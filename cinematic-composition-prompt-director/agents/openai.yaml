@@ -1,0 +1,4 @@
+interface:
+  display_name: "电影构图提示导演"
+  short_description: "将想法、场景、粗提示或图像观察转成 10 条电影剧照感构图提示。"
+  default_prompt: "把下面的场景扩展成 10 条电影化构图提示，保持同一核心主题。"

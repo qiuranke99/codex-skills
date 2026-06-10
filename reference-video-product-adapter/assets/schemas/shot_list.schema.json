@@ -1,0 +1,29 @@
+{
+  "type": "object",
+  "required": ["project_title", "target_duration_sec", "shots"],
+  "properties": {
+    "project_title": {"type": "string"},
+    "target_duration_sec": {"type": "number"},
+    "shots": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["shot_id", "duration_sec", "reference_beat_id", "shot_size", "visual", "action", "camera", "product_role", "on_screen_text", "source_refs", "ai_video_notes", "risk_flags"],
+        "properties": {
+          "shot_id": {"type": "string"},
+          "duration_sec": {"type": "number"},
+          "reference_beat_id": {"type": "string"},
+          "shot_size": {"type": "string"},
+          "visual": {"type": "string"},
+          "action": {"type": "string"},
+          "camera": {"type": "string"},
+          "product_role": {"type": "string"},
+          "on_screen_text": {"type": "string"},
+          "source_refs": {"type": "array"},
+          "ai_video_notes": {"type": "string"},
+          "risk_flags": {"type": "array"}
+        }
+      }
+    }
+  }
+}

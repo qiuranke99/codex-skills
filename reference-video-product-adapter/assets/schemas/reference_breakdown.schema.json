@@ -1,0 +1,31 @@
+{
+  "type": "object",
+  "required": ["reference_id", "source", "duration_sec", "beats", "style_notes", "music_or_rhythm_notes", "text_or_logo_notes"],
+  "properties": {
+    "reference_id": {"type": "string"},
+    "source": {"type": "string"},
+    "duration_sec": {"type": "number"},
+    "beats": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["beat_id", "time_range", "visual", "action", "camera", "transition", "rhythm_note", "adaptation_function"],
+        "properties": {
+          "beat_id": {"type": "string"},
+          "time_range": {"type": "string"},
+          "visual": {"type": "string"},
+          "action": {"type": "string"},
+          "camera": {"type": "string"},
+          "transition": {"type": "string"},
+          "text_or_logo": {"type": "string"},
+          "rhythm_note": {"type": "string"},
+          "adaptation_function": {"type": "string"},
+          "confidence": {"type": "string", "enum": ["high", "medium", "low"]}
+        }
+      }
+    },
+    "style_notes": {"type": "array"},
+    "music_or_rhythm_notes": {"type": "array"},
+    "text_or_logo_notes": {"type": "array"}
+  }
+}

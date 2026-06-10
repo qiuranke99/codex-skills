@@ -1,0 +1,82 @@
+{
+  "reference_id": "REF001",
+  "source": "sample reference notes",
+  "duration_sec": 15,
+  "beats": [
+    {
+      "beat_id": "B01",
+      "time_range": "0:00-0:02",
+      "visual": "A hand enters a warm tabletop scene.",
+      "action": "The subject prepares to pick up the hero object.",
+      "camera": "Medium close-up, slight push-in.",
+      "transition": "Hard cut on motion.",
+      "text_or_logo": "No readable text.",
+      "rhythm_note": "Quick opening beat.",
+      "adaptation_function": "Open with tactile entry and product anticipation.",
+      "confidence": "medium"
+    },
+    {
+      "beat_id": "B02",
+      "time_range": "0:02-0:04",
+      "visual": "The object enters frame as the main focus.",
+      "action": "Object is placed in the center.",
+      "camera": "Close-up hero placement.",
+      "transition": "Cut to close-up.",
+      "text_or_logo": "No readable text.",
+      "rhythm_note": "Reveal beat.",
+      "adaptation_function": "Introduce product silhouette.",
+      "confidence": "medium"
+    },
+    {
+      "beat_id": "B03",
+      "time_range": "0:04-0:07",
+      "visual": "A tactile detail is shown in close-up.",
+      "action": "Surface and hand interaction are emphasized.",
+      "camera": "Macro detail.",
+      "transition": "Cut on touch.",
+      "text_or_logo": "No readable text.",
+      "rhythm_note": "Texture beat.",
+      "adaptation_function": "Show product material detail.",
+      "confidence": "medium"
+    },
+    {
+      "beat_id": "B04",
+      "time_range": "0:07-0:10",
+      "visual": "A dynamic movement creates energy.",
+      "action": "Object moves through frame with a quick flourish.",
+      "camera": "Tracking close-up.",
+      "transition": "Whip-like cut.",
+      "text_or_logo": "No readable text.",
+      "rhythm_note": "Momentum beat.",
+      "adaptation_function": "Make daily use feel active.",
+      "confidence": "medium"
+    },
+    {
+      "beat_id": "B05",
+      "time_range": "0:10-0:13",
+      "visual": "The hero object is cleanly presented.",
+      "action": "Subject holds the object toward camera.",
+      "camera": "Hero close-up.",
+      "transition": "Clean cut.",
+      "text_or_logo": "Brand-like reveal in original, not reused.",
+      "rhythm_note": "Hero reveal.",
+      "adaptation_function": "Show product clearly without copying original brand treatment.",
+      "confidence": "medium"
+    },
+    {
+      "beat_id": "B06",
+      "time_range": "0:13-0:15",
+      "visual": "Simple final frame.",
+      "action": "End card or final hold.",
+      "camera": "Static hero shot.",
+      "transition": "Hold.",
+      "text_or_logo": "Original text not reused.",
+      "rhythm_note": "Closure beat.",
+      "adaptation_function": "End with short product name only.",
+      "confidence": "medium"
+    }
+  ],
+  "style_notes": ["warm tabletop lighting", "tactile close-ups", "clean social ad rhythm"],
+  "music_or_rhythm_notes": ["six fast beats", "cuts land on object motion", "final hold"],
+  "text_or_logo_notes": ["do not reuse original brand marks or original copy"]
+}

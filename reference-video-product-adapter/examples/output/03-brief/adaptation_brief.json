@@ -1,0 +1,11 @@
+{
+  "project_title": "Aurora Cup Reference Adaptation",
+  "product_name": "Aurora Cup",
+  "reference_strategy": "Use the reference video for six-beat pacing, tactile close-up rhythm, and final hero reveal only. Change product, setting, action specifics, text, and composition.",
+  "target_duration_sec": 15,
+  "tone": ["warm", "tactile", "clean", "morning commute"],
+  "must_show": ["cup silhouette", "matte surface", "lid detail", "hand carry", "final hero hold"],
+  "must_avoid": ["exact temperature retention claims", "unconfirmed leak-resistant claim", "original reference brand marks", "frame-by-frame imitation"],
+  "product_claims": ["P001", "P002", "P003 needs_confirmation"],
+  "open_questions": ["Can leak-resistant lid be used as a confirmed claim?"]
+}

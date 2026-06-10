@@ -1,0 +1,90 @@
+{
+  "project_title": "Aurora Cup Reference Adaptation",
+  "target_duration_sec": 15,
+  "shots": [
+    {
+      "shot_id": "S01",
+      "duration_sec": 2,
+      "reference_beat_id": "B01",
+      "shot_size": "Medium close-up",
+      "visual": "Morning tabletop with a hand entering near the cup shadow.",
+      "action": "Hand reaches toward the cup area without revealing the full product yet.",
+      "camera": "Slight push-in.",
+      "product_role": "anticipation",
+      "on_screen_text": "",
+      "source_refs": ["reference_video:B01", "product_pack:must_show"],
+      "ai_video_notes": "Use a new tabletop composition; do not copy the reference frame.",
+      "risk_flags": ["reference_dependency"]
+    },
+    {
+      "shot_id": "S02",
+      "duration_sec": 2,
+      "reference_beat_id": "B02",
+      "shot_size": "Close-up",
+      "visual": "Aurora Cup placed in the center of a clean morning table.",
+      "action": "Cup lands softly and becomes the main focus.",
+      "camera": "Cut to close-up.",
+      "product_role": "silhouette reveal",
+      "on_screen_text": "Aurora Cup",
+      "source_refs": ["reference_video:B02", "product_pack:P001"],
+      "ai_video_notes": "Preserve cup silhouette from product reference; avoid detailed generated logo.",
+      "risk_flags": ["logo_accuracy", "product_identity"]
+    },
+    {
+      "shot_id": "S03",
+      "duration_sec": 3,
+      "reference_beat_id": "B03",
+      "shot_size": "Macro",
+      "visual": "Close-up of matte cup surface and lid edge.",
+      "action": "Fingers rotate the cup slightly to catch light on the finish.",
+      "camera": "Macro slide.",
+      "product_role": "material detail",
+      "on_screen_text": "matte finish",
+      "source_refs": ["reference_video:B03", "product_pack:P002", "product_pack:P003 needs_confirmation"],
+      "ai_video_notes": "Show lid visually but do not state leak-resistant unless confirmed.",
+      "risk_flags": ["text_rendering", "unsupported_claim"]
+    },
+    {
+      "shot_id": "S04",
+      "duration_sec": 3,
+      "reference_beat_id": "B04",
+      "shot_size": "Tracking close-up",
+      "visual": "Cup moves from table toward a bag side pocket.",
+      "action": "Hand lifts and carries the cup through frame.",
+      "camera": "Short lateral track.",
+      "product_role": "daily use",
+      "on_screen_text": "",
+      "source_refs": ["reference_video:B04", "product_pack:must_show"],
+      "ai_video_notes": "Keep movement simple for AI stability.",
+      "risk_flags": ["product_identity"]
+    },
+    {
+      "shot_id": "S05",
+      "duration_sec": 3,
+      "reference_beat_id": "B05",
+      "shot_size": "Hero close-up",
+      "visual": "Cup held near warm morning light.",
+      "action": "Subject presents the cup to camera without copying the reference pose.",
+      "camera": "Gentle push-in.",
+      "product_role": "hero reveal",
+      "on_screen_text": "made for daily carry",
+      "source_refs": ["reference_video:B05", "user_instruction:inferred"],
+      "ai_video_notes": "Soft lifestyle line only; no technical promise.",
+      "risk_flags": ["none"]
+    },
+    {
+      "shot_id": "S06",
+      "duration_sec": 2,
+      "reference_beat_id": "B06",
+      "shot_size": "Static hero",
+      "visual": "Cup on clean surface with negative space.",
+      "action": "Final hold.",
+      "camera": "Locked-off.",
+      "product_role": "end card",
+      "on_screen_text": "Aurora Cup",
+      "source_refs": ["reference_video:B06", "product_pack:product_name"],
+      "ai_video_notes": "Add final text in post if logo accuracy matters.",
+      "risk_flags": ["text_rendering"]
+    }
+  ]
+}

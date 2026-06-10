@@ -1,0 +1,33 @@
+{
+  "product_name": "Aurora Cup",
+  "mapping_items": [
+    {
+      "mapping_id": "M01",
+      "reference_beat_id": "B01",
+      "product_role": "anticipation before reveal",
+      "product_claims": [],
+      "source_refs": ["reference_video:B01", "product_pack:must_show"],
+      "claim_status": "not_applicable",
+      "adaptation_note": "Keep tactile opening but change tabletop composition."
+    },
+    {
+      "mapping_id": "M02",
+      "reference_beat_id": "B02",
+      "product_role": "silhouette reveal",
+      "product_claims": ["P001"],
+      "source_refs": ["reference_video:B02", "product_pack:P001"],
+      "claim_status": "provided",
+      "adaptation_note": "Show the travel cup as the new hero object."
+    },
+    {
+      "mapping_id": "M03",
+      "reference_beat_id": "B03",
+      "product_role": "surface and lid detail",
+      "product_claims": ["P002", "P003"],
+      "source_refs": ["reference_video:B03", "product_pack:P002", "product_pack:P003 needs_confirmation"],
+      "claim_status": "needs_confirmation",
+      "adaptation_note": "Show lid visually but avoid saying leak-resistant until confirmed."
+    }
+  ],
+  "unsupported_or_missing": ["P003 leak-resistant lid requires confirmation before on-screen copy"]
+}

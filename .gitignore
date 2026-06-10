@@ -1,0 +1,10 @@
+# Local loose intake files at the skill archive root.
+/*.jpg
+/*.jpeg
+/*.png
+/*.webp
+/*_指令.md
+
+# OS/editor files.
+Thumbs.db
+.DS_Store

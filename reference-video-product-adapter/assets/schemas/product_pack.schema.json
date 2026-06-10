@@ -1,0 +1,36 @@
+{
+  "type": "object",
+  "required": ["product_name", "category", "assets", "claims", "must_show", "must_avoid"],
+  "properties": {
+    "product_name": {"type": "string"},
+    "category": {"type": "string"},
+    "brand": {"type": "string"},
+    "target_market": {"type": "string"},
+    "assets": {
+      "type": "object",
+      "required": ["product_images", "logo_files"],
+      "properties": {
+        "product_images": {"type": "array"},
+        "logo_files": {"type": "array"},
+        "packaging_files": {"type": "array"},
+        "mood_references": {"type": "array"}
+      }
+    },
+    "claims": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["claim_id", "claim", "source", "status"],
+        "properties": {
+          "claim_id": {"type": "string"},
+          "claim": {"type": "string"},
+          "source": {"type": "string"},
+          "status": {"type": "string", "enum": ["provided", "inferred", "needs_confirmation", "not_applicable"]}
+        }
+      }
+    },
+    "must_show": {"type": "array"},
+    "must_avoid": {"type": "array"},
+    "target_output": {"type": "object"}
+  }
+}

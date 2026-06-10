@@ -1,0 +1,22 @@
+{
+  "type": "object",
+  "required": ["source_video", "duration_sec", "width", "height", "fps", "video_codec", "audio_codec", "extracted_frames", "contact_sheet", "audio_path"],
+  "properties": {
+    "source_video": {"type": "string"},
+    "duration_sec": {"type": "number"},
+    "width": {"type": "number"},
+    "height": {"type": "number"},
+    "fps": {"type": "number"},
+    "video_codec": {"type": "string"},
+    "audio_codec": {"type": "string"},
+    "frame_count_estimate": {"type": "number"},
+    "extracted_frames": {
+      "type": "array",
+      "items": {"type": "string"}
+    },
+    "contact_sheet": {"type": "string"},
+    "audio_path": {"type": "string"},
+    "generated_at_utc": {"type": "string"},
+    "tools": {"type": "object"}
+  }
+}

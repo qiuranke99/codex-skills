@@ -1,0 +1,4 @@
+interface:
+  display_name: "Reference Video Product Adapter"
+  short_description: "Adapt reference videos into product plans"
+  default_prompt: "Use the reference-video-product-adapter skill to turn this reference video and product pack into a checked shot list, storyboard prompt, and video-platform prompt."
