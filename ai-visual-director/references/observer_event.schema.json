@@ -1,0 +1,108 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "AI Visual Director Shadow Observer Event",
+  "type": "object",
+  "required": [
+    "event_id",
+    "run_id",
+    "created_at",
+    "production_mode",
+    "observer_mode",
+    "stage",
+    "source_artifact",
+    "event_type",
+    "severity",
+    "failure_codes",
+    "evidence"
+  ],
+  "properties": {
+    "event_id": {"type": "string", "minLength": 1},
+    "run_id": {"type": "string", "minLength": 1},
+    "created_at": {"type": "string", "format": "date-time"},
+    "production_mode": {
+      "enum": ["standard_fast", "rush", "premium_pitch", "certification", "unknown"]
+    },
+    "observer_mode": {
+      "enum": ["auto", "off", "full"]
+    },
+    "stage": {
+      "enum": [
+        "intake",
+        "route",
+        "shot_plan",
+        "structure_gate",
+        "storyboard_prompt",
+        "post_image_qc",
+        "video_prompt",
+        "final_qc",
+        "skill_packaging",
+        "other"
+      ]
+    },
+    "source_artifact": {"type": "string"},
+    "event_type": {
+      "enum": [
+        "artifact_recorded",
+        "validator_pass",
+        "validator_warning",
+        "validator_error",
+        "route_issue",
+        "prompt_issue",
+        "image_qc_issue",
+        "video_prompt_issue",
+        "user_correction",
+        "candidate_rule_generated",
+        "other"
+      ]
+    },
+    "severity": {
+      "enum": ["info", "low", "medium", "high", "severe"]
+    },
+    "failure_codes": {
+      "type": "array",
+      "items": {
+        "enum": [
+          "route_misclass",
+          "duration_defaulted",
+          "escalation_trigger_missed",
+          "reference_role_conflict",
+          "insufficient_camera_variety",
+          "weak_attention_order",
+          "missing_depth_layers",
+          "unmotivated_movement",
+          "generic_premium_language",
+          "scale_unproven",
+          "photoreal_drift",
+          "anime_manga_drift",
+          "readable_text",
+          "panel_separation_failure",
+          "identity_drift",
+          "wrong_camera_angle",
+          "repeated_centered_composition",
+          "static_panel_dump",
+          "missing_first_last_frame",
+          "segment_continuity_break",
+          "motion_not_motivated",
+          "other"
+        ]
+      },
+      "uniqueItems": true,
+      "default": []
+    },
+    "evidence": {"type": "string"},
+    "related_shots": {
+      "type": "array",
+      "items": {"type": "string"},
+      "default": []
+    },
+    "related_images": {
+      "type": "array",
+      "items": {"type": "string"},
+      "default": []
+    },
+    "prompt_excerpt": {"type": "string"},
+    "suggested_fix": {"type": "string"},
+    "candidate_rule_id": {"type": "string"}
+  },
+  "additionalProperties": false
+}

@@ -1,0 +1,4 @@
+interface:
+  display_name: "AI视觉导演"
+  short_description: "从参考图和关键词自动规划9宫格蓝灰手绘故事板与10秒视频提示词。"
+  default_prompt: "用 AI视觉导演流程处理这些参考图和关键词，输出9宫格蓝灰手绘故事板、Google omni 10s/段视频提示词和QC报告。"

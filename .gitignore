@@ -5,6 +5,10 @@
 /*.webp
 /*_指令.md
 
+# Python validation/runtime cache.
+**/__pycache__/
+*.pyc
+
 # OS/editor files.
 Thumbs.db
 .DS_Store

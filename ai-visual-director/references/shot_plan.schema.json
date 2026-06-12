@@ -1,0 +1,115 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "AI Visual Director Shot Plan",
+  "type": "object",
+  "required": [
+    "project_title",
+    "project_type",
+    "duration_seconds",
+    "storyboard_sheet_count",
+    "video_segment_count",
+    "continuity_locks",
+    "sheets"
+  ],
+  "properties": {
+    "project_title": {"type": "string"},
+    "project_type": {"type": "string"},
+    "duration_seconds": {"type": "number"},
+    "storyboard_sheet_count": {"type": "integer", "minimum": 1},
+    "panel_count": {"type": "integer", "minimum": 9},
+    "video_segment_count": {"type": "integer", "minimum": 1},
+    "visual_strategy": {"type": "string"},
+    "continuity_locks": {"type": "array", "items": {"type": "string"}, "minItems": 1},
+    "reference_roles": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["image", "role"],
+        "properties": {
+          "image": {"type": "string"},
+          "role": {"type": "string"},
+          "must_preserve": {"type": "array", "items": {"type": "string"}},
+          "may_ignore": {"type": "array", "items": {"type": "string"}}
+        },
+        "additionalProperties": false
+      }
+    },
+    "sheets": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["sheet_id", "time_range", "beat", "shots"],
+        "properties": {
+          "sheet_id": {"type": "string"},
+          "time_range": {"type": "string"},
+          "beat": {"type": "string"},
+          "shots": {
+            "type": "array",
+            "minItems": 9,
+            "maxItems": 9,
+            "items": {
+              "type": "object",
+              "required": [
+                "shot_id",
+                "aspect_ratio",
+                "scene",
+                "duration",
+                "shot_purpose",
+                "shot_size",
+                "camera_angle",
+                "lens_feel",
+                "camera_movement",
+                "cut_logic",
+                "attention_order",
+                "eye_trace",
+                "depth_strategy",
+                "reference_parity",
+                "main_subject",
+                "main_action",
+                "body_pose",
+                "composition",
+                "foreground",
+                "midground",
+                "background",
+                "scale_reference",
+                "continuity_lock",
+                "must_preserve",
+                "avoid"
+              ],
+              "properties": {
+                "shot_id": {"type": "string"},
+                "aspect_ratio": {"type": "string"},
+                "scene": {"type": "string"},
+                "duration": {"type": "string"},
+                "shot_purpose": {"type": "string"},
+                "shot_size": {"type": "string"},
+                "camera_angle": {"type": "string"},
+                "lens_feel": {"type": "string"},
+                "camera_movement": {"type": "string"},
+                "cut_logic": {"type": "string"},
+                "attention_order": {"type": "string"},
+                "eye_trace": {"type": "string"},
+                "depth_strategy": {"type": "string"},
+                "reference_parity": {"type": "string"},
+                "main_subject": {"type": "string"},
+                "main_action": {"type": "string"},
+                "body_pose": {"type": "string"},
+                "composition": {"type": "string"},
+                "foreground": {"type": "string"},
+                "midground": {"type": "string"},
+                "background": {"type": "string"},
+                "scale_reference": {"type": "string"},
+                "continuity_lock": {"type": "string"},
+                "must_preserve": {"type": "string"},
+                "avoid": {"type": "string"}
+              },
+              "additionalProperties": false
+            }
+          }
+        },
+        "additionalProperties": false
+      }
+    }
+  },
+  "additionalProperties": false
+}

@@ -1,0 +1,83 @@
+{
+  "skill_name": "ai-visual-director",
+  "version": "0.6.0",
+  "distribution_mode": "self-contained skill folder",
+  "canonical_packaged_references": [
+    {
+      "path": "SKILL.md",
+      "sha256": "54535a79c3ef47edea5ad1532c5b4ef54f7662423cd817b860650a18dc01e87e",
+      "purpose": "primary skill workflow rules including Shadow Observer launch contract"
+    },
+    {
+      "path": "references/observer_protocol.md",
+      "sha256": "d27bef51e9a0975de04b5e423a19b33ba7d27bad8ab79547d853a91f2bc59e56",
+      "purpose": "Shadow Observer protocol: non-blocking event logging and candidate-rule promotion rules"
+    },
+    {
+      "path": "references/observer_event.schema.json",
+      "sha256": "7a1cb6e3df2150fece36b7084e9c3fb91adff1a5afc987247760667ba189e5bd",
+      "purpose": "append-only Shadow Observer event contract"
+    },
+    {
+      "path": "references/rule_candidate.schema.json",
+      "sha256": "af1590dfd3b10ca35b513461a8ac1e8bd557cf15936be366dc719517deebb0be",
+      "purpose": "candidate-rule proposal contract for skill improvement passes"
+    },
+    {
+      "path": "references/intake.schema.json",
+      "sha256": "e93b1d876ab2a0fbad5a6c1da10ab1d7f2d2d84463070f4a0866cf961657979f",
+      "purpose": "intake contract including production and observer modes"
+    },
+    {
+      "path": "references/director_kernel.md",
+      "sha256": "20b8d1b4374665c8e220b400104a3efb7fa504951381b58331d4a34d7e97b1c8",
+      "purpose": "production-mode routing, director playbooks, and escalation triggers"
+    },
+    {
+      "path": "references/world_class_tvc_principles.md",
+      "sha256": "f3a7160cbdd3e29026a3c215b06c23a08e63083bc864b38c0799f9797e629163",
+      "purpose": "world-class TVC principles, reference parity, attention choreography, and source map"
+    },
+    {
+      "path": "references/shot_spec_template.md",
+      "sha256": "c70f9fa44630effe80ef40147593d0d2df1893864ea710eb46750885be7820e6",
+      "purpose": "shot-spec grammar and handoff fields"
+    },
+    {
+      "path": "references/good_shotlist_examples.md",
+      "sha256": "b88c8edfcb380c6f1661c2fcad464d9d38077d8b110546e50e7a6ed18e33612e",
+      "purpose": "reference examples for non-generic shot progression"
+    },
+    {
+      "path": "references/blue_gray_previs_style_bible.md",
+      "sha256": "6afe4502201c7e41774ff6739c174a51556eb0410b9f1d7ebfc86ae6b68032c3",
+      "purpose": "blue-gray previs sketch style rules"
+    },
+    {
+      "path": "assets/blue_gray_previs_reference.jpeg",
+      "sha256": "46c536e9f12104532df7cb2ed6481bf0bc69c9cde84ceb20ad90040389afdb22",
+      "purpose": "visual target reference for the blue-gray sketch style"
+    },
+    {
+      "path": "scripts/observe_run.py",
+      "sha256": "007f872b3702f3d9d3a149051ff5c0e23bdfd90f1e3e45dac23f063679428ff6",
+      "purpose": "non-blocking observer event logging, validator ingestion, single-run candidate generation, and cross-run aggregation"
+    },
+    {
+      "path": "scripts/create_observer_packet.py",
+      "sha256": "c4473581f85a2ab3c20336d3307d1c1f35089606742aeb83ccff543d2d1033be",
+      "purpose": "compact observer packet creation for optional sub-agent or SSOT review handoff"
+    },
+    {
+      "path": "scripts/verify_skill_package.py",
+      "sha256": "f7268716de9a016f83a012246b36af76752af70f5fb9159a455eb7130714393f",
+      "purpose": "self-contained package verification including observer smoke tests"
+    }
+  ],
+  "notes": [
+    "The project-root markdown files may remain as editable method-library notes, but the packaged skill must not depend on them.",
+    "When root references change, copy the updated versions into this skill and update the hashes before publishing.",
+    "Shadow Observer events and candidate rules are learning evidence, not automatic permission to mutate the skill.",
+    "Temporary-thread observer candidates remain draft evidence until accepted in the SSOT main thread."
+  ]
+}

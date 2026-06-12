@@ -1,0 +1,44 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Google Omni Video Segments",
+  "type": "object",
+  "required": ["segments"],
+  "properties": {
+    "segments": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": [
+          "segment_id",
+          "time_range",
+          "purpose",
+          "source_shots",
+          "first_frame",
+          "last_frame",
+          "camera_plan",
+          "subject_motion",
+          "environment_motion",
+          "continuity_lock",
+          "visual_style",
+          "negative_constraints"
+        ],
+        "properties": {
+          "segment_id": {"type": "string"},
+          "time_range": {"type": "string"},
+          "purpose": {"type": "string"},
+          "source_shots": {"type": "array", "items": {"type": "string"}},
+          "first_frame": {"type": "string"},
+          "last_frame": {"type": "string"},
+          "camera_plan": {"type": "string"},
+          "subject_motion": {"type": "string"},
+          "environment_motion": {"type": "string"},
+          "continuity_lock": {"type": "string"},
+          "visual_style": {"type": "string"},
+          "negative_constraints": {"type": "string"}
+        },
+        "additionalProperties": false
+      }
+    }
+  },
+  "additionalProperties": false
+}
