@@ -1,16 +1,16 @@
 {
   "skill_name": "ai-visual-director",
-  "version": "0.6.2",
+  "version": "0.6.3",
   "distribution_mode": "self-contained skill folder",
   "canonical_packaged_references": [
     {
       "path": "SKILL.md",
-      "sha256": "839fb6fe88c2e36d1222fcdb76a88e103f000443451f72d88d2ee310e0af5cbf",
-      "purpose": "primary skill workflow rules including Shadow Observer launch contract, product identity fidelity contract, and video product identity lock contract"
+      "sha256": "fe9a66d7aab583b83c5e4f988ced62acb8170b532afd8d69191351f809b06267",
+      "purpose": "primary skill workflow rules including Shadow Observer launch contract, product identity fidelity contract, and full-view video product visual-fact lock contract"
     },
     {
       "path": "references/observer_protocol.md",
-      "sha256": "a0c8db165bc89b9e913fa7ad834b4f024e4d2f8fe9268c7ea6a354da480a8fbb",
+      "sha256": "8d4817b487ea519765d06feac8124c705635b0f5abe8ac63e01c01b87efc1498",
       "purpose": "Shadow Observer protocol: non-blocking event logging, product identity mismatch taxonomy, and candidate-rule promotion rules"
     },
     {
@@ -35,8 +35,8 @@
     },
     {
       "path": "references/video_segments.schema.json",
-      "sha256": "13d4d6ec1852020e15c8fbf7845ebebdcb8228cd5fc8f20fb8730c5159b0fb98",
-      "purpose": "Google Omni video segment contract including optional product reference setup, product identity lock, and per-segment product motion lock fields"
+      "sha256": "29cd8f50d95cbce2662273aac700aa7792b14fee459132a8d6030cdea0bae30b",
+      "purpose": "Google Omni video segment contract including product reference setup, visual-fact identity lock, exact text/mark inventory, and full-view product fidelity fields"
     },
     {
       "path": "references/director_kernel.md",
@@ -45,8 +45,8 @@
     },
     {
       "path": "references/world_class_tvc_principles.md",
-      "sha256": "52c1770c83479b11fad0cef144f4e4865020f3ee60a28fabfc34d884e80a3a47",
-      "purpose": "world-class TVC principles, reference parity, attention choreography, video product identity lock rules, and source map"
+      "sha256": "75ec165ff418e6e3cdf122b0b5371fb75d9fe19a0ea8dccb4fa5afa977da8af6",
+      "purpose": "world-class TVC principles, reference parity, attention choreography, video product visual-fact lock rules, and source map"
     },
     {
       "path": "references/shot_spec_template.md",
@@ -70,7 +70,7 @@
     },
     {
       "path": "scripts/observe_run.py",
-      "sha256": "075882999e3fb254e3028c4a11403ac23269379565f29933a13905dbfd186dd5",
+      "sha256": "b0906df1659557d24b0a1c82e38e63d70f35319f80ea035b33e0ea58768f2f58",
       "purpose": "non-blocking observer event logging, validator ingestion, product identity mismatch classification, single-run candidate generation, and cross-run aggregation"
     },
     {
@@ -85,8 +85,8 @@
     },
     {
       "path": "scripts/validate_video_segments.py",
-      "sha256": "a8bc56036e29da4e8d85442e41011c89a8d627f1fc8544fbee9c93e7e7db0786",
-      "purpose": "Google Omni video segment validator including product reference setup, product identity lock, and unsafe product rebuild language gates"
+      "sha256": "5f7b53d45e9234170d68746b81821d20d6bc55e891d9eae52469506de299c390",
+      "purpose": "Google Omni video segment validator including product reference setup, exact visible product text gates, forbidden visual additions, and full-view product visual-fact fidelity"
     },
     {
       "path": "scripts/verify_skill_package.py",
@@ -100,8 +100,8 @@
     },
     {
       "path": "tests/test_validate_video_product_lock.py",
-      "sha256": "fd264bcb26dd393d32643d7bd3f47d4b1fab2145c66fe2a4d02352f8deb4ed59",
-      "purpose": "regression tests for product packaging fidelity and rigid-body product rules in Google Omni video prompts"
+      "sha256": "b18fe72c0ed4662e741eb5ebc4883fc28c46ec2183afb96ad6d65a975ed5fce0",
+      "purpose": "regression tests for full-visible product text fidelity, forbidden visual additions, and lens-motion freedom in Google Omni video prompts"
     }
   ],
   "notes": [

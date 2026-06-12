@@ -65,7 +65,7 @@ INFERENCE_RULES: list[tuple[re.Pattern[str], str]] = [
     (re.compile(r"scale_reference|scale proof|scale", re.I), "scale_unproven"),
     (re.compile(r"photoreal|photo-real|realistic", re.I), "photoreal_drift"),
     (re.compile(r"anime|manga|comic", re.I), "anime_manga_drift"),
-    (re.compile(r"product.*(label|text|logo|mark|packag|blank|fake|wrong|morph|spin|rotate|generate|generic)|label.*product|包装|标签|品牌文字|假品牌|空白瓶|产品.*(漂移|生成|变形|旋转)", re.I), "product_identity_mismatch"),
+    (re.compile(r"product.*(label|text|logo|mark|packag|blank|fake|wrong|generic|metal plate|badge|plaque|extra panel|emboss|relief|component)|label.*product|包装|标签|品牌文字|假品牌|空白瓶|错字|漏字|金属片|铭牌|徽章|浮雕|压印|产品.*(漂移|不一致|错字|漏字)", re.I), "product_identity_mismatch"),
     (re.compile(r"readable text|caption|unrelated text|shot number|subtitle", re.I), "readable_text"),
     (re.compile(r"panel separation|grid|border", re.I), "panel_separation_failure"),
     (re.compile(r"identity|product.*drift|character.*drift", re.I), "identity_drift"),
@@ -145,10 +145,10 @@ PROPOSAL_MAP = {
     "product_identity_mismatch": {
         "target_file": "SKILL.md",
         "hypothesis": "The product identity lock is missing or not being enforced strongly enough in storyboard planning, storyboard prompting, generated sheets, or video prompts.",
-        "rule": "When a user product is visible, preserve the locked package silhouette, label layout, supplied product text, logo/mark, color blocks, and cap/pump/closure; reject blank packaging, fake brands, invented claims, changed layouts, generic product substitutes, and product-video language that rebuilds, spins, morphs, opens, duplicates, or separates package parts.",
-        "applies_when": "A shot plan, storyboard prompt, generated sheet, or video segment blanks, invents, changes, or motion-rebuilds user-provided product packaging identity.",
-        "risk": "Tiny microtext may be impossible in rough storyboard or video scale; preserve label geometry and primary supplied marks rather than inventing details.",
-        "regression": "A user-provided bottle labeled LUMA / HYDRATING SERUM / 30 ml must not become a blank cosmetic bottle, a different fake brand, or a generated/morphing/spinning product in a video segment.",
+        "rule": "When a user product is visible, preserve the locked package silhouette, label layout, supplied product text, logo/mark, embossed or relief marks, color blocks, real physical components, materials, and cap/pump/closure; reject blank packaging, misspelled or missing copy, fake brands, invented claims, changed layouts, generic product substitutes, and non-reference additions such as metal plates, badges, plaques, extra panels, or wrong hardware.",
+        "applies_when": "A shot plan, storyboard prompt, generated sheet, or video segment blanks, misspells, omits, invents, or adds visible product packaging facts that are not in the user-provided reference.",
+        "risk": "Tiny microtext may be impossible in rough storyboard or video scale; preserve label geometry and every readable primary supplied mark rather than inventing details.",
+        "regression": "A user-provided bottle labeled LUMA / HYDRATING SERUM / 30 ml with no front metal plate must not become a blank cosmetic bottle, a different fake brand, misspelled text, or a bottle with an added metal badge/plaque in a full-visible video segment.",
     },
     "panel_separation_failure": {
         "target_file": "references/blue_gray_previs_style_bible.md",

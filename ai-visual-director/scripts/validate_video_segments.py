@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Validate Google Omni video segments for temporal structure and product locks."""
+"""Validate Google Omni video segments for temporal structure and product visual-fidelity locks."""
 
 from __future__ import annotations
 
@@ -34,52 +34,51 @@ PRODUCT_MARK_WORDS = re.compile(
     r"文字|标签|标贴|品牌|商标|版式|包装|瓶盖|喷头|形状|比例",
     re.IGNORECASE,
 )
-RIGID_WORDS = re.compile(
-    r"rigid|still|stable|unchanged|fixed|cap (?:stays|remains)|label (?:stays|remains|fixed)|"
-    r"刚体|稳定|不变|固定|瓶盖不动|瓶盖保持|标签固定|标签不动",
-    re.IGNORECASE,
-)
-UNSAFE_PRODUCT_REBUILD = re.compile(
-    r"\b(product|bottle|jar|tube|package|perfume|fragrance)\b[^.\n]{0,80}"
-    r"\b(appear|appears|emerge|emerges|rise|rises|rotate|rotates|spin|spins|form|forms|generate|generates|"
-    r"assemble|assembles|materialize|materializes|morph|morphs|transform|transforms|open|opens|separate|separates|"
-    r"float|floats|lift|lifts|detach|detaches)\b|"
-    r"\b(cap|lid|atomizer)\b[^.\n]{0,60}\b(open|opens|separate|separates|float|floats|lift|lifts|detach|detaches)\b|"
-    r"产品[^。\n]{0,80}(生成|出现|升起|旋转|变形|变成|组装|凝结|开盖|分离|漂浮)|"
-    r"瓶盖[^。\n]{0,60}(打开|分离|漂浮|升起|脱离)",
-    re.IGNORECASE,
-)
 PRODUCT_DRIFT_WORDS = re.compile(
-    r"generic|blank|fake|new brand|new logo|changed label|changed cap|duplicate|extra bottle|"
-    r"通用|空白|假品牌|假标签|新品牌|新logo|改变标签|改变瓶盖|多个瓶|重复瓶",
+    r"generic|blank|fake|wrong text|no text|missing text|new brand|new logo|changed label|changed cap|"
+    r"duplicate|extra bottle|extra emblem|extra badge|front plaque|metal plate|"
+    r"通用|空白|无字|错字|文字错误|假品牌|假标签|新品牌|新logo|改变标签|改变瓶盖|多个瓶|重复瓶|金属片|铭牌|徽章",
     re.IGNORECASE,
 )
-NEGATED_CLAUSE = re.compile(
-    r"^\s*(no|not|never|do not|don't|without|禁止|不要|不能|不可|不)\b",
+VISUAL_FIDELITY_WORDS = re.compile(
+    r"exact|match|same|preserve|supplied|original|reference|no-extra|no extra|unchanged visual|visual facts|"
+    r"准确|一致|保持|保留|参考图|原始|真实|不得新增|不新增|视觉事实",
     re.IGNORECASE,
 )
-UNSAFE_POSITIVE_FIELDS = [
+BAD_FULL_VIEW_TEXT = re.compile(
+    r"blank label|no label|no text|no readable text|text-free|unlabeled|generic label|fake text|wrong text|"
+    r"空白标签|无标签|无文字|不出现字|不显示文字|通用标签|假文字|错字",
+    re.IGNORECASE,
+)
+POSITIVE_VISUAL_FIELDS = [
     "purpose",
     "first_frame",
     "last_frame",
     "camera_plan",
     "subject_motion",
     "environment_motion",
+    "continuity_lock",
+    "visual_style",
+    "visible_product_text_or_marks",
+    "product_visual_facts",
 ]
+NEGATED_PREFIX_WORDS = ("no", "not", "without", "never", "禁止", "不要", "不能", "不可", "没有", "无")
 PRODUCT_VISIBILITY_VALUES = {"full_visible", "partial_visible", "detail_only", "not_visible"}
 REQUIRED_REFERENCE_FIELDS = ["product_identity_reference", "product_identity_role"]
 REQUIRED_LOCK_FIELDS = [
     "source_reference",
     "product_name_text",
     "primary_label_text",
+    "surface_text_inventory",
+    "embossed_or_relief_marks",
     "label_layout",
     "packaging_shape",
+    "physical_component_inventory",
     "color_material_marks",
     "required_visible_marks",
     "forbidden_changes",
-    "rigid_body_rule",
-    "allowed_angles_or_views",
-    "forbidden_product_motion",
+    "forbidden_visual_additions",
+    "full_view_fidelity_rule",
 ]
 
 
@@ -105,6 +104,71 @@ def has_nonempty(value: object) -> bool:
     return bool(str(value).strip())
 
 
+def as_list(value: object) -> list[str]:
+    if isinstance(value, list):
+        return [str(item).strip() for item in value if str(item).strip()]
+    if isinstance(value, str) and value.strip():
+        return [value.strip()]
+    return []
+
+
+def normalized(value: str) -> str:
+    return re.sub(r"\s+", " ", value).strip().lower()
+
+
+def positive_segment_blob(segment: dict) -> str:
+    return text_blob(*(segment.get(field, "") for field in POSITIVE_VISUAL_FIELDS))
+
+
+def visible_text_lines(lock: dict) -> list[str]:
+    lines = []
+    for value in [lock.get("product_name_text"), lock.get("primary_label_text")]:
+        for item in as_list(value):
+            if "unreadable_from_reference" not in normalized(item):
+                lines.append(item)
+    unique = []
+    for line in lines:
+        if normalized(line) not in {normalized(item) for item in unique}:
+            unique.append(line)
+    return unique
+
+
+def missing_full_view_text_lines(lock: dict, segment: dict) -> list[str]:
+    blob = normalized(text_blob(
+        segment.get("visible_product_text_or_marks", ""),
+        segment.get("product_visual_facts", ""),
+        segment.get("last_frame", ""),
+        segment.get("continuity_lock", ""),
+    ))
+    missing = []
+    for line in visible_text_lines(lock):
+        if normalized(line) not in blob:
+            missing.append(line)
+    return missing
+
+
+def forbidden_visual_additions(lock: dict) -> list[str]:
+    additions = []
+    for field in ["forbidden_visual_additions", "forbidden_changes"]:
+        additions.extend(as_list(lock.get(field)))
+    return additions
+
+
+def positive_mentions_forbidden_addition(lock: dict, segment: dict) -> str | None:
+    clauses = [normalized(clause) for clause in re.split(r"[.;。；\n]+", positive_segment_blob(segment))]
+    for addition in forbidden_visual_additions(lock):
+        normalized_addition = normalized(addition)
+        if not normalized_addition:
+            continue
+        for clause in clauses:
+            if normalized_addition not in clause:
+                continue
+            if any(f"{prefix} {normalized_addition}" in clause for prefix in NEGATED_PREFIX_WORDS):
+                continue
+            return addition
+    return None
+
+
 def is_product_video(payload: dict) -> bool:
     if isinstance(payload.get("product_identity_lock"), dict):
         return True
@@ -117,18 +181,6 @@ def is_product_video(payload: dict) -> bool:
 
 def segment_mentions_product(segment: dict) -> bool:
     return bool(PRODUCT_WORDS.search(text_blob(segment)))
-
-
-def has_unsafe_product_rebuild(segment: dict) -> bool:
-    """Detect product reconstruction in positive motion fields, not in bans."""
-    positive_blob = text_blob(*(segment.get(field, "") for field in UNSAFE_POSITIVE_FIELDS))
-    for clause in re.split(r"[.;。；\n]+", positive_blob):
-        clause = clause.strip()
-        if not clause or NEGATED_CLAUSE.search(clause):
-            continue
-        if UNSAFE_PRODUCT_REBUILD.search(clause):
-            return True
-    return False
 
 
 def validate_product_video(payload: dict) -> tuple[list[str], list[str]]:
@@ -151,6 +203,7 @@ def validate_product_video(payload: dict) -> tuple[list[str], list[str]]:
     lock = payload.get("product_identity_lock")
     if not isinstance(lock, dict):
         errors.append("video: product video requires product_identity_lock")
+        lock = {}
     else:
         for field in REQUIRED_LOCK_FIELDS:
             if not has_nonempty(lock.get(field)):
@@ -167,9 +220,6 @@ def validate_product_video(payload: dict) -> tuple[list[str], list[str]]:
         visibility = str(segment.get("product_visibility", "")).strip()
         product_visible = visibility and visibility != "not_visible"
 
-        if has_unsafe_product_rebuild(segment):
-            errors.append(f"{sid}: unsafe product rebuild language detected")
-
         if mentions_product or product_visible:
             if visibility not in PRODUCT_VISIBILITY_VALUES:
                 errors.append(f"{sid}: product segment requires product_visibility")
@@ -181,18 +231,39 @@ def validate_product_video(payload: dict) -> tuple[list[str], list[str]]:
                 errors.append(f"{sid}: product segment requires product_motion_rule")
 
             identity_blob = text_blob(
+                segment.get("visible_product_text_or_marks", ""),
+                segment.get("product_visual_facts", ""),
+                segment.get("forbidden_visual_additions", ""),
                 segment.get("product_motion_rule", ""),
                 segment.get("subject_motion", ""),
                 segment.get("continuity_lock", ""),
                 segment.get("last_frame", ""),
                 segment.get("negative_constraints", ""),
             )
-            if not RIGID_WORDS.search(identity_blob):
-                errors.append(f"{sid}: product segment must state rigid/still/unchanged product motion")
+            if not VISUAL_FIDELITY_WORDS.search(identity_blob):
+                errors.append(f"{sid}: product segment must state that product visual facts match the real reference")
             if not PRODUCT_MARK_WORDS.search(identity_blob):
                 errors.append(f"{sid}: product segment must preserve package shape, label/text/logo/mark/cap/layout")
             if not PRODUCT_DRIFT_WORDS.search(str(segment.get("negative_constraints", ""))):
                 errors.append(f"{sid}: negative_constraints must reject generic/blank/fake/changed product variants")
+            if visibility == "full_visible":
+                if not has_nonempty(segment.get("visible_product_text_or_marks")):
+                    errors.append(f"{sid}: full-visible product segment requires visible_product_text_or_marks")
+                if not has_nonempty(segment.get("product_visual_facts")):
+                    errors.append(f"{sid}: full-visible product segment requires product_visual_facts")
+                if not has_nonempty(segment.get("forbidden_visual_additions")):
+                    errors.append(f"{sid}: full-visible product segment requires forbidden_visual_additions")
+                missing_text = missing_full_view_text_lines(lock, segment) if lock else []
+                if missing_text:
+                    errors.append(
+                        f"{sid}: full-visible product segment must carry exact visible product text: "
+                        + ", ".join(missing_text)
+                    )
+                forbidden = positive_mentions_forbidden_addition(lock, segment) if lock else None
+                if forbidden:
+                    errors.append(f"{sid}: positive visual description contains forbidden visual addition: {forbidden}")
+                if BAD_FULL_VIEW_TEXT.search(positive_segment_blob(segment)):
+                    errors.append(f"{sid}: full-visible product segment cannot blank, suppress, fake, or generalize product text")
 
     return errors, warnings
 

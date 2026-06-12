@@ -108,7 +108,7 @@ Video:
 
 Use `other` only when a failure is real but does not fit the current taxonomy. If `other` repeats, propose a taxonomy update instead of leaving it vague.
 
-Use `readable_text` for captions, shot numbers, subtitles, handwritten notes, fake labels, signage, and non-product text. Use `product_identity_mismatch` when a user-provided product becomes blank, loses its supplied label text/logo/mark, invents a different brand or claim, changes package layout, drops required packaging marks, or a video prompt treats the locked product as a generic/generated/morphing object. Real product packaging text is identity evidence, not text contamination.
+Use `readable_text` for captions, shot numbers, subtitles, handwritten notes, fake labels, signage, and non-product text. Use `product_identity_mismatch` when a user-provided product becomes blank, loses or misspells supplied label text/logo/mark, suppresses embossed or relief text, invents a different brand or claim, changes package layout, drops required packaging marks, adds non-reference components such as metal plates/badges/plaques/extra panels, or uses a generic substitute. Real product packaging text is identity evidence, not text contamination.
 
 ## Candidate Rules
 

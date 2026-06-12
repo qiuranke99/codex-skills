@@ -95,7 +95,7 @@ A Google omni segment needs motion over time:
 
 Do not paste static storyboard descriptions into a video prompt.
 
-For product videos, temporal logic must not override product identity. Treat the real user product as a locked rigid-body object. Put the product reference setup and product identity lock before the segment, then make the camera, focus, lighting, glass, mist, petals, liquid, hands, or environment move around the unchanged product. Do not turn the product into a generated, rising, spinning, morphing, opening, duplicated, blank-label, fake-logo, or generic luxury object. Preserve visible label text/marks/layout when legible; preserve exact label geometry and primary supplied marks when microtext is too small.
+For product videos, temporal logic and lens design must not override product identity. Put the product reference setup and product identity lock before the segment. Camera orbit, hero reveal, rotation, rise, cap action, and other shot-language choices are allowed when they serve the film; they become failures only when the product's visible facts drift. Full-visible product shots must preserve exact readable copy, logo/wordmark, embossed or relief text, label layout, physical components, materials, cap/pump/closure, and known absent features. If the real product has no metal plate, badge, plaque, or extra label panel, the prompt must forbid those additions.
 
 ### 10. The World-Class Failure Test
 
@@ -108,5 +108,5 @@ Reject or revise if any of these are true:
 - a cut does not change knowledge, emotion, proof, or desire;
 - product, material, or character identity drifts;
 - a product-video prompt can be pasted without its product identity lock;
-- product movement language implies rebuilding, morphing, spinning, opening, cap separation, duplicated packaging, or a blank/fake label;
+- full-visible product shots omit or misspell visible text, suppress embossing/relief marks, invent labels/logos/claims, or add non-reference components such as metal plates, badges, plaques, extra panels, or wrong hardware;
 - the reference image quality appears only as mood words, not compositional decisions.

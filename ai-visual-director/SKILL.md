@@ -62,20 +62,24 @@ Before shot planning, extract a `product_identity_lock`:
   "source_reference": "user product image or file path",
   "product_name_text": "exact visible product/brand text, or unreadable_from_reference",
   "primary_label_text": ["exact short label lines visible on the package"],
+  "surface_text_inventory": ["all visible printed, engraved, embossed, debossed, relief, logo, wordmark, and volume marks"],
+  "embossed_or_relief_marks": ["raised/debossed marks visible in the reference, or none_visible"],
   "label_layout": "where the label, wordmark, icon, color bands, and claims sit on the package",
   "packaging_shape": "bottle/jar/tube/box silhouette, cap/pump/closure, proportions",
+  "physical_component_inventory": ["only real visible parts: body, cap, pump, collar, tube, label panel, box flap, etc."],
   "color_material_marks": "body color, label color, material, finish, transparent/opaque areas",
   "required_visible_marks": ["marks that must appear whenever the product faces camera"],
   "forbidden_changes": ["blank package", "fake logo", "new text", "changed label layout"],
-  "rigid_body_rule": "product remains the same physical package; camera/light/environment carry motion",
-  "allowed_angles_or_views": ["only angles supported by user product references"],
-  "forbidden_product_motion": ["morphing", "generating", "rebuilding", "cap separation", "label movement"]
+  "forbidden_visual_additions": ["components not present in the product reference, such as metal plates, badges, plaques, extra labels"],
+  "full_view_fidelity_rule": "when product_visibility is full_visible, show the exact text/mark inventory and physical component inventory; do not omit, misspell, or add parts"
 }
 ```
 
 If the product reference is too blurry to read exact text, write `unreadable_from_reference` and preserve the visible label geometry. Ask for a clearer product reference only when exact label accuracy is materially required by the user or final deliverable. Never invent missing brand text, claims, ingredient names, certification icons, or legal copy.
 
 The global no-text rule has a narrow exception: user-provided product packaging text, labels, logos, marks, and label blocks must be preserved when the product is visible. Captions, shot numbers, handwritten notes, callouts, UI overlays, fake signage, and invented labels remain forbidden.
+
+Do not confuse product fidelity with conservative motion. Camera orbit, hero reveal, rotation, rise, cap action, or other shot-language choices are allowed when they serve the sequence. They become failures only if they change the real product's visible facts: wrong or missing text, wrong embossing/relief, wrong label layout, invented metal plate/badge/plaque, extra hardware, changed material, wrong cap/pump/closure, duplicate packaging, or a generic substitute.
 
 ## Intake Contract
 
@@ -359,11 +363,11 @@ After generation, inspect the image. Reject and regenerate if the sheet has read
 
 Create video prompts by temporal segment, not by storyboard sheet.
 
-For any product video, start the prompt file with a `Required Reference Setup` and `Product Identity Lock` before the segments. The user's product original, packshot, or multi-angle product image is the highest-priority `product_identity` reference; style references may affect lighting, environment, camera mood, props, and rhythm, but must not change bottle/package geometry, cap/pump/closure, label layout, visible text/logo/mark, color bands, materials, or proportions.
+For any product video, start the prompt file with a `Required Reference Setup` and `Product Identity Lock` before the segments. The user's product original, packshot, or multi-angle product image is the highest-priority `product_identity` reference; style references may affect lighting, environment, camera mood, props, rhythm, and lens language, but must not change bottle/package geometry, cap/pump/closure, label layout, visible text/logo/mark, embossed or relief marks, color bands, materials, proportions, or real component inventory.
 
-Carry the same `product_identity_lock` from the shot plan into the video prompt JSON. Add `rigid_body_rule`, `allowed_angles_or_views`, and `forbidden_product_motion` when the lock is used for video. Product-visible segments must include `product_visibility`, `product_identity_reference`, and `product_motion_rule`.
+Carry the same `product_identity_lock` from the shot plan into the video prompt JSON. Product-visible segments must include `product_visibility`, `product_identity_reference`, and `product_motion_rule`. Full-product views must also include `visible_product_text_or_marks`, `product_visual_facts`, and `forbidden_visual_additions`.
 
-Write product motion conservatively. The product is a rigid physical object already in the scene; camera move, rack focus, glass, liquid, mist, petals, reflections, hands, and light carry the motion. Do not describe the product/package as appearing, generating, rising, rotating/spinning, morphing, assembling, transforming, opening, duplicating, or having a cap/label separate unless the user explicitly asks for that exact physical action and the reference supports it. Prefer "camera reveals the already-standing locked product" over "the product appears."
+For full-visible product shots, write the product as an inspected artifact, not a mood object: repeat the exact visible text/wordmark/logo/embossing inventory from the reference, repeat the actual physical component inventory, and explicitly forbid absent high-risk additions. If the real bottle has no metal plate, badge, plaque, or extra label panel, say so. If the real product has raised or engraved text, name it. If exact microtext is unreadable, preserve the correct location/geometry and any readable primary mark; never substitute a new phrase.
 
 When a segment is pasted into Google Omni, include the `Required Reference Setup`, the full `Product Identity Lock`, and the selected segment together. A segment without the lock is underspecified and may drift into a generic mood object.
 
@@ -376,6 +380,9 @@ source_shots:
 product_visibility:
 product_identity_reference:
 product_motion_rule:
+visible_product_text_or_marks:
+product_visual_facts:
+forbidden_visual_additions:
 first_frame:
 last_frame:
 camera_plan:
