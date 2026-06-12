@@ -1,17 +1,17 @@
 {
   "skill_name": "ai-visual-director",
-  "version": "0.6.1",
+  "version": "0.6.2",
   "distribution_mode": "self-contained skill folder",
   "canonical_packaged_references": [
     {
       "path": "SKILL.md",
-      "sha256": "93c1e3f5129faf8140f4c72f5fd0f9ac72c2eda580eedf200e9f345fb1a5febd",
-      "purpose": "primary skill workflow rules including Shadow Observer launch contract and product identity fidelity contract"
+      "sha256": "839fb6fe88c2e36d1222fcdb76a88e103f000443451f72d88d2ee310e0af5cbf",
+      "purpose": "primary skill workflow rules including Shadow Observer launch contract, product identity fidelity contract, and video product identity lock contract"
     },
     {
       "path": "references/observer_protocol.md",
-      "sha256": "e152b3234542222a463eacb79fe059bd44e7e346edc888838b49748552a90771",
-      "purpose": "Shadow Observer protocol: non-blocking event logging and candidate-rule promotion rules"
+      "sha256": "a0c8db165bc89b9e913fa7ad834b4f024e4d2f8fe9268c7ea6a354da480a8fbb",
+      "purpose": "Shadow Observer protocol: non-blocking event logging, product identity mismatch taxonomy, and candidate-rule promotion rules"
     },
     {
       "path": "references/observer_event.schema.json",
@@ -20,7 +20,7 @@
     },
     {
       "path": "references/rule_candidate.schema.json",
-      "sha256": "af1590dfd3b10ca35b513461a8ac1e8bd557cf15936be366dc719517deebb0be",
+      "sha256": "4b5ee7631586b15585fb95a0877cc6ba54d6671ea9ce7f3d629d2869dd507bcb",
       "purpose": "candidate-rule proposal contract for skill improvement passes"
     },
     {
@@ -34,14 +34,19 @@
       "purpose": "shot-plan contract including optional product identity lock and per-shot product visibility/action fields"
     },
     {
+      "path": "references/video_segments.schema.json",
+      "sha256": "13d4d6ec1852020e15c8fbf7845ebebdcb8228cd5fc8f20fb8730c5159b0fb98",
+      "purpose": "Google Omni video segment contract including optional product reference setup, product identity lock, and per-segment product motion lock fields"
+    },
+    {
       "path": "references/director_kernel.md",
       "sha256": "20b8d1b4374665c8e220b400104a3efb7fa504951381b58331d4a34d7e97b1c8",
       "purpose": "production-mode routing, director playbooks, and escalation triggers"
     },
     {
       "path": "references/world_class_tvc_principles.md",
-      "sha256": "f3a7160cbdd3e29026a3c215b06c23a08e63083bc864b38c0799f9797e629163",
-      "purpose": "world-class TVC principles, reference parity, attention choreography, and source map"
+      "sha256": "52c1770c83479b11fad0cef144f4e4865020f3ee60a28fabfc34d884e80a3a47",
+      "purpose": "world-class TVC principles, reference parity, attention choreography, video product identity lock rules, and source map"
     },
     {
       "path": "references/shot_spec_template.md",
@@ -65,7 +70,7 @@
     },
     {
       "path": "scripts/observe_run.py",
-      "sha256": "8055f24b0f5b794ce7505e724d746a7fa2aa1d42f0e91b972297e6ce27a40f63",
+      "sha256": "075882999e3fb254e3028c4a11403ac23269379565f29933a13905dbfd186dd5",
       "purpose": "non-blocking observer event logging, validator ingestion, product identity mismatch classification, single-run candidate generation, and cross-run aggregation"
     },
     {
@@ -79,17 +84,28 @@
       "purpose": "shot-plan structural gate including product identity lock enforcement"
     },
     {
+      "path": "scripts/validate_video_segments.py",
+      "sha256": "a8bc56036e29da4e8d85442e41011c89a8d627f1fc8544fbee9c93e7e7db0786",
+      "purpose": "Google Omni video segment validator including product reference setup, product identity lock, and unsafe product rebuild language gates"
+    },
+    {
       "path": "scripts/verify_skill_package.py",
-      "sha256": "4629371dfb83e244a5f14e81294afda01c877e89de06ba87542e81465900a859",
-      "purpose": "self-contained package verification including observer smoke tests and product identity validator regression"
+      "sha256": "c60e4def69db5492c6995ef15e95eb0f001a6073d8274b19538bae1706539fd3",
+      "purpose": "self-contained package verification including observer smoke tests, product identity validator regression, and video product identity validator regression"
     },
     {
       "path": "tests/test_validate_product_identity_lock.py",
       "sha256": "9dc4360ddb96350aa88ccdfed38ef74453085c285e1a149bd3ae6a80a0e48a96",
       "purpose": "regression tests for product packaging fidelity in the shot-plan validator"
+    },
+    {
+      "path": "tests/test_validate_video_product_lock.py",
+      "sha256": "fd264bcb26dd393d32643d7bd3f47d4b1fab2145c66fe2a4d02352f8deb4ed59",
+      "purpose": "regression tests for product packaging fidelity and rigid-body product rules in Google Omni video prompts"
     }
   ],
   "notes": [
+    "source_manifest.json is the manifest and is intentionally not self-hashed.",
     "The project-root markdown files may remain as editable method-library notes, but the packaged skill must not depend on them.",
     "When root references change, copy the updated versions into this skill and update the hashes before publishing.",
     "Shadow Observer events and candidate rules are learning evidence, not automatic permission to mutate the skill.",

@@ -68,7 +68,7 @@ The event stream should prefer concrete evidence over opinion:
 - route decision that defaulted because duration was missing;
 - user correction that reveals an unsupported brief pattern;
 - image QC failure such as unrelated readable text, product identity mismatch, or panel separation failure;
-- prompt failure such as static panel dump in a video segment.
+- prompt failure such as static panel dump in a video segment or product identity drift in a video prompt.
 
 ## Failure Taxonomy
 
@@ -108,7 +108,7 @@ Video:
 
 Use `other` only when a failure is real but does not fit the current taxonomy. If `other` repeats, propose a taxonomy update instead of leaving it vague.
 
-Use `readable_text` for captions, shot numbers, subtitles, handwritten notes, fake labels, signage, and non-product text. Use `product_identity_mismatch` when a user-provided product becomes blank, loses its supplied label text/logo/mark, invents a different brand or claim, changes package layout, or drops required packaging marks. Real product packaging text is identity evidence, not text contamination.
+Use `readable_text` for captions, shot numbers, subtitles, handwritten notes, fake labels, signage, and non-product text. Use `product_identity_mismatch` when a user-provided product becomes blank, loses its supplied label text/logo/mark, invents a different brand or claim, changes package layout, drops required packaging marks, or a video prompt treats the locked product as a generic/generated/morphing object. Real product packaging text is identity evidence, not text contamination.
 
 ## Candidate Rules
 

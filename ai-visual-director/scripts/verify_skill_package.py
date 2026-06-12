@@ -30,12 +30,14 @@ REQUIRED_FILES = [
     "assets/blue_gray_previs_reference.jpeg",
     "scripts/route_project.py",
     "scripts/validate_shot_plan.py",
+    "scripts/validate_video_segments.py",
     "scripts/score_audit.py",
     "scripts/observe_run.py",
     "scripts/create_observer_packet.py",
     "scripts/package_skill.py",
     "scripts/verify_skill_package.py",
     "tests/test_validate_product_identity_lock.py",
+    "tests/test_validate_video_product_lock.py",
 ]
 
 
@@ -208,6 +210,20 @@ def main() -> int:
         if test_proc.returncode != 0:
             errors.append(
                 "product identity validator regression test failed: "
+                f"{test_proc.stderr.strip() or test_proc.stdout.strip()}"
+            )
+
+    video_product_test = skill_dir / "tests/test_validate_video_product_lock.py"
+    if video_product_test.exists():
+        test_proc = subprocess.run(
+            [sys.executable, str(video_product_test)],
+            text=True,
+            capture_output=True,
+            check=False,
+        )
+        if test_proc.returncode != 0:
+            errors.append(
+                "video product identity validator regression test failed: "
                 f"{test_proc.stderr.strip() or test_proc.stdout.strip()}"
             )
 

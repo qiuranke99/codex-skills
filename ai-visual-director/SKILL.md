@@ -66,7 +66,10 @@ Before shot planning, extract a `product_identity_lock`:
   "packaging_shape": "bottle/jar/tube/box silhouette, cap/pump/closure, proportions",
   "color_material_marks": "body color, label color, material, finish, transparent/opaque areas",
   "required_visible_marks": ["marks that must appear whenever the product faces camera"],
-  "forbidden_changes": ["blank package", "fake logo", "new text", "changed label layout"]
+  "forbidden_changes": ["blank package", "fake logo", "new text", "changed label layout"],
+  "rigid_body_rule": "product remains the same physical package; camera/light/environment carry motion",
+  "allowed_angles_or_views": ["only angles supported by user product references"],
+  "forbidden_product_motion": ["morphing", "generating", "rebuilding", "cap separation", "label movement"]
 }
 ```
 
@@ -350,16 +353,29 @@ Use this style lock:
 rough hand-drawn production storyboard sheet, animatic previs sketch, director's working storyboard thumbnails, loose black pencil linework, dark graphite searching lines, visible construction lines, very light blue-gray storyboard wash, sparse tonal blocks, clean white paper background, simplified faceless characters when people appear, sparse cinematic environment detail, linework primary, wash secondary
 ```
 
-After generation, inspect the image. Reject and regenerate if the sheet has readable text, photoreal finish, repeated centered compositions, missing panel separation, inconsistent product/character identity, or unclear camera angles.
+After generation, inspect the image. Reject and regenerate if the sheet has readable text outside user-provided product packaging, photoreal finish, repeated centered compositions, missing panel separation, inconsistent product/character identity, or unclear camera angles.
 
 ## Google Omni Video Prompts
 
-Create video prompts by temporal segment, not by storyboard sheet. For each 10s segment:
+Create video prompts by temporal segment, not by storyboard sheet.
+
+For any product video, start the prompt file with a `Required Reference Setup` and `Product Identity Lock` before the segments. The user's product original, packshot, or multi-angle product image is the highest-priority `product_identity` reference; style references may affect lighting, environment, camera mood, props, and rhythm, but must not change bottle/package geometry, cap/pump/closure, label layout, visible text/logo/mark, color bands, materials, or proportions.
+
+Carry the same `product_identity_lock` from the shot plan into the video prompt JSON. Add `rigid_body_rule`, `allowed_angles_or_views`, and `forbidden_product_motion` when the lock is used for video. Product-visible segments must include `product_visibility`, `product_identity_reference`, and `product_motion_rule`.
+
+Write product motion conservatively. The product is a rigid physical object already in the scene; camera move, rack focus, glass, liquid, mist, petals, reflections, hands, and light carry the motion. Do not describe the product/package as appearing, generating, rising, rotating/spinning, morphing, assembling, transforming, opening, duplicating, or having a cap/label separate unless the user explicitly asks for that exact physical action and the reference supports it. Prefer "camera reveals the already-standing locked product" over "the product appears."
+
+When a segment is pasted into Google Omni, include the `Required Reference Setup`, the full `Product Identity Lock`, and the selected segment together. A segment without the lock is underspecified and may drift into a generic mood object.
+
+For each 10s segment:
 
 ```yaml
 SEG_01_0s_10s
 purpose:
 source_shots:
+product_visibility:
+product_identity_reference:
+product_motion_rule:
 first_frame:
 last_frame:
 camera_plan:

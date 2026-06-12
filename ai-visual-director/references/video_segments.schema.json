@@ -4,6 +4,67 @@
   "type": "object",
   "required": ["segments"],
   "properties": {
+    "required_reference_setup": {
+      "type": "object",
+      "required": ["product_identity_reference", "product_identity_role"],
+      "properties": {
+        "product_identity_reference": {"type": "string"},
+        "product_identity_role": {"type": "string"},
+        "non_identity_references": {
+          "type": "array",
+          "items": {"type": "string"}
+        }
+      },
+      "additionalProperties": true
+    },
+    "product_identity_lock": {
+      "type": "object",
+      "required": [
+        "source_reference",
+        "product_name_text",
+        "primary_label_text",
+        "label_layout",
+        "packaging_shape",
+        "color_material_marks",
+        "required_visible_marks",
+        "forbidden_changes",
+        "rigid_body_rule",
+        "allowed_angles_or_views",
+        "forbidden_product_motion"
+      ],
+      "properties": {
+        "source_reference": {"type": "string"},
+        "product_name_text": {"type": "string"},
+        "primary_label_text": {
+          "oneOf": [
+            {"type": "string"},
+            {"type": "array", "items": {"type": "string"}}
+          ]
+        },
+        "label_layout": {"type": "string"},
+        "packaging_shape": {"type": "string"},
+        "color_material_marks": {"type": "string"},
+        "required_visible_marks": {
+          "type": "array",
+          "items": {"type": "string"}
+        },
+        "forbidden_changes": {
+          "type": "array",
+          "items": {"type": "string"}
+        },
+        "rigid_body_rule": {"type": "string"},
+        "allowed_angles_or_views": {
+          "type": "array",
+          "items": {"type": "string"}
+        },
+        "forbidden_product_motion": {
+          "type": "array",
+          "items": {"type": "string"}
+        }
+      },
+      "additionalProperties": true
+    },
+    "global_negative_constraints": {"type": "string"},
     "segments": {
       "type": "array",
       "items": {
@@ -27,6 +88,11 @@
           "time_range": {"type": "string"},
           "purpose": {"type": "string"},
           "source_shots": {"type": "array", "items": {"type": "string"}},
+          "product_visibility": {
+            "enum": ["full_visible", "partial_visible", "detail_only", "not_visible"]
+          },
+          "product_identity_reference": {"type": "string"},
+          "product_motion_rule": {"type": "string"},
           "first_frame": {"type": "string"},
           "last_frame": {"type": "string"},
           "camera_plan": {"type": "string"},
