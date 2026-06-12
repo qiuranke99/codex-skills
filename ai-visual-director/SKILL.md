@@ -51,6 +51,29 @@ When the user supplies world-class reference images, do not copy surface style b
 
 Every shot plan must include reference parity decisions. If a generated 9-panel sheet only resembles the reference by keywords but not by hierarchy, depth, light, material, or visual restraint, treat it as failure.
 
+## Product Identity Fidelity Contract
+
+When the user supplies a real product image, package photo, packshot, label reference, or product-identity reference, treat the packaging as identity, not decoration. Do not simplify a real product into a blank bottle, generic jar, invented brand, or approximate label.
+
+Before shot planning, extract a `product_identity_lock`:
+
+```json
+{
+  "source_reference": "user product image or file path",
+  "product_name_text": "exact visible product/brand text, or unreadable_from_reference",
+  "primary_label_text": ["exact short label lines visible on the package"],
+  "label_layout": "where the label, wordmark, icon, color bands, and claims sit on the package",
+  "packaging_shape": "bottle/jar/tube/box silhouette, cap/pump/closure, proportions",
+  "color_material_marks": "body color, label color, material, finish, transparent/opaque areas",
+  "required_visible_marks": ["marks that must appear whenever the product faces camera"],
+  "forbidden_changes": ["blank package", "fake logo", "new text", "changed label layout"]
+}
+```
+
+If the product reference is too blurry to read exact text, write `unreadable_from_reference` and preserve the visible label geometry. Ask for a clearer product reference only when exact label accuracy is materially required by the user or final deliverable. Never invent missing brand text, claims, ingredient names, certification icons, or legal copy.
+
+The global no-text rule has a narrow exception: user-provided product packaging text, labels, logos, marks, and label blocks must be preserved when the product is visible. Captions, shot numbers, handwritten notes, callouts, UI overlays, fake signage, and invented labels remain forbidden.
+
 ## Intake Contract
 
 Normalize user input into an intake object before planning:
@@ -147,6 +170,8 @@ attention_order:
 eye_trace:
 depth_strategy:
 reference_parity:
+product_visibility:
+product_identity_action:
 main_subject:
 main_action:
 body_pose:
@@ -163,6 +188,8 @@ avoid:
 Do not write vague camera language. Replace "cinematic", "premium", "beautiful", "high-end", "高级", "电影感", or "奢华" with visible decisions: camera height, subject scale, movement direction, foreground/midground/background, action, cut logic, and scale proof.
 
 `attention_order` must say what the viewer sees first, second, and third. `eye_trace` must say where the viewer's gaze enters and exits the frame, and how that sets up the next cut. `depth_strategy` must explain the foreground/midground/background relation or why the shot is intentionally flat. `reference_parity` must name which reference image qualities are being preserved and which are intentionally ignored.
+
+For product work, `product_visibility` must be one of `full_visible`, `partial_visible`, `detail_only`, or `not_visible`. Any shot where the product is visible must use `product_identity_action` to say exactly how the locked package shape, front/back label, product text, wordmark, logo/mark, color bands, cap/pump, and proportions are preserved in that panel. `must_preserve` must repeat the relevant visible package marks; do not write only `same product`.
 
 ## Director QC Gate
 
@@ -183,6 +210,14 @@ Per 3x3 sheet:
 - no panel exists only to "look premium"; every panel has a shot purpose
 
 For product ads, also require product identity, material proof, texture proof, use action, benefit metaphor, and final packshot across the sequence.
+
+For any product ad or product-identity reference, also require:
+
+- a complete top-level `product_identity_lock`
+- `product_visibility` and `product_identity_action` on every product shot
+- visible product panels preserve supplied package text/label/logo/mark/layout rather than blanking or inventing them
+- `avoid` forbids fake logos, fake claims, blank generic packaging, changed label layout, extra bottles, and wrong cap/pump/closure
+- no storyboard prompt may use a broad `no readable text/no logos/no labels` ban unless it explicitly exempts user-provided product packaging marks
 
 For narrative/surreal work, also require normal baseline, reveal, scale/stakes proof, reaction, and payoff.
 
@@ -302,9 +337,12 @@ Each sheet prompt must contain:
 - 3x3 separate-panel layout
 - sheet number and total sheet count
 - global continuity locks
+- product_identity_lock when a product appears
 - the 9 panel-specific shot specs, compressed but concrete
 - blue-gray previs sketch style lock
-- negative constraints: no captions, no shot numbers, no readable text, no logos, no photorealism, no anime/manga, no polished illustration
+- negative constraints: no captions, no shot numbers, no unrelated readable text, no invented labels/logos/claims, no photorealism, no anime/manga, no polished illustration
+
+When a user product appears in a storyboard sheet, the sheet prompt must explicitly say: preserve the exact user-provided product silhouette, cap/pump/closure, label placement, visible product text, logo/mark, color bands, and package proportions; draw exact supplied short label text when legible in the reference; do not invent missing text. If product text is too small for rough storyboard readability, draw the correct label blocks and the supplied primary wordmark/short text at the product-facing scale rather than leaving the package blank.
 
 Use this style lock:
 

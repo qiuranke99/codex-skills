@@ -43,6 +43,32 @@ STATIC_WORDS = re.compile(r"locked|static|still|no movement|固定|静止", re.I
 ESTABLISHING_WORDS = re.compile(r"wide|establish|world|环境|全景|远景", re.IGNORECASE)
 MACRO_WORDS = re.compile(r"macro|insert|detail|close-up|extreme close|特写|微距|细节", re.IGNORECASE)
 ANGLE_SPECIAL_WORDS = re.compile(r"low|high|top|overhead|ground|aerial|低机位|高机位|俯拍|仰拍|顶拍|地面", re.IGNORECASE)
+PRODUCT_PROJECT_TYPES = {"premium_product_ad"}
+PRODUCT_ROLE_WORDS = {"product_identity"}
+PRODUCT_APPEARANCE_WORDS = re.compile(
+    r"product|packshot|bottle|jar|tube|box|package|packaging|label|logo|brand|serum|cream|lipstick|fragrance|"
+    r"产品|包装|瓶|瓶身|罐|管|盒|标签|标贴|文字|品牌|商标|精华|面霜|口红|香水",
+    re.IGNORECASE,
+)
+PRODUCT_MARK_WORDS = re.compile(
+    r"label|logo|wordmark|text|mark|packaging|brand|layout|文字|标签|标贴|品牌|商标|版式|包装",
+    re.IGNORECASE,
+)
+PRODUCT_TEXT_BAN_WORDS = re.compile(
+    r"no readable text|no text|no labels|no logos|without readable text|无文字|不要文字|不要标签|不要logo|不要商标",
+    re.IGNORECASE,
+)
+PRODUCT_VISIBILITY_VALUES = {"full_visible", "partial_visible", "detail_only", "not_visible"}
+REQUIRED_PRODUCT_LOCK_FIELDS = [
+    "source_reference",
+    "product_name_text",
+    "primary_label_text",
+    "label_layout",
+    "packaging_shape",
+    "color_material_marks",
+    "required_visible_marks",
+    "forbidden_changes",
+]
 
 
 def load_plan(path: str) -> dict:
@@ -60,6 +86,102 @@ def has_concrete_language(text: str) -> bool:
     if ABSTRACT_WORDS.search(text) and len(text) < 40:
         return False
     return True
+
+
+def nonempty_product_lock_value(value: object) -> bool:
+    if isinstance(value, list):
+        return any(str(item).strip() for item in value)
+    return bool(str(value).strip())
+
+
+def is_product_plan(plan: dict) -> bool:
+    if str(plan.get("project_type", "")).strip() in PRODUCT_PROJECT_TYPES:
+        return True
+    for role in plan.get("reference_roles", []):
+        if str(role.get("role", "")).strip() in PRODUCT_ROLE_WORDS:
+            return True
+    search_blob = " ".join(
+        str(value)
+        for value in [
+            plan.get("project_title", ""),
+            plan.get("visual_strategy", ""),
+            " ".join(str(item) for item in plan.get("continuity_locks", [])),
+        ]
+    )
+    return bool(PRODUCT_APPEARANCE_WORDS.search(search_blob))
+
+
+def shot_mentions_product(shot: dict) -> bool:
+    blob = " ".join(
+        str(shot.get(field, ""))
+        for field in [
+            "shot_purpose",
+            "main_subject",
+            "main_action",
+            "composition",
+            "reference_parity",
+            "continuity_lock",
+            "must_preserve",
+            "avoid",
+        ]
+    )
+    return bool(PRODUCT_APPEARANCE_WORDS.search(blob))
+
+
+def validate_product_identity(plan: dict) -> tuple[list[str], list[str]]:
+    errors: list[str] = []
+    warnings: list[str] = []
+
+    if not is_product_plan(plan):
+        return errors, warnings
+
+    lock = plan.get("product_identity_lock")
+    if not isinstance(lock, dict):
+        errors.append("plan: product ad/reference requires product_identity_lock")
+    else:
+        for field in REQUIRED_PRODUCT_LOCK_FIELDS:
+            if not nonempty_product_lock_value(lock.get(field)):
+                errors.append(f"product_identity_lock: missing {field}")
+
+    for sheet in plan.get("sheets", []):
+        for shot in sheet.get("shots", []):
+            sid = shot.get("shot_id", "<unknown-shot>")
+            visibility = str(shot.get("product_visibility", "")).strip()
+            action = str(shot.get("product_identity_action", "")).strip()
+            mentions_product = shot_mentions_product(shot)
+            product_visible = visibility and visibility != "not_visible"
+
+            if mentions_product or product_visible:
+                if visibility not in PRODUCT_VISIBILITY_VALUES:
+                    errors.append(f"{sid}: product shot requires product_visibility")
+                elif visibility == "not_visible":
+                    errors.append(f"{sid}: product_visibility cannot be not_visible when the shot mentions the product")
+
+                if not has_concrete_language(action) or action.lower() in {"not applicable", "n/a", "none"}:
+                    errors.append(f"{sid}: product shot requires concrete product_identity_action")
+
+                identity_blob = " ".join(
+                    str(shot.get(field, ""))
+                    for field in [
+                        "product_identity_action",
+                        "must_preserve",
+                        "continuity_lock",
+                        "reference_parity",
+                    ]
+                )
+                if not PRODUCT_MARK_WORDS.search(identity_blob):
+                    errors.append(
+                        f"{sid}: visible product must preserve package marks, label/text/logo/layout, or state why none are provided"
+                    )
+
+                avoid_text = str(shot.get("avoid", ""))
+                if PRODUCT_TEXT_BAN_WORDS.search(avoid_text) and "product" not in avoid_text.lower() and "产品" not in avoid_text:
+                    errors.append(f"{sid}: avoid field bans readable text/logos without a product-packaging exception")
+
+            elif visibility and visibility not in PRODUCT_VISIBILITY_VALUES:
+                errors.append(f"{sid}: product_visibility has invalid value {visibility!r}")
+
+    return errors, warnings
 
 
 def validate_sheet(sheet: dict) -> tuple[list[str], list[str]]:
@@ -157,6 +279,10 @@ def main() -> int:
 
     if not plan.get("continuity_locks"):
         errors.append("plan: missing continuity_locks")
+
+    product_errors, product_warnings = validate_product_identity(plan)
+    errors.extend(product_errors)
+    warnings.extend(product_warnings)
 
     for sheet in sheets:
         sheet_errors, sheet_warnings = validate_sheet(sheet)

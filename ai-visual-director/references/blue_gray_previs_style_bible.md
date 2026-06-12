@@ -308,6 +308,8 @@ Recommended style-lock phrase:
 - UI overlays
 - watermark
 
+Exception: user-provided product packaging text, labels, logos/marks, label blocks, and required visible package marks are product identity when the user supplies a real product reference. Preserve them when the product faces camera. The contamination rule applies to captions, shot numbers, notes, callouts, fake signage, invented labels, and non-product text.
+
 ### Continuity Drift
 
 - changing costume silhouette across frames
@@ -344,7 +346,7 @@ Recommended style-lock phrase:
 | 允许未完成边缘、断线、修正线 | 不要追求 polished illustration finish |
 | 使用冷淡、低饱和、浅灰蓝调 | 不要使用高饱和色彩或电影调色 |
 | 生成单帧 storyboard frame 时只输出单帧 | 不要生成多格分镜页，除非明确要求 |
-| 画面中不出现文字、标签、shot number、手写注释 | 不要添加 captions、labels、arrows、callouts |
+| 除用户提供的产品包装文字/标签/logo/mark 外，画面中不出现文字、shot number、手写注释 | 不要添加 captions、arrows、callouts、假标签、假品牌 |
 | 把 photoreal reference 转译成 sketch grammar | 不要复制 photoreal 光影、皮肤、摄影质感 |
 | 让构图服务镜头预演 | 不要为了好看牺牲 blocking、scale、camera logic |
 | 在巨物镜头中保持巨大物体简化但可读 | 不要画成 monster fantasy 或破坏场面，除非明确要求 |
@@ -365,7 +367,7 @@ Recommended style-lock phrase:
 | ground-level shot | 地面近景、斑马线、鞋底或脚边缘、低视点 | 上方建筑细节、远景人物细节 | 看起来只是普通街景 | 指定 ground-level camera, horizon low, foreground street markings large |
 | giant-scale shot | 巨物与行人、车、路口、建筑的比例证据 | 巨物皮肤、鞋材质、破坏细节 | 只是画了一个大脚但没有尺度 | 放入 pedestrians, crosswalk, cars, building windows as scale markers |
 | miniature-person shot | 巨大手/脸/道具与小人的比例，小人的动作姿态 | 小人的五官、服装纹理 | 小人像玩具或装饰 | 用 human-readable stick-like shorthand pose，避免 toy-like styling |
-| object / prop insert | 物体轮廓、手与物体关系、构图裁切 | 材质、品牌、文字、反射 | 变成产品广告或写实静物 | 保持 loose pencil, pale wash, no readable labels, production sketch finish |
+| object / prop insert | 物体轮廓、手与物体关系、构图裁切；若是用户产品则保留包装形状、标签布局、可见主文字/logo/mark | 材质、反射、微小不可读文案 | 变成写实静物、空白通用产品、假品牌 | 保持 loose pencil, pale wash, production sketch finish；产品标签只画用户提供的真实信息 |
 | urban environment shot | 街道方向、建筑块、杆线、车辆、行人密度 | 招牌文字、窗户细节、真实城市纹理 | 背景过度完成，像 concept art | 降低细节密度，用 blocky buildings and sparse perspective cues |
 
 ---
@@ -441,7 +443,7 @@ Rules:
 - building density：城市密度保持中高，但用简化块体表达。
 - street direction：地面边线、斑马线、道路透视应维持镜头空间逻辑。
 - scale references：行人、车辆、路牌、建筑窗带应作为重复比例证据。
-- simplified sign shapes without readable text：可保留招牌、自动售货机、路牌的大形状，但不要写可读文字。
+- simplified sign shapes without readable text：可保留招牌、自动售货机、路牌的大形状，但不要写可读文字；用户产品包装除外，需保留真实包装文字/标签/mark。
 - 如果从街道切到低角度建筑镜头，建筑竖线和反射面可以延续，但不要转成 photoreal architecture。
 - 如果从城市地面切到天际线，skyline 应保持蓝灰块面和稀疏竖线，而不是完整城市插画。
 
@@ -529,7 +531,7 @@ Aspect ratio:
 [e.g. 16:9 single frame, 4:3 storyboard thumbnail, vertical frame.]
 
 Avoid:
-photorealism, anime, manga, comic book style, polished illustration, glossy concept art, fashion illustration, rich watercolor painting, clean vector art, 3D render, realistic skin texture, detailed facial features, saturated color, over-rendered architecture, cinematic live-action still, text inside image, captions, labels, shot numbers, handwritten notes, readable signage, multi-panel sheet unless requested.
+photorealism, anime, manga, comic book style, polished illustration, glossy concept art, fashion illustration, rich watercolor painting, clean vector art, 3D render, realistic skin texture, detailed facial features, saturated color, over-rendered architecture, cinematic live-action still, unrelated text inside image, captions, shot numbers, handwritten notes, readable signage, fake labels, invented logos, multi-panel sheet unless requested.
 ```
 
 ---
@@ -571,7 +573,7 @@ Aspect ratio: 16:9 single storyboard frame.
 ### Negative Prompt
 
 ```text
-photorealism, cinematic live-action still, anime, manga, comic book style, polished illustration, glossy concept art, rich watercolor painting, clean vector art, 3D render, realistic skin texture, detailed facial features, detailed eyes, eyelashes, lips, detailed hair strands, saturated color, over-rendered architecture, realistic signage, readable text, captions, labels, shot numbers, handwritten notes, dense city detail, fashion illustration, beauty portrait, multi-panel storyboard sheet
+photorealism, cinematic live-action still, anime, manga, comic book style, polished illustration, glossy concept art, rich watercolor painting, clean vector art, 3D render, realistic skin texture, detailed facial features, detailed eyes, eyelashes, lips, detailed hair strands, saturated color, over-rendered architecture, realistic signage, unrelated readable text, captions, fake labels, invented logos, shot numbers, handwritten notes, dense city detail, fashion illustration, beauty portrait, multi-panel storyboard sheet
 ```
 
 ### Why It Works
@@ -632,8 +634,9 @@ Before generation, check:
 - Is the environment simplified?
 - Are buildings reduced to blocks, verticals, and sparse perspective cues?
 - Are props readable but not polished?
-- Is there any unwanted text?
-- Are there captions, labels, shot numbers, handwritten notes, or readable signs?
+- Is there any unwanted text outside user-provided product packaging?
+- Are there captions, fake labels, shot numbers, handwritten notes, or readable signs?
+- If a user product appears, are the supplied package shape, label layout, visible product text, logo/mark, and color blocks preserved instead of blanked or invented?
 - Is the image a single frame when a single frame is requested?
 - Is it still a production storyboard, not final art?
 - Would a director or previs supervisor understand the shot from the sketch alone?
@@ -664,7 +667,7 @@ Hard reject if:
 | no scale reference | Giant or miniature subject is stated but not visually proven | Add: pedestrians, cars, crosswalks, building windows, hands or feet as scale markers |
 | wrong camera angle | Requested low angle becomes eye-level, ground shot becomes normal street shot | Add explicit camera: low-angle / ground-level / high-angle; describe horizon, foreground size, perspective lines |
 | multi-panel sheet when single frame requested | AI outputs several panels, borders, sequence sheet | Add: single storyboard frame only, no multi-panel sheet, no captions, no shot numbers |
-| text appears inside image | Labels, signs, handwritten notes, subtitles, panel numbers | Add: no text inside image, no captions, no labels, no readable signage, no handwritten notes |
+| text appears inside image | Captions, signs, handwritten notes, subtitles, panel numbers, fake labels | Add: no unrelated text inside image, no captions, no fake labels, no readable signage, no handwritten notes; preserve only user-provided product packaging text/marks |
 | character continuity drift | Headphones disappear, costume changes, hairstyle changes, props mutate | Add continuity anchors: same headphones, same uniform silhouette, same hairstyle silhouette, same props |
 | product / prop distortion | Earphones, shoes, phone, bicycle, vending machine become unreadable or over-designed | Add: readable simplified prop silhouette, preserve function and proportion, no brand text, no product-ad rendering |
 | wash dominates linework | Blue-gray blocks overpower the sketch | Add: linework primary, wash secondary, minimal shading, high white-paper visibility |
@@ -686,4 +689,4 @@ Use this style lock directly in GPT instructions or image prompts:
 
 Expanded operational lock:
 
-> Create a single rough production storyboard frame for shot planning. Preserve camera angle, shot size, composition, foreground/midground/background separation, and scale references. Use loose dark graphite searching lines with visible construction marks. Add only very light low-saturation blue-gray wash as sparse spatial blocks. Keep the white paper background visible. Simplify characters into faceless readable figures with consistent costume and prop silhouettes. Simplify environments into blocky cinematic cues, perspective lines, shorthand pedestrians, vehicles, and props. Avoid photorealism, anime, manga, comic polish, rich watercolor, glossy concept art, realistic skin, detailed facial features, over-rendered architecture, readable text, captions, labels, shot numbers, and handwritten notes.
+> Create a single rough production storyboard frame for shot planning. Preserve camera angle, shot size, composition, foreground/midground/background separation, and scale references. Use loose dark graphite searching lines with visible construction marks. Add only very light low-saturation blue-gray wash as sparse spatial blocks. Keep the white paper background visible. Simplify characters into faceless readable figures with consistent costume and prop silhouettes. Simplify environments into blocky cinematic cues, perspective lines, shorthand pedestrians, vehicles, and props. If a user-provided product appears, preserve its package silhouette, label layout, visible product text, logo/mark, color blocks, and cap/pump/closure. Avoid photorealism, anime, manga, comic polish, rich watercolor, glossy concept art, realistic skin, detailed facial features, over-rendered architecture, unrelated readable text, captions, fake labels, shot numbers, and handwritten notes.

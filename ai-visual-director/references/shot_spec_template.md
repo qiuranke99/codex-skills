@@ -205,6 +205,13 @@ Rationale: the downstream artist or generator must know what to draw, where the 
 | `must_preserve` | Non-negotiable facts. | `label faces camera; cap stays black; screen text remains short` | `quality` |
 | `avoid` | Specific failure modes. | `avoid extra bottles, fake logos, destroyed buildings, axis flip` | `avoid mistakes` |
 
+For real product work, product packaging is identity. If the user provides a product image, add two shot-level decisions whenever the product appears:
+
+| Field | Definition | Good | Weak |
+|---|---|---|---|
+| `product_visibility` | Whether the product appears in this shot. Use `full_visible`, `partial_visible`, `detail_only`, or `not_visible`. | `full_visible` | `visible` |
+| `product_identity_action` | How this panel preserves the locked product shape, label, text, logo/mark, cap/pump, colors, and proportions. | `front label faces camera; draw LUMA wordmark, HYDRATING SERUM line, pale blue stripe, black cap` | `same product` |
+
 ## 8. Clean Handoff Spec: Exact Field Order
 
 Use this format when the user says `给手绘分镜用`, asks for clean handoff specs, or needs specs for a storyboard artist/generator.
@@ -433,6 +440,16 @@ Use whenever the sequence has recurring characters, products, places, or scale.
 - Wardrobe:
 - Hair / face / body features:
 - Product identity:
+- Product identity lock:
+  - source reference:
+  - exact visible product/brand text:
+  - primary label text:
+  - label layout:
+  - packaging shape:
+  - cap/pump/closure:
+  - color/material marks:
+  - required visible marks:
+  - forbidden changes:
 - Product state:
 - Prop positions:
 - Environment:
@@ -448,12 +465,16 @@ Good continuity lock:
 
 - `same navy uniform, red ribbon, wet black loafers, short black bob, no glasses; movement remains left-to-right until SH_004`.
 - `same matte charcoal bottle, black cap, vertical filter window facing camera, blue light off until button press in SH_003`.
+- `same white cylindrical serum bottle; black cap; centered front label rectangle; exact visible text LUMA / HYDRATING SERUM / 30 ml when label faces camera; no blank bottle, fake brand, new claims, or changed label layout`.
 
 Weak continuity lock:
 
 - `keep consistent`.
 - `same vibe`.
 - `same product`.
+- `label on bottle`.
+
+Product text rule: captions, subtitles, shot numbers, callouts, UI overlays, and invented labels are forbidden. User-provided product packaging text, label blocks, logo/mark shapes, and required visible marks are not forbidden; they must be preserved when the product faces camera. If a reference is too blurry to read, write `unreadable_from_reference` and preserve label geometry rather than inventing text.
 
 ## 14. Scale Relationship Template
 
@@ -491,6 +512,7 @@ Before final output, verify every shot:
 - It includes axis, screen direction, and eyeline when relevant.
 - It includes scale proof when scale matters.
 - It includes continuity lock when a subject recurs.
+- For user-provided products, it includes a product identity lock and per-product-shot visibility/action notes.
 - It includes specific avoid notes for likely drift.
 
 ## 16. Sequence Logic Checklist

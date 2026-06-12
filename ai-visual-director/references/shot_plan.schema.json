@@ -20,6 +20,30 @@
     "video_segment_count": {"type": "integer", "minimum": 1},
     "visual_strategy": {"type": "string"},
     "continuity_locks": {"type": "array", "items": {"type": "string"}, "minItems": 1},
+    "product_identity_lock": {
+      "type": "object",
+      "required": [
+        "source_reference",
+        "product_name_text",
+        "primary_label_text",
+        "label_layout",
+        "packaging_shape",
+        "color_material_marks",
+        "required_visible_marks",
+        "forbidden_changes"
+      ],
+      "properties": {
+        "source_reference": {"type": "string"},
+        "product_name_text": {"type": "string"},
+        "primary_label_text": {"type": "array", "items": {"type": "string"}},
+        "label_layout": {"type": "string"},
+        "packaging_shape": {"type": "string"},
+        "color_material_marks": {"type": "string"},
+        "required_visible_marks": {"type": "array", "items": {"type": "string"}},
+        "forbidden_changes": {"type": "array", "items": {"type": "string"}}
+      },
+      "additionalProperties": false
+    },
     "reference_roles": {
       "type": "array",
       "items": {
@@ -100,6 +124,11 @@
                 "background": {"type": "string"},
                 "scale_reference": {"type": "string"},
                 "continuity_lock": {"type": "string"},
+                "product_visibility": {
+                  "type": "string",
+                  "enum": ["full_visible", "partial_visible", "detail_only", "not_visible"]
+                },
+                "product_identity_action": {"type": "string"},
                 "must_preserve": {"type": "string"},
                 "avoid": {"type": "string"}
               },

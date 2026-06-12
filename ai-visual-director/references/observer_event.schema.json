@@ -77,6 +77,7 @@
           "readable_text",
           "panel_separation_failure",
           "identity_drift",
+          "product_identity_mismatch",
           "wrong_camera_angle",
           "repeated_centered_composition",
           "static_panel_dump",

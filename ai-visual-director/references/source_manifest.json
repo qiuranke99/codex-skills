@@ -1,21 +1,21 @@
 {
   "skill_name": "ai-visual-director",
-  "version": "0.6.0",
+  "version": "0.6.1",
   "distribution_mode": "self-contained skill folder",
   "canonical_packaged_references": [
     {
       "path": "SKILL.md",
-      "sha256": "54535a79c3ef47edea5ad1532c5b4ef54f7662423cd817b860650a18dc01e87e",
-      "purpose": "primary skill workflow rules including Shadow Observer launch contract"
+      "sha256": "93c1e3f5129faf8140f4c72f5fd0f9ac72c2eda580eedf200e9f345fb1a5febd",
+      "purpose": "primary skill workflow rules including Shadow Observer launch contract and product identity fidelity contract"
     },
     {
       "path": "references/observer_protocol.md",
-      "sha256": "d27bef51e9a0975de04b5e423a19b33ba7d27bad8ab79547d853a91f2bc59e56",
+      "sha256": "e152b3234542222a463eacb79fe059bd44e7e346edc888838b49748552a90771",
       "purpose": "Shadow Observer protocol: non-blocking event logging and candidate-rule promotion rules"
     },
     {
       "path": "references/observer_event.schema.json",
-      "sha256": "7a1cb6e3df2150fece36b7084e9c3fb91adff1a5afc987247760667ba189e5bd",
+      "sha256": "931e7293dead147f5ca58c52c36837fb53876f25f078c417a5310fcc9a0a5c01",
       "purpose": "append-only Shadow Observer event contract"
     },
     {
@@ -29,6 +29,11 @@
       "purpose": "intake contract including production and observer modes"
     },
     {
+      "path": "references/shot_plan.schema.json",
+      "sha256": "a0e8c7323a0e02a5e937ffd80bb716e27abca1be3799c73e9af4235da50f86fe",
+      "purpose": "shot-plan contract including optional product identity lock and per-shot product visibility/action fields"
+    },
+    {
       "path": "references/director_kernel.md",
       "sha256": "20b8d1b4374665c8e220b400104a3efb7fa504951381b58331d4a34d7e97b1c8",
       "purpose": "production-mode routing, director playbooks, and escalation triggers"
@@ -40,8 +45,8 @@
     },
     {
       "path": "references/shot_spec_template.md",
-      "sha256": "c70f9fa44630effe80ef40147593d0d2df1893864ea710eb46750885be7820e6",
-      "purpose": "shot-spec grammar and handoff fields"
+      "sha256": "1c43f8c9e0f78f7429d8a565b9b544fec7121f4f46c20000dd1e6e3edc8724ee",
+      "purpose": "shot-spec grammar, handoff fields, and product identity lock grammar"
     },
     {
       "path": "references/good_shotlist_examples.md",
@@ -50,8 +55,8 @@
     },
     {
       "path": "references/blue_gray_previs_style_bible.md",
-      "sha256": "6afe4502201c7e41774ff6739c174a51556eb0410b9f1d7ebfc86ae6b68032c3",
-      "purpose": "blue-gray previs sketch style rules"
+      "sha256": "80ea96b6c5f2c6ae94e976a1df90a1cb535705bde4d383b266bc5208323eefc8",
+      "purpose": "blue-gray previs sketch style rules with product-packaging text exception"
     },
     {
       "path": "assets/blue_gray_previs_reference.jpeg",
@@ -60,8 +65,8 @@
     },
     {
       "path": "scripts/observe_run.py",
-      "sha256": "007f872b3702f3d9d3a149051ff5c0e23bdfd90f1e3e45dac23f063679428ff6",
-      "purpose": "non-blocking observer event logging, validator ingestion, single-run candidate generation, and cross-run aggregation"
+      "sha256": "8055f24b0f5b794ce7505e724d746a7fa2aa1d42f0e91b972297e6ce27a40f63",
+      "purpose": "non-blocking observer event logging, validator ingestion, product identity mismatch classification, single-run candidate generation, and cross-run aggregation"
     },
     {
       "path": "scripts/create_observer_packet.py",
@@ -69,9 +74,19 @@
       "purpose": "compact observer packet creation for optional sub-agent or SSOT review handoff"
     },
     {
+      "path": "scripts/validate_shot_plan.py",
+      "sha256": "6f64f0780e23a6275b99255faabfc8cfb7a01ef0600e2156595f2e0e870627b5",
+      "purpose": "shot-plan structural gate including product identity lock enforcement"
+    },
+    {
       "path": "scripts/verify_skill_package.py",
-      "sha256": "f7268716de9a016f83a012246b36af76752af70f5fb9159a455eb7130714393f",
-      "purpose": "self-contained package verification including observer smoke tests"
+      "sha256": "4629371dfb83e244a5f14e81294afda01c877e89de06ba87542e81465900a859",
+      "purpose": "self-contained package verification including observer smoke tests and product identity validator regression"
+    },
+    {
+      "path": "tests/test_validate_product_identity_lock.py",
+      "sha256": "9dc4360ddb96350aa88ccdfed38ef74453085c285e1a149bd3ae6a80a0e48a96",
+      "purpose": "regression tests for product packaging fidelity in the shot-plan validator"
     }
   ],
   "notes": [

@@ -35,6 +35,7 @@ REQUIRED_FILES = [
     "scripts/create_observer_packet.py",
     "scripts/package_skill.py",
     "scripts/verify_skill_package.py",
+    "tests/test_validate_product_identity_lock.py",
 ]
 
 
@@ -195,6 +196,20 @@ def main() -> int:
                     errors.append("observe_run.py aggregate-runs expected one source events file")
             else:
                 errors.append("observe_run.py did not create aggregate candidate rules")
+
+    product_identity_test = skill_dir / "tests/test_validate_product_identity_lock.py"
+    if product_identity_test.exists():
+        test_proc = subprocess.run(
+            [sys.executable, str(product_identity_test)],
+            text=True,
+            capture_output=True,
+            check=False,
+        )
+        if test_proc.returncode != 0:
+            errors.append(
+                "product identity validator regression test failed: "
+                f"{test_proc.stderr.strip() or test_proc.stdout.strip()}"
+            )
 
     result = {
         "ok": not errors,
