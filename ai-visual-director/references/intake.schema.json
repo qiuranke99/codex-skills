@@ -50,6 +50,14 @@
     "conflicting_reference_roles": {
       "type": "boolean",
       "default": false
+    },
+    "advanced_cinematic_language": {
+      "type": "boolean",
+      "default": false
+    },
+    "complex_delivery_mode": {
+      "type": "boolean",
+      "default": false
     }
   },
   "additionalProperties": false

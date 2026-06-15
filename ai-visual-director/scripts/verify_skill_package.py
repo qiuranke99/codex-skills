@@ -23,6 +23,7 @@ REQUIRED_FILES = [
     "references/rule_candidate.schema.json",
     "references/source_manifest.json",
     "references/workflow_contract.md",
+    "references/cinematic_language_decision_matrix.md",
     "references/observer_protocol.md",
     "references/director_kernel.md",
     "references/world_class_tvc_principles.md",
@@ -42,6 +43,7 @@ REQUIRED_FILES = [
     "tests/test_validate_product_identity_lock.py",
     "tests/test_validate_video_product_lock.py",
     "tests/test_validate_run_package.py",
+    "tests/test_cinematic_language_routing.py",
 ]
 
 
@@ -152,6 +154,7 @@ def main() -> int:
                 "storyboard_sheet_count": 3,
                 "panel_count": 27,
                 "video_segment_count": 4,
+                "cinematic_language_reference_required": False,
             }
             for key, value in expected.items():
                 if routed.get(key) != value:
@@ -275,6 +278,20 @@ def main() -> int:
         if test_proc.returncode != 0:
             errors.append(
                 "run package validator regression test failed: "
+                f"{test_proc.stderr.strip() or test_proc.stdout.strip()}"
+            )
+
+    cinematic_language_test = skill_dir / "tests/test_cinematic_language_routing.py"
+    if cinematic_language_test.exists():
+        test_proc = subprocess.run(
+            [sys.executable, str(cinematic_language_test)],
+            text=True,
+            capture_output=True,
+            check=False,
+        )
+        if test_proc.returncode != 0:
+            errors.append(
+                "cinematic language routing regression test failed: "
                 f"{test_proc.stderr.strip() or test_proc.stdout.strip()}"
             )
 

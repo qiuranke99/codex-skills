@@ -17,6 +17,7 @@ from pathlib import Path
 DEFAULT_SEGMENT_SECONDS = 10
 SECONDS_PER_STORYBOARD_SHEET = 13.5
 ALLOWED_PRODUCTION_MODES = {"standard_fast", "rush", "premium_pitch", "certification"}
+CINEMATIC_LANGUAGE_REFERENCE = "references/cinematic_language_decision_matrix.md"
 
 
 ROUTE_TEMPLATES = {
@@ -132,6 +133,43 @@ KEYWORDS = [
 ]
 
 
+CINEMATIC_LANGUAGE_TRIGGER_PATTERNS = [
+    (
+        "vfx_or_virtual_production",
+        r"\bvfx\b|visual effects|virtual production|led volume|greenscreen|green screen|bluescreen|blue screen|"
+        r"tracking marker|lens grid|distortion chart|witness camera|hdri|light probe|composit|cgi?\b|"
+        r"虚拟制作|绿幕|蓝幕|跟踪点|镜头畸变|畸变标定|视效|特效|合成|见证机位|灯光探针",
+    ),
+    (
+        "sound_design_or_sound_editing",
+        r"sound design|sound bridge|j-cut|l-cut|foley|ambience|voiceover|voice-over|\bvo\b|adr|\bmos\b|"
+        r"dialogue|diegetic|non-diegetic|声音设计|声桥|声画|音效|环境声|拟音|旁白|对白|同期声|无声拍摄",
+    ),
+    (
+        "production_handoff_or_camera_report",
+        r"camera report|camera handoff|dp handoff|production handoff|timecode|time code|scene[- /]?shot[- /]?take|"
+        r"focus mark|t-stop|f-stop|take metadata|交付|可追溯|现场记录|摄影指导交接|机位报告|时间码|焦点距离|焦点标记",
+    ),
+    (
+        "color_pipeline_or_delivery",
+        r"\baces\b|\blut\b|show lut|color pipeline|color space|rec\.?709|rec\.?2020|dci-p3|\bhdr\b|\bsdr\b|"
+        r"\bdi\b|idt|odt|色彩管线|调色|色彩空间|输出色彩|交付色彩|现场lut",
+    ),
+    (
+        "advanced_optics_or_motion_texture",
+        r"anamorphic|spherical|lens character|filtration|filter system|pro-mist|glimmerglass|polarizer|\bnd\b|"
+        r"shutter angle|frame rate|slow motion|speed ramp|time-lapse|rack focus|follow focus|split diopter|"
+        r"变形宽银幕|球面镜头|镜头质感|滤镜|快门角|帧率|升格|降格|变速|延时|焦点转移|跟焦|分裂焦",
+    ),
+    (
+        "complex_continuity_or_coverage",
+        r"180[- ]?degree|axis crossing|cross[- ]?line|eyeline match|screen direction|match on action|coverage|"
+        r"master shot|safety shot|30[- ]?degree|jump cut|axis|eyeline|轴线|过轴|跨线|视线匹配|银幕方向|动作匹配|"
+        r"覆盖策略|主镜头|保护镜头|跳切",
+    ),
+]
+
+
 def read_intake() -> dict:
     if len(sys.argv) > 1:
         return json.loads(Path(sys.argv[1]).read_text(encoding="utf-8"))
@@ -174,6 +212,50 @@ def escalation_triggers(intake: dict, brief: str) -> list[str]:
     return triggers
 
 
+def infer_cinematic_language_triggers(
+    intake: dict,
+    brief: str,
+    project_type: str,
+    production_mode: str,
+    duration: float,
+) -> list[str]:
+    triggers: list[str] = []
+    if intake.get("advanced_cinematic_language") or intake.get("complex_delivery_mode"):
+        triggers.append("explicit_user_or_intake_flag")
+
+    for trigger, pattern in CINEMATIC_LANGUAGE_TRIGGER_PATTERNS:
+        if re.search(pattern, brief, flags=re.IGNORECASE):
+            triggers.append(trigger)
+
+    if production_mode == "certification":
+        triggers.append("certification_mode")
+    elif production_mode == "premium_pitch" and duration >= 30:
+        triggers.append("premium_pitch_complexity")
+
+    if project_type in {"architecture_or_space", "tech_or_science"} and duration >= 30:
+        triggers.append("complex_project_type")
+
+    unique: list[str] = []
+    for trigger in triggers:
+        if trigger not in unique:
+            unique.append(trigger)
+    return unique
+
+
+def cinematic_language_depth(triggers: list[str]) -> str:
+    l3_triggers = {
+        "vfx_or_virtual_production",
+        "production_handoff_or_camera_report",
+        "color_pipeline_or_delivery",
+        "certification_mode",
+    }
+    if any(trigger in l3_triggers for trigger in triggers):
+        return "L3"
+    if triggers:
+        return "L2"
+    return "default"
+
+
 def main() -> int:
     intake = read_intake()
     brief = str(intake.get("brief", "")).strip()
@@ -192,12 +274,24 @@ def main() -> int:
     triggers = escalation_triggers(intake, brief)
     sheet_count = max(1, math.ceil(duration / SECONDS_PER_STORYBOARD_SHEET))
     video_segment_count = max(1, math.ceil(duration / segment_seconds))
+    cinematic_triggers = infer_cinematic_language_triggers(
+        intake=intake,
+        brief=brief,
+        project_type=project_type,
+        production_mode=production_mode,
+        duration=duration,
+    )
+    cinematic_reference_required = bool(cinematic_triggers)
 
     result = {
         "project_type": project_type,
         "production_mode": production_mode,
         "escalation_required": bool(triggers) or production_mode in {"premium_pitch", "certification"},
         "escalation_triggers": triggers,
+        "cinematic_language_reference_required": cinematic_reference_required,
+        "cinematic_language_triggers": cinematic_triggers,
+        "cinematic_language_depth": cinematic_language_depth(cinematic_triggers),
+        "recommended_references": [CINEMATIC_LANGUAGE_REFERENCE] if cinematic_reference_required else [],
         "duration_seconds": duration,
         "storyboard_sheet_count": sheet_count,
         "panel_count": sheet_count * 9,

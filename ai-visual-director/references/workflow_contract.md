@@ -25,16 +25,32 @@ allows it.
 3. Product identity lock: if a real product appears, extract the visual facts
    before shot planning.
 4. Route decision: run or mirror `scripts/route_project.py`.
-5. Shot plan: write `02_shot_plan.json` against `references/shot_plan.schema.json`.
-6. Structure validation: run `scripts/validate_shot_plan.py`.
-7. Internal revision: fix validation failures before image prompts.
-8. Storyboard image prompts: one prompt per 3x3 sheet.
-9. Video segment prompts: 10-second temporal segments with first/last frame and
+5. Advanced cinematic-language routing: if `00_route_decision.json` sets
+   `cinematic_language_reference_required: true`, read
+   `references/cinematic_language_decision_matrix.md` before shot planning.
+   If it is false, do not load that reference for ordinary product-ad boards.
+6. Shot plan: write `02_shot_plan.json` against `references/shot_plan.schema.json`.
+7. Structure validation: run `scripts/validate_shot_plan.py`.
+8. Internal revision: fix validation failures before image prompts.
+9. Storyboard image prompts: one prompt per 3x3 sheet.
+10. Video segment prompts: 10-second temporal segments with first/last frame and
    motion over time.
-10. Video validation: run `scripts/validate_video_segments.py` when structured
+11. Video validation: run `scripts/validate_video_segments.py` when structured
     video JSON is produced.
-11. Final QC: run `scripts/validate_run_package.py` on the run directory.
-12. Report artifact paths and remaining risks.
+12. Final QC: run `scripts/validate_run_package.py` on the run directory.
+13. Report artifact paths and remaining risks.
+
+`00_route_decision.json` may include:
+
+- `cinematic_language_reference_required`
+- `cinematic_language_triggers`
+- `cinematic_language_depth`
+- `recommended_references`
+
+Treat these as routing evidence. They do not replace judgment: if the user
+explicitly asks for VFX, sound design, camera report, color pipeline, complex
+continuity, advanced lens language, or production handoff, read the advanced
+reference even if a hand-written route object forgot to set the flag.
 
 ## 3. Product Identity Lock
 

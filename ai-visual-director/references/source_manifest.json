@@ -1,12 +1,12 @@
 {
   "skill_name": "ai-visual-director",
-  "version": "0.7.0",
+  "version": "0.7.1",
   "distribution_mode": "self-contained skill folder",
   "canonical_packaged_references": [
     {
       "path": "SKILL.md",
-      "sha256": "d41e4b4e895f14d3ff43f4f1455fee5e9a641bbf34ed9e53943eb86aafbfd2ff",
-      "purpose": "primary skill router with staged director workflow, product identity contract, validation gates, storyboard generation rules, and final deliverable contract"
+      "sha256": "f30344420fbd250aac9cfb45de60b6fb8bc2e44ac8a39cabef6646011b18b421",
+      "purpose": "primary skill router with staged director workflow, conditional advanced cinematic-language routing, product identity contract, validation gates, storyboard generation rules, and final deliverable contract"
     },
     {
       "path": "agents/openai.yaml",
@@ -15,8 +15,13 @@
     },
     {
       "path": "references/workflow_contract.md",
-      "sha256": "8675d0db4e670ee4a611bd06996bb6ecc632c4623f3649ac9d951d3da80410d5",
-      "purpose": "required run order, product-fidelity gates, canonical run artifact names, and final validation contract"
+      "sha256": "0721c9d6447bdba962997f5f655ef8d1d5a5d3e65ced840e0e7771f9fec8f1fc",
+      "purpose": "required run order, advanced cinematic-language routing gate, product-fidelity gates, canonical run artifact names, and final validation contract"
+    },
+    {
+      "path": "references/cinematic_language_decision_matrix.md",
+      "sha256": "f323267407c60a5c3680a81610fcd763f73a328f20253b47faab715dbd52a8a3",
+      "purpose": "on-demand advanced cinematic language reference for VFX, sound-aware planning, color pipeline, camera report, complex continuity, and production handoff"
     },
     {
       "path": "references/observer_protocol.md",
@@ -35,8 +40,8 @@
     },
     {
       "path": "references/intake.schema.json",
-      "sha256": "c6e72f2d86f19e8234d2f13e79aa5f4074092e84d2fd8b16b66731a0cebeb38e",
-      "purpose": "intake contract including production and observer modes"
+      "sha256": "c8f2bd3af3d3ea1d69f6afd4631475ab6bc3f8cecc155789efef10a0b7b5c1fa",
+      "purpose": "intake contract including production, observer, advanced cinematic language, and complex delivery modes"
     },
     {
       "path": "references/shot_plan.schema.json",
@@ -65,8 +70,8 @@
     },
     {
       "path": "references/shot_spec_template.md",
-      "sha256": "7c70ca41fb7b28a8dba8a49e173a1593f95f07e4f60f0bfae7fd03ccc95fdeec",
-      "purpose": "shot-spec grammar, handoff fields, and product identity lock grammar"
+      "sha256": "64d12385414ea5a69bd820abade2990fd85139196b3356caea22607a99f9001a",
+      "purpose": "shot-spec grammar, conditional advanced cinematic-language fields, handoff fields, and product identity lock grammar"
     },
     {
       "path": "references/good_shotlist_examples.md",
@@ -85,8 +90,8 @@
     },
     {
       "path": "scripts/route_project.py",
-      "sha256": "ca47c19e01d3572d80ee9023d0b3cf253f7a22368b4f64c6362e3570430af013",
-      "purpose": "intake routing, production-mode inference, duration logic, storyboard sheet count, and video segment count"
+      "sha256": "972c8fb441a515a5e92e42f316ac864ff100efe7468dfb9398a406901e66c52f",
+      "purpose": "intake routing, production-mode inference, duration logic, storyboard sheet count, video segment count, and advanced cinematic-language reference routing"
     },
     {
       "path": "scripts/validate_shot_plan.py",
@@ -125,8 +130,8 @@
     },
     {
       "path": "scripts/verify_skill_package.py",
-      "sha256": "4c1d6bd3d310d280e55b593452cd944e306d884e9a2bcc67cfd3e187840ccf35",
-      "purpose": "self-contained package verification including manifest hash checks, observer smoke tests, product/video/run-package regression tests"
+      "sha256": "ce28733adc96fede862771738b61fde5a2f709264a97e06b14ad3e93c0173fbc",
+      "purpose": "self-contained package verification including manifest hash checks, observer smoke tests, product/video/run-package/cinematic-routing regression tests"
     },
     {
       "path": "tests/test_validate_product_identity_lock.py",
@@ -142,6 +147,11 @@
       "path": "tests/test_validate_run_package.py",
       "sha256": "f6ae788ef890f54c01bd8a9dd89bfe730541eeee49ea3570d00fc72c5a146959",
       "purpose": "regression tests for completed run-package validation and storyboard prompt product text carry-through"
+    },
+    {
+      "path": "tests/test_cinematic_language_routing.py",
+      "sha256": "63558c2022fbcc40b85d1ac16ae1bd1e48dcd0a49679a82b78857f00029a724e",
+      "purpose": "regression tests for conditional advanced cinematic-language routing and refined non-full-source reference import"
     }
   ],
   "notes": [

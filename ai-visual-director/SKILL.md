@@ -31,6 +31,7 @@ Use progressive disclosure. Read only the files needed for the requested output:
 
 - Required run order, product-fidelity gates, artifact names, and final validation: `references/workflow_contract.md`.
 - Shot-spec fields and handoff grammar: `references/shot_spec_template.md`.
+- Advanced cinematic language, VFX/virtual production, sound-aware shot planning, color pipeline, camera report, and complex handoff routing: read `references/cinematic_language_decision_matrix.md` only when `00_route_decision.json` sets `cinematic_language_reference_required: true` or the user explicitly asks for those modes.
 - Production-mode routing, escalation triggers, and director playbooks: `references/director_kernel.md`.
 - World-class TVC principles, attention choreography, reference parity, and image-to-shot translation: `references/world_class_tvc_principles.md`.
 - Non-blocking observer sidecar behavior and learning-loop rules: `references/observer_protocol.md`.
@@ -106,6 +107,21 @@ Use the intake schema when a structured brief is needed. Route with
 ```bash
 python scripts/route_project.py intake.json > 00_route_decision.json
 ```
+
+The route decision may include:
+
+```yaml
+cinematic_language_reference_required:
+cinematic_language_triggers:
+cinematic_language_depth:
+recommended_references:
+```
+
+If `cinematic_language_reference_required` is `true`, read
+`references/cinematic_language_decision_matrix.md` before finalizing the shot
+plan. If it is `false`, do not load that reference merely because the brief says
+`cinematic`, `premium`, or `film look`; solve those with the normal shot-spec
+grammar and reference parity rules.
 
 Default duration logic:
 

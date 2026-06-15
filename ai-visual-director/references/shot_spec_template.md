@@ -273,7 +273,39 @@ vfx_or_scale_note:
 
 Previs needs physical clarity: camera height, camera path, actor marks, entrances/exits, usable movement path, and practical/VFX constraints.
 
-## 10. Default Shot List Table
+## 10. Advanced Cinematic Language Extra Fields
+
+Use these only when the route decision sets `cinematic_language_reference_required: true`, or when the user explicitly asks for advanced cinematography, VFX/virtual production, sound-aware planning, color pipeline, camera report, or complex handoff. Do not add these to routine product storyboards by default.
+
+```yaml
+cinematic_language_depth:
+  level:
+  active_domains:
+  reason:
+  added_fields:
+  omitted_fields_with_reason:
+lens_language:
+focus_strategy:
+depth_of_field:
+lighting_motivation:
+lighting_shape:
+motion_texture:
+color_strategy:
+sound_intent:
+coverage_strategy:
+edit_continuity_strategy:
+camera_report_required:
+camera_report_fields:
+vfx_or_tracking_notes:
+virtual_production_notes:
+color_pipeline_notes:
+sound_capture_notes:
+handoff_risk:
+```
+
+Field discipline: each added field must change a shot decision or downstream handoff. If a field is merely decorative, omit it and state why in `omitted_fields_with_reason`.
+
+## 11. Default Shot List Table
 
 Use this table before clean handoff specs unless the user asks for handoff specs only.
 
@@ -294,7 +326,7 @@ Column rules:
 - `POV / Axis / Cut Logic`: viewer alignment, spatial axis/screen direction, and reason for the cut.
 - `Scale / Continuity`: scale proof, wardrobe, product state, prop state, geography, or continuity lock.
 
-## 11. Single-Shot Template
+## 12. Single-Shot Template
 
 Use when the user asks for one frame or one storyboard panel.
 
@@ -319,9 +351,9 @@ Use when the user asks for one frame or one storyboard panel.
 | Avoid | |
 ```
 
-## 12. Sequence Templates
+## 13. Sequence Templates
 
-### 12.1 Compact four-shot sequence
+### 13.1 Compact four-shot sequence
 
 Best for a compact beat: setup, discovery, proof, payoff.
 
@@ -334,7 +366,7 @@ Best for a compact beat: setup, discovery, proof, payoff.
 
 Minimum requirements: at least one geography shot, one readable detail or proof shot, continuity lock, and scale references when scale matters.
 
-### 12.2 Dialogue coverage template
+### 13.2 Dialogue coverage template
 
 Use for two-person or multi-person dialogue. Do not create random singles.
 
@@ -348,7 +380,7 @@ Use for two-person or multi-person dialogue. Do not create random singles.
 | Power-shift close-up | Mark decision, threat, lie, intimacy, silence, or reversal | Close-up must be earned. |
 | Exit / consequence | Resolve or complicate the beat | Shows what the exchange caused. |
 
-### 12.3 Commercial sequence template
+### 13.3 Commercial sequence template
 
 Best for product, beauty, tech, service, food, or fashion.
 
@@ -365,7 +397,7 @@ Best for product, beauty, tech, service, food, or fashion.
 
 Do not invent brand names, logos, health claims, medical claims, purification claims, safety claims, or performance claims unless the user provides them.
 
-### 12.4 Fast-cut structure
+### 13.4 Fast-cut structure
 
 Best for 10-20 second social ads or rhythm-heavy montage.
 
@@ -379,7 +411,7 @@ Best for 10-20 second social ads or rhythm-heavy montage.
 
 Rules: every shot has one visual job; inserts are punctuation, not filler; repeat no shot size more than three times in a row unless deliberate; final shots should visually simplify.
 
-### 12.5 Suspense reveal template
+### 13.5 Suspense reveal template
 
 | Stage | Function | Notes |
 |---|---|---|
@@ -390,7 +422,7 @@ Rules: every shot has one visual job; inserts are punctuation, not filler; repea
 | Reaction | Show embodied response | Gaze, stillness, hand tension, breath, retreat. |
 | Consequence | What changes after discovery | Do not end on vague fear. |
 
-### 12.6 Reference image conversion
+### 13.6 Reference image conversion
 
 Use when the user supplies one or more reference images.
 
@@ -432,7 +464,7 @@ Conflict priority:
 8. style reference;
 9. examples in knowledge files.
 
-## 13. Continuity Lock Template
+## 14. Continuity Lock Template
 
 Use whenever the sequence has recurring characters, products, places, or scale.
 
@@ -483,7 +515,7 @@ Weak continuity lock:
 
 Product text rule: captions, subtitles, shot numbers, callouts, UI overlays, and invented labels are forbidden. User-provided product packaging text, label blocks, logo/mark shapes, embossed/debossed marks, and required visible marks are not forbidden; they must be preserved when the product faces camera. If a reference is too blurry to read, write `unreadable_from_reference` and preserve label geometry rather than inventing text. A rough storyboard may simplify rendering detail, but it must not omit readable product identity, blank the label, or add absent hardware such as metal plates, badges, plaques, extra emblems, or new label panels.
 
-## 14. Scale Relationship Template
+## 15. Scale Relationship Template
 
 Use for giants, miniatures, VFX, product macro, architecture, surreal transformations, and distance clarity.
 
@@ -503,7 +535,7 @@ Examples:
 - `Primary subject: giant schoolgirl. Reference object 1: taxi. Reference object 2: crosswalk stripe. Relative size: one shoe equals taxi length. Frame proof: taxi bumper aligns beside shoe sole. Avoid: making her only slightly taller than pedestrians.`
 - `Primary subject: serum droplet. Reference object 1: fingertip ridge. Reference object 2: bottle pipette. Relative size: droplet half the width of fingernail. Frame proof: droplet suspended between pipette and skin. Avoid: droplet becoming splash or pearl.`
 
-## 15. Readability Checklist
+## 16. Readability Checklist
 
 Before final output, verify every shot:
 
@@ -522,7 +554,7 @@ Before final output, verify every shot:
 - For user-provided products, it includes a product identity lock and per-product-shot visibility/action notes.
 - It includes specific avoid notes for likely drift.
 
-## 16. Sequence Logic Checklist
+## 17. Sequence Logic Checklist
 
 Before final output, verify the sequence:
 
@@ -539,7 +571,7 @@ Before final output, verify the sequence:
 - Inserts function as proof or rhythm punctuation, not filler.
 - The final shot resolves, complicates, or deliberately leaves a clear question.
 
-## 17. Revision and Versioning Rules
+## 18. Revision and Versioning Rules
 
 - Preserve existing `SH_###` IDs whenever possible.
 - If inserting a shot, use `SH_003A` or `SH_003B`; renumber only when the user asks for a clean final.
@@ -550,7 +582,7 @@ Before final output, verify the sequence:
 - If aspect ratio changes, re-evaluate composition, negative space, and scale references.
 - If downstream results drift, strengthen `continuity_lock`, `must_preserve`, `avoid`, `panel_moment`, `axis_of_action`, and `screen_direction`; do not merely add adjectives.
 
-## 18. Common Failure Modes and Corrections
+## 19. Common Failure Modes and Corrections
 
 | Failure mode | Symptom | Correction |
 |---|---|---|
@@ -576,7 +608,7 @@ Before final output, verify the sequence:
 | Tool-specific leakage | Specs mention model names or temporary role labels. | Remove tool labels and keep stable visual-planning fields. |
 | Panel cannot be drawn | Action spans multiple moments. | Choose decisive frame and write `panel_moment`. |
 
-## 19. Final Output Order
+## 20. Final Output Order
 
 When producing a full answer, use this order:
 
