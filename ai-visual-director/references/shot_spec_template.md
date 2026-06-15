@@ -205,12 +205,15 @@ Rationale: the downstream artist or generator must know what to draw, where the 
 | `must_preserve` | Non-negotiable facts. | `label faces camera; cap stays black; screen text remains short` | `quality` |
 | `avoid` | Specific failure modes. | `avoid extra bottles, fake logos, destroyed buildings, axis flip` | `avoid mistakes` |
 
-For real product work, product packaging is identity. If the user provides a product image, add two shot-level decisions whenever the product appears:
+For real product work, product packaging is identity. If the user provides a product image, add shot-level product decisions whenever the product appears:
 
 | Field | Definition | Good | Weak |
 |---|---|---|---|
 | `product_visibility` | Whether the product appears in this shot. Use `full_visible`, `partial_visible`, `detail_only`, or `not_visible`. | `full_visible` | `visible` |
 | `product_identity_action` | How this panel preserves the locked product shape, label, text, logo/mark, cap/pump, colors, and proportions. | `front label faces camera; draw LUMA wordmark, HYDRATING SERUM line, pale blue stripe, black cap` | `same product` |
+| `visible_product_text_or_marks` | Required for `full_visible`: exact text, wordmark, logo/mark, embossed/debossed marks that must be drawn or preserved. | `LUMA; HYDRATING SERUM; 30 ml; raised LUMA wordmark` | `label text` |
+| `product_visual_facts` | Required for `full_visible`: actual product geometry, components, materials, and label placement visible in the panel. | `white cylindrical bottle, rounded black cap, centered front label rectangle, pale blue stripe, no metal plate` | `luxury bottle` |
+| `forbidden_visual_additions` | Required for `full_visible`: physical or graphic facts absent from the reference and not allowed in this panel. | `no gold metal plate, no badge, no front plaque, no extra emblem, no new label panel` | `no mistakes` |
 
 ## 8. Clean Handoff Spec: Exact Field Order
 
@@ -442,14 +445,18 @@ Use whenever the sequence has recurring characters, products, places, or scale.
 - Product identity:
 - Product identity lock:
   - source reference:
-  - exact visible product/brand text:
+  - product name text:
   - primary label text:
+  - surface text inventory:
+  - embossed / debossed / relief marks:
   - label layout:
   - packaging shape:
-  - cap/pump/closure:
+  - physical component inventory:
   - color/material marks:
   - required visible marks:
   - forbidden changes:
+  - forbidden visual additions:
+  - full-view fidelity rule:
 - Product state:
 - Prop positions:
 - Environment:
@@ -465,7 +472,7 @@ Good continuity lock:
 
 - `same navy uniform, red ribbon, wet black loafers, short black bob, no glasses; movement remains left-to-right until SH_004`.
 - `same matte charcoal bottle, black cap, vertical filter window facing camera, blue light off until button press in SH_003`.
-- `same white cylindrical serum bottle; black cap; centered front label rectangle; exact visible text LUMA / HYDRATING SERUM / 30 ml when label faces camera; no blank bottle, fake brand, new claims, or changed label layout`.
+- `same white cylindrical serum bottle; rounded black cap; centered front label rectangle; exact visible text LUMA / HYDRATING SERUM / 30 ml when label faces camera; surface text inventory is front wordmark plus two lower text lines; no embossing visible; no gold metal plate, badge, plaque, extra emblem, fake brand, new claims, or changed label layout`.
 
 Weak continuity lock:
 
@@ -474,7 +481,7 @@ Weak continuity lock:
 - `same product`.
 - `label on bottle`.
 
-Product text rule: captions, subtitles, shot numbers, callouts, UI overlays, and invented labels are forbidden. User-provided product packaging text, label blocks, logo/mark shapes, and required visible marks are not forbidden; they must be preserved when the product faces camera. If a reference is too blurry to read, write `unreadable_from_reference` and preserve label geometry rather than inventing text.
+Product text rule: captions, subtitles, shot numbers, callouts, UI overlays, and invented labels are forbidden. User-provided product packaging text, label blocks, logo/mark shapes, embossed/debossed marks, and required visible marks are not forbidden; they must be preserved when the product faces camera. If a reference is too blurry to read, write `unreadable_from_reference` and preserve label geometry rather than inventing text. A rough storyboard may simplify rendering detail, but it must not omit readable product identity, blank the label, or add absent hardware such as metal plates, badges, plaques, extra emblems, or new label panels.
 
 ## 14. Scale Relationship Template
 

@@ -58,16 +58,55 @@ PRODUCT_TEXT_BAN_WORDS = re.compile(
     r"no readable text|no text|no labels|no logos|without readable text|无文字|不要文字|不要标签|不要logo|不要商标",
     re.IGNORECASE,
 )
+PRODUCT_DRIFT_WORDS = re.compile(
+    r"generic|blank|fake|wrong text|no text|missing text|new brand|new logo|changed label|changed cap|"
+    r"duplicate|extra bottle|extra emblem|extra badge|front plaque|metal plate",
+    re.IGNORECASE,
+)
+VISUAL_FIDELITY_WORDS = re.compile(
+    r"exact|match|same|preserve|supplied|original|reference|unchanged|visual facts|real product|locked",
+    re.IGNORECASE,
+)
+BAD_FULL_VIEW_TEXT = re.compile(
+    r"blank label|no label|no text|no readable text|text-free|unlabeled|generic label|fake text|wrong text",
+    re.IGNORECASE,
+)
+POSITIVE_PRODUCT_VISUAL_FIELDS = [
+    "shot_purpose",
+    "main_subject",
+    "main_action",
+    "composition",
+    "foreground",
+    "midground",
+    "background",
+    "reference_parity",
+    "continuity_lock",
+    "must_preserve",
+    "product_identity_action",
+    "visible_product_text_or_marks",
+    "product_visual_facts",
+]
+FULL_VISIBLE_PRODUCT_FIELDS = [
+    "visible_product_text_or_marks",
+    "product_visual_facts",
+    "forbidden_visual_additions",
+]
+NEGATED_PREFIX_WORDS = ("no", "not", "without", "never")
 PRODUCT_VISIBILITY_VALUES = {"full_visible", "partial_visible", "detail_only", "not_visible"}
 REQUIRED_PRODUCT_LOCK_FIELDS = [
     "source_reference",
     "product_name_text",
     "primary_label_text",
+    "surface_text_inventory",
+    "embossed_or_relief_marks",
     "label_layout",
     "packaging_shape",
+    "physical_component_inventory",
     "color_material_marks",
     "required_visible_marks",
     "forbidden_changes",
+    "forbidden_visual_additions",
+    "full_view_fidelity_rule",
 ]
 
 
@@ -89,9 +128,89 @@ def has_concrete_language(text: str) -> bool:
 
 
 def nonempty_product_lock_value(value: object) -> bool:
+    if value is None:
+        return False
     if isinstance(value, list):
         return any(str(item).strip() for item in value)
     return bool(str(value).strip())
+
+
+def text_blob(*values: object) -> str:
+    chunks: list[str] = []
+    for value in values:
+        if isinstance(value, dict):
+            chunks.append(text_blob(*value.values()))
+        elif isinstance(value, list):
+            chunks.append(text_blob(*value))
+        else:
+            chunks.append(str(value))
+    return " ".join(chunks)
+
+
+def as_list(value: object) -> list[str]:
+    if isinstance(value, list):
+        return [str(item).strip() for item in value if str(item).strip()]
+    if isinstance(value, str) and value.strip():
+        return [value.strip()]
+    return []
+
+
+def normalized(value: object) -> str:
+    return re.sub(r"\s+", " ", str(value)).strip().lower()
+
+
+def visible_text_lines(lock: dict) -> list[str]:
+    lines: list[str] = []
+    for value in [lock.get("product_name_text"), lock.get("primary_label_text")]:
+        for item in as_list(value):
+            if "unreadable_from_reference" not in normalized(item):
+                lines.append(item)
+
+    unique: list[str] = []
+    seen: set[str] = set()
+    for line in lines:
+        key = normalized(line)
+        if key not in seen:
+            seen.add(key)
+            unique.append(line)
+    return unique
+
+
+def missing_full_view_text_lines(lock: dict, shot: dict) -> list[str]:
+    blob = normalized(text_blob(
+        shot.get("visible_product_text_or_marks", ""),
+        shot.get("product_visual_facts", ""),
+        shot.get("product_identity_action", ""),
+        shot.get("continuity_lock", ""),
+        shot.get("must_preserve", ""),
+    ))
+    return [line for line in visible_text_lines(lock) if normalized(line) not in blob]
+
+
+def forbidden_visual_additions(lock: dict) -> list[str]:
+    additions: list[str] = []
+    for field in ["forbidden_visual_additions", "forbidden_changes"]:
+        additions.extend(as_list(lock.get(field)))
+    return additions
+
+
+def positive_shot_blob(shot: dict) -> str:
+    return text_blob(*(shot.get(field, "") for field in POSITIVE_PRODUCT_VISUAL_FIELDS))
+
+
+def positive_mentions_forbidden_addition(lock: dict, shot: dict) -> str | None:
+    clauses = [normalized(clause) for clause in re.split(r"[.;,\n]+", positive_shot_blob(shot))]
+    for addition in forbidden_visual_additions(lock):
+        normalized_addition = normalized(addition)
+        if not normalized_addition:
+            continue
+        for clause in clauses:
+            if normalized_addition not in clause:
+                continue
+            if any(f"{prefix} {normalized_addition}" in clause for prefix in NEGATED_PREFIX_WORDS):
+                continue
+            return addition
+    return None
 
 
 def is_product_plan(plan: dict) -> bool:
@@ -138,6 +257,7 @@ def validate_product_identity(plan: dict) -> tuple[list[str], list[str]]:
     lock = plan.get("product_identity_lock")
     if not isinstance(lock, dict):
         errors.append("plan: product ad/reference requires product_identity_lock")
+        lock = {}
     else:
         for field in REQUIRED_PRODUCT_LOCK_FIELDS:
             if not nonempty_product_lock_value(lock.get(field)):
@@ -160,23 +280,44 @@ def validate_product_identity(plan: dict) -> tuple[list[str], list[str]]:
                 if not has_concrete_language(action) or action.lower() in {"not applicable", "n/a", "none"}:
                     errors.append(f"{sid}: product shot requires concrete product_identity_action")
 
-                identity_blob = " ".join(
-                    str(shot.get(field, ""))
-                    for field in [
-                        "product_identity_action",
-                        "must_preserve",
-                        "continuity_lock",
-                        "reference_parity",
-                    ]
+                identity_blob = text_blob(
+                    shot.get("product_identity_action", ""),
+                    shot.get("visible_product_text_or_marks", ""),
+                    shot.get("product_visual_facts", ""),
+                    shot.get("forbidden_visual_additions", ""),
+                    shot.get("must_preserve", ""),
+                    shot.get("continuity_lock", ""),
+                    shot.get("reference_parity", ""),
+                    shot.get("avoid", ""),
                 )
+                if not VISUAL_FIDELITY_WORDS.search(identity_blob):
+                    errors.append(f"{sid}: product shot must state that product visual facts match the real reference")
                 if not PRODUCT_MARK_WORDS.search(identity_blob):
                     errors.append(
                         f"{sid}: visible product must preserve package marks, label/text/logo/layout, or state why none are provided"
                     )
+                if not PRODUCT_DRIFT_WORDS.search(str(shot.get("avoid", ""))):
+                    errors.append(f"{sid}: avoid field must reject generic/blank/fake/changed product variants")
 
                 avoid_text = str(shot.get("avoid", ""))
                 if PRODUCT_TEXT_BAN_WORDS.search(avoid_text) and "product" not in avoid_text.lower() and "产品" not in avoid_text:
                     errors.append(f"{sid}: avoid field bans readable text/logos without a product-packaging exception")
+
+                if visibility == "full_visible":
+                    for field in FULL_VISIBLE_PRODUCT_FIELDS:
+                        if not nonempty_product_lock_value(shot.get(field)):
+                            errors.append(f"{sid}: full-visible product shot requires {field}")
+                    missing_text = missing_full_view_text_lines(lock, shot) if lock else []
+                    if missing_text:
+                        errors.append(
+                            f"{sid}: full-visible product shot must carry exact visible product text: "
+                            + ", ".join(missing_text)
+                        )
+                    forbidden = positive_mentions_forbidden_addition(lock, shot) if lock else None
+                    if forbidden:
+                        errors.append(f"{sid}: positive visual description contains forbidden visual addition: {forbidden}")
+                    if BAD_FULL_VIEW_TEXT.search(positive_shot_blob(shot)):
+                        errors.append(f"{sid}: full-visible product shot cannot blank, suppress, fake, or generalize product text")
 
             elif visibility and visibility not in PRODUCT_VISIBILITY_VALUES:
                 errors.append(f"{sid}: product_visibility has invalid value {visibility!r}")

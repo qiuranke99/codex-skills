@@ -1,12 +1,22 @@
 {
   "skill_name": "ai-visual-director",
-  "version": "0.6.3",
+  "version": "0.7.0",
   "distribution_mode": "self-contained skill folder",
   "canonical_packaged_references": [
     {
       "path": "SKILL.md",
-      "sha256": "fe9a66d7aab583b83c5e4f988ced62acb8170b532afd8d69191351f809b06267",
-      "purpose": "primary skill workflow rules including Shadow Observer launch contract, product identity fidelity contract, and full-view video product visual-fact lock contract"
+      "sha256": "d41e4b4e895f14d3ff43f4f1455fee5e9a641bbf34ed9e53943eb86aafbfd2ff",
+      "purpose": "primary skill router with staged director workflow, product identity contract, validation gates, storyboard generation rules, and final deliverable contract"
+    },
+    {
+      "path": "agents/openai.yaml",
+      "sha256": "4d1b62c648d0824b870535159172a18de936919d6c24c2feddd53f502707aea6",
+      "purpose": "agent interface metadata and default prompt"
+    },
+    {
+      "path": "references/workflow_contract.md",
+      "sha256": "8675d0db4e670ee4a611bd06996bb6ecc632c4623f3649ac9d951d3da80410d5",
+      "purpose": "required run order, product-fidelity gates, canonical run artifact names, and final validation contract"
     },
     {
       "path": "references/observer_protocol.md",
@@ -25,13 +35,13 @@
     },
     {
       "path": "references/intake.schema.json",
-      "sha256": "e93b1d876ab2a0fbad5a6c1da10ab1d7f2d2d84463070f4a0866cf961657979f",
+      "sha256": "c6e72f2d86f19e8234d2f13e79aa5f4074092e84d2fd8b16b66731a0cebeb38e",
       "purpose": "intake contract including production and observer modes"
     },
     {
       "path": "references/shot_plan.schema.json",
-      "sha256": "a0e8c7323a0e02a5e937ffd80bb716e27abca1be3799c73e9af4235da50f86fe",
-      "purpose": "shot-plan contract including optional product identity lock and per-shot product visibility/action fields"
+      "sha256": "8f32f82aead51070d66a33e886b2e88d02cd73d08207a93db327834f9177164f",
+      "purpose": "shot-plan contract including product identity visual-fact lock and full-visible storyboard product fidelity fields"
     },
     {
       "path": "references/video_segments.schema.json",
@@ -39,8 +49,13 @@
       "purpose": "Google Omni video segment contract including product reference setup, visual-fact identity lock, exact text/mark inventory, and full-view product fidelity fields"
     },
     {
+      "path": "references/audit.schema.json",
+      "sha256": "101015875d4579b5acd4b8757ea70aec91be026a0e1006a7e96f83ebdf4e9bce",
+      "purpose": "offline audit and skill certification scoring contract"
+    },
+    {
       "path": "references/director_kernel.md",
-      "sha256": "20b8d1b4374665c8e220b400104a3efb7fa504951381b58331d4a34d7e97b1c8",
+      "sha256": "0d1f495a8c756a23294ca9f6c03d189f9d9c3d162a5920421d40be2255a718a8",
       "purpose": "production-mode routing, director playbooks, and escalation triggers"
     },
     {
@@ -50,12 +65,12 @@
     },
     {
       "path": "references/shot_spec_template.md",
-      "sha256": "1c43f8c9e0f78f7429d8a565b9b544fec7121f4f46c20000dd1e6e3edc8724ee",
+      "sha256": "7c70ca41fb7b28a8dba8a49e173a1593f95f07e4f60f0bfae7fd03ccc95fdeec",
       "purpose": "shot-spec grammar, handoff fields, and product identity lock grammar"
     },
     {
       "path": "references/good_shotlist_examples.md",
-      "sha256": "b88c8edfcb380c6f1661c2fcad464d9d38077d8b110546e50e7a6ed18e33612e",
+      "sha256": "3ee01674075e5abd18e189a0983df98026851742e3e2b2eeecf017f618805141",
       "purpose": "reference examples for non-generic shot progression"
     },
     {
@@ -69,19 +84,14 @@
       "purpose": "visual target reference for the blue-gray sketch style"
     },
     {
-      "path": "scripts/observe_run.py",
-      "sha256": "b0906df1659557d24b0a1c82e38e63d70f35319f80ea035b33e0ea58768f2f58",
-      "purpose": "non-blocking observer event logging, validator ingestion, product identity mismatch classification, single-run candidate generation, and cross-run aggregation"
-    },
-    {
-      "path": "scripts/create_observer_packet.py",
-      "sha256": "c4473581f85a2ab3c20336d3307d1c1f35089606742aeb83ccff543d2d1033be",
-      "purpose": "compact observer packet creation for optional sub-agent or SSOT review handoff"
+      "path": "scripts/route_project.py",
+      "sha256": "ca47c19e01d3572d80ee9023d0b3cf253f7a22368b4f64c6362e3570430af013",
+      "purpose": "intake routing, production-mode inference, duration logic, storyboard sheet count, and video segment count"
     },
     {
       "path": "scripts/validate_shot_plan.py",
-      "sha256": "6f64f0780e23a6275b99255faabfc8cfb7a01ef0600e2156595f2e0e870627b5",
-      "purpose": "shot-plan structural gate including product identity lock enforcement"
+      "sha256": "aaef0e635b2885b638b9e49979ac5dfb8a3fa6b6b45c14d2800ec2ee6f058e70",
+      "purpose": "shot-plan structural gate including product identity lock enforcement, exact visible text checks, and forbidden visual addition detection"
     },
     {
       "path": "scripts/validate_video_segments.py",
@@ -89,19 +99,49 @@
       "purpose": "Google Omni video segment validator including product reference setup, exact visible product text gates, forbidden visual additions, and full-view product visual-fact fidelity"
     },
     {
+      "path": "scripts/validate_run_package.py",
+      "sha256": "fd3116c12f254cb573b130f8c6adfd278b1dbfdf40ef4ddc9fffb218986bf87e",
+      "purpose": "completed run-directory validator for required artifacts, shot/video gates, storyboard prompt product text carry-through, and final QC readiness"
+    },
+    {
+      "path": "scripts/score_audit.py",
+      "sha256": "b5dd773d5510fccf124294d2cab3938cad1799ef4e06731a3f56d7a920acfcb0",
+      "purpose": "offline audit scoring helper"
+    },
+    {
+      "path": "scripts/observe_run.py",
+      "sha256": "b0906df1659557d24b0a1c82e38e63d70f35319f80ea035b33e0ea58768f2f58",
+      "purpose": "non-blocking observer event logging, validator ingestion, product identity mismatch classification, single-run candidate generation, and cross-run aggregation"
+    },
+    {
+      "path": "scripts/create_observer_packet.py",
+      "sha256": "f97a0c6b05b2e0302eb724d7ce060da6dff5cd50d6c66b591654b6c534ae261a",
+      "purpose": "compact observer packet creation for optional sub-agent or SSOT review handoff"
+    },
+    {
+      "path": "scripts/package_skill.py",
+      "sha256": "3b458e63b1ec8b769248a547516f9a537ec47334b86fe38c3db1b8dbbb75ad99",
+      "purpose": "skill packaging helper"
+    },
+    {
       "path": "scripts/verify_skill_package.py",
-      "sha256": "c60e4def69db5492c6995ef15e95eb0f001a6073d8274b19538bae1706539fd3",
-      "purpose": "self-contained package verification including observer smoke tests, product identity validator regression, and video product identity validator regression"
+      "sha256": "4c1d6bd3d310d280e55b593452cd944e306d884e9a2bcc67cfd3e187840ccf35",
+      "purpose": "self-contained package verification including manifest hash checks, observer smoke tests, product/video/run-package regression tests"
     },
     {
       "path": "tests/test_validate_product_identity_lock.py",
-      "sha256": "9dc4360ddb96350aa88ccdfed38ef74453085c285e1a149bd3ae6a80a0e48a96",
+      "sha256": "db1ac4e4b6aba9584e6a2019de5ad2348e41945ecf4fa7e01707cc5696d01d13",
       "purpose": "regression tests for product packaging fidelity in the shot-plan validator"
     },
     {
       "path": "tests/test_validate_video_product_lock.py",
       "sha256": "b18fe72c0ed4662e741eb5ebc4883fc28c46ec2183afb96ad6d65a975ed5fce0",
       "purpose": "regression tests for full-visible product text fidelity, forbidden visual additions, and lens-motion freedom in Google Omni video prompts"
+    },
+    {
+      "path": "tests/test_validate_run_package.py",
+      "sha256": "f6ae788ef890f54c01bd8a9dd89bfe730541eeee49ea3570d00fc72c5a146959",
+      "purpose": "regression tests for completed run-package validation and storyboard prompt product text carry-through"
     }
   ],
   "notes": [

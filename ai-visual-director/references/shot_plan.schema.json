@@ -26,21 +26,31 @@
         "source_reference",
         "product_name_text",
         "primary_label_text",
+        "surface_text_inventory",
+        "embossed_or_relief_marks",
         "label_layout",
         "packaging_shape",
+        "physical_component_inventory",
         "color_material_marks",
         "required_visible_marks",
-        "forbidden_changes"
+        "forbidden_changes",
+        "forbidden_visual_additions",
+        "full_view_fidelity_rule"
       ],
       "properties": {
         "source_reference": {"type": "string"},
         "product_name_text": {"type": "string"},
         "primary_label_text": {"type": "array", "items": {"type": "string"}},
+        "surface_text_inventory": {"type": "array", "items": {"type": "string"}},
+        "embossed_or_relief_marks": {"type": "array", "items": {"type": "string"}},
         "label_layout": {"type": "string"},
         "packaging_shape": {"type": "string"},
+        "physical_component_inventory": {"type": "array", "items": {"type": "string"}},
         "color_material_marks": {"type": "string"},
         "required_visible_marks": {"type": "array", "items": {"type": "string"}},
-        "forbidden_changes": {"type": "array", "items": {"type": "string"}}
+        "forbidden_changes": {"type": "array", "items": {"type": "string"}},
+        "forbidden_visual_additions": {"type": "array", "items": {"type": "string"}},
+        "full_view_fidelity_rule": {"type": "string"}
       },
       "additionalProperties": false
     },
@@ -129,6 +139,19 @@
                   "enum": ["full_visible", "partial_visible", "detail_only", "not_visible"]
                 },
                 "product_identity_action": {"type": "string"},
+                "visible_product_text_or_marks": {
+                  "oneOf": [
+                    {"type": "string"},
+                    {"type": "array", "items": {"type": "string"}}
+                  ]
+                },
+                "product_visual_facts": {"type": "string"},
+                "forbidden_visual_additions": {
+                  "oneOf": [
+                    {"type": "string"},
+                    {"type": "array", "items": {"type": "string"}}
+                  ]
+                },
                 "must_preserve": {"type": "string"},
                 "avoid": {"type": "string"}
               },

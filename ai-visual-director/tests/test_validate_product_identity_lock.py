@@ -106,19 +106,33 @@ def make_plan(include_identity_lock: bool) -> dict:
     if include_identity_lock:
         plan["product_identity_lock"] = {
             "source_reference": "serum-reference.jpg",
-            "product_name_text": "LUMA SERUM",
+            "product_name_text": "LUMA",
             "primary_label_text": ["LUMA", "HYDRATING SERUM", "30 ml"],
+            "surface_text_inventory": ["front wordmark LUMA", "center text HYDRATING SERUM", "lower text 30 ml"],
+            "embossed_or_relief_marks": ["none_visible"],
             "label_layout": "white front label rectangle centered on the bottle face",
             "packaging_shape": "tall cylindrical white bottle with rounded black cap",
+            "physical_component_inventory": ["white cylindrical bottle", "rounded black cap", "front label rectangle"],
             "color_material_marks": "white bottle, black cap, pale blue label stripe",
             "required_visible_marks": ["LUMA wordmark", "HYDRATING SERUM line", "30 ml line"],
             "forbidden_changes": ["blank bottle", "fake brand", "new label layout", "extra claims"],
+            "forbidden_visual_additions": ["gold metal plate", "metal badge", "front plaque", "extra emblem"],
+            "full_view_fidelity_rule": (
+                "full product views must show the exact LUMA / HYDRATING SERUM / 30 ml text, "
+                "same white bottle, same black cap, same label geometry, and no extra hardware"
+            ),
         }
         for shot in plan["sheets"][0]["shots"]:
             shot["product_visibility"] = "full_visible"
             shot["product_identity_action"] = (
                 "draw the locked bottle shape with the front label panel and exact supplied label text blocks"
             )
+            shot["visible_product_text_or_marks"] = ["LUMA", "HYDRATING SERUM", "30 ml"]
+            shot["product_visual_facts"] = (
+                "same white cylindrical bottle, rounded black cap, centered front label rectangle, "
+                "LUMA wordmark, HYDRATING SERUM line, 30 ml line, pale blue stripe, no gold metal plate"
+            )
+            shot["forbidden_visual_additions"] = "No gold metal plate, no metal badge, no front plaque, no extra emblem."
             shot["must_preserve"] = (
                 "same product silhouette, white bottle body, black cap, front label layout, "
                 "LUMA wordmark, HYDRATING SERUM text, and 30 ml line"
@@ -155,6 +169,42 @@ class ProductIdentityLockTests(unittest.TestCase):
 
         self.assertEqual(code, 0, result)
         self.assertTrue(result["ok"], result)
+
+    def test_product_ads_require_visual_fact_inventory_in_identity_lock(self) -> None:
+        plan = make_plan(include_identity_lock=True)
+        del plan["product_identity_lock"]["surface_text_inventory"]
+
+        code, result = run_validator(plan)
+
+        self.assertNotEqual(code, 0)
+        self.assertFalse(result["ok"])
+        self.assertTrue(
+            any("surface_text_inventory" in error for error in result["errors"]),
+            result["errors"],
+        )
+
+    def test_storyboard_rejects_wrong_visible_text_and_invented_product_parts(self) -> None:
+        plan = make_plan(include_identity_lock=True)
+        shot = plan["sheets"][0]["shots"][-1]
+        shot["visible_product_text_or_marks"] = ["LUMA"]
+        shot["product_visual_facts"] = (
+            "white bottle with a centered gold metal plate and simplified front branding"
+        )
+        shot["composition"] = "front packshot shows a gold metal plate as the main label area"
+        shot["must_preserve"] = "same bottle silhouette with LUMA visible"
+
+        code, result = run_validator(plan)
+
+        self.assertNotEqual(code, 0)
+        self.assertFalse(result["ok"])
+        self.assertTrue(
+            any("exact visible product text" in error for error in result["errors"]),
+            result["errors"],
+        )
+        self.assertTrue(
+            any("forbidden visual addition" in error for error in result["errors"]),
+            result["errors"],
+        )
 
 
 if __name__ == "__main__":

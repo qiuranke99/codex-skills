@@ -8,6 +8,7 @@ import py_compile
 import subprocess
 import sys
 import tempfile
+import hashlib
 from pathlib import Path
 
 
@@ -21,6 +22,7 @@ REQUIRED_FILES = [
     "references/observer_event.schema.json",
     "references/rule_candidate.schema.json",
     "references/source_manifest.json",
+    "references/workflow_contract.md",
     "references/observer_protocol.md",
     "references/director_kernel.md",
     "references/world_class_tvc_principles.md",
@@ -31,6 +33,7 @@ REQUIRED_FILES = [
     "scripts/route_project.py",
     "scripts/validate_shot_plan.py",
     "scripts/validate_video_segments.py",
+    "scripts/validate_run_package.py",
     "scripts/score_audit.py",
     "scripts/observe_run.py",
     "scripts/create_observer_packet.py",
@@ -38,11 +41,20 @@ REQUIRED_FILES = [
     "scripts/verify_skill_package.py",
     "tests/test_validate_product_identity_lock.py",
     "tests/test_validate_video_product_lock.py",
+    "tests/test_validate_run_package.py",
 ]
 
 
 def fail(message: str) -> None:
     raise SystemExit(message)
+
+
+def sha256_file(path: Path) -> str:
+    digest = hashlib.sha256()
+    with path.open("rb") as handle:
+        for chunk in iter(lambda: handle.read(1024 * 1024), b""):
+            digest.update(chunk)
+    return digest.hexdigest()
 
 
 def main() -> int:
@@ -83,6 +95,31 @@ def main() -> int:
                 json.loads(path.read_text(encoding="utf-8"))
             except Exception as exc:
                 errors.append(f"invalid JSON {rel}: {exc}")
+
+    manifest_path = skill_dir / "references/source_manifest.json"
+    if manifest_path.exists():
+        try:
+            manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
+            for entry in manifest.get("canonical_packaged_references", []):
+                rel = entry.get("path")
+                expected_hash = entry.get("sha256")
+                if not rel or not expected_hash:
+                    errors.append(f"source_manifest.json entry missing path or sha256: {entry!r}")
+                    continue
+                if rel == "references/source_manifest.json":
+                    errors.append("source_manifest.json must not self-hash")
+                    continue
+                path = skill_dir / rel
+                if not path.exists():
+                    errors.append(f"source_manifest.json references missing file: {rel}")
+                    continue
+                actual_hash = sha256_file(path)
+                if actual_hash != expected_hash:
+                    errors.append(
+                        f"source_manifest.json hash mismatch for {rel}: expected {expected_hash}, got {actual_hash}"
+                    )
+        except Exception as exc:
+            errors.append(f"source_manifest.json manifest check failed: {exc}")
 
     for path in sorted((skill_dir / "scripts").glob("*.py")):
         try:
@@ -224,6 +261,20 @@ def main() -> int:
         if test_proc.returncode != 0:
             errors.append(
                 "video product identity validator regression test failed: "
+                f"{test_proc.stderr.strip() or test_proc.stdout.strip()}"
+            )
+
+    run_package_test = skill_dir / "tests/test_validate_run_package.py"
+    if run_package_test.exists():
+        test_proc = subprocess.run(
+            [sys.executable, str(run_package_test)],
+            text=True,
+            capture_output=True,
+            check=False,
+        )
+        if test_proc.returncode != 0:
+            errors.append(
+                "run package validator regression test failed: "
                 f"{test_proc.stderr.strip() or test_proc.stdout.strip()}"
             )
 
