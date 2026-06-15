@@ -43,7 +43,7 @@ STATIC_WORDS = re.compile(r"locked|static|still|no movement|固定|静止", re.I
 ESTABLISHING_WORDS = re.compile(r"wide|establish|world|环境|全景|远景", re.IGNORECASE)
 MACRO_WORDS = re.compile(r"macro|insert|detail|close-up|extreme close|特写|微距|细节", re.IGNORECASE)
 ANGLE_SPECIAL_WORDS = re.compile(r"low|high|top|overhead|ground|aerial|低机位|高机位|俯拍|仰拍|顶拍|地面", re.IGNORECASE)
-PRODUCT_PROJECT_TYPES = {"premium_product_ad"}
+PRODUCT_PROJECT_TYPES = {"premium_product_ad", "product_ad"}
 PRODUCT_ROLE_WORDS = {"product_identity"}
 PRODUCT_APPEARANCE_WORDS = re.compile(
     r"product|packshot|bottle|jar|tube|box|package|packaging|label|logo|brand|serum|cream|lipstick|fragrance|"
@@ -61,6 +61,16 @@ PRODUCT_TEXT_BAN_WORDS = re.compile(
 PRODUCT_DRIFT_WORDS = re.compile(
     r"generic|blank|fake|wrong text|no text|missing text|new brand|new logo|changed label|changed cap|"
     r"duplicate|extra bottle|extra emblem|extra badge|front plaque|metal plate",
+    re.IGNORECASE,
+)
+PACKSHOT_EXCEPTION_WORDS = re.compile(
+    r"packshot[- ]only|catalog|catalogue|e-?commerce|listing|sku|detail board|product-only board",
+    re.IGNORECASE,
+)
+PRODUCT_DOMINANT_WORDS = re.compile(
+    r"product|packshot|bottle|jar|tube|box|package|packaging|label|logo|brand|serum|cream|lipstick|fragrance|"
+    r"front-facing|full supplied|hero product|product hero|full bottle|full product|"
+    r"浜у搧|鍖呰|鐡秥鐡惰韩|缃恷绠鐩抾鏍囩|鏍囪创|鍝佺墝|鍟嗘爣|绮惧崕|闈㈤湝|鍙ｇ孩|棣欐按",
     re.IGNORECASE,
 )
 VISUAL_FIDELITY_WORDS = re.compile(
@@ -230,21 +240,123 @@ def is_product_plan(plan: dict) -> bool:
     return bool(PRODUCT_APPEARANCE_WORDS.search(search_blob))
 
 
+def is_packshot_exception(plan: dict) -> bool:
+    return bool(PACKSHOT_EXCEPTION_WORDS.search(text_blob(
+        plan.get("project_title", ""),
+        plan.get("visual_strategy", ""),
+        plan.get("continuity_locks", []),
+    )))
+
+
 def shot_mentions_product(shot: dict) -> bool:
     blob = " ".join(
         str(shot.get(field, ""))
         for field in [
+            "scene",
             "shot_purpose",
+            "shot_size",
             "main_subject",
             "main_action",
             "composition",
-            "reference_parity",
-            "continuity_lock",
-            "must_preserve",
-            "avoid",
+            "foreground",
+            "midground",
+            "background",
         ]
     )
     return bool(PRODUCT_APPEARANCE_WORDS.search(blob))
+
+
+def product_dominates_positive_subject(shot: dict) -> bool:
+    return bool(PRODUCT_DOMINANT_WORDS.search(text_blob(
+        shot.get("shot_size", ""),
+        shot.get("main_subject", ""),
+        shot.get("main_action", ""),
+        shot.get("composition", ""),
+        shot.get("foreground", ""),
+        shot.get("midground", ""),
+        shot.get("background", ""),
+    )))
+
+
+def validate_product_visibility_rhythm(plan: dict) -> tuple[list[str], list[str]]:
+    errors: list[str] = []
+    warnings: list[str] = []
+
+    if not is_product_plan(plan) or is_packshot_exception(plan):
+        return errors, warnings
+
+    all_shots: list[dict] = [
+        shot
+        for sheet in plan.get("sheets", [])
+        for shot in sheet.get("shots", [])
+        if isinstance(shot, dict)
+    ]
+    if not all_shots:
+        return errors, warnings
+
+    valid_visibility_shots = [
+        shot for shot in all_shots if str(shot.get("product_visibility", "")).strip() in PRODUCT_VISIBILITY_VALUES
+    ]
+    if valid_visibility_shots:
+        not_visible_count = sum(
+            1 for shot in valid_visibility_shots if str(shot.get("product_visibility", "")).strip() == "not_visible"
+        )
+        minimum_not_visible = max(1, len(valid_visibility_shots) // 12)
+        if not_visible_count < minimum_not_visible:
+            errors.append(
+                "plan: product storyboard needs at least "
+                f"{minimum_not_visible} product-not-visible origin/world/benefit beat(s), found {not_visible_count}"
+            )
+
+        first_full_index = next(
+            (
+                idx
+                for idx, shot in enumerate(valid_visibility_shots, start=1)
+                if str(shot.get("product_visibility", "")).strip() == "full_visible"
+            ),
+            None,
+        )
+        if first_full_index is not None and first_full_index <= 2 and len(valid_visibility_shots) >= 9:
+            errors.append(
+                "plan: first full-visible product reveal arrives too early; build at least two origin/detail/partial beats first"
+            )
+
+    for sheet in plan.get("sheets", []):
+        sheet_id = sheet.get("sheet_id", "<unknown>")
+        shots = [shot for shot in sheet.get("shots", []) if isinstance(shot, dict)]
+        if len(shots) != 9:
+            continue
+
+        visibility_values = [str(shot.get("product_visibility", "")).strip() for shot in shots]
+        if any(value not in PRODUCT_VISIBILITY_VALUES for value in visibility_values):
+            continue
+
+        full_visible_count = visibility_values.count("full_visible")
+        detail_or_partial_count = visibility_values.count("detail_only") + visibility_values.count("partial_visible")
+        not_visible_count = visibility_values.count("not_visible")
+        non_product_led_count = sum(1 for shot in shots if not product_dominates_positive_subject(shot))
+
+        if full_visible_count > 4:
+            errors.append(
+                f"{sheet_id}: too many full-visible product shots ({full_visible_count}/9); "
+                "avoid packshot wall rhythm unless the brief explicitly asks for a catalog or packshot-only board"
+            )
+        if detail_or_partial_count < 3:
+            errors.append(
+                f"{sheet_id}: needs at least 3 detail_only/partial_visible transition or proof shots, "
+                f"found {detail_or_partial_count}"
+            )
+        if not_visible_count < 1:
+            errors.append(
+                f"{sheet_id}: needs at least 1 product-not-visible origin/world/benefit/metaphor shot"
+            )
+        if non_product_led_count < 2:
+            errors.append(
+                f"{sheet_id}: needs at least 2 non-product-led storyboard panels; "
+                "do not let product identity lock consume every composition"
+            )
+
+    return errors, warnings
 
 
 def validate_product_identity(plan: dict) -> tuple[list[str], list[str]]:
@@ -269,13 +381,19 @@ def validate_product_identity(plan: dict) -> tuple[list[str], list[str]]:
             visibility = str(shot.get("product_visibility", "")).strip()
             action = str(shot.get("product_identity_action", "")).strip()
             mentions_product = shot_mentions_product(shot)
-            product_visible = visibility and visibility != "not_visible"
+            product_visible = visibility in PRODUCT_VISIBILITY_VALUES and visibility != "not_visible"
 
-            if mentions_product or product_visible:
+            if visibility not in PRODUCT_VISIBILITY_VALUES:
+                errors.append(f"{sid}: product plan shot requires product_visibility")
+                continue
+
+            if visibility == "not_visible" and mentions_product:
+                errors.append(f"{sid}: product_visibility cannot be not_visible when positive shot content describes the product")
+                continue
+
+            if product_visible:
                 if visibility not in PRODUCT_VISIBILITY_VALUES:
                     errors.append(f"{sid}: product shot requires product_visibility")
-                elif visibility == "not_visible":
-                    errors.append(f"{sid}: product_visibility cannot be not_visible when the shot mentions the product")
 
                 if not has_concrete_language(action) or action.lower() in {"not applicable", "n/a", "none"}:
                     errors.append(f"{sid}: product shot requires concrete product_identity_action")
@@ -424,6 +542,10 @@ def main() -> int:
     product_errors, product_warnings = validate_product_identity(plan)
     errors.extend(product_errors)
     warnings.extend(product_warnings)
+
+    rhythm_errors, rhythm_warnings = validate_product_visibility_rhythm(plan)
+    errors.extend(rhythm_errors)
+    warnings.extend(rhythm_warnings)
 
     for sheet in sheets:
         sheet_errors, sheet_warnings = validate_sheet(sheet)

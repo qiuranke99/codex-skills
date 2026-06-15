@@ -19,6 +19,11 @@
     "panel_count": {"type": "integer", "minimum": 9},
     "video_segment_count": {"type": "integer", "minimum": 1},
     "visual_strategy": {"type": "string"},
+    "product_visibility_rhythm": {
+      "type": "array",
+      "items": {"type": "string"},
+      "description": "Per-shot product visibility rhythm, for example SH_001 not_visible -> SH_002 detail_only -> SH_003 partial_visible."
+    },
     "continuity_locks": {"type": "array", "items": {"type": "string"}, "minItems": 1},
     "product_identity_lock": {
       "type": "object",

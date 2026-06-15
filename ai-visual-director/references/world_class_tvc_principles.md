@@ -81,6 +81,21 @@ A packshot is not enough. The product must earn desire through:
 - benefit metaphor;
 - final authority.
 
+Product visibility is rhythm, not coverage. World-class product films often
+make the product more desirable by withholding it, breaking it into material
+facts, or letting the world around it prove the promise. A product identity lock
+must therefore be paired with a visibility plan:
+
+- absent product: origin, world, human response, benefit, or metaphor;
+- detail-only product: component truth, typography proof, material edge, cap,
+  pump, tube, relief, closure, or texture;
+- partial product: silhouette, reflection, crop, occlusion, or motion bridge;
+- full product: earned reveal, inspection, or final memory image.
+
+If most panels are full-visible product views, the storyboard is not more
+faithful; it is less directed. It has confused product accuracy with cinematic
+coverage.
+
 ### 9. Video Prompts Must Preserve Temporal Logic
 
 A Google omni segment needs motion over time:

@@ -31,6 +31,19 @@ OPTIONAL_VIDEO_JSON = [
     "video_segments.json",
 ]
 
+PRODUCT_VISIBILITY_VALUES = {"full_visible", "partial_visible", "detail_only", "not_visible"}
+PRODUCT_PROJECT_TYPES = {"premium_product_ad", "product_ad"}
+PRODUCT_ROLE_WORDS = {"product_identity"}
+PRODUCT_APPEARANCE_WORDS = re.compile(
+    r"product|packshot|bottle|jar|tube|box|package|packaging|label|logo|brand|serum|cream|lipstick|fragrance|"
+    r"浜у搧|鍖呰|鐡秥鐡惰韩|缃恷绠鐩抾鏍囩|鏍囪创|鍝佺墝|鍟嗘爣|绮惧崕|闈㈤湝|鍙ｇ孩|棣欐按",
+    re.IGNORECASE,
+)
+NOT_VISIBLE_PROMPT_WORDS = re.compile(
+    r"not_visible|not visible|no product|no bottle|no package|no label|product absent|package absent",
+    re.IGNORECASE,
+)
+
 
 def load_json(path: Path) -> tuple[dict | None, str | None]:
     try:
@@ -68,6 +81,49 @@ def visible_product_text_lines(lock: dict) -> list[str]:
     return unique
 
 
+def text_blob(*values: object) -> str:
+    chunks: list[str] = []
+    for value in values:
+        if isinstance(value, dict):
+            chunks.append(text_blob(*value.values()))
+        elif isinstance(value, list):
+            chunks.append(text_blob(*value))
+        else:
+            chunks.append(str(value))
+    return " ".join(chunks)
+
+
+def is_product_plan(plan: dict) -> bool:
+    if isinstance(plan.get("product_identity_lock"), dict):
+        return True
+    if str(plan.get("project_type", "")).strip() in PRODUCT_PROJECT_TYPES:
+        return True
+    for role in plan.get("reference_roles", []):
+        if str(role.get("role", "")).strip() in PRODUCT_ROLE_WORDS:
+            return True
+    return bool(PRODUCT_APPEARANCE_WORDS.search(text_blob(
+        plan.get("project_title", ""),
+        plan.get("visual_strategy", ""),
+        plan.get("continuity_locks", []),
+    )))
+
+
+def iter_shots(plan: dict) -> list[dict]:
+    return [
+        shot
+        for sheet in plan.get("sheets", [])
+        for shot in sheet.get("shots", [])
+        if isinstance(shot, dict)
+    ]
+
+
+def shot_prompt_snippet(prompt_text: str, shot_id: str, max_chars: int = 420) -> str:
+    match = re.search(re.escape(shot_id), prompt_text, flags=re.IGNORECASE)
+    if not match:
+        return ""
+    return prompt_text[match.start() : match.start() + max_chars]
+
+
 def run_validator(script: Path, artifact: Path) -> tuple[bool, dict | str]:
     proc = subprocess.run(
         [sys.executable, str(script), str(artifact)],
@@ -89,7 +145,8 @@ def validate_product_storyboard_prompt(run_dir: Path, shot_plan: dict) -> list[s
         return errors
 
     prompt_path = run_dir / "04_storyboard_image_prompts.md"
-    prompt_text = normalized(prompt_path.read_text(encoding="utf-8")) if prompt_path.exists() else ""
+    prompt_raw = prompt_path.read_text(encoding="utf-8") if prompt_path.exists() else ""
+    prompt_text = normalized(prompt_raw)
     for line in visible_product_text_lines(lock):
         if normalized(line) not in prompt_text:
             errors.append(
@@ -102,6 +159,32 @@ def validate_product_storyboard_prompt(run_dir: Path, shot_plan: dict) -> list[s
             normalized(item) in prompt_text for item in as_list(lock.get(field))
         ):
             errors.append(f"04_storyboard_image_prompts.md: missing product lock evidence for {field}")
+
+    if is_product_plan(shot_plan):
+        if "product visibility rhythm" not in prompt_text:
+            errors.append(
+                "04_storyboard_image_prompts.md: missing Product Visibility Rhythm block; "
+                "per-panel visibility must counterbalance the global product lock"
+            )
+
+        for shot in iter_shots(shot_plan):
+            shot_id = str(shot.get("shot_id", "")).strip()
+            visibility = str(shot.get("product_visibility", "")).strip()
+            if not shot_id or visibility not in PRODUCT_VISIBILITY_VALUES:
+                continue
+            snippet = shot_prompt_snippet(prompt_raw, shot_id)
+            if not snippet:
+                errors.append(f"04_storyboard_image_prompts.md: missing panel prompt for {shot_id}")
+                continue
+            snippet_norm = normalized(snippet)
+            if visibility not in snippet_norm:
+                errors.append(
+                    f"04_storyboard_image_prompts.md: {shot_id} prompt must state product_visibility: {visibility}"
+                )
+            if visibility == "not_visible" and not NOT_VISIBLE_PROMPT_WORDS.search(snippet):
+                errors.append(
+                    f"04_storyboard_image_prompts.md: {shot_id} not_visible panel must explicitly forbid product/package/bottle/text"
+                )
 
     return errors
 

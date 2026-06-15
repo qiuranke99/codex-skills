@@ -53,10 +53,36 @@ def valid_storyboard_prompt() -> str:
     return """
 # Storyboard Sheet 01 Prompt
 
-Draw the exact user-provided product. Preserve front wordmark LUMA, center text
-HYDRATING SERUM, lower text 30 ml, white cylindrical bottle, rounded black cap,
-front label rectangle, pale blue stripe, none_visible embossed marks, no gold
-metal plate, no metal badge, no front plaque, no extra emblem.
+Product Visibility Rhythm: SH_001 not_visible -> SH_002 detail_only -> SH_003
+partial_visible -> SH_004 full_visible -> SH_005 detail_only -> SH_006
+partial_visible -> SH_007 not_visible -> SH_008 partial_visible -> SH_009
+full_visible.
+
+Panel plan:
+- SH_001 [product_visibility: not_visible]: no product, no bottle, no package,
+  no label, and no product text in this panel; draw only the blue-white droplet
+  world.
+- SH_002 [product_visibility: detail_only]: draw only the rounded black cap edge
+  and pale blue stripe reflection, not the full bottle.
+- SH_003 [product_visibility: partial_visible]: crop the white bottle shoulder
+  behind the tray rim; do not show the full package.
+- SH_004 [product_visibility: full_visible]: draw the exact user-provided
+  product. Preserve front wordmark LUMA, center text HYDRATING SERUM, lower text
+  30 ml, white cylindrical bottle, rounded black cap, front label rectangle,
+  pale blue stripe, none_visible embossed marks, no gold metal plate, no metal
+  badge, no front plaque, no extra emblem.
+- SH_005 [product_visibility: detail_only]: show only the centered front label
+  rectangle and pale blue stripe material detail.
+- SH_006 [product_visibility: partial_visible]: show the fingertip and cropped
+  bottle base, not a centered packshot.
+- SH_007 [product_visibility: not_visible]: no product, no bottle, no package,
+  no label, and no product text in this panel; draw only the hydration ripple.
+- SH_008 [product_visibility: partial_visible]: show only the reflected cropped
+  bottle silhouette as a transition.
+- SH_009 [product_visibility: full_visible]: final front packshot of the exact
+  LUMA / HYDRATING SERUM / 30 ml bottle, preserving the same white cylindrical
+  bottle, rounded black cap, front label rectangle, pale blue stripe, and no
+  gold metal plate, no metal badge, no front plaque, no extra emblem.
 """
 
 
@@ -95,6 +121,30 @@ class RunPackageValidationTests(unittest.TestCase):
         self.assertFalse(result["ok"])
         self.assertTrue(
             any("HYDRATING SERUM" in error for error in result["errors"]),
+            result["errors"],
+        )
+
+    def test_run_package_rejects_storyboard_prompt_without_visibility_rhythm(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            run_dir = Path(tmp)
+            populate_run_dir(
+                run_dir,
+                """
+# Storyboard Sheet 01 Prompt
+
+Global product lock: draw the exact LUMA / HYDRATING SERUM / 30 ml bottle in
+the storyboard sheet with the same white cylindrical bottle, rounded black cap,
+front label rectangle, pale blue stripe, no gold metal plate, no metal badge,
+no front plaque, no extra emblem.
+""",
+            )
+
+            code, result = run_validator(run_dir)
+
+        self.assertNotEqual(code, 0)
+        self.assertFalse(result["ok"])
+        self.assertTrue(
+            any("Product Visibility Rhythm" in error or "product_visibility" in error for error in result["errors"]),
             result["errors"],
         )
 

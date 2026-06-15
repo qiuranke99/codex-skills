@@ -1,12 +1,12 @@
 {
   "skill_name": "ai-visual-director",
-  "version": "0.7.1",
+  "version": "0.7.2",
   "distribution_mode": "self-contained skill folder",
   "canonical_packaged_references": [
     {
       "path": "SKILL.md",
-      "sha256": "f30344420fbd250aac9cfb45de60b6fb8bc2e44ac8a39cabef6646011b18b421",
-      "purpose": "primary skill router with staged director workflow, conditional advanced cinematic-language routing, product identity contract, validation gates, storyboard generation rules, and final deliverable contract"
+      "sha256": "a0a03dc27783ca6e3383597da8f38175b6d9e9b753c0f3829f49182f6b0b3a3a",
+      "purpose": "primary skill router with staged director workflow, conditional advanced cinematic-language routing, product identity contract, product visibility rhythm, validation gates, storyboard generation rules, and final deliverable contract"
     },
     {
       "path": "agents/openai.yaml",
@@ -15,8 +15,8 @@
     },
     {
       "path": "references/workflow_contract.md",
-      "sha256": "0721c9d6447bdba962997f5f655ef8d1d5a5d3e65ced840e0e7771f9fec8f1fc",
-      "purpose": "required run order, advanced cinematic-language routing gate, product-fidelity gates, canonical run artifact names, and final validation contract"
+      "sha256": "d9314e4d5f9536f311412f0d4009360bbb446352fee54455cfb3156f9c0dee02",
+      "purpose": "required run order, advanced cinematic-language routing gate, product-fidelity and product visibility-rhythm gates, canonical run artifact names, and final validation contract"
     },
     {
       "path": "references/cinematic_language_decision_matrix.md",
@@ -45,8 +45,8 @@
     },
     {
       "path": "references/shot_plan.schema.json",
-      "sha256": "8f32f82aead51070d66a33e886b2e88d02cd73d08207a93db327834f9177164f",
-      "purpose": "shot-plan contract including product identity visual-fact lock and full-visible storyboard product fidelity fields"
+      "sha256": "ae535c510bb39170a1934f4bb8132db9ff6d76c033ec355eddde852b73b5d925",
+      "purpose": "shot-plan contract including product identity visual-fact lock, product visibility rhythm, and full-visible storyboard product fidelity fields"
     },
     {
       "path": "references/video_segments.schema.json",
@@ -60,17 +60,17 @@
     },
     {
       "path": "references/director_kernel.md",
-      "sha256": "0d1f495a8c756a23294ca9f6c03d189f9d9c3d162a5920421d40be2255a718a8",
-      "purpose": "production-mode routing, director playbooks, and escalation triggers"
+      "sha256": "1f0efc468ca7ca4c5b8a4cfb85158ef3be2d58eee053381f03b240b7fccb0388",
+      "purpose": "production-mode routing, director playbooks, product visibility-rhythm requirements, and escalation triggers"
     },
     {
       "path": "references/world_class_tvc_principles.md",
-      "sha256": "75ec165ff418e6e3cdf122b0b5371fb75d9fe19a0ea8dccb4fa5afa977da8af6",
-      "purpose": "world-class TVC principles, reference parity, attention choreography, video product visual-fact lock rules, and source map"
+      "sha256": "45546280fe23c00ec0b083f60252123409ce5bc470b2af8f9df05f337d8a434d",
+      "purpose": "world-class TVC principles, reference parity, attention choreography, product visibility rhythm, video product visual-fact lock rules, and source map"
     },
     {
       "path": "references/shot_spec_template.md",
-      "sha256": "64d12385414ea5a69bd820abade2990fd85139196b3356caea22607a99f9001a",
+      "sha256": "4a87a69f0db469856a5af50aaabb50b26403bcc592fe4d2489d0d88a71001507",
       "purpose": "shot-spec grammar, conditional advanced cinematic-language fields, handoff fields, and product identity lock grammar"
     },
     {
@@ -95,8 +95,8 @@
     },
     {
       "path": "scripts/validate_shot_plan.py",
-      "sha256": "aaef0e635b2885b638b9e49979ac5dfb8a3fa6b6b45c14d2800ec2ee6f058e70",
-      "purpose": "shot-plan structural gate including product identity lock enforcement, exact visible text checks, and forbidden visual addition detection"
+      "sha256": "315343ea6ef23fa2e81533069f18522c672fcb5b486d9ad214c5f1c8d74986dc",
+      "purpose": "shot-plan structural gate including product identity lock enforcement, product visibility-rhythm gates, exact visible text checks, and forbidden visual addition detection"
     },
     {
       "path": "scripts/validate_video_segments.py",
@@ -105,8 +105,8 @@
     },
     {
       "path": "scripts/validate_run_package.py",
-      "sha256": "fd3116c12f254cb573b130f8c6adfd278b1dbfdf40ef4ddc9fffb218986bf87e",
-      "purpose": "completed run-directory validator for required artifacts, shot/video gates, storyboard prompt product text carry-through, and final QC readiness"
+      "sha256": "ad74156a1e6b4f824aec7002a4157d43bf91b165a740225fc0f1a220150f7c55",
+      "purpose": "completed run-directory validator for required artifacts, shot/video gates, storyboard prompt product text carry-through, per-panel product visibility rhythm, and final QC readiness"
     },
     {
       "path": "scripts/score_audit.py",
@@ -135,8 +135,8 @@
     },
     {
       "path": "tests/test_validate_product_identity_lock.py",
-      "sha256": "db1ac4e4b6aba9584e6a2019de5ad2348e41945ecf4fa7e01707cc5696d01d13",
-      "purpose": "regression tests for product packaging fidelity in the shot-plan validator"
+      "sha256": "68a4b38aea9f0f1c10d4d5ae2e683ce5cd0b838c1fd01bf239237e27c8f1e2ae",
+      "purpose": "regression tests for product packaging fidelity and packshot-wall visibility rhythm in the shot-plan validator"
     },
     {
       "path": "tests/test_validate_video_product_lock.py",
@@ -145,8 +145,8 @@
     },
     {
       "path": "tests/test_validate_run_package.py",
-      "sha256": "f6ae788ef890f54c01bd8a9dd89bfe730541eeee49ea3570d00fc72c5a146959",
-      "purpose": "regression tests for completed run-package validation and storyboard prompt product text carry-through"
+      "sha256": "592118c3c035b4c15bf366520c0828be1237ce69dd6eb942711ae71e53e68fb7",
+      "purpose": "regression tests for completed run-package validation, storyboard prompt product text carry-through, and per-panel visibility rhythm"
     },
     {
       "path": "tests/test_cinematic_language_routing.py",

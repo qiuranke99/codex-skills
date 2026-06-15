@@ -98,6 +98,26 @@ metal plates, front plaques, badges, extra emblems, new label panels, claims,
 certification icons, extra bottles, changed caps, changed pumps, changed
 materials, or altered product shape.
 
+The product lock must not collapse the film into repeated product coverage. In
+product work, every shot declares `product_visibility`, including shots where
+the product is absent. Treat the values as narrative rhythm:
+
+- `not_visible`: origin, world, human response, benefit metaphor, or atmosphere
+  with no product, bottle, package, label, logo, or product text in frame;
+- `detail_only`: one real component, text area, material, cap, pump, edge, tube,
+  relief mark, or label block, not the full package;
+- `partial_visible`: cropped, occluded, reflected, silhouetted, or transitional
+  product presence;
+- `full_visible`: inspection-grade product view with exact visible text,
+  component inventory, and forbidden additions locked.
+
+For non-catalog 9-panel product sheets, use this hard minimum rhythm: no more
+than 4 `full_visible` shots; at least 1 `not_visible` shot; at least 3
+`detail_only` or `partial_visible` shots; and at least 2 panels whose main
+subject is not the product or package. If the user asks for catalog, listing,
+e-commerce, SKU, packshot-only, or detail-board work, state that exception in
+the `visual_strategy`.
+
 ## 4. Storyboard Sheet Rule
 
 A rough storyboard style is not permission to omit product facts. If a product
@@ -109,6 +129,14 @@ mark; never replace it with generic pseudo-text.
 
 Global bans such as `no readable text`, `no logo`, or `no labels` are invalid
 unless they explicitly exempt user-provided product packaging marks.
+
+A product storyboard sheet prompt must include a `Product Visibility Rhythm`
+block and must repeat `[product_visibility: ...]` in every panel line. For
+`not_visible` panels, explicitly forbid product/package/bottle/label/product
+text in that panel. For `detail_only` panels, say which real component or
+surface detail appears and forbid the full package. For `partial_visible`
+panels, state the crop, occlusion, reflection, or reveal mechanism. Only
+`full_visible` panels carry the full visible text inventory.
 
 ## 5. Video Segment Rule
 

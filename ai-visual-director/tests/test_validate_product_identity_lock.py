@@ -122,21 +122,95 @@ def make_plan(include_identity_lock: bool) -> dict:
                 "same white bottle, same black cap, same label geometry, and no extra hardware"
             ),
         }
-        for shot in plan["sheets"][0]["shots"]:
-            shot["product_visibility"] = "full_visible"
-            shot["product_identity_action"] = (
-                "draw the locked bottle shape with the front label panel and exact supplied label text blocks"
-            )
-            shot["visible_product_text_or_marks"] = ["LUMA", "HYDRATING SERUM", "30 ml"]
-            shot["product_visual_facts"] = (
-                "same white cylindrical bottle, rounded black cap, centered front label rectangle, "
-                "LUMA wordmark, HYDRATING SERUM line, 30 ml line, pale blue stripe, no gold metal plate"
-            )
-            shot["forbidden_visual_additions"] = "No gold metal plate, no metal badge, no front plaque, no extra emblem."
-            shot["must_preserve"] = (
-                "same product silhouette, white bottle body, black cap, front label layout, "
-                "LUMA wordmark, HYDRATING SERUM text, and 30 ml line"
-            )
+        visibility_plan = {
+            1: {
+                "product_visibility": "not_visible",
+                "scene": "blue-white clinical droplet world with no object visible yet",
+                "shot_purpose": "establish a cool clinical morning world before the object reveal",
+                "main_subject": "blue-white water droplet suspended above a reflective tray",
+                "main_action": "droplet trembles and catches a pale blue stripe of light",
+                "composition": "droplet sits high left while the empty tray curve opens space on the right",
+                "foreground": "soft tray rim blur",
+                "midground": "single suspended droplet",
+                "background": "white-blue laboratory glass blocks",
+                "must_preserve": "cool white and pale blue material world with no bottle visible",
+            },
+            2: {
+                "product_visibility": "detail_only",
+                "main_subject": "rounded black cap edge and pale blue label stripe reflection",
+                "main_action": "light rolls across the cap edge without showing the full bottle",
+                "shot_size": "extreme close-up cap-and-label material insert",
+                "product_identity_action": "show only the real black cap edge and pale blue label stripe reflection from the locked LUMA bottle",
+            },
+            3: {
+                "product_visibility": "partial_visible",
+                "main_subject": "cropped white bottle shoulder entering behind a tray rim",
+                "main_action": "shoulder edge slides into view while most of the package stays hidden",
+                "product_identity_action": "crop the locked white cylindrical bottle so only the shoulder curve and black cap base are visible",
+            },
+            4: {
+                "product_visibility": "full_visible",
+                "main_subject": "first full LUMA bottle reveal in three-quarter view",
+                "main_action": "front label turns into readable view",
+            },
+            5: {
+                "product_visibility": "detail_only",
+                "main_subject": "front label rectangle and pale blue stripe detail",
+                "main_action": "macro focus moves across the label stripe and white bottle surface",
+                "product_identity_action": "draw only the real centered front label rectangle, pale blue stripe, and white bottle material",
+            },
+            6: {
+                "product_visibility": "partial_visible",
+                "main_subject": "clean fingertip nudging the cropped bottle base",
+                "main_action": "fingertip starts a small rotation from the base edge",
+                "product_identity_action": "show the locked white cylindrical base partially, keeping the black cap and label geometry consistent where visible",
+            },
+            7: {
+                "product_visibility": "not_visible",
+                "scene": "abstract blue-white hydration surface with no object visible",
+                "shot_purpose": "show the benefit metaphor before returning to the final identity",
+                "shot_size": "benefit metaphor close shot",
+                "main_subject": "skin-like water surface forming a smooth hydration ripple",
+                "main_action": "ripple expands into a clean circular highlight",
+                "composition": "ripple fills the lower half while the upper right stays empty for the next reveal",
+                "foreground": "soft wet surface edge",
+                "midground": "single smooth ripple highlight",
+                "background": "pale blue-white negative space",
+                "must_preserve": "benefit metaphor with no bottle, label, logo, or package visible",
+            },
+            8: {
+                "product_visibility": "partial_visible",
+                "main_subject": "cropped bottle silhouette re-entering through a glass reflection",
+                "main_action": "reflection pulls the eye back toward the final packshot",
+                "product_identity_action": "show only the locked white cylindrical silhouette and black cap outline as a reflection-cropped transition",
+            },
+            9: {
+                "product_visibility": "full_visible",
+                "main_subject": "final front-facing LUMA bottle packshot",
+                "main_action": "product holds still while the label finishes readable",
+            },
+        }
+        for index, shot in enumerate(plan["sheets"][0]["shots"], start=1):
+            shot.update(visibility_plan[index])
+            if shot["product_visibility"] != "not_visible":
+                shot.setdefault(
+                    "product_identity_action",
+                    "preserve the locked bottle shape, label layout, black cap, and visible real product marks",
+                )
+            if shot["product_visibility"] == "full_visible":
+                shot["product_identity_action"] = (
+                    "draw the locked bottle shape with the front label panel and exact supplied label text blocks"
+                )
+                shot["visible_product_text_or_marks"] = ["LUMA", "HYDRATING SERUM", "30 ml"]
+                shot["product_visual_facts"] = (
+                    "same white cylindrical bottle, rounded black cap, centered front label rectangle, "
+                    "LUMA wordmark, HYDRATING SERUM line, 30 ml line, pale blue stripe, no gold metal plate"
+                )
+                shot["forbidden_visual_additions"] = "No gold metal plate, no metal badge, no front plaque, no extra emblem."
+                shot["must_preserve"] = (
+                    "same product silhouette, white bottle body, black cap, front label layout, "
+                    "LUMA wordmark, HYDRATING SERUM text, and 30 ml line"
+                )
     return plan
 
 
@@ -169,6 +243,38 @@ class ProductIdentityLockTests(unittest.TestCase):
 
         self.assertEqual(code, 0, result)
         self.assertTrue(result["ok"], result)
+
+    def test_storyboard_rejects_packshot_wall_visibility_rhythm(self) -> None:
+        plan = make_plan(include_identity_lock=True)
+        for shot in plan["sheets"][0]["shots"]:
+            shot["product_visibility"] = "full_visible"
+            shot["shot_purpose"] = "repeat a full product beauty view with only minor angle variation"
+            shot["main_subject"] = "full front-facing LUMA bottle product packshot"
+            shot["main_action"] = "product holds while a light sweep crosses the front label"
+            shot["composition"] = "full bottle remains dominant in the center with only small lighting changes"
+            shot["midground"] = "full product bottle with front label"
+            shot["product_identity_action"] = (
+                "draw the locked bottle shape with the front label panel and exact supplied label text blocks"
+            )
+            shot["visible_product_text_or_marks"] = ["LUMA", "HYDRATING SERUM", "30 ml"]
+            shot["product_visual_facts"] = (
+                "same white cylindrical bottle, rounded black cap, centered front label rectangle, "
+                "LUMA wordmark, HYDRATING SERUM line, 30 ml line, pale blue stripe, no gold metal plate"
+            )
+            shot["forbidden_visual_additions"] = "No gold metal plate, no metal badge, no front plaque, no extra emblem."
+            shot["must_preserve"] = (
+                "same product silhouette, white bottle body, black cap, front label layout, "
+                "LUMA wordmark, HYDRATING SERUM text, and 30 ml line"
+            )
+
+        code, result = run_validator(plan)
+
+        self.assertNotEqual(code, 0)
+        self.assertFalse(result["ok"])
+        self.assertTrue(
+            any("too many full-visible" in error or "packshot wall" in error for error in result["errors"]),
+            result["errors"],
+        )
 
     def test_product_ads_require_visual_fact_inventory_in_identity_lock(self) -> None:
         plan = make_plan(include_identity_lock=True)

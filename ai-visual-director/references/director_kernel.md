@@ -58,6 +58,28 @@ For 27 shots: sheet 1 = origin/reveal, sheet 2 = texture/use, sheet 3 = benefit/
 
 Minimum shot mix per sheet: 1 establishing, 2 macro/insert, 1 hero product angle, 1 movement bridge, 1 payoff.
 
+Product visibility rhythm is mandatory for real product storyboards. The
+product lock preserves facts only when the product is visible; it must not make
+every panel a full bottle view.
+
+Per non-catalog 9-panel sheet:
+
+- maximum 4 `full_visible` product shots;
+- at least 1 `not_visible` origin/world/benefit/metaphor shot;
+- at least 3 `detail_only` or `partial_visible` shots;
+- at least 2 panels led by something other than the product/package;
+- the first full-visible reveal should be earned by origin, detail, or partial
+  beats unless the brief explicitly says catalog, listing, SKU, e-commerce, or
+  packshot-only.
+
+Use this default visibility arc unless the brief gives a stronger one:
+
+```text
+not_visible -> detail_only -> partial_visible -> full_visible ->
+detail_only -> partial_visible/use -> not_visible/benefit ->
+partial_visible/return -> full_visible payoff
+```
+
 Forbidden defaults: nine centered product packshots, repeated eye-level table shots, abstract luxury language without visible proof.
 
 ### Beauty Or Fashion

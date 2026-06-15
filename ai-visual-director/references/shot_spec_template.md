@@ -215,6 +215,25 @@ For real product work, product packaging is identity. If the user provides a pro
 | `product_visual_facts` | Required for `full_visible`: actual product geometry, components, materials, and label placement visible in the panel. | `white cylindrical bottle, rounded black cap, centered front label rectangle, pale blue stripe, no metal plate` | `luxury bottle` |
 | `forbidden_visual_additions` | Required for `full_visible`: physical or graphic facts absent from the reference and not allowed in this panel. | `no gold metal plate, no badge, no front plaque, no extra emblem, no new label panel` | `no mistakes` |
 
+Use `product_visibility` as rhythm, not as a yes/no note. In a non-catalog
+9-panel product storyboard, the default ceiling is 4 `full_visible` shots. The
+sheet also needs at least 1 `not_visible` origin/world/benefit/metaphor panel,
+at least 3 `detail_only` or `partial_visible` panels, and at least 2 panels led
+by something other than the product/package. This keeps the product identity
+lock from turning every frame into a bottle, box, or label close-up.
+
+Storyboard prompts must restate the rhythm per panel:
+
+```text
+Product Visibility Rhythm: SH_001 not_visible -> SH_002 detail_only -> ...
+- SH_001 [product_visibility: not_visible]: no product, bottle, package, label,
+  logo, or product text in this panel.
+- SH_005 [product_visibility: detail_only]: only the real cap edge and raised
+  wordmark, not the full package.
+- SH_009 [product_visibility: full_visible]: exact full product with locked
+  readable marks and forbidden additions.
+```
+
 ## 8. Clean Handoff Spec: Exact Field Order
 
 Use this format when the user says `给手绘分镜用`, asks for clean handoff specs, or needs specs for a storyboard artist/generator.

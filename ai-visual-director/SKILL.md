@@ -86,6 +86,15 @@ For every product-visible shot, include `product_visibility` and
 `visible_product_text_or_marks`, `product_visual_facts`, and
 `forbidden_visual_additions`.
 
+Product identity is a fidelity constraint, not a mandate to make every panel a
+product panel. In a product storyboard, every shot must still declare
+`product_visibility`, including `not_visible` origin, world, benefit, or
+metaphor shots. Product-absent panels must explicitly keep the product,
+package, label, logo, and product text out of the frame. `detail_only` panels
+draw only the specified real component or material fact; `partial_visible`
+panels crop, occlude, reflect, or reveal only part of the locked product. Do
+not let a global product lock turn a 9-panel sheet into a wall of packshots.
+
 Full-visible product shots must carry the exact visible text/wordmark/logo/mark
 inventory from the real reference. If the real product has a raised wordmark,
 embossed mark, transparent spray tube, no metal plate, no badge, no front
@@ -186,7 +195,16 @@ lens relation, action, material behavior, or continuity facts.
 
 For product ads, the sequence must include product identity, material proof,
 texture proof, use action or interaction, benefit metaphor or proof, and final
-packshot clarity unless the user specifies another structure.
+packshot clarity unless the user specifies another structure. A non-catalog
+9-panel product sheet must also preserve product visibility rhythm:
+
+- maximum 4 `full_visible` product shots per 9 panels;
+- at least 1 `not_visible` origin/world/benefit/metaphor shot;
+- at least 3 `detail_only` or `partial_visible` transition/proof shots;
+- at least 2 panels whose main subject is not the product or package;
+- the first full-visible product reveal should not arrive in panel 1 or 2
+  unless the user explicitly requests a catalog, listing, or packshot-only
+  board.
 
 ## Validation Gates
 
@@ -257,6 +275,24 @@ facts, and package proportions. Draw exact supplied short label text when it is
 legible in the reference. If microtext is too small for rough storyboard scale,
 draw the correct label blocks and any readable primary mark rather than leaving
 the package blank.
+
+Every product storyboard sheet prompt must include a `Product Visibility
+Rhythm` block before the panel plan, then repeat each shot's visibility in the
+panel line:
+
+```text
+Product Visibility Rhythm: SH_001 not_visible -> SH_002 detail_only -> ...
+- SH_001 [product_visibility: not_visible]: no product, no bottle, no package,
+  no label, and no product text in this panel; draw only the origin/world beat.
+- SH_004 [product_visibility: full_visible]: draw the exact supplied product
+  with the locked text, label layout, component inventory, and forbidden
+  additions.
+```
+
+Never rely on a global product lock alone. The global lock protects
+full-visible product facts, but per-panel visibility tells the image model when
+not to draw the product, when to draw only a component, and when to draw the
+full package.
 
 Base style phrase:
 
