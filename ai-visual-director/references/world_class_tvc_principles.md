@@ -16,6 +16,10 @@ Use this file to upgrade routine TVC outputs without adding production-time revi
 
 Every shot must answer: what must the viewer understand or feel at this exact moment? If the answer is only "premium mood," the shot is under-directed.
 
+Before individual shots, define the advertising idea. World-class fragrance
+work is not a sequence of bottle details. It has a world rule, a sensory
+promise, and a few signature images that could live in a treatment deck.
+
 ### 2. Reference Parity, Not Reference Imitation
 
 World-class references are high-quality because of hierarchy, restraint, light, depth, material truth, and rhythm. Extract those qualities:
@@ -96,7 +100,34 @@ If most panels are full-visible product views, the storyboard is not more
 faithful; it is less directed. It has confused product accuracy with cinematic
 coverage.
 
-### 9. Video Prompts Must Preserve Temporal Logic
+### 9. Scene Event Beats Product Detail
+
+A product detail is not automatically a scene. A scene has an arena, a visible
+event, and a mechanism that changes what the viewer knows or feels.
+
+For product storyboards, every panel should be answerable in this form:
+
+```text
+In [scene_arena], [dramatic_event] happens because [visual_mechanism], so the
+viewer understands/feels [scene_role].
+```
+
+Examples of strong mechanisms:
+
+- reflection transforms a corridor edge into the bottle silhouette;
+- a fingertip ripple becomes the final base highlight;
+- a veil occludes the product until the cap catches a hard line of light;
+- a greenhouse door opens only where the scent path passes.
+
+Weak mechanisms:
+
+- light sweeps across product;
+- ribbon drifts behind bottle;
+- cap detail appears;
+- product holds still;
+- macro texture looks premium.
+
+### 10. Video Prompts Must Preserve Temporal Logic
 
 A Google omni segment needs motion over time:
 
@@ -112,7 +143,7 @@ Do not paste static storyboard descriptions into a video prompt.
 
 For product videos, temporal logic and lens design must not override product identity. Put the product reference setup and product identity lock before the segment. Camera orbit, hero reveal, rotation, rise, cap action, and other shot-language choices are allowed when they serve the film; they become failures only when the product's visible facts drift. Full-visible product shots must preserve exact readable copy, logo/wordmark, embossed or relief text, label layout, physical components, materials, cap/pump/closure, and known absent features. If the real product has no metal plate, badge, plaque, or extra label panel, the prompt must forbid those additions.
 
-### 10. The World-Class Failure Test
+### 11. The World-Class Failure Test
 
 Reject or revise if any of these are true:
 
@@ -121,6 +152,11 @@ Reject or revise if any of these are true:
 - foreground/midground/background do not change meaning;
 - the same camera relation repeats more than two times without a structural reason;
 - a cut does not change knowledge, emotion, proof, or desire;
+- there is no top-level creative concept, world rule, scene ladder, or visual
+  mechanism before shot planning;
+- panels lack scene arenas, dramatic events, or motivated visual mechanisms;
+- the sheet is mostly product parts, petals, ribbons, caustics, and packshots
+  without scene invention;
 - product, material, or character identity drifts;
 - a product-video prompt can be pasted without its product identity lock;
 - full-visible product shots omit or misspell visible text, suppress embossing/relief marks, invent labels/logos/claims, or add non-reference components such as metal plates, badges, plaques, extra panels, or wrong hardware;

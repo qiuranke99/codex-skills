@@ -43,6 +43,18 @@ NOT_VISIBLE_PROMPT_WORDS = re.compile(
     r"not_visible|not visible|no product|no bottle|no package|no label|product absent|package absent",
     re.IGNORECASE,
 )
+CREATIVE_PROMPT_BLOCKS = [
+    "creative concept",
+    "world rule",
+    "scene ladder",
+    "visual mechanism",
+]
+CREATIVE_PANEL_FIELDS = [
+    "scene_arena",
+    "scene_role",
+    "dramatic_event",
+    "visual_mechanism",
+]
 
 
 def load_json(path: Path) -> tuple[dict | None, str | None]:
@@ -118,7 +130,9 @@ def iter_shots(plan: dict) -> list[dict]:
 
 
 def shot_prompt_snippet(prompt_text: str, shot_id: str, max_chars: int = 420) -> str:
-    match = re.search(re.escape(shot_id), prompt_text, flags=re.IGNORECASE)
+    match = re.search(r"(?:^|\n)\s*-\s*" + re.escape(shot_id) + r"\b", prompt_text, flags=re.IGNORECASE)
+    if not match:
+        match = re.search(re.escape(shot_id), prompt_text, flags=re.IGNORECASE)
     if not match:
         return ""
     return prompt_text[match.start() : match.start() + max_chars]
@@ -161,6 +175,10 @@ def validate_product_storyboard_prompt(run_dir: Path, shot_plan: dict) -> list[s
             errors.append(f"04_storyboard_image_prompts.md: missing product lock evidence for {field}")
 
     if is_product_plan(shot_plan):
+        for block in CREATIVE_PROMPT_BLOCKS:
+            if block not in prompt_text:
+                errors.append(f"04_storyboard_image_prompts.md: missing {block.title()} block")
+
         if "product visibility rhythm" not in prompt_text:
             errors.append(
                 "04_storyboard_image_prompts.md: missing Product Visibility Rhythm block; "
@@ -181,6 +199,9 @@ def validate_product_storyboard_prompt(run_dir: Path, shot_plan: dict) -> list[s
                 errors.append(
                     f"04_storyboard_image_prompts.md: {shot_id} prompt must state product_visibility: {visibility}"
                 )
+            for field in CREATIVE_PANEL_FIELDS:
+                if field not in snippet_norm:
+                    errors.append(f"04_storyboard_image_prompts.md: {shot_id} prompt must state {field}")
             if visibility == "not_visible" and not NOT_VISIBLE_PROMPT_WORDS.search(snippet):
                 errors.append(
                     f"04_storyboard_image_prompts.md: {shot_id} not_visible panel must explicitly forbid product/package/bottle/text"

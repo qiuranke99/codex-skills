@@ -179,6 +179,10 @@ Rationale: the downstream artist or generator must know what to draw, where the 
 | `SH_###` | Stable shot ID for revision. | `SH_004` | `next shot` |
 | `aspect_ratio` | Frame ratio if relevant. | `9:16 vertical` | `cinematic` |
 | `scene` | Place, time, and story beat context. | `rainy Tokyo crossing, first scale reveal` | `city` |
+| `scene_arena` | Distinct visual world or place of the panel. | `rain-lit glass elevator threshold` | `product area` |
+| `scene_role` | The panel's commercial or story function. | `benefit metaphor`, `partial reveal threshold`, `final authority` | `beauty` |
+| `dramatic_event` | On-screen event or transformation. | `the elevator reflection folds into the bottle silhouette` | `light sweeps across product` |
+| `visual_mechanism` | Repeatable image logic that causes the reveal or cut. | `corridor reflection matches the bottle edge and motivates the cut` | `premium reflection` |
 | `duration` | Timing, required for timed ads or animatics. | `1.2s`, `hold 3s` | `short` |
 | `dramatic_beat` | What changes or what this shot does emotionally/narratively/persuasively. | `viewer realizes the street is now tiny below her` | `emotional moment` |
 | `shot_purpose` | Why this shot exists in the sequence. | `prove giant scale through taxi-to-shoe comparison` | `make it epic` |
@@ -234,6 +238,24 @@ Product Visibility Rhythm: SH_001 not_visible -> SH_002 detail_only -> ...
   readable marks and forbidden additions.
 ```
 
+For premium product ads, do not leave the creative scene layer implicit:
+
+```text
+scene_arena: mirrored hotel corridor
+scene_role: partial reveal threshold
+dramatic_event: the corridor reflection narrows until it becomes the bottle's vertical edge
+visual_mechanism: architectural reflection matches the product silhouette and motivates the cut
+```
+
+Weak pattern:
+
+```text
+scene_arena: macro product detail
+scene_role: beauty shot
+dramatic_event: light sweeps across the cap
+visual_mechanism: premium lavender reflection
+```
+
 ## 8. Clean Handoff Spec: Exact Field Order
 
 Use this format when the user says `给手绘分镜用`, asks for clean handoff specs, or needs specs for a storyboard artist/generator.
@@ -242,6 +264,10 @@ Use this format when the user says `给手绘分镜用`, asks for clean handoff 
 SH_001
 aspect_ratio:
 scene:
+scene_arena:
+scene_role:
+dramatic_event:
+visual_mechanism:
 duration:
 dramatic_beat:
 shot_purpose:

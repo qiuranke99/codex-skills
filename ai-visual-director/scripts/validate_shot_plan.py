@@ -73,6 +73,32 @@ PRODUCT_DOMINANT_WORDS = re.compile(
     r"浜у搧|鍖呰|鐡秥鐡惰韩|缃恷绠鐩抾鏍囩|鏍囪创|鍝佺墝|鍟嗘爣|绮惧崕|闈㈤湝|鍙ｇ孩|棣欐按",
     re.IGNORECASE,
 )
+REQUIRED_CREATIVE_CONCEPT_FIELDS = [
+    "big_idea",
+    "audience_desire",
+    "story_tension",
+    "world_rule",
+    "visual_mechanism",
+    "scene_ladder",
+    "signature_images",
+]
+REQUIRED_CREATIVE_SHOT_FIELDS = [
+    "scene_arena",
+    "scene_role",
+    "dramatic_event",
+    "visual_mechanism",
+]
+WEAK_CREATIVE_WORDS = re.compile(
+    r"^(premium|luxury|beautiful|elegant|cinematic|high-end)$|"
+    r"\b(looks? premium|look beautiful|high-end feeling|beauty shot|nice mood)\b",
+    re.IGNORECASE,
+)
+WEAK_DRAMATIC_EVENT_WORDS = re.compile(
+    r"^(light|highlight|camera|product|bottle|label|cap|ribbon|petal)\s+"
+    r"(sweeps?|travels?|drifts?|holds?|settles?|appears?|reveals?|catches?|shows?)\b|"
+    r"\b(light sweeps? across|holds still|looks premium|soft lavender reflection makes it look premium)\b",
+    re.IGNORECASE,
+)
 VISUAL_FIDELITY_WORDS = re.compile(
     r"exact|match|same|preserve|supplied|original|reference|unchanged|visual facts|real product|locked",
     re.IGNORECASE,
@@ -276,6 +302,90 @@ def product_dominates_positive_subject(shot: dict) -> bool:
         shot.get("midground", ""),
         shot.get("background", ""),
     )))
+
+
+def is_concrete_creative_value(value: object) -> bool:
+    if isinstance(value, list):
+        return len([item for item in value if is_concrete_creative_value(item)]) >= 3
+    text = str(value).strip()
+    if not has_concrete_language(text):
+        return False
+    if WEAK_CREATIVE_WORDS.search(text):
+        return False
+    return True
+
+
+def is_weak_dramatic_event(value: object) -> bool:
+    text = re.sub(r"\s+", " ", str(value).strip())
+    if len(text) < 28:
+        return True
+    return bool(WEAK_DRAMATIC_EVENT_WORDS.search(text))
+
+
+def validate_creative_director_standard(plan: dict) -> tuple[list[str], list[str]]:
+    errors: list[str] = []
+    warnings: list[str] = []
+
+    if not is_product_plan(plan) or is_packshot_exception(plan):
+        return errors, warnings
+
+    concept = plan.get("creative_concept")
+    if not isinstance(concept, dict):
+        errors.append("plan: product ad requires creative_concept before shot planning")
+        concept = {}
+
+    for field in REQUIRED_CREATIVE_CONCEPT_FIELDS:
+        value = concept.get(field)
+        if not is_concrete_creative_value(value):
+            errors.append(f"creative_concept: missing or weak {field}")
+
+    for field in ["scene_ladder", "signature_images"]:
+        values = [norm(item) for item in as_list(concept.get(field)) if norm(item)]
+        if len(set(values)) < 3:
+            errors.append(f"creative_concept: {field} needs at least 3 distinct entries")
+
+    for sheet in plan.get("sheets", []):
+        sheet_id = sheet.get("sheet_id", "<unknown>")
+        shots = [shot for shot in sheet.get("shots", []) if isinstance(shot, dict)]
+        if len(shots) != 9:
+            continue
+
+        scene_arenas: set[str] = set()
+        visual_mechanisms: set[str] = set()
+        scene_roles: set[str] = set()
+        weak_event_count = 0
+
+        for shot in shots:
+            sid = shot.get("shot_id", "<unknown-shot>")
+            for field in REQUIRED_CREATIVE_SHOT_FIELDS:
+                value = shot.get(field)
+                if field == "scene_role":
+                    if len(str(value).strip()) < 4:
+                        errors.append(f"{sid}: missing or weak {field}")
+                elif not is_concrete_creative_value(value):
+                    errors.append(f"{sid}: missing or weak {field}")
+
+            if str(shot.get("scene_arena", "")).strip():
+                scene_arenas.add(norm(shot.get("scene_arena", "")))
+            if str(shot.get("visual_mechanism", "")).strip():
+                visual_mechanisms.add(norm(shot.get("visual_mechanism", "")))
+            if str(shot.get("scene_role", "")).strip():
+                scene_roles.add(norm(shot.get("scene_role", "")))
+
+            if is_weak_dramatic_event(shot.get("dramatic_event", "")):
+                weak_event_count += 1
+                errors.append(f"{sid}: weak dramatic_event; name an on-screen event, tension, or transformation")
+
+        if len(scene_arenas) < 3:
+            errors.append(f"{sheet_id}: needs at least 3 distinct scene_arena values, found {len(scene_arenas)}")
+        if len(visual_mechanisms) < 3:
+            errors.append(f"{sheet_id}: needs at least 3 distinct visual_mechanism values, found {len(visual_mechanisms)}")
+        if len(scene_roles) < 4:
+            errors.append(f"{sheet_id}: needs at least 4 distinct scene_role values, found {len(scene_roles)}")
+        if weak_event_count > 2:
+            errors.append(f"{sheet_id}: too many weak dramatic events ({weak_event_count}/9)")
+
+    return errors, warnings
 
 
 def validate_product_visibility_rhythm(plan: dict) -> tuple[list[str], list[str]]:
@@ -546,6 +656,10 @@ def main() -> int:
     rhythm_errors, rhythm_warnings = validate_product_visibility_rhythm(plan)
     errors.extend(rhythm_errors)
     warnings.extend(rhythm_warnings)
+
+    creative_errors, creative_warnings = validate_creative_director_standard(plan)
+    errors.extend(creative_errors)
+    warnings.extend(creative_warnings)
 
     for sheet in sheets:
         sheet_errors, sheet_warnings = validate_sheet(sheet)

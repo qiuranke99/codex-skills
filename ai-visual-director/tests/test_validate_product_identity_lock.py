@@ -87,6 +87,25 @@ def make_plan(include_identity_lock: bool) -> dict:
         "panel_count": 9,
         "video_segment_count": 2,
         "continuity_locks": ["same user-provided serum bottle throughout"],
+        "creative_concept": {
+            "big_idea": "A single clinical droplet teaches the world to behave like the bottle's pale blue stripe.",
+            "audience_desire": "make the serum feel precise, cool, tactile, and desirable before the final packshot",
+            "story_tension": "the skin-world is dry and still until small controlled water events pull the product into view",
+            "world_rule": "every reveal is caused by water, reflection, fingertip pressure, or glass refraction, never by a random beauty pose",
+            "visual_mechanism": "droplet, tray reflection, label stripe, fingertip ripple, and final packshot form one cause-and-effect chain",
+            "scene_ladder": [
+                "clinical droplet world",
+                "reflective tray threshold",
+                "fingertip interaction table",
+                "hydration ripple world",
+                "clean packshot memory space",
+            ],
+            "signature_images": [
+                "a blue-white droplet suspended over an empty tray",
+                "the black cap edge arriving as a reflection before the bottle appears",
+                "a fingertip ripple becoming the final packshot base highlight",
+            ],
+        },
         "reference_roles": [
             {
                 "image": "serum-reference.jpg",
@@ -126,6 +145,10 @@ def make_plan(include_identity_lock: bool) -> dict:
             1: {
                 "product_visibility": "not_visible",
                 "scene": "blue-white clinical droplet world with no object visible yet",
+                "scene_arena": "clinical droplet world",
+                "scene_role": "origin world",
+                "dramatic_event": "a suspended droplet trembles and establishes the water logic before any package appears",
+                "visual_mechanism": "droplet highlight foreshadows the pale blue label stripe and later tray reflection",
                 "shot_purpose": "establish a cool clinical morning world before the object reveal",
                 "main_subject": "blue-white water droplet suspended above a reflective tray",
                 "main_action": "droplet trembles and catches a pale blue stripe of light",
@@ -137,6 +160,10 @@ def make_plan(include_identity_lock: bool) -> dict:
             },
             2: {
                 "product_visibility": "detail_only",
+                "scene_arena": "reflective tray threshold",
+                "scene_role": "material clue",
+                "dramatic_event": "the black cap edge arrives as a reflected clue before the full package is shown",
+                "visual_mechanism": "tray reflection turns the droplet highlight into a product-component reveal",
                 "main_subject": "rounded black cap edge and pale blue label stripe reflection",
                 "main_action": "light rolls across the cap edge without showing the full bottle",
                 "shot_size": "extreme close-up cap-and-label material insert",
@@ -144,23 +171,39 @@ def make_plan(include_identity_lock: bool) -> dict:
             },
             3: {
                 "product_visibility": "partial_visible",
+                "scene_arena": "reflective tray threshold",
+                "scene_role": "partial reveal",
+                "dramatic_event": "a cropped shoulder slides behind the tray rim and withholds the full bottle",
+                "visual_mechanism": "foreground tray occlusion turns the package into a withheld silhouette",
                 "main_subject": "cropped white bottle shoulder entering behind a tray rim",
                 "main_action": "shoulder edge slides into view while most of the package stays hidden",
                 "product_identity_action": "crop the locked white cylindrical bottle so only the shoulder curve and black cap base are visible",
             },
             4: {
                 "product_visibility": "full_visible",
+                "scene_arena": "reflective tray threshold",
+                "scene_role": "first full reveal",
+                "dramatic_event": "the tray reflection completes the silhouette and lets the first readable product view arrive",
+                "visual_mechanism": "the reflection opens like a stage slit to motivate the full product reveal",
                 "main_subject": "first full LUMA bottle reveal in three-quarter view",
                 "main_action": "front label turns into readable view",
             },
             5: {
                 "product_visibility": "detail_only",
+                "scene_arena": "label stripe inspection",
+                "scene_role": "typography proof",
+                "dramatic_event": "macro focus tests the pale blue stripe and label rectangle as proof of product identity",
+                "visual_mechanism": "a moving specular line connects the stripe to the earlier droplet path",
                 "main_subject": "front label rectangle and pale blue stripe detail",
                 "main_action": "macro focus moves across the label stripe and white bottle surface",
                 "product_identity_action": "draw only the real centered front label rectangle, pale blue stripe, and white bottle material",
             },
             6: {
                 "product_visibility": "partial_visible",
+                "scene_arena": "fingertip interaction table",
+                "scene_role": "use action",
+                "dramatic_event": "a fingertip nudges only the cropped base so the object becomes tactile rather than worshipped",
+                "visual_mechanism": "fingertip pressure starts a rotation that will become the final reflection",
                 "main_subject": "clean fingertip nudging the cropped bottle base",
                 "main_action": "fingertip starts a small rotation from the base edge",
                 "product_identity_action": "show the locked white cylindrical base partially, keeping the black cap and label geometry consistent where visible",
@@ -168,6 +211,10 @@ def make_plan(include_identity_lock: bool) -> dict:
             7: {
                 "product_visibility": "not_visible",
                 "scene": "abstract blue-white hydration surface with no object visible",
+                "scene_arena": "hydration ripple world",
+                "scene_role": "benefit metaphor",
+                "dramatic_event": "the fingertip action resolves as a smooth water ripple with no package in frame",
+                "visual_mechanism": "the rotation energy transfers into a skin-like hydration ripple",
                 "shot_purpose": "show the benefit metaphor before returning to the final identity",
                 "shot_size": "benefit metaphor close shot",
                 "main_subject": "skin-like water surface forming a smooth hydration ripple",
@@ -180,12 +227,20 @@ def make_plan(include_identity_lock: bool) -> dict:
             },
             8: {
                 "product_visibility": "partial_visible",
+                "scene_arena": "hydration ripple world",
+                "scene_role": "return bridge",
+                "dramatic_event": "the ripple reflection catches a cropped bottle silhouette and pulls the eye back to identity",
+                "visual_mechanism": "the circular ripple deforms into the product's cylindrical reflection",
                 "main_subject": "cropped bottle silhouette re-entering through a glass reflection",
                 "main_action": "reflection pulls the eye back toward the final packshot",
                 "product_identity_action": "show only the locked white cylindrical silhouette and black cap outline as a reflection-cropped transition",
             },
             9: {
                 "product_visibility": "full_visible",
+                "scene_arena": "clean packshot memory space",
+                "scene_role": "final authority",
+                "dramatic_event": "the ripple energy stops and the product holds as the final memory image",
+                "visual_mechanism": "the reflected ripple becomes the stable base highlight under the front packshot",
                 "main_subject": "final front-facing LUMA bottle packshot",
                 "main_action": "product holds still while the label finishes readable",
             },
@@ -273,6 +328,43 @@ class ProductIdentityLockTests(unittest.TestCase):
         self.assertFalse(result["ok"])
         self.assertTrue(
             any("too many full-visible" in error or "packshot wall" in error for error in result["errors"]),
+            result["errors"],
+        )
+
+    def test_product_ads_require_creative_concept_and_scene_mechanics(self) -> None:
+        plan = make_plan(include_identity_lock=True)
+        del plan["creative_concept"]
+        for shot in plan["sheets"][0]["shots"]:
+            shot.pop("scene_arena", None)
+            shot.pop("scene_role", None)
+            shot.pop("dramatic_event", None)
+            shot.pop("visual_mechanism", None)
+
+        code, result = run_validator(plan)
+
+        self.assertNotEqual(code, 0)
+        self.assertFalse(result["ok"])
+        self.assertTrue(
+            any("creative_concept" in error or "scene_arena" in error for error in result["errors"]),
+            result["errors"],
+        )
+
+    def test_product_ads_reject_weak_repeated_macro_detail_mechanics(self) -> None:
+        plan = make_plan(include_identity_lock=True)
+        plan["creative_concept"]["scene_ladder"] = ["macro lavender surface"]
+        plan["creative_concept"]["visual_mechanism"] = "light sweeps across premium product details"
+        for shot in plan["sheets"][0]["shots"]:
+            shot["scene_arena"] = "macro lavender product detail table"
+            shot["scene_role"] = "product beauty detail"
+            shot["dramatic_event"] = "light sweeps across the product detail"
+            shot["visual_mechanism"] = "soft lavender reflection makes it look premium"
+
+        code, result = run_validator(plan)
+
+        self.assertNotEqual(code, 0)
+        self.assertFalse(result["ok"])
+        self.assertTrue(
+            any("distinct scene_arena" in error or "weak dramatic_event" in error for error in result["errors"]),
             result["errors"],
         )
 

@@ -53,36 +53,76 @@ def valid_storyboard_prompt() -> str:
     return """
 # Storyboard Sheet 01 Prompt
 
+Creative Concept: A single clinical droplet teaches the world to behave like
+the bottle's pale blue stripe.
+World Rule: every reveal is caused by water, reflection, fingertip pressure, or
+glass refraction, never by a random beauty pose.
+Scene Ladder: clinical droplet world -> reflective tray threshold -> fingertip
+interaction table -> hydration ripple world -> clean packshot memory space.
+Visual Mechanism: droplet, tray reflection, label stripe, fingertip ripple, and
+final packshot form one cause-and-effect chain.
+
+Product Lock Evidence: surface text inventory includes front wordmark LUMA,
+center text HYDRATING SERUM, lower text 30 ml, centered front label rectangle,
+and pale blue stripe; embossed or relief marks: none_visible.
+
 Product Visibility Rhythm: SH_001 not_visible -> SH_002 detail_only -> SH_003
 partial_visible -> SH_004 full_visible -> SH_005 detail_only -> SH_006
 partial_visible -> SH_007 not_visible -> SH_008 partial_visible -> SH_009
 full_visible.
 
+Product Lock Evidence: surface text inventory includes front wordmark LUMA,
+center text HYDRATING SERUM, lower text 30 ml, centered front label rectangle,
+and pale blue stripe; embossed or relief marks: none_visible.
+
 Panel plan:
-- SH_001 [product_visibility: not_visible]: no product, no bottle, no package,
-  no label, and no product text in this panel; draw only the blue-white droplet
-  world.
-- SH_002 [product_visibility: detail_only]: draw only the rounded black cap edge
-  and pale blue stripe reflection, not the full bottle.
-- SH_003 [product_visibility: partial_visible]: crop the white bottle shoulder
-  behind the tray rim; do not show the full package.
-- SH_004 [product_visibility: full_visible]: draw the exact user-provided
-  product. Preserve front wordmark LUMA, center text HYDRATING SERUM, lower text
-  30 ml, white cylindrical bottle, rounded black cap, front label rectangle,
-  pale blue stripe, none_visible embossed marks, no gold metal plate, no metal
-  badge, no front plaque, no extra emblem.
-- SH_005 [product_visibility: detail_only]: show only the centered front label
-  rectangle and pale blue stripe material detail.
-- SH_006 [product_visibility: partial_visible]: show the fingertip and cropped
-  bottle base, not a centered packshot.
-- SH_007 [product_visibility: not_visible]: no product, no bottle, no package,
-  no label, and no product text in this panel; draw only the hydration ripple.
-- SH_008 [product_visibility: partial_visible]: show only the reflected cropped
-  bottle silhouette as a transition.
-- SH_009 [product_visibility: full_visible]: final front packshot of the exact
-  LUMA / HYDRATING SERUM / 30 ml bottle, preserving the same white cylindrical
-  bottle, rounded black cap, front label rectangle, pale blue stripe, and no
-  gold metal plate, no metal badge, no front plaque, no extra emblem.
+- SH_001 [product_visibility: not_visible] [scene_arena: clinical droplet world]
+  [scene_role: origin world] [dramatic_event: a suspended droplet trembles and
+  establishes the water logic before any package appears] [visual_mechanism:
+  droplet highlight foreshadows the pale blue label stripe]. No product, no
+  bottle, no package, no label, and no product text in this panel.
+- SH_002 [product_visibility: detail_only] [scene_arena: reflective tray
+  threshold] [scene_role: material clue] [dramatic_event: the black cap edge
+  arrives as a reflected clue before the full package is shown]
+  [visual_mechanism: tray reflection turns the droplet highlight into a
+  product-component reveal]. Draw only the rounded black cap edge and pale blue
+  stripe reflection, not the full bottle.
+- SH_003 [product_visibility: partial_visible] [scene_arena: reflective tray
+  threshold] [scene_role: partial reveal] [dramatic_event: a cropped shoulder
+  slides behind the tray rim and withholds the full bottle] [visual_mechanism:
+  foreground tray occlusion turns the package into a withheld silhouette].
+- SH_004 [product_visibility: full_visible] [scene_arena: reflective tray
+  threshold] [scene_role: first full reveal] [dramatic_event: the tray
+  reflection completes the silhouette and lets the first readable product view
+  arrive] [visual_mechanism: the reflection opens like a stage slit]. Draw the
+  exact LUMA / HYDRATING SERUM / 30 ml product with white cylindrical bottle,
+  rounded black cap, front label rectangle, pale blue stripe, and no gold metal
+  plate, no metal badge, no front plaque, no extra emblem.
+- SH_005 [product_visibility: detail_only] [scene_arena: label stripe
+  inspection] [scene_role: typography proof] [dramatic_event: macro focus tests
+  the pale blue stripe and label rectangle as proof of product identity]
+  [visual_mechanism: a moving specular line connects the stripe to the earlier
+  droplet path].
+- SH_006 [product_visibility: partial_visible] [scene_arena: fingertip
+  interaction table] [scene_role: use action] [dramatic_event: a fingertip
+  nudges only the cropped base so the object becomes tactile rather than
+  worshipped] [visual_mechanism: fingertip pressure starts a rotation].
+- SH_007 [product_visibility: not_visible] [scene_arena: hydration ripple world]
+  [scene_role: benefit metaphor] [dramatic_event: the fingertip action resolves
+  as a smooth water ripple with no package in frame] [visual_mechanism: the
+  rotation energy transfers into a skin-like hydration ripple]. No product, no
+  bottle, no package, no label, and no product text in this panel.
+- SH_008 [product_visibility: partial_visible] [scene_arena: hydration ripple
+  world] [scene_role: return bridge] [dramatic_event: the ripple reflection
+  catches a cropped bottle silhouette and pulls the eye back to identity]
+  [visual_mechanism: the circular ripple deforms into the product reflection].
+- SH_009 [product_visibility: full_visible] [scene_arena: clean packshot memory
+  space] [scene_role: final authority] [dramatic_event: the ripple energy stops
+  and the product holds as the final memory image] [visual_mechanism: the
+  reflected ripple becomes the stable base highlight]. Final front packshot of
+  the exact LUMA / HYDRATING SERUM / 30 ml bottle, preserving the same white
+  cylindrical bottle, rounded black cap, front label rectangle, pale blue stripe,
+  and no gold metal plate, no metal badge, no front plaque, no extra emblem.
 """
 
 
@@ -145,6 +185,45 @@ no front plaque, no extra emblem.
         self.assertFalse(result["ok"])
         self.assertTrue(
             any("Product Visibility Rhythm" in error or "product_visibility" in error for error in result["errors"]),
+            result["errors"],
+        )
+
+    def test_run_package_rejects_storyboard_prompt_without_creative_scene_blocks(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            run_dir = Path(tmp)
+            populate_run_dir(
+                run_dir,
+                """
+# Storyboard Sheet 01 Prompt
+
+Product Visibility Rhythm: SH_001 not_visible -> SH_002 detail_only -> SH_003
+partial_visible -> SH_004 full_visible -> SH_005 detail_only -> SH_006
+partial_visible -> SH_007 not_visible -> SH_008 partial_visible -> SH_009
+full_visible.
+
+Product Lock Evidence: surface text inventory includes front wordmark LUMA,
+center text HYDRATING SERUM, lower text 30 ml, centered front label rectangle,
+and pale blue stripe; embossed or relief marks: none_visible.
+
+Panel plan:
+- SH_001 [product_visibility: not_visible]: no product, no bottle, no package.
+- SH_002 [product_visibility: detail_only]: cap detail.
+- SH_003 [product_visibility: partial_visible]: bottle crop.
+- SH_004 [product_visibility: full_visible]: exact LUMA / HYDRATING SERUM / 30 ml bottle, white cylindrical bottle, rounded black cap, front label rectangle, pale blue stripe, no gold metal plate, no metal badge, no front plaque, no extra emblem.
+- SH_005 [product_visibility: detail_only]: label detail.
+- SH_006 [product_visibility: partial_visible]: base crop.
+- SH_007 [product_visibility: not_visible]: no product, no bottle, no package.
+- SH_008 [product_visibility: partial_visible]: reflected bottle crop.
+- SH_009 [product_visibility: full_visible]: exact LUMA / HYDRATING SERUM / 30 ml bottle, white cylindrical bottle, rounded black cap, front label rectangle, pale blue stripe, no gold metal plate, no metal badge, no front plaque, no extra emblem.
+""",
+            )
+
+            code, result = run_validator(run_dir)
+
+        self.assertNotEqual(code, 0)
+        self.assertFalse(result["ok"])
+        self.assertTrue(
+            any("Creative Concept" in error or "scene_arena" in error for error in result["errors"]),
             result["errors"],
         )
 

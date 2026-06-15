@@ -43,6 +43,24 @@ Escalate from `standard_fast` to `premium_pitch` or `certification` only if:
 
 Default arc: ingredient/world origin -> product reveal -> material/texture proof -> use action -> benefit metaphor -> packshot payoff.
 
+Before shot planning, define the creative concept. Product beauty is not a
+concept. A premium product ad must have:
+
+- a `big_idea` that can be pitched in one sentence;
+- an `audience_desire` beyond "looks premium";
+- a `story_tension` such as withholding, awakening, crossing a threshold,
+  transformation, or return;
+- a `world_rule` that decides how images behave;
+- a `visual_mechanism` that motivates reveals and cuts;
+- a `scene_ladder` with at least three distinct arenas or phases;
+- at least three `signature_images` that are not all product details.
+
+Weak concept pattern: petals -> glass -> cap -> label -> packshot. This is
+ingredient/product coverage, not advertising direction. Upgrade it into a
+sceneable world: a greenhouse threshold, mirrored corridor, rain-lit elevator,
+skin-ripple table, silk veil, window reflection, or another invented arena
+motivated by the references and brand promise.
+
 For 9 shots:
 1. world/ingredient establish
 2. macro ingredient or material detail
@@ -79,6 +97,18 @@ not_visible -> detail_only -> partial_visible -> full_visible ->
 detail_only -> partial_visible/use -> not_visible/benefit ->
 partial_visible/return -> full_visible payoff
 ```
+
+Every panel also needs:
+
+- `scene_arena`: the visual place or world of the panel;
+- `scene_role`: the panel's commercial function;
+- `dramatic_event`: the on-screen event or transformation;
+- `visual_mechanism`: how the world rule makes this image happen.
+
+Per 9-panel sheet, use at least 3 distinct `scene_arena` values, 3 distinct
+`visual_mechanism` values, and 4 distinct `scene_role` values. If the sheet can
+be summarized as "more macro details of the same object with different crops",
+it is still a failure even when product visibility counts pass.
 
 Forbidden defaults: nine centered product packshots, repeated eye-level table shots, abstract luxury language without visible proof.
 

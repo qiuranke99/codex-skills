@@ -24,6 +24,28 @@
       "items": {"type": "string"},
       "description": "Per-shot product visibility rhythm, for example SH_001 not_visible -> SH_002 detail_only -> SH_003 partial_visible."
     },
+    "creative_concept": {
+      "type": "object",
+      "required": [
+        "big_idea",
+        "audience_desire",
+        "story_tension",
+        "world_rule",
+        "visual_mechanism",
+        "scene_ladder",
+        "signature_images"
+      ],
+      "properties": {
+        "big_idea": {"type": "string"},
+        "audience_desire": {"type": "string"},
+        "story_tension": {"type": "string"},
+        "world_rule": {"type": "string"},
+        "visual_mechanism": {"type": "string"},
+        "scene_ladder": {"type": "array", "items": {"type": "string"}, "minItems": 3},
+        "signature_images": {"type": "array", "items": {"type": "string"}, "minItems": 3}
+      },
+      "additionalProperties": false
+    },
     "continuity_locks": {"type": "array", "items": {"type": "string"}, "minItems": 1},
     "product_identity_lock": {
       "type": "object",
@@ -119,6 +141,10 @@
                 "shot_id": {"type": "string"},
                 "aspect_ratio": {"type": "string"},
                 "scene": {"type": "string"},
+                "scene_arena": {"type": "string"},
+                "scene_role": {"type": "string"},
+                "dramatic_event": {"type": "string"},
+                "visual_mechanism": {"type": "string"},
                 "duration": {"type": "string"},
                 "shot_purpose": {"type": "string"},
                 "shot_size": {"type": "string"},

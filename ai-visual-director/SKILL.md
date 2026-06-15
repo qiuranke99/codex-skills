@@ -12,14 +12,15 @@ Do not answer these tasks with one long prompt. Run a staged director workflow:
 
 1. Intake and reference-role analysis.
 2. Route decision: project type, duration logic, sheet count, panel count, and video segment count.
-3. Director brief: dramatic arc, visual motif, continuity locks, failure modes.
-4. Product identity lock before shot planning when a real product is supplied.
-5. Shot plan: concrete shot specs for every storyboard panel.
-6. Automated structure and product-fidelity validation.
-7. Internal revision until validation passes or the remaining risk is explicit.
-8. One storyboard image prompt per 3x3 sheet.
-9. Google Omni prompts in temporal segments, normally 10 seconds each.
-10. Run-package validation, final QC summary, and saved artifact paths.
+3. Creative concept: big idea, audience desire, story tension, world rule, visual mechanism, scene ladder, and signature images.
+4. Director brief: dramatic arc, visual motif, continuity locks, failure modes.
+5. Product identity lock before shot planning when a real product is supplied.
+6. Shot plan: concrete shot specs for every storyboard panel.
+7. Automated structure, creative-standard, and product-fidelity validation.
+8. Internal revision until validation passes or the remaining risk is explicit.
+9. One storyboard image prompt per 3x3 sheet.
+10. Google Omni prompts in temporal segments, normally 10 seconds each.
+11. Run-package validation, final QC summary, and saved artifact paths.
 
 If the user provides only images and short keywords, infer the missing structure.
 Ask only when a missing fact materially changes the route, such as unknown
@@ -60,6 +61,29 @@ copying surface style blindly:
 Every shot plan must include reference parity decisions. If a 9-panel sheet only
 resembles the reference by keywords, not hierarchy, depth, light, material, or
 visual restraint, treat it as a failure.
+
+## Creative Concept Gate
+
+Before shot planning, define a top-level `creative_concept`. A high-end TVC is
+not a tour of product parts. It needs a world, a rule, and events that make the
+product feel inevitable.
+
+For non-catalog product ads, `creative_concept` must include:
+
+- `big_idea`: the advertising thought, not a mood phrase;
+- `audience_desire`: what the viewer should want or feel;
+- `story_tension`: what is withheld, transformed, awakened, crossed, or resolved;
+- `world_rule`: how this film's world behaves;
+- `visual_mechanism`: the repeatable image logic that drives reveals and cuts;
+- `scene_ladder`: at least three distinct arenas or phases;
+- `signature_images`: at least three frames a director could pitch verbally.
+
+If the idea can be summarized as `petals + glass + product + light sweep`, it is
+not yet a TVC concept. Keep working until there is a sceneable mechanism such as
+`a mirrored hotel corridor folds into the bottle edge`, `a dawn greenhouse opens
+only where the scent passes`, or `a fingertip ripple turns into the final base
+reflection`. Do not copy those examples; invent an equivalent mechanism from
+the supplied references and brief.
 
 ## Product Identity
 
@@ -163,6 +187,10 @@ Every panel must become a shot spec with the fields from
 shot_id:
 aspect_ratio:
 scene:
+scene_arena:
+scene_role:
+dramatic_event:
+visual_mechanism:
 duration:
 shot_purpose:
 shot_size:
@@ -193,6 +221,18 @@ midground / background, and what must not drift. Do not use adjectives such as
 `cinematic`, `luxury`, `premium`, or `beautiful` as substitutes for staging,
 lens relation, action, material behavior, or continuity facts.
 
+Every product-ad panel also needs a creative scene layer:
+
+- `scene_arena`: where the panel lives visually, such as greenhouse corridor,
+  reflective tray threshold, rain-lit elevator, skin-ripple world, or clean
+  packshot memory space;
+- `scene_role`: what this panel does in the commercial arc, such as origin
+  world, inciting transformation, partial reveal, use action, benefit metaphor,
+  return bridge, or final authority;
+- `dramatic_event`: the on-screen event or transformation, not merely `light
+  sweep` or `product holds`;
+- `visual_mechanism`: how the film's world rule creates the image or cut.
+
 For product ads, the sequence must include product identity, material proof,
 texture proof, use action or interaction, benefit metaphor or proof, and final
 packshot clarity unless the user specifies another structure. A non-catalog
@@ -215,7 +255,8 @@ python scripts/validate_shot_plan.py 02_shot_plan.json
 ```
 
 The shot-plan gate checks structural variety, required shot fields, product
-identity locks, exact visible text carry-through, full-visible product facts,
+identity locks, creative concept, scene arenas, dramatic events, visual
+mechanisms, exact visible text carry-through, full-visible product facts,
 forbidden visual additions, and avoid-list discipline.
 
 For Google Omni video segment JSON:
@@ -293,6 +334,25 @@ Never rely on a global product lock alone. The global lock protects
 full-visible product facts, but per-panel visibility tells the image model when
 not to draw the product, when to draw only a component, and when to draw the
 full package.
+
+Every product storyboard sheet prompt must also include:
+
+```text
+Creative Concept:
+World Rule:
+Scene Ladder:
+Visual Mechanism:
+```
+
+Then every panel line must repeat:
+
+```text
+[scene_arena: ...] [scene_role: ...] [dramatic_event: ...] [visual_mechanism: ...]
+```
+
+This is not decorative metadata. It is the antidote to repetitive bottle
+details: the image model needs to know the scene, event, and mechanism that make
+each panel different.
 
 Base style phrase:
 
