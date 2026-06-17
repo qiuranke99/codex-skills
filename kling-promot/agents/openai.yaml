@@ -1,0 +1,4 @@
+interface:
+  display_name: "Kling-Promot"
+  short_description: "World-class Kling 3.0 video prompt director."
+  default_prompt: "Use $kling-promot to turn my video idea and available references into a Kling 3.0 or Kling 3.0 Omni prompt."

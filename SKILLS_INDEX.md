@@ -16,10 +16,11 @@ Codex discovery root: `C:\Users\Administrator\.codex\skills`
 | `ai-visual-director` | `D:\AI\skill\ai-visual-director` | Automates AI visual direction from references, briefs, and duration targets into route decisions, shot plans, blue-gray storyboard sheet prompts, imagegen prompts, and Google Omni video prompts. | `https://github.com/qiuranke99/ai-visual-director-skill` | active |
 | `seedance-prompt-en` | `D:\AI\skill\seedance-prompt-en` | English prompt writing guide for Jimeng Seedance 2.0 multimodal AI video generation, including @ references, camera language, extension/editing, ads, short dramas, and educational content. | `https://github.com/dexhunter/seedance2-skill` | active |
 | `seedance-prompt-zh` | `D:\AI\skill\seedance-prompt-zh` | Chinese prompt writing guide for Jimeng Seedance 2.0 multimodal AI video generation, including @ references, camera replication, effects, extension/editing, ads, short dramas, and educational content. | `https://github.com/dexhunter/seedance2-skill/tree/main/zh` | active |
+| `kling-promot` | `D:\AI\skill\kling-promot` | World-class Kling 3.0 and Kling VIDEO 3.0 Omni prompt director for text/image/video/audio references, elements, custom multi-shot, native audio, dialogue, and API-oriented prompt payloads. | Local skill created from official Kling documentation plus prompt-pattern research; display name: `Kling-Promot` | active |
 
 ## Codex Discovery Entries
 
-As of 2026-06-17, the eight user-maintained skills above are installed for Codex discovery as Windows directory junctions:
+As of 2026-06-17, the nine user-maintained skills above are installed for Codex discovery as Windows directory junctions:
 
 | Codex entry | Junction target |
 | --- | --- |
@@ -31,6 +32,7 @@ As of 2026-06-17, the eight user-maintained skills above are installed for Codex
 | `C:\Users\Administrator\.codex\skills\ai-visual-director` | `D:\AI\skill\ai-visual-director` |
 | `C:\Users\Administrator\.codex\skills\seedance-prompt-en` | `D:\AI\skill\seedance-prompt-en` |
 | `C:\Users\Administrator\.codex\skills\seedance-prompt-zh` | `D:\AI\skill\seedance-prompt-zh` |
+| `C:\Users\Administrator\.codex\skills\kling-promot` | `D:\AI\skill\kling-promot` |
 
 ## Skipped Sources
 
