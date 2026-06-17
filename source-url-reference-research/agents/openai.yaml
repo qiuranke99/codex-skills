@@ -1,4 +1,4 @@
 interface:
   display_name: "Source URL Reference Research"
-  short_description: "Find visual references without downloads"
-  default_prompt: "Use $source-url-reference-research to find high-quality visual references and return source_url evidence without downloading media."
+  short_description: "Find verified visual references"
+  default_prompt: "Use $source-url-reference-research to find verified visual references and automatically create an image reference pack for image-reference requests."

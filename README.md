@@ -10,8 +10,9 @@ Each skill must live in its own stable folder:
 
 ```text
 D:\AI\skill\
-  SKILLS_INDEX.md
+  AGENTS.md
   README.md
+  SKILLS_INDEX.md
   <skill-name>\
     SKILL.md
     scripts\
@@ -20,7 +21,7 @@ D:\AI\skill\
     assets\
 ```
 
-Only `SKILLS_INDEX.md`, `README.md`, and skill directories should be kept at the root.
+Only `AGENTS.md`, `README.md`, `SKILLS_INDEX.md`, and skill directories should be kept at the root.
 
 ## Rules
 
