@@ -53,14 +53,21 @@ def valid_storyboard_prompt() -> str:
     return """
 # Storyboard Sheet 01 Prompt
 
+Story Engine: A clinical droplet teaches a reflective world to reveal the serum
+only after its hydration logic is proven.
 Creative Concept: A single clinical droplet teaches the world to behave like
 the bottle's pale blue stripe.
 World Rule: every reveal is caused by water, reflection, fingertip pressure, or
 glass refraction, never by a random beauty pose.
+Beat Map: origin droplet -> reflected cap clue -> withheld shoulder -> earned
+full reveal -> label proof -> fingertip use -> hydration metaphor -> return
+bridge -> final product authority.
 Scene Ladder: clinical droplet world -> reflective tray threshold -> fingertip
 interaction table -> hydration ripple world -> clean packshot memory space.
 Visual Mechanism: droplet, tray reflection, label stripe, fingertip ripple, and
 final packshot form one cause-and-effect chain.
+Anti-plastic: real glass reflection, contact shadow, tactile tray edges,
+physical water behavior, subtle paper grain, and restrained blue-gray graphite.
 
 Product Lock Evidence: surface text inventory includes front wordmark LUMA,
 center text HYDRATING SERUM, lower text 30 ml, centered front label rectangle,
@@ -224,6 +231,21 @@ Panel plan:
         self.assertFalse(result["ok"])
         self.assertTrue(
             any("Creative Concept" in error or "scene_arena" in error for error in result["errors"]),
+            result["errors"],
+        )
+
+    def test_run_package_rejects_markdown_only_video_prompts(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            run_dir = Path(tmp)
+            populate_run_dir(run_dir, valid_storyboard_prompt())
+            (run_dir / "08_google_omni_video_prompts.json").unlink()
+
+            code, result = run_validator(run_dir)
+
+        self.assertNotEqual(code, 0)
+        self.assertFalse(result["ok"])
+        self.assertTrue(
+            any("structured video prompt JSON" in error for error in result["errors"]),
             result["errors"],
         )
 

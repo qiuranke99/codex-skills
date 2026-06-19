@@ -15,7 +15,6 @@ from pathlib import Path
 
 
 DEFAULT_SEGMENT_SECONDS = 10
-SECONDS_PER_STORYBOARD_SHEET = 13.5
 ALLOWED_PRODUCTION_MODES = {"standard_fast", "rush", "premium_pitch", "certification"}
 CINEMATIC_LANGUAGE_REFERENCE = "references/cinematic_language_decision_matrix.md"
 
@@ -203,13 +202,60 @@ def escalation_triggers(intake: dict, brief: str) -> list[str]:
         triggers.append("regulated_or_likeness_risk")
     if re.search(r"像.*香奈儿|像.*Chanel|像.*Dior|像.*Apple|模仿|复刻", brief, flags=re.IGNORECASE):
         triggers.append("brand_imitation_risk")
-    if "duration_seconds" not in intake:
+    if "duration_seconds" not in intake and infer_duration_seconds(intake, brief)[1] == "default_missing":
         triggers.append("duration_missing_defaulted")
     if len(intake.get("reference_images", [])) > 6:
         triggers.append("many_reference_images_need_role_discipline")
     if intake.get("conflicting_reference_roles"):
         triggers.append("declared_reference_conflict")
     return triggers
+
+
+TIME_PATTERN = re.compile(r"(?P<value>\d+(?:\.\d+)?)\s*(?P<unit>s|sec|secs|second|seconds|秒)", re.IGNORECASE)
+SEGMENT_TIME_PATTERN = re.compile(
+    r"(?P<value>\d+(?:\.\d+)?)\s*(?:s|sec|secs|second|seconds|秒)\s*(?:/|每)?\s*(?:segment|segments|seg|clip|clips|段|条)",
+    re.IGNORECASE,
+)
+DURATION_CONTEXT_PATTERN = re.compile(
+    r"(?:duration|length|runtime|total|video|film|ad|spot|时长|总长|视频|广告|短片|片子|成片)[^\d]{0,12}"
+    r"(?P<value>\d+(?:\.\d+)?)\s*(?:s|sec|secs|second|seconds|秒)",
+    re.IGNORECASE,
+)
+
+
+def _time_mentions(brief: str) -> list[tuple[float, tuple[int, int]]]:
+    mentions = []
+    for match in TIME_PATTERN.finditer(brief):
+        mentions.append((float(match.group("value")), match.span()))
+    return mentions
+
+
+def infer_segment_seconds(intake: dict, brief: str) -> tuple[float, str]:
+    if "video_segment_seconds" in intake and intake.get("video_segment_seconds") not in (None, ""):
+        return float(intake["video_segment_seconds"]), "intake.video_segment_seconds"
+    match = SEGMENT_TIME_PATTERN.search(brief)
+    if match:
+        return float(match.group("value")), "brief.segment_seconds"
+    return float(DEFAULT_SEGMENT_SECONDS), "default"
+
+
+def infer_duration_seconds(intake: dict, brief: str) -> tuple[float, str]:
+    if "duration_seconds" in intake and intake.get("duration_seconds") not in (None, ""):
+        return float(intake["duration_seconds"]), "intake.duration_seconds"
+
+    explicit = DURATION_CONTEXT_PATTERN.search(brief)
+    if explicit:
+        return float(explicit.group("value")), "brief.duration_context"
+
+    segment_spans = [match.span() for match in SEGMENT_TIME_PATTERN.finditer(brief)]
+    candidates = [
+        value
+        for value, span in _time_mentions(brief)
+        if not any(span[0] >= seg_span[0] and span[1] <= seg_span[1] for seg_span in segment_spans)
+    ]
+    if candidates:
+        return max(candidates), "brief.time_mention"
+    return 30.0, "default_missing"
 
 
 def infer_cinematic_language_triggers(
@@ -256,6 +302,48 @@ def cinematic_language_depth(triggers: list[str]) -> str:
     return "default"
 
 
+def storyboard_sheet_count(duration: float) -> int:
+    """Return storyboard sheet count for director keyframes, not edit count."""
+    if duration <= 30:
+        return 1
+    if duration <= 60:
+        return 2
+    return max(3, math.ceil(duration / 30))
+
+
+def recommended_story_beat_count(duration: float) -> int:
+    if duration <= 10:
+        return 3
+    if duration <= 20:
+        return 4
+    if duration <= 30:
+        return 5
+    if duration <= 60:
+        return 6
+    return min(9, max(7, math.ceil(duration / 10)))
+
+
+def select_story_beats(project_type: str, duration: float) -> list[str]:
+    arc = ROUTE_TEMPLATES[project_type]["arc"]
+    target = recommended_story_beat_count(duration)
+    if len(arc) >= target:
+        return arc[:target]
+    beats = list(arc)
+    fillers = [
+        "inciting visual rule",
+        "escalation or complication",
+        "human or material proof",
+        "return bridge",
+        "memory image",
+    ]
+    for filler in fillers:
+        if len(beats) >= target:
+            break
+        if filler not in beats:
+            beats.append(filler)
+    return beats[:target]
+
+
 def main() -> int:
     intake = read_intake()
     brief = str(intake.get("brief", "")).strip()
@@ -263,8 +351,8 @@ def main() -> int:
         print("brief is required", file=sys.stderr)
         return 2
 
-    duration = float(intake.get("duration_seconds") or 30)
-    segment_seconds = float(intake.get("video_segment_seconds") or DEFAULT_SEGMENT_SECONDS)
+    duration, duration_source = infer_duration_seconds(intake, brief)
+    segment_seconds, segment_seconds_source = infer_segment_seconds(intake, brief)
     if duration <= 0 or segment_seconds <= 0:
         print("duration_seconds and video_segment_seconds must be positive", file=sys.stderr)
         return 2
@@ -272,8 +360,9 @@ def main() -> int:
     project_type = infer_project_type(brief)
     production_mode = infer_production_mode(intake, brief)
     triggers = escalation_triggers(intake, brief)
-    sheet_count = max(1, math.ceil(duration / SECONDS_PER_STORYBOARD_SHEET))
+    sheet_count = storyboard_sheet_count(duration)
     video_segment_count = max(1, math.ceil(duration / segment_seconds))
+    story_beats = select_story_beats(project_type, duration)
     cinematic_triggers = infer_cinematic_language_triggers(
         intake=intake,
         brief=brief,
@@ -293,14 +382,27 @@ def main() -> int:
         "cinematic_language_depth": cinematic_language_depth(cinematic_triggers),
         "recommended_references": [CINEMATIC_LANGUAGE_REFERENCE] if cinematic_reference_required else [],
         "duration_seconds": duration,
+        "duration_source": duration_source,
         "storyboard_sheet_count": sheet_count,
         "panel_count": sheet_count * 9,
+        "storyboard_panel_semantics": (
+            "Each storyboard panel is a director keyframe or narrative evidence frame, "
+            "not a required video cut. Do not map 9 panels to 9 quick-cut video shots."
+        ),
+        "recommended_story_beat_count": len(story_beats),
+        "recommended_story_beats": story_beats,
+        "omni_prompt_mode": "temporal_segment_motion_contract",
+        "max_story_beats_per_video_segment": 4,
+        "max_source_keyframes_per_video_segment": 4,
         "video_segment_seconds": segment_seconds,
+        "video_segment_seconds_source": segment_seconds_source,
         "video_segment_count": video_segment_count,
         "route_template": ROUTE_TEMPLATES[project_type],
         "reference_image_count": len(intake.get("reference_images", [])),
         "notes": [
+            "Storyboard panels are keyframes, not a one-to-one edit list.",
             "Storyboard sheet count and video segment count are intentionally separate.",
+            "Google Omni prompts should describe temporal story beats, camera motion, subject motion, environment motion, and continuity; do not paste all storyboard panels as cuts.",
             "Revise route if reference images or explicit user requirements contradict keyword inference.",
         ],
     }

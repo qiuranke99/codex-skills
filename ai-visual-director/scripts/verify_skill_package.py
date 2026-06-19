@@ -151,8 +151,8 @@ def main() -> int:
             expected = {
                 "project_type": "premium_product_ad",
                 "production_mode": "standard_fast",
-                "storyboard_sheet_count": 3,
-                "panel_count": 27,
+                "storyboard_sheet_count": 2,
+                "panel_count": 18,
                 "video_segment_count": 4,
                 "cinematic_language_reference_required": False,
             }

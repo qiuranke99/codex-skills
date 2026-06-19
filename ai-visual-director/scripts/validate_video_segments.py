@@ -16,11 +16,16 @@ REQUIRED_SEGMENT_FIELDS = [
     "source_shots",
     "first_frame",
     "last_frame",
+    "story_beats",
     "camera_plan",
+    "cut_strategy",
     "subject_motion",
     "environment_motion",
+    "motion_continuity",
     "continuity_lock",
     "visual_style",
+    "anti_plastic_constraints",
+    "omni_prompt",
     "negative_constraints",
 ]
 
@@ -43,6 +48,23 @@ PRODUCT_DRIFT_WORDS = re.compile(
 VISUAL_FIDELITY_WORDS = re.compile(
     r"exact|match|same|preserve|supplied|original|reference|no-extra|no extra|unchanged visual|visual facts|"
     r"准确|一致|保持|保留|参考图|原始|真实|不得新增|不新增|视觉事实",
+    re.IGNORECASE,
+)
+CAMERA_MOTION_WORDS = re.compile(
+    r"dolly|truck|pan|tilt|push|pull|orbit|arc|crane|pedestal|handheld|locked|tracking|follow|rack focus|"
+    r"zoom|parallax|reveal|slide|drift|move|camera|"
+    r"推|拉|摇|移|环绕|跟拍|手持|锁定|变焦|焦点|视差|揭示|滑过|运动|镜头",
+    re.IGNORECASE,
+)
+ANTI_PLASTIC_POSITIVE_WORDS = re.compile(
+    r"material|texture|tactile|grain|halation|lens|reflection|refraction|shadow|contact|imperfect|imperfection|"
+    r"physical|real|natural|micro|specular|surface|glass|skin|metal|fabric|paper|motion blur|"
+    r"材质|纹理|触感|颗粒|镜头|反射|折射|阴影|接触|瑕疵|物理|真实|自然|微|高光|表面|玻璃|皮肤|金属|织物|纸|运动模糊",
+    re.IGNORECASE,
+)
+AI_PLASTIC_NEGATIVE_WORDS = re.compile(
+    r"plastic|waxy|cgi|synthetic|over[- ]?smooth|overly smooth|rubber|melted|airbrushed|fake texture|"
+    r"塑料|蜡感|CGI|合成感|过度光滑|橡胶|融化|磨皮|假纹理",
     re.IGNORECASE,
 )
 BAD_FULL_VIEW_TEXT = re.compile(
@@ -268,6 +290,78 @@ def validate_product_video(payload: dict) -> tuple[list[str], list[str]]:
     return errors, warnings
 
 
+def validate_video_story(payload: dict) -> tuple[list[str], list[str]]:
+    errors: list[str] = []
+    warnings: list[str] = []
+    story = payload.get("video_story")
+    required = [
+        "logline",
+        "story_arc",
+        "world_rule",
+        "emotional_turn",
+        "duration_strategy",
+        "anti_plastic_strategy",
+    ]
+    if not isinstance(story, dict):
+        errors.append("video_story: missing story engine for video prompts")
+        return errors, warnings
+    for field in required:
+        if not has_nonempty(story.get(field)):
+            errors.append(f"video_story: missing {field}")
+    arc = story.get("story_arc")
+    if not isinstance(arc, list) or len([item for item in arc if str(item).strip()]) < 2:
+        errors.append("video_story: story_arc must contain at least 2 beats")
+    anti_plastic = text_blob(story.get("anti_plastic_strategy", ""))
+    if not ANTI_PLASTIC_POSITIVE_WORDS.search(anti_plastic):
+        errors.append("video_story: anti_plastic_strategy must specify material, lens, light, texture, or physical-detail controls")
+    return errors, warnings
+
+
+def validate_temporal_segments(payload: dict) -> tuple[list[str], list[str]]:
+    errors: list[str] = []
+    warnings: list[str] = []
+    for idx, segment in enumerate(payload.get("segments", []), start=1):
+        if not isinstance(segment, dict):
+            continue
+        sid = segment.get("segment_id", f"segment-{idx}")
+        story_beats = segment.get("story_beats")
+        if not isinstance(story_beats, list) or not story_beats:
+            errors.append(f"{sid}: story_beats must be a non-empty list")
+        elif len(story_beats) > 4:
+            errors.append(f"{sid}: too many story_beats ({len(story_beats)}); do not paste a 9-panel storyboard into one video segment")
+
+        source_shots = segment.get("source_shots")
+        if isinstance(source_shots, list) and len(source_shots) > 4:
+            errors.append(f"{sid}: too many source_shots ({len(source_shots)}); one Omni/Veo segment should reference only the keyframes it can actually animate")
+
+        first_frame = normalized(str(segment.get("first_frame", "")))
+        last_frame = normalized(str(segment.get("last_frame", "")))
+        if first_frame and last_frame and first_frame == last_frame:
+            errors.append(f"{sid}: first_frame and last_frame cannot be identical; video needs temporal change")
+
+        camera_plan = str(segment.get("camera_plan", ""))
+        if camera_plan and not CAMERA_MOTION_WORDS.search(camera_plan):
+            errors.append(f"{sid}: camera_plan must name a physical camera state or movement")
+
+        motion_blob = text_blob(
+            segment.get("subject_motion", ""),
+            segment.get("environment_motion", ""),
+            segment.get("motion_continuity", ""),
+            segment.get("cut_strategy", ""),
+            segment.get("omni_prompt", ""),
+        )
+        if not CAMERA_MOTION_WORDS.search(text_blob(camera_plan, motion_blob)):
+            errors.append(f"{sid}: segment must describe camera, subject, or environment motion instead of a static storyboard frame")
+
+        anti_plastic = text_blob(segment.get("anti_plastic_constraints", ""), segment.get("negative_constraints", ""))
+        if not ANTI_PLASTIC_POSITIVE_WORDS.search(anti_plastic):
+            errors.append(f"{sid}: anti_plastic_constraints must specify real material, lens, texture, light, shadow, or physical-detail behavior")
+        if not AI_PLASTIC_NEGATIVE_WORDS.search(anti_plastic):
+            warnings.append(f"{sid}: consider naming plastic/CGI/waxy/over-smoothed failure modes in anti_plastic or negative constraints")
+
+    return errors, warnings
+
+
 def main() -> int:
     if len(sys.argv) != 2:
         print("usage: validate_video_segments.py <video_segments.json>", file=sys.stderr)
@@ -294,6 +388,14 @@ def main() -> int:
     product_errors, product_warnings = validate_product_video(payload)
     errors.extend(product_errors)
     warnings.extend(product_warnings)
+
+    story_errors, story_warnings = validate_video_story(payload)
+    errors.extend(story_errors)
+    warnings.extend(story_warnings)
+
+    temporal_errors, temporal_warnings = validate_temporal_segments(payload)
+    errors.extend(temporal_errors)
+    warnings.extend(temporal_warnings)
 
     result = {
         "ok": not errors,

@@ -69,6 +69,37 @@ class CinematicLanguageRoutingTests(unittest.TestCase):
             routed["recommended_references"],
         )
 
+    def test_route_parses_duration_and_segment_seconds_from_brief_text(self) -> None:
+        routed = run_router(
+            {
+                "brief": "高端护肤产品广告，40s，Google Omni 10s/段，一张产品图，一张蓝灰视觉参考图",
+                "reference_images": [{"path": "product.jpg"}, {"path": "style.jpg"}],
+            }
+        )
+
+        self.assertEqual(routed["duration_seconds"], 40)
+        self.assertEqual(routed["duration_source"], "brief.duration_context")
+        self.assertEqual(routed["video_segment_seconds"], 10)
+        self.assertEqual(routed["video_segment_seconds_source"], "brief.segment_seconds")
+        self.assertEqual(routed["video_segment_count"], 4)
+        self.assertEqual(routed["storyboard_sheet_count"], 2)
+        self.assertEqual(routed["panel_count"], 18)
+
+    def test_ten_second_ad_keeps_storyboard_as_keyframes_not_nine_video_cuts(self) -> None:
+        routed = run_router(
+            {
+                "brief": "10s product ad, one product photo, one visual reference, cinematic but concise",
+                "reference_images": [{"path": "product.jpg"}, {"path": "style.jpg"}],
+            }
+        )
+
+        self.assertEqual(routed["duration_seconds"], 10)
+        self.assertEqual(routed["video_segment_count"], 1)
+        self.assertEqual(routed["storyboard_sheet_count"], 1)
+        self.assertEqual(routed["panel_count"], 9)
+        self.assertLessEqual(routed["recommended_story_beat_count"], 3)
+        self.assertIn("not a one-to-one edit list", routed["notes"][0])
+
     def test_skill_contains_conditional_refined_reference_not_full_source_import(self) -> None:
         self.assertTrue(REFERENCE.exists(), "missing refined cinematic language reference")
         reference_text = REFERENCE.read_text(encoding="utf-8")

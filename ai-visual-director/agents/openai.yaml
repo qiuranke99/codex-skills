@@ -1,4 +1,4 @@
 interface:
   display_name: "AI Visual Director"
-  short_description: "Director workflow for reference analysis, product-faithful storyboards, image prompts, and Google Omni video segments."
-  default_prompt: "Run the AI Visual Director workflow for these references and keywords. Produce reference roles, route decision, shot plan, product identity lock when needed, storyboard sheet prompts, Google Omni segment prompts, validation results, and final QC artifact paths."
+  short_description: "Story-first ad-film director workflow for product-faithful storyboard images and Google Omni video prompts."
+  default_prompt: "Use $ai-visual-director for this brief and references. Build the internal story engine, product identity lock, shot plan, and validation chain, then show only the storyboard image path(s) and paste-ready Google Omni video prompts unless validation fails."

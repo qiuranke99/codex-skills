@@ -36,7 +36,7 @@ PRODUCT_PROJECT_TYPES = {"premium_product_ad", "product_ad"}
 PRODUCT_ROLE_WORDS = {"product_identity"}
 PRODUCT_APPEARANCE_WORDS = re.compile(
     r"product|packshot|bottle|jar|tube|box|package|packaging|label|logo|brand|serum|cream|lipstick|fragrance|"
-    r"浜у搧|鍖呰|鐡秥鐡惰韩|缃恷绠鐩抾鏍囩|鏍囪创|鍝佺墝|鍟嗘爣|绮惧崕|闈㈤湝|鍙ｇ孩|棣欐按",
+    r"产品|包装|瓶|瓶身|罐|管|盒|标签|标贴|文字|品牌|商标|精华|面霜|口红|香水",
     re.IGNORECASE,
 )
 NOT_VISIBLE_PROMPT_WORDS = re.compile(
@@ -44,10 +44,13 @@ NOT_VISIBLE_PROMPT_WORDS = re.compile(
     re.IGNORECASE,
 )
 CREATIVE_PROMPT_BLOCKS = [
+    "story engine",
     "creative concept",
     "world rule",
+    "beat map",
     "scene ladder",
     "visual mechanism",
+    "anti-plastic",
 ]
 CREATIVE_PANEL_FIELDS = [
     "scene_arena",
@@ -262,7 +265,7 @@ def main() -> int:
             if not ok:
                 errors.append(f"{video_json.name} failed validate_video_segments.py: {payload}")
         else:
-            warnings.append("no structured video prompt JSON found; markdown-only video prompts were not schema-validated")
+            errors.append("missing structured video prompt JSON; markdown-only Google Omni prompts cannot be validated")
 
     result = {
         "ok": not errors,

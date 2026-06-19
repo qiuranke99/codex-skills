@@ -147,28 +147,33 @@ If a response must be shortened, preserve fields in this order:
 
 1. `SH_###`
 2. `scene`
-3. `dramatic_beat`
-4. `shot_purpose`
-5. `shot_size`
-6. `camera_angle`
-7. `main_subject`
-8. `main_action`
-9. `blocking`
-10. `body_pose`
-11. `composition`
-12. `foreground`, `midground`, `background`
-13. `pov_alignment`
-14. `axis_of_action`, `screen_direction`, `eyeline`
-15. `cut_logic`
-16. `panel_moment`
-17. `scale_reference`
-18. `continuity_lock`
-19. `camera_movement`
-20. `lens_feel`
-21. `must_preserve`
-22. `avoid`
-23. `duration`
-24. `aspect_ratio`
+3. `story_beat`
+4. `arc_position`
+5. `dramatic_beat`
+6. `shot_purpose`
+7. `shot_size`
+8. `camera_angle`
+9. `camera_motivation`
+10. `main_subject`
+11. `main_action`
+12. `blocking`
+13. `body_pose`
+14. `composition`
+15. `foreground`, `midground`, `background`
+16. `motion_continuity`
+17. `material_truth`
+18. `pov_alignment`
+19. `axis_of_action`, `screen_direction`, `eyeline`
+20. `cut_logic`
+21. `panel_moment`
+22. `scale_reference`
+23. `continuity_lock`
+24. `camera_movement`
+25. `lens_feel`
+26. `must_preserve`
+27. `avoid`
+28. `duration`
+29. `aspect_ratio`
 
 Rationale: the downstream artist or generator must know what to draw, where the viewer is, what action is happening, and what cannot drift before it needs aesthetic or technical refinements.
 
@@ -179,6 +184,8 @@ Rationale: the downstream artist or generator must know what to draw, where the 
 | `SH_###` | Stable shot ID for revision. | `SH_004` | `next shot` |
 | `aspect_ratio` | Frame ratio if relevant. | `9:16 vertical` | `cinematic` |
 | `scene` | Place, time, and story beat context. | `rainy Tokyo crossing, first scale reveal` | `city` |
+| `arc_position` | Where this keyframe sits in the ad film's arc. | `origin`, `first rule violation`, `earned reveal`, `benefit proof`, `final authority` | `middle` |
+| `story_beat` | The story change this keyframe proves. | `the product earns visibility after the ripple reveals its label geometry` | `product shot` |
 | `scene_arena` | Distinct visual world or place of the panel. | `rain-lit glass elevator threshold` | `product area` |
 | `scene_role` | The panel's commercial or story function. | `benefit metaphor`, `partial reveal threshold`, `final authority` | `beauty` |
 | `dramatic_event` | On-screen event or transformation. | `the elevator reflection folds into the bottle silhouette` | `light sweeps across product` |
@@ -190,6 +197,9 @@ Rationale: the downstream artist or generator must know what to draw, where the 
 | `camera_angle` | Camera position relative to subject. | `low street-level angle looking up from taxi bumper` | `dramatic angle` |
 | `lens_feel` | Perceived spatial behavior, not equipment fetish. | `24mm wide feel, strong foreground exaggeration` | `ARRI 28mm f/1.4` |
 | `camera_movement` | Static state or motivated move. | `locked-off`, `slow dolly-in`, `tilt-down reveal` | `dynamic camera` |
+| `camera_motivation` | Why the camera moves or stays still. | `dolly-in follows the fingertip pressure as it becomes the hydration ripple` | `more cinematic` |
+| `motion_continuity` | How motion carries from prior beat to next beat. | `tray slide inherits the droplet direction and resolves into the bottle reflection` | `smooth` |
+| `material_truth` | Physical texture, light, and lens behavior that prevents plastic CGI. | `real glass thickness, contact shadow, imperfect specular edge, subtle grain` | `realistic` |
 | `cut_logic` | Why this shot follows the previous shot. | `reaction cut after she sees the tiny taxis` | `another angle` |
 | `panel_moment` | Which instant the storyboard panel should draw. | `decisive moment: foot hovering above taxi row` | `during movement` |
 | `pov_alignment` | Viewer’s alignment. | `character-aligned discovery`, `objective wide`, `product-functional insert` | `cinematic POV` |

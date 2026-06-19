@@ -5,10 +5,13 @@ main `SKILL.md` focused on routing while preserving a strict delivery process.
 
 ## 1. Operating Boundary
 
-Use this skill for director-led visual planning, storyboard sheets, image
-prompts, and video-generation prompt packs. It is not a generic image prompt
-writer. The skill must produce sequence logic, product/character/location
-continuity, reference-role decisions, and validation evidence.
+Use this skill for director-led visual planning, storyboard bitmap images, and
+video-generation prompt packs. It is not a generic image prompt writer or a
+9-grid template. The skill must produce sequence logic, product/character/
+location continuity, reference-role decisions, story-engine evidence, and
+validation evidence. The final user-facing output is only storyboard image(s)
+and Google Omni video prompts; internal artifacts exist to make those outputs
+auditable.
 
 Do not modify project SSOT files or long-term indexes unless the user explicitly
 asks. Temporary run artifacts belong in the current run directory.
@@ -19,28 +22,34 @@ allows it.
 
 ## 2. Required Run Order
 
-1. Intake: identify brief, duration, output targets, reference files, and risk.
+1. Intake: identify brief, duration, dimensions, output targets, reference files, and risk.
 2. Reference-role analysis: separate product identity, first-frame composition,
    style, lighting, environment, negative, and motion references.
 3. Product identity lock: if a real product appears, extract the visual facts
-   before shot planning.
-4. Route decision: run or mirror `scripts/route_project.py`.
-5. Creative concept: define big idea, audience desire, story tension, world
-   rule, visual mechanism, scene ladder, and signature images.
-6. Advanced cinematic-language routing: if `00_route_decision.json` sets
+   before route, story, or shot planning.
+4. Route decision: run or mirror `scripts/route_project.py`, inferring duration
+   and segment seconds from brief text when structured intake is absent.
+5. Story engine: define advertising logline, dramatic question, world rule,
+   product role, story arc, motion language, duration design, and anti-plastic
+   material rules.
+6. Creative concept: define big idea, audience desire, story tension, world
+   rule, visual mechanism, scene ladder, and signature images. It must derive
+   from the story engine, not from a product-angle template.
+7. Advanced cinematic-language routing: if `00_route_decision.json` sets
    `cinematic_language_reference_required: true`, read
    `references/cinematic_language_decision_matrix.md` before shot planning.
    If it is false, do not load that reference for ordinary product-ad boards.
-7. Shot plan: write `02_shot_plan.json` against `references/shot_plan.schema.json`.
-8. Structure validation: run `scripts/validate_shot_plan.py`.
-9. Internal revision: fix validation failures before image prompts.
-10. Storyboard image prompts: one prompt per 3x3 sheet.
-11. Video segment prompts: 10-second temporal segments with first/last frame and
-   motion over time.
-12. Video validation: run `scripts/validate_video_segments.py` when structured
-    video JSON is produced.
-13. Final QC: run `scripts/validate_run_package.py` on the run directory.
-14. Report artifact paths and remaining risks.
+8. Shot plan: write `02_shot_plan.json` against `references/shot_plan.schema.json`.
+9. Structure validation: run `scripts/validate_shot_plan.py`.
+10. Internal revision: fix validation failures before image generation or video prompts.
+11. Storyboard image generation: one bitmap storyboard image per sheet when image generation is available; keep prompt text as an internal artifact or fallback only.
+12. Video segment prompts: temporal segments with first/last frame, 1-4 story
+    beats, camera plan, cut strategy, subject/environment motion, motion
+    continuity, product lock, and anti-plastic constraints.
+13. Video validation: run `scripts/validate_video_segments.py`; structured video
+    JSON is required for a complete run.
+14. Final QC: run `scripts/validate_run_package.py` on the run directory.
+15. Report only storyboard image path(s), Google Omni prompt path, validation status, and remaining hard risks.
 
 `00_route_decision.json` may include:
 
@@ -54,7 +63,28 @@ explicitly asks for VFX, sound design, camera report, color pipeline, complex
 continuity, advanced lens language, or production handoff, read the advanced
 reference even if a hand-written route object forgot to set the flag.
 
-## 3. Creative Concept Gate
+## 3. Story Engine Gate
+
+For brief + product image + visual reference work, `story_engine` is mandatory
+before shot planning. It is the source of the storyboard and video segment
+logic.
+
+Required fields:
+
+- `advertising_logline`: one sentence that sells the idea, not the product category;
+- `world_rule`: how this film's world behaves on screen;
+- `dramatic_question`: what is withheld, crossed, awakened, transformed, or resolved;
+- `dramatic_arc`: beginning, turn, escalation, and resolution;
+- `product_role`: how the product becomes inevitable without appearing in every panel;
+- `reference_synthesis`: what each supplied reference controls and what it must not control;
+- `duration_design`: beat allocation across total seconds, storyboard sheets, and Omni segments;
+- `motion_language`: camera and world motion grammar derived from the story engine;
+- `anti_plastic_rules`: material truth, tactile imperfections, restraint, and non-gloss constraints.
+
+Reject story engines that can be summarized as `product + petals + glass +
+light sweep`, `premium product reveal`, or `beautiful packshot sequence`.
+
+## 4. Creative Concept Gate
 
 For non-catalog product ads, do not begin shot planning until the plan has a
 top-level `creative_concept`:
@@ -85,7 +115,7 @@ across the product`, `product holds`, `ribbon drifts`, or `premium reflection`
 are weak unless they cause a reveal, transformation, decision, use action,
 benefit metaphor, or final memory image.
 
-## 4. Product Identity Lock
+## 5. Product Identity Lock
 
 When the user provides a product image, product packaging is identity. It is not
 decorative style. A shot, storyboard sheet, or video prompt that omits or
@@ -151,7 +181,11 @@ subject is not the product or package. If the user asks for catalog, listing,
 e-commerce, SKU, packshot-only, or detail-board work, state that exception in
 the `visual_strategy`.
 
-## 5. Storyboard Sheet Rule
+## 6. Storyboard Sheet Rule
+
+Storyboard panels are director keyframes, not mandatory edit points. A 10-second
+film can use a 9-panel sheet to think through composition, cause/effect, and
+visual memory without becoming a nine-cut video.
 
 A rough storyboard style is not permission to omit product facts. If a product
 faces camera, the sheet prompt must instruct the artist/model to draw the real
@@ -178,7 +212,7 @@ every panel line. These fields are not captions for the final image; they are
 directional constraints that prevent the sheet from becoming a repeated product
 detail board.
 
-## 6. Video Segment Rule
+## 7. Video Segment Rule
 
 Video prompts may use camera orbit, pan, push-in, reveal, parallax, foreground
 occlusion, light sweeps, mist, petals, liquid, or environment motion. Those
@@ -188,7 +222,21 @@ A product must not be rebuilt from atmosphere, simplified into a generic object,
 or given invented labels or hardware. If the product changes angle, the lock
 still governs the visible faces and components.
 
-## 7. Required Run Directory
+Each segment must be a concise motion contract, not a storyboard transcription:
+
+- 1-4 `story_beats`;
+- first frame and last frame must differ;
+- `camera_plan` must name a physical camera state or movement;
+- `cut_strategy` must say whether the segment is one continuous move, a hidden
+  transition, or a small beat sequence;
+- `subject_motion`, `environment_motion`, and `motion_continuity` must state
+  what changes over time;
+- `anti_plastic_constraints` must specify material, lens, light, shadow,
+  texture, or physical-detail behavior.
+
+Do not paste nine storyboard panels into one 10-second Omni/Veo prompt.
+
+## 8. Required Run Directory
 
 Use these canonical artifact names when producing a complete run:
 
@@ -206,11 +254,12 @@ storyboard_sheet_02.png
 10_run_package_validation.json
 ```
 
-Bitmap storyboard sheets are optional only when image generation is not
-requested or cannot run in the current environment. The prompt, plan, video, and
-QC artifacts are still required.
+Bitmap storyboard sheets are optional only when image generation cannot run in
+the current environment. The prompt trace, plan, video JSON, and QC artifacts
+are still required internally, but the final user-facing answer must not list
+them as deliverables unless validation fails or the user asks for internals.
 
-## 8. Failure Handling
+## 9. Failure Handling
 
 Do not hide failures in prose. If validation fails, revise the artifact and run
 the validator again. If exact product facts are impossible because the reference

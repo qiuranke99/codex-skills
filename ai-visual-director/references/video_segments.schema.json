@@ -2,8 +2,28 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "title": "Google Omni Video Segments",
   "type": "object",
-  "required": ["segments"],
+  "required": ["video_story", "segments"],
   "properties": {
+    "video_story": {
+      "type": "object",
+      "required": [
+        "logline",
+        "story_arc",
+        "world_rule",
+        "emotional_turn",
+        "duration_strategy",
+        "anti_plastic_strategy"
+      ],
+      "properties": {
+        "logline": {"type": "string"},
+        "story_arc": {"type": "array", "items": {"type": "string"}, "minItems": 2},
+        "world_rule": {"type": "string"},
+        "emotional_turn": {"type": "string"},
+        "duration_strategy": {"type": "string"},
+        "anti_plastic_strategy": {"type": "string"}
+      },
+      "additionalProperties": false
+    },
     "required_reference_setup": {
       "type": "object",
       "required": ["product_identity_reference", "product_identity_role"],
@@ -103,11 +123,16 @@
           "source_shots",
           "first_frame",
           "last_frame",
+          "story_beats",
           "camera_plan",
+          "cut_strategy",
           "subject_motion",
           "environment_motion",
+          "motion_continuity",
           "continuity_lock",
           "visual_style",
+          "anti_plastic_constraints",
+          "omni_prompt",
           "negative_constraints"
         ],
         "properties": {
@@ -135,11 +160,21 @@
           },
           "first_frame": {"type": "string"},
           "last_frame": {"type": "string"},
+          "story_beats": {
+            "type": "array",
+            "items": {"type": "string"},
+            "minItems": 1,
+            "maxItems": 4
+          },
           "camera_plan": {"type": "string"},
+          "cut_strategy": {"type": "string"},
           "subject_motion": {"type": "string"},
           "environment_motion": {"type": "string"},
+          "motion_continuity": {"type": "string"},
           "continuity_lock": {"type": "string"},
           "visual_style": {"type": "string"},
+          "anti_plastic_constraints": {"type": "string"},
+          "omni_prompt": {"type": "string"},
           "negative_constraints": {"type": "string"}
         },
         "additionalProperties": false

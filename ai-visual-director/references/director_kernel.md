@@ -41,11 +41,22 @@ Escalate from `standard_fast` to `premium_pitch` or `certification` only if:
 
 ### Premium Product Ad
 
-Default arc: ingredient/world origin -> product reveal -> material/texture proof -> use action -> benefit metaphor -> packshot payoff.
+Default arc is not a shot list. Start with a story engine:
+origin pressure -> first rule violation -> partial product inevitability ->
+material/use proof -> benefit metaphor -> final authority.
 
-Before shot planning, define the creative concept. Product beauty is not a
-concept. A premium product ad must have:
+Before shot planning, define `story_engine` and then the creative concept.
+Product beauty is not a concept. A premium product ad must have:
 
+- an `advertising_logline` that sells the idea, not the product category;
+- a `dramatic_question` that names what is withheld, crossed, awakened,
+  transformed, or resolved;
+- a `product_role` that explains why the product becomes inevitable without
+  appearing in every panel;
+- a `duration_design` that maps story beats to seconds, storyboard keyframes,
+  and Omni/Veo segments;
+- `anti_plastic_rules` grounded in material, lens, light, shadow, texture, and
+  physical detail;
 - a `big_idea` that can be pitched in one sentence;
 - an `audience_desire` beyond "looks premium";
 - a `story_tension` such as withholding, awakening, crossing a threshold,
@@ -61,7 +72,14 @@ sceneable world: a greenhouse threshold, mirrored corridor, rain-lit elevator,
 skin-ripple table, silk veil, window reflection, or another invented arena
 motivated by the references and brand promise.
 
-For 9 shots:
+Duration arcs:
+
+- 10-15s: one world rule, one earned reveal, one tactile proof, one final identity.
+- 20-30s: origin/reveal, texture/use, benefit/payoff.
+- 40s: slow discovery 0-10, tactile proof 10-20, use/benefit 20-30, authority 30-40.
+- 60s: add a second turn or human/world response; do not add more product angles.
+
+For one 9-keyframe sheet:
 1. world/ingredient establish
 2. macro ingredient or material detail
 3. motion bridge into product world
@@ -72,7 +90,9 @@ For 9 shots:
 8. benefit metaphor or use-action bridge
 9. final packshot or sheet payoff
 
-For 27 shots: sheet 1 = origin/reveal, sheet 2 = texture/use, sheet 3 = benefit/payoff.
+Panels are keyframes, not mandatory edit points. A 10-second film can use one
+9-panel sheet without becoming nine quick cuts. For 40s, default to 2 sheets /
+18 keyframes and 4 temporal video prompts unless the brief needs more coverage.
 
 Minimum shot mix per sheet: 1 establishing, 2 macro/insert, 1 hero product angle, 1 movement bridge, 1 payoff.
 

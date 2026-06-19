@@ -53,12 +53,37 @@ def base_shot(idx: int) -> dict:
         "shot_id": f"SH_{idx:03d}",
         "aspect_ratio": "16:9",
         "scene": "blue-gray product world with white serum bottle on reflective tray",
+        "arc_position": [
+            "origin",
+            "material clue",
+            "withheld reveal",
+            "first identity reveal",
+            "identity proof",
+            "use action",
+            "benefit metaphor",
+            "return bridge",
+            "final authority",
+        ][idx - 1],
+        "story_beat": [
+            "water establishes the world rule before the product appears",
+            "the cap edge appears only as a reflected clue",
+            "the product shoulder is withheld by foreground tray geometry",
+            "the first readable full product view is earned by reflection",
+            "label stripe and text become tactile material proof",
+            "a fingertip makes the product feel usable rather than worshipped",
+            "the use action becomes a hydration ripple with no product in frame",
+            "the ripple reflection pulls the eye back toward the package",
+            "the exact product resolves into the final memory image",
+        ][idx - 1],
         "duration": "1.5s",
         "shot_purpose": "show the user-provided serum bottle as the commercial identity anchor",
         "shot_size": shot_sizes[idx - 1],
         "camera_angle": angles[idx - 1],
         "lens_feel": "slightly wide product-table spatial feel",
         "camera_movement": movements[idx - 1],
+        "camera_motivation": "camera movement follows the water/reflection rule instead of circling the product arbitrarily",
+        "motion_continuity": "each motion inherits energy from the prior droplet, tray, fingertip, or ripple beat",
+        "material_truth": "real glass reflections, contact shadows, tactile tray edges, and restrained graphite storyboard texture avoid waxy CGI",
         "cut_logic": "advance from product world to package proof and final payoff",
         "attention_order": "first product silhouette, second label panel, third reflective tray",
         "eye_trace": "viewer enters on bottle shoulder, drops to label panel, exits toward tray edge",
@@ -86,6 +111,21 @@ def make_plan(include_identity_lock: bool) -> dict:
         "storyboard_sheet_count": 1,
         "panel_count": 9,
         "video_segment_count": 2,
+        "story_engine": {
+            "advertising_logline": "A clinical droplet teaches a reflective world to reveal the serum only when its hydration logic is proven.",
+            "world_rule": "Water, tray reflection, fingertip pressure, and glass refraction are the only forces allowed to reveal the product.",
+            "dramatic_question": "Can the product earn visibility through tactile proof before becoming a final packshot?",
+            "dramatic_arc": [
+                "an empty droplet world establishes the rule",
+                "partial product clues and fingertip pressure test the material promise",
+                "a hydration ripple resolves into the final exact product identity",
+            ],
+            "product_role": "the serum is the proof object that becomes inevitable after the world demonstrates its hydration behavior",
+            "reference_synthesis": "product reference controls package identity; visual references control blue-gray lighting, tray depth, and restrained atmosphere only",
+            "duration_design": "12 seconds use one sheet of 9 keyframes and two video segments; panels are narrative evidence, not nine cuts",
+            "motion_language": "slow dolly, tray slide, fingertip pressure, ripple transfer, and final locked push-in",
+            "anti_plastic_rules": "real glass reflection, contact shadow, micro texture, physical water behavior, lens softness, and restrained grain",
+        },
         "continuity_locks": ["same user-provided serum bottle throughout"],
         "creative_concept": {
             "big_idea": "A single clinical droplet teaches the world to behave like the bottle's pale blue stripe.",
@@ -346,6 +386,32 @@ class ProductIdentityLockTests(unittest.TestCase):
         self.assertFalse(result["ok"])
         self.assertTrue(
             any("creative_concept" in error or "scene_arena" in error for error in result["errors"]),
+            result["errors"],
+        )
+
+    def test_product_ads_require_story_engine_before_shot_planning(self) -> None:
+        plan = make_plan(include_identity_lock=True)
+        del plan["story_engine"]
+
+        code, result = run_validator(plan)
+
+        self.assertNotEqual(code, 0)
+        self.assertFalse(result["ok"])
+        self.assertTrue(
+            any("story_engine" in error for error in result["errors"]),
+            result["errors"],
+        )
+
+    def test_shot_plan_rejects_panel_count_that_disagrees_with_actual_shots(self) -> None:
+        plan = make_plan(include_identity_lock=True)
+        plan["panel_count"] = 999
+
+        code, result = run_validator(plan)
+
+        self.assertNotEqual(code, 0)
+        self.assertFalse(result["ok"])
+        self.assertTrue(
+            any("panel_count=999" in error for error in result["errors"]),
             result["errors"],
         )
 

@@ -15,8 +15,20 @@ SKILL_DIR = Path(__file__).resolve().parents[1]
 VALIDATOR = SKILL_DIR / "scripts" / "validate_video_segments.py"
 
 
+def make_video_story() -> dict:
+    return {
+        "logline": "A locked product identity emerges from a tactile material world and becomes the final authority frame.",
+        "story_arc": ["material omen", "earned product reveal", "settled identity payoff"],
+        "world_rule": "Reflections and foreground glass reveal the product; the package never builds itself from mist.",
+        "emotional_turn": "The viewer moves from curiosity to confidence when the exact package resolves.",
+        "duration_strategy": "One 10-second segment carries one reveal with 3 temporal beats, not nine quick cuts.",
+        "anti_plastic_strategy": "Use real glass thickness, contact shadows, imperfect specular edges, lens softness, and restrained film grain to avoid waxy plastic CGI.",
+    }
+
+
 def make_bad_video_prompt() -> dict:
     return {
+        "video_story": make_video_story(),
         "segments": [
             {
                 "segment_id": "SEG_01_0s_10s",
@@ -25,12 +37,17 @@ def make_bad_video_prompt() -> dict:
                 "source_shots": ["SH_001", "SH_002", "SH_003"],
                 "first_frame": "Purple mist and petals in darkness.",
                 "last_frame": "A luxurious purple perfume object appears in a hero frame.",
+                "story_beats": ["mist omen", "bottle appears", "hero hold"],
                 "camera_plan": "The bottle rises from mist, rotates slowly, and becomes the central object.",
+                "cut_strategy": "single reveal move, no hard cuts",
                 "subject_motion": "The cap separates slightly and the perfume bottle forms from light.",
                 "environment_motion": "Violet petals and reflections swirl around the product.",
+                "motion_continuity": "Mist moves into the reveal, then settles.",
                 "continuity_lock": "Keep a high-end purple perfume atmosphere.",
                 "visual_style": "Luxury purple fragrance ad.",
-                "negative_constraints": "No cheap look.",
+                "anti_plastic_constraints": "Real glass surface, contact shadows, lens softness, and subtle grain; avoid waxy plastic CGI.",
+                "omni_prompt": "A purple perfume object rises from mist as the camera pushes in; petals move around real glass with subtle grain.",
+                "negative_constraints": "No cheap look, no waxy plastic CGI.",
             }
         ]
     }
@@ -38,6 +55,7 @@ def make_bad_video_prompt() -> dict:
 
 def make_bad_visual_identity_prompt() -> dict:
     return {
+        "video_story": make_video_story(),
         "required_reference_setup": {
             "product_identity_reference": "Belle-purple-product-sheet.jpeg",
             "product_identity_role": "highest_priority_product_identity",
@@ -74,12 +92,17 @@ def make_bad_visual_identity_prompt() -> dict:
                 "forbidden_visual_additions": "No cheap details.",
                 "first_frame": "Purple bottle silhouette in mist.",
                 "last_frame": "Full front hero view with LUXE VIOLET text on a gold metal plate.",
+                "story_beats": ["silhouette", "orbit reveal", "front hero view"],
                 "camera_plan": "The camera orbits as the product rotates into a full front packshot.",
+                "cut_strategy": "single orbit reveal",
                 "subject_motion": "Product turns smoothly for a full reveal.",
                 "environment_motion": "Violet reflections and petals move around the bottle.",
+                "motion_continuity": "The orbit continues from silhouette to front view without a jump.",
                 "continuity_lock": "Keep a premium purple perfume look.",
                 "visual_style": "Luxury purple fragrance TVC.",
-                "negative_constraints": "No cheap look.",
+                "anti_plastic_constraints": "Real glass thickness, contact shadows, lens softness, and restrained grain; avoid waxy plastic CGI.",
+                "omni_prompt": "The camera orbits a purple bottle from silhouette to front hero view while reflections and petals move around real glass.",
+                "negative_constraints": "No cheap look, no waxy plastic CGI.",
             }
         ],
     }
@@ -87,6 +110,7 @@ def make_bad_visual_identity_prompt() -> dict:
 
 def make_locked_video_prompt() -> dict:
     return {
+        "video_story": make_video_story(),
         "required_reference_setup": {
             "product_identity_reference": "Belle-purple-product-sheet.jpeg",
             "product_identity_role": "highest_priority_product_identity",
@@ -158,21 +182,39 @@ def make_locked_video_prompt() -> dict:
                     "The same real rectangular transparent lavender-purple bottle is visible front 3/4, "
                     "champagne-gold cap on, internal spray tube visible, original label layout in place."
                 ),
+                "story_beats": [
+                    "foreground petal macro with no product",
+                    "glass slide reveals the locked bottle silhouette",
+                    "front 3/4 product identity settles into the authority frame",
+                ],
                 "camera_plan": (
                     "Camera slides past foreground glass, then makes a controlled orbit that shows the full bottle front."
                 ),
+                "cut_strategy": "one continuous reveal with no more than three internal beats; no nine-panel quick-cut montage",
                 "subject_motion": (
                     "Product turns only as a photographed packshot object; label text, cap, spray tube, body shape, and surface components stay exact."
                 ),
                 "environment_motion": "Mist, petals, reflections, and glass ribbons move around the locked product.",
+                "motion_continuity": "The foreground glass slide motivates the orbit, and the orbit settles into the final readable packshot.",
                 "continuity_lock": (
                     "Hard-lock to Belle-purple-product-sheet.jpeg: tall slim rectangular purple transparent body, "
                     "thick base, squared shoulders, champagne-gold cap, internal spray tube, original label layout."
                 ),
                 "visual_style": "Restrained violet fragrance TVC; product identity outranks style references.",
+                "anti_plastic_constraints": (
+                    "Real glass thickness, contact shadows under the bottle, imperfect specular edges, restrained lens softness, "
+                    "subtle film grain, and physical mist depth; avoid waxy plastic CGI and over-smoothed reflections."
+                ),
+                "omni_prompt": (
+                    "A lavender petal macro opens the shot with no product visible. The camera slides past foreground glass, "
+                    "then makes a controlled orbit revealing the same real rectangular transparent lavender-purple bottle; mist, "
+                    "petals, and reflections move around it while label layout, champagne-gold cap, internal spray tube, and body "
+                    "proportions stay locked. The shot settles on a readable front 3/4 authority frame with real glass thickness, "
+                    "contact shadows, subtle grain, and no waxy plastic CGI."
+                ),
                 "negative_constraints": (
                     "No generic purple bottle, no blank label, no fake text, no new brand, no changed cap, "
-                    "no cap removal, no product morphing, no product spin, no duplicate bottle."
+                    "no cap removal, no product morphing, no product spin, no duplicate bottle, no waxy plastic CGI."
                 ),
             }
         ],
@@ -223,6 +265,35 @@ class VideoProductLockTests(unittest.TestCase):
 
         self.assertEqual(code, 0, result)
         self.assertTrue(result["ok"], result)
+
+    def test_video_prompts_reject_nine_storyboard_panels_as_one_segment(self) -> None:
+        payload = make_locked_video_prompt()
+        segment = payload["segments"][0]
+        segment["source_shots"] = [f"SH_{idx:03d}" for idx in range(1, 10)]
+        segment["story_beats"] = [f"panel {idx} cut" for idx in range(1, 10)]
+
+        code, result = run_validator(payload)
+
+        self.assertNotEqual(code, 0)
+        self.assertFalse(result["ok"])
+        self.assertTrue(
+            any("too many story_beats" in error or "too many source_shots" in error for error in result["errors"]),
+            result["errors"],
+        )
+
+    def test_video_prompts_reject_static_first_last_frame(self) -> None:
+        payload = make_locked_video_prompt()
+        segment = payload["segments"][0]
+        segment["last_frame"] = segment["first_frame"]
+
+        code, result = run_validator(payload)
+
+        self.assertNotEqual(code, 0)
+        self.assertFalse(result["ok"])
+        self.assertTrue(
+            any("first_frame and last_frame cannot be identical" in error for error in result["errors"]),
+            result["errors"],
+        )
 
 
 if __name__ == "__main__":

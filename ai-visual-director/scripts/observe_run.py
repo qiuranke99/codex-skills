@@ -84,7 +84,7 @@ PROPOSAL_MAP = {
         "rule": "When duration or segment length appears in the brief, parse it before applying default timing.",
         "applies_when": "Brief contains time expressions or per-segment instructions.",
         "risk": "Over-parsing ambiguous poetic timing as hard duration.",
-        "regression": "Input brief says 40s and 10s per segment; output must route to 3 sheets, 27 panels, 4 segments.",
+        "regression": "Input brief says 40s and 10s per segment; output must route to 2 storyboard sheets, 18 keyframes, and 4 video segments.",
     },
     "reference_role_conflict": {
         "target_file": "SKILL.md",

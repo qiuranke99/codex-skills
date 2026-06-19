@@ -13,12 +13,17 @@ REQUIRED_SHOT_FIELDS = [
     "shot_id",
     "aspect_ratio",
     "scene",
+    "arc_position",
+    "story_beat",
     "duration",
     "shot_purpose",
     "shot_size",
     "camera_angle",
     "lens_feel",
     "camera_movement",
+    "camera_motivation",
+    "motion_continuity",
+    "material_truth",
     "cut_logic",
     "attention_order",
     "eye_trace",
@@ -70,9 +75,20 @@ PACKSHOT_EXCEPTION_WORDS = re.compile(
 PRODUCT_DOMINANT_WORDS = re.compile(
     r"product|packshot|bottle|jar|tube|box|package|packaging|label|logo|brand|serum|cream|lipstick|fragrance|"
     r"front-facing|full supplied|hero product|product hero|full bottle|full product|"
-    r"浜у搧|鍖呰|鐡秥鐡惰韩|缃恷绠鐩抾鏍囩|鏍囪创|鍝佺墝|鍟嗘爣|绮惧崕|闈㈤湝|鍙ｇ孩|棣欐按",
+    r"产品|包装|瓶|瓶身|罐|管|盒|标签|标贴|文字|品牌|商标|精华|面霜|口红|香水|全产品|完整产品|产品主角",
     re.IGNORECASE,
 )
+REQUIRED_STORY_ENGINE_FIELDS = [
+    "advertising_logline",
+    "world_rule",
+    "dramatic_question",
+    "dramatic_arc",
+    "product_role",
+    "reference_synthesis",
+    "duration_design",
+    "motion_language",
+    "anti_plastic_rules",
+]
 REQUIRED_CREATIVE_CONCEPT_FIELDS = [
     "big_idea",
     "audience_desire",
@@ -97,6 +113,17 @@ WEAK_DRAMATIC_EVENT_WORDS = re.compile(
     r"^(light|highlight|camera|product|bottle|label|cap|ribbon|petal)\s+"
     r"(sweeps?|travels?|drifts?|holds?|settles?|appears?|reveals?|catches?|shows?)\b|"
     r"\b(light sweeps? across|holds still|looks premium|soft lavender reflection makes it look premium)\b",
+    re.IGNORECASE,
+)
+WEAK_STORY_ENGINE_WORDS = re.compile(
+    r"^(premium|luxury|beautiful|elegant|cinematic|high-end|product reveal|packshot sequence)$|"
+    r"\b(product\s*\+\s*petals|petals\s*\+\s*glass|glass\s*\+\s*light sweep|premium product reveal|beautiful packshot)\b",
+    re.IGNORECASE,
+)
+ANTI_PLASTIC_WORDS = re.compile(
+    r"material|texture|tactile|grain|halation|lens|reflection|refraction|shadow|contact|imperfect|"
+    r"physical|real|natural|micro|specular|surface|glass|skin|metal|fabric|motion blur|"
+    r"材质|纹理|触感|颗粒|镜头|反射|折射|阴影|接触|瑕疵|物理|真实|自然|微|高光|表面|玻璃|皮肤|金属|织物|运动模糊",
     re.IGNORECASE,
 )
 VISUAL_FIDELITY_WORDS = re.compile(
@@ -320,6 +347,64 @@ def is_weak_dramatic_event(value: object) -> bool:
     if len(text) < 28:
         return True
     return bool(WEAK_DRAMATIC_EVENT_WORDS.search(text))
+
+
+def validate_story_engine(plan: dict) -> tuple[list[str], list[str]]:
+    errors: list[str] = []
+    warnings: list[str] = []
+
+    if not is_product_plan(plan) or is_packshot_exception(plan):
+        return errors, warnings
+
+    story = plan.get("story_engine")
+    if not isinstance(story, dict):
+        errors.append("plan: product ad requires story_engine before shot planning")
+        return errors, warnings
+
+    for field in REQUIRED_STORY_ENGINE_FIELDS:
+        value = story.get(field)
+        if not has_concrete_language(value):
+            errors.append(f"story_engine: missing or weak {field}")
+
+    for field in ["advertising_logline", "world_rule", "dramatic_question", "product_role"]:
+        if WEAK_STORY_ENGINE_WORDS.search(str(story.get(field, "")).strip()):
+            errors.append(f"story_engine: {field} is generic or template-like")
+
+    arc = story.get("dramatic_arc")
+    if not isinstance(arc, list) or len([item for item in arc if has_concrete_language(item)]) < 3:
+        errors.append("story_engine: dramatic_arc needs at least 3 concrete beats")
+    elif len({norm(item) for item in arc}) < 3:
+        errors.append("story_engine: dramatic_arc beats must be distinct")
+
+    if not ANTI_PLASTIC_WORDS.search(text_blob(story.get("anti_plastic_rules", ""))):
+        errors.append("story_engine: anti_plastic_rules must specify material, texture, lens, light, shadow, or physical-detail controls")
+
+    return errors, warnings
+
+
+def validate_plan_counts(plan: dict, sheets: list[dict]) -> tuple[list[str], list[str]]:
+    errors: list[str] = []
+    warnings: list[str] = []
+    shots = [
+        shot
+        for sheet in sheets
+        for shot in sheet.get("shots", [])
+        if isinstance(shot, dict)
+    ]
+
+    expected_panel_count = plan.get("panel_count")
+    if expected_panel_count is not None and int(expected_panel_count) != len(shots):
+        errors.append(f"plan: panel_count={expected_panel_count}, but sheets contain {len(shots)} shots")
+
+    video_segment_count = plan.get("video_segment_count")
+    if video_segment_count is not None and int(video_segment_count) < 1:
+        errors.append("plan: video_segment_count must be at least 1")
+
+    duration_seconds = plan.get("duration_seconds")
+    if duration_seconds is not None and float(duration_seconds) <= 0:
+        errors.append("plan: duration_seconds must be positive")
+
+    return errors, warnings
 
 
 def validate_creative_director_standard(plan: dict) -> tuple[list[str], list[str]]:
@@ -646,8 +731,16 @@ def main() -> int:
     if expected_sheets is not None and len(sheets) != int(expected_sheets):
         errors.append(f"plan: storyboard_sheet_count={expected_sheets}, but sheets has {len(sheets)}")
 
+    count_errors, count_warnings = validate_plan_counts(plan, sheets)
+    errors.extend(count_errors)
+    warnings.extend(count_warnings)
+
     if not plan.get("continuity_locks"):
         errors.append("plan: missing continuity_locks")
+
+    story_errors, story_warnings = validate_story_engine(plan)
+    errors.extend(story_errors)
+    warnings.extend(story_warnings)
 
     product_errors, product_warnings = validate_product_identity(plan)
     errors.extend(product_errors)

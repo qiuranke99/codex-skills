@@ -64,14 +64,17 @@ Camera movement should reveal, follow, compare, transform, or withhold. Avoid "s
 
 ### 7. Rhythm Is Designed
 
-For 40s premium product TVC:
+For a 40s premium product TVC:
 
 - 0-10s: slow discovery, high negative space, large tonal restraint;
 - 10-20s: tactile proof, more inserts, slightly faster sensory cuts;
 - 20-30s: use/benefit, human or metaphor motion;
 - 30-40s: slowdown into authority, packshot, final memory image.
 
-Vary shot size and camera relation by beat. Do not make all 27 panels equally intense.
+Use 2 storyboard sheets / 18 keyframes by default unless the brief needs more
+coverage. Vary shot size and camera relation by beat. Do not make all panels
+equally intense, and do not translate keyframes into a one-to-one quick-cut
+video edit.
 
 ### 8. Product Proof Beats Product Worship
 
@@ -143,7 +146,23 @@ Do not paste static storyboard descriptions into a video prompt.
 
 For product videos, temporal logic and lens design must not override product identity. Put the product reference setup and product identity lock before the segment. Camera orbit, hero reveal, rotation, rise, cap action, and other shot-language choices are allowed when they serve the film; they become failures only when the product's visible facts drift. Full-visible product shots must preserve exact readable copy, logo/wordmark, embossed or relief text, label layout, physical components, materials, cap/pump/closure, and known absent features. If the real product has no metal plate, badge, plaque, or extra label panel, the prompt must forbid those additions.
 
-### 11. The World-Class Failure Test
+### 11. Anti-Plastic Production Texture
+
+Do not try to fix AI plasticity with a single phrase such as `not AI-looking`.
+Encode physical image behavior:
+
+- material truth: glass thickness, skin pores, paper tooth, metal edges, fabric
+  weave, water meniscus, condensation, contact shadows;
+- optical truth: lens softness, restrained halation, imperfect specular edges,
+  shallow depth when motivated, motion blur only where motion exists;
+- lighting truth: one dominant source, believable bounce, shadow contact,
+  coherent reflection direction;
+- grade truth: avoid over-smoothed skin, waxy highlights, neon over-saturation,
+  and uniform glossy CGI surfaces;
+- post texture: subtle grain or compression only after the image already has
+  coherent light, contrast, material, and lens behavior.
+
+### 12. The World-Class Failure Test
 
 Reject or revise if any of these are true:
 
