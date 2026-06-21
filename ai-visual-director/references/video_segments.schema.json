@@ -2,8 +2,12 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "title": "Google Omni Video Segments",
   "type": "object",
-  "required": ["video_story", "agent_activation_ledger", "segments"],
+  "required": ["requested_video_aspect_ratio", "video_story", "agent_activation_ledger", "segments"],
   "properties": {
+    "requested_video_aspect_ratio": {
+      "type": "string",
+      "description": "Final video frame ratio, for example 9:16. Every segment prompt must preserve this frame orientation."
+    },
     "agent_activation_ledger": {
       "type": "array",
       "minItems": 2,
@@ -158,6 +162,7 @@
           "segment_id",
           "time_range",
           "purpose",
+          "aspect_ratio",
           "source_shots",
           "first_frame",
           "last_frame",
@@ -177,6 +182,7 @@
           "segment_id": {"type": "string"},
           "time_range": {"type": "string"},
           "purpose": {"type": "string"},
+          "aspect_ratio": {"type": "string"},
           "source_shots": {
             "type": "array",
             "items": {"type": "string"},

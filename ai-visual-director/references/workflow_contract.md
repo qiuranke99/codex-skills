@@ -25,55 +25,62 @@ allows it.
 1. Intake: identify brief, duration, dimensions, output targets, reference files, and risk.
 2. Reference-role analysis: separate product identity, first-frame composition,
    style, lighting, environment, negative, and motion references.
-3. Product identity lock: if a real product appears, extract the visual facts
+3. Reference deconstruction: for every supplied reference image, separate
+   observed facts, transferable visual principles, and forbidden surface-copy
+   elements. The output is `reference_deconstruction`; it must assign
+   accountability to creative director, art director, screenwriter, and
+   director before concept selection.
+4. Product identity lock: if a real product appears, extract the visual facts
    before route, story, or shot planning.
-4. Route decision: run or mirror `scripts/route_project.py`, inferring duration
-   and segment seconds from brief text when structured intake is absent.
-5. Story engine: define advertising logline, dramatic question, world rule,
+5. Route decision: run or mirror `scripts/route_project.py`, inferring duration,
+   segment seconds, and requested video aspect ratio from brief text when
+   structured intake is absent.
+6. Story engine: define advertising logline, dramatic question, world rule,
    product role, story arc, motion language, duration design, and anti-plastic
    material rules.
-6. Creative concept: define big idea, audience desire, story tension, world
+7. Creative concept: define big idea, audience desire, story tension, world
    rule, visual mechanism, scene ladder, and signature images. It must derive
    from the story engine, not from a product-angle template.
-7. Advanced cinematic-language routing: if `00_route_decision.json` sets
+8. Advanced cinematic-language routing: if `00_route_decision.json` sets
    `cinematic_language_reference_required: true`, read
    `references/cinematic_language_decision_matrix.md` before shot planning.
    If it is false, do not load that reference for ordinary product-ad boards.
-8. Mandatory agent activation: follow `AGENTS.md`. Start
+9. Mandatory agent activation: follow `AGENTS.md`. Start
    `creative_director_agent`, `director_agent`, `screenwriter_agent`, and
    `art_director_agent`, then record their `completed` entries in
    `02_shot_plan.json.agent_activation_ledger`. If any required agent is
    missing, skipped, simulated, or blocked, do not proceed to concept council or
    shot planning.
-9. Internal concept council: creative director proposes creative candidates,
+10. Internal concept council: creative director proposes creative candidates,
    then director, screenwriter, and art director produce structured vetoes and
    a final `director_resolution` without asking the user to choose unless the
    user explicitly requests an approval checkpoint.
-10. Timecoded script map: screenwriter writes the exact-duration script map;
+11. Timecoded script map: screenwriter writes the exact-duration script map;
    director approves it before storyboard planning.
-11. Shot plan: write `02_shot_plan.json` against
+12. Shot plan: write `02_shot_plan.json` against
    `references/shot_plan.schema.json`; only here, after director approval, set
    `panel_count`, `panels_per_sheet`, `grid_layouts`, and
-   `shots_per_video_segment`.
-12. Structure validation: run `scripts/validate_shot_plan.py`.
-13. Internal revision: fix validation failures before image generation or video prompts.
-14. Storyboard and approved-keyframe planning: for the Google Omni speed path,
+   `shots_per_video_segment`. Each shot must include `reference_transform`,
+   `shot_function_signature`, and the requested aspect ratio.
+13. Structure validation: run `scripts/validate_shot_plan.py`.
+14. Internal revision: fix validation failures before image generation or video prompts.
+15. Storyboard and approved-keyframe planning: for the Google Omni speed path,
     create one dynamic-N bitmap storyboard sheet per executable 10-second
     segment when image generation is available; also prepare mapped source-shot
     ranges or keyframe packets per executable video segment.
-15. Google Omni expert activation: start `google_omni_prompt_expert_agent`
+16. Google Omni expert activation: start `google_omni_prompt_expert_agent`
     after approved storyboard packets exist. `08_google_omni_video_prompts.json`
     must include completed prompt-expert and director entries in
     `agent_activation_ledger`; without them, video validation fails.
-16. Video segment prompts: temporal segments with first/last frame, controlled
+17. Video segment prompts: temporal segments with first/last frame, controlled
     story beats/source shots, camera plan, cut strategy, subject/environment
-    motion, motion continuity, product lock, and anti-plastic constraints. Any
-    multi-shot segment requires explicit internal shot time spans and
-    transitions.
-17. Video validation: run `scripts/validate_video_segments.py`; structured video
+    motion, motion continuity, product lock, requested aspect ratio, and
+    anti-plastic constraints. Any multi-shot segment requires explicit internal
+    shot time spans and transitions.
+18. Video validation: run `scripts/validate_video_segments.py`; structured video
     JSON is required for a complete run.
-18. Final QC: run `scripts/validate_run_package.py` on the run directory.
-19. Report only storyboard image path(s), Google Omni prompt path, validation
+19. Final QC: run `scripts/validate_run_package.py` on the run directory.
+20. Report only storyboard image path(s), Google Omni prompt path, validation
     status, remaining hard risks, and the minimal segment-usage rule needed to
     prevent misuse of the storyboard sheet as a video input.
 
@@ -144,6 +151,31 @@ The `dramatic_event` must describe what happens in the frame. `light sweeps
 across the product`, `product holds`, `ribbon drifts`, or `premium reflection`
 are weak unless they cause a reveal, transformation, decision, use action,
 benefit metaphor, or final memory image.
+
+## 4A. Reference Deconstruction And Responsibility Gate
+
+Reference images are not prop libraries. Before the creative concept is final,
+`reference_deconstruction` must name:
+
+- one `references[]` entry per supplied reference image;
+- observed visual facts;
+- transferable principles;
+- surface elements that must not be copied;
+- the assigned agent owner for each reference;
+- a `new_mechanism` that links borrowed DNA to a new story world rule.
+
+If the storyboard only repeats a reference's visible props, background color,
+platform, angle, or product pose, the failure is not generic. Assign it:
+
+- weak concept leap -> `creative_director_agent`;
+- surface-copy art direction -> `art_director_agent`;
+- repeated script beat -> `screenwriter_agent`;
+- repeated shot function or wrong panel aspect -> `director_agent`.
+
+Each shot must also include `shot_function_signature`:
+`information_delta`, `desire_delta`, `product_role_delta`, `event_type`,
+`camera_relation_key`, `reference_transform_id`, and `redundancy_risk`.
+This lets validation distinguish intentional motif echo from lazy repetition.
 
 ## 5. Product Identity Lock
 
@@ -235,6 +267,14 @@ path, `storyboard_sheet_count` equals `video_segment_count`: each 10-second
 generation segment receives one dynamic N-panel storyboard sheet and one JSON
 temporal prompt. N may differ by segment. Do not turn panels into separate
 generations.
+
+Aspect ratio is a panel contract, not a sheet-canvas preference. If the user
+asks for 9:16, every storyboard panel/cell and every video segment prompt must
+be 9:16. The overall contact sheet can be a landscape canvas when that helps
+review multiple vertical panels, but it must not contain mixed horizontal,
+square, and vertical panel frames. `00_route_decision.json`,
+`02_shot_plan.json`, `04_storyboard_image_prompts.md`, and
+`08_google_omni_video_prompts.json` must carry the same requested ratio.
 
 For Google Omni/Flow, the executable handoff is the product identity reference,
 the visual reference if available, the product identity lock, the segment's

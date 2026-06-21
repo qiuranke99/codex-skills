@@ -17,6 +17,7 @@ from pathlib import Path
 DEFAULT_SEGMENT_SECONDS = 10
 ALLOWED_PRODUCTION_MODES = {"standard_fast", "rush", "premium_pitch", "production_handoff", "certification"}
 ALLOWED_VIDEO_BACKENDS = {"google_omni", "google_flow", "veo_api", "runway", "kling", "luma", "multi_backend"}
+ALLOWED_ASPECT_RATIOS = {"9:16", "16:9", "1:1", "4:5", "3:4"}
 CINEMATIC_LANGUAGE_REFERENCE = "references/cinematic_language_decision_matrix.md"
 
 
@@ -224,6 +225,59 @@ def infer_video_backend(intake: dict, brief: str) -> str:
     return "google_omni"
 
 
+def ratio_key(value: object) -> str:
+    text = re.sub(r"\s+", " ", str(value)).strip().lower()
+    match = re.search(r"(\d+(?:\.\d+)?)\s*[:x/]\s*(\d+(?:\.\d+)?)", text)
+    if not match:
+        return text
+    width = float(match.group(1))
+    height = float(match.group(2))
+    if width <= 0 or height <= 0:
+        return text
+    if width.is_integer() and height.is_integer():
+        divisor = math.gcd(int(width), int(height))
+        normalized = f"{int(width) // divisor}:{int(height) // divisor}"
+        if normalized in ALLOWED_ASPECT_RATIOS:
+            return normalized
+    ratio = width / height
+    common = {
+        "9:16": 9 / 16,
+        "16:9": 16 / 9,
+        "1:1": 1,
+        "4:5": 4 / 5,
+        "3:4": 3 / 4,
+    }
+    for key, target in common.items():
+        if abs(ratio - target) < 0.01:
+            return key
+    return ""
+
+
+def infer_brief_aspect_ratio(brief: str) -> tuple[str | None, str | None]:
+    for match in re.finditer(r"(\d+(?:\.\d+)?)\s*[:x/]\s*(\d+(?:\.\d+)?)", brief):
+        ratio = ratio_key(match.group(0))
+        if ratio in ALLOWED_ASPECT_RATIOS:
+            return ratio, "brief.aspect_ratio"
+    if re.search(r"vertical|portrait|竖屏|竖版|手机竖屏", brief, re.IGNORECASE):
+        return "9:16", "brief.vertical_keyword"
+    if re.search(r"horizontal|landscape|横屏|横版", brief, re.IGNORECASE):
+        return "16:9", "brief.horizontal_keyword"
+    return None, None
+
+
+def infer_requested_aspect_ratio(intake: dict, brief: str) -> tuple[str | None, str, str | None]:
+    brief_ratio, brief_source = infer_brief_aspect_ratio(brief)
+    explicit = str(intake.get("requested_video_aspect_ratio", "")).strip()
+    if explicit:
+        intake_ratio = ratio_key(explicit)
+        if intake_ratio not in ALLOWED_ASPECT_RATIOS:
+            return None, "invalid_intake.requested_video_aspect_ratio", brief_ratio
+        return intake_ratio, "intake.requested_video_aspect_ratio", brief_ratio
+    if brief_ratio:
+        return brief_ratio, brief_source or "brief.aspect_ratio", None
+    return None, "not_specified", None
+
+
 def backend_generation_contract(video_backend: str) -> dict:
     if video_backend in {"google_omni", "google_flow"}:
         return {
@@ -268,6 +322,11 @@ def escalation_triggers(intake: dict, brief: str) -> list[str]:
         triggers.append("many_reference_images_need_role_discipline")
     if intake.get("conflicting_reference_roles"):
         triggers.append("declared_reference_conflict")
+    requested_ratio, ratio_source, brief_ratio = infer_requested_aspect_ratio(intake, brief)
+    if ratio_source == "invalid_intake.requested_video_aspect_ratio":
+        triggers.append("invalid_requested_video_aspect_ratio")
+    elif requested_ratio and brief_ratio and requested_ratio != brief_ratio:
+        triggers.append("aspect_ratio_conflict_intake_overrides_brief")
     return triggers
 
 
@@ -443,8 +502,12 @@ def main() -> int:
 
     duration, duration_source = infer_duration_seconds(intake, brief)
     segment_seconds, segment_seconds_source, requested_segment_seconds = infer_segment_seconds(intake, brief)
+    requested_aspect_ratio, aspect_ratio_source, brief_aspect_ratio = infer_requested_aspect_ratio(intake, brief)
     if duration <= 0 or segment_seconds <= 0:
         print("duration_seconds and video_segment_seconds must be positive", file=sys.stderr)
+        return 2
+    if aspect_ratio_source == "invalid_intake.requested_video_aspect_ratio":
+        print("requested_video_aspect_ratio must be one of 9:16, 16:9, 1:1, 4:5, 3:4, or a reducible WxH value", file=sys.stderr)
         return 2
 
     project_type = infer_project_type(brief)
@@ -479,6 +542,10 @@ def main() -> int:
         "recommended_references": [CINEMATIC_LANGUAGE_REFERENCE] if cinematic_reference_required else [],
         "duration_seconds": duration,
         "duration_source": duration_source,
+        "requested_video_aspect_ratio": requested_aspect_ratio,
+        "aspect_ratio_source": aspect_ratio_source,
+        "brief_detected_video_aspect_ratio": brief_aspect_ratio,
+        "aspect_contract": "panel_must_match_video_sheet_canvas_may_differ",
         "storyboard_sheet_count": sheet_count,
         "storyboard_artifact_policy": execution_contract["storyboard_artifact_policy"],
         "storyboard_grid_mode": execution_contract["storyboard_grid_mode"],

@@ -4,6 +4,7 @@
 from __future__ import annotations
 
 import json
+import math
 import re
 import sys
 from pathlib import Path
@@ -13,6 +14,7 @@ REQUIRED_SEGMENT_FIELDS = [
     "segment_id",
     "time_range",
     "purpose",
+    "aspect_ratio",
     "source_shots",
     "first_frame",
     "last_frame",
@@ -142,6 +144,21 @@ def as_list(value: object) -> list[str]:
 
 def normalized(value: str) -> str:
     return re.sub(r"\s+", " ", value).strip().lower()
+
+
+def ratio_key(value: object) -> str:
+    text = normalized(str(value))
+    match = re.search(r"(\d+(?:\.\d+)?)\s*[:x/]\s*(\d+(?:\.\d+)?)", text)
+    if not match:
+        return text
+    width = float(match.group(1))
+    height = float(match.group(2))
+    if width <= 0 or height <= 0:
+        return text
+    if width.is_integer() and height.is_integer():
+        divisor = math.gcd(int(width), int(height))
+        return f"{int(width) // divisor}:{int(height) // divisor}"
+    return f"{width:g}:{height:g}"
 
 
 def evidence_blob(value: object) -> str:
@@ -381,6 +398,38 @@ def validate_video_story(payload: dict) -> tuple[list[str], list[str]]:
     return errors, warnings
 
 
+def validate_requested_aspect_ratio(payload: dict) -> tuple[list[str], list[str]]:
+    errors: list[str] = []
+    warnings: list[str] = []
+
+    requested_raw = str(payload.get("requested_video_aspect_ratio", "")).strip()
+    requested = ratio_key(requested_raw)
+    if not requested_raw:
+        errors.append("video: requested_video_aspect_ratio is required so Google Omni prompts keep the final frame orientation")
+        return errors, warnings
+
+    for idx, segment in enumerate(payload.get("segments", []), start=1):
+        if not isinstance(segment, dict):
+            continue
+        sid = segment.get("segment_id", f"segment-{idx}")
+        segment_ratio = ratio_key(segment.get("aspect_ratio", ""))
+        if segment_ratio != requested:
+            errors.append(
+                f"{sid}: aspect_ratio {segment.get('aspect_ratio')!r} must match requested_video_aspect_ratio {payload.get('requested_video_aspect_ratio')!r}"
+            )
+        segment_text = normalized(text_blob(
+            segment.get("first_frame", ""),
+            segment.get("last_frame", ""),
+            segment.get("camera_plan", ""),
+            segment.get("visual_style", ""),
+            segment.get("omni_prompt", ""),
+        ))
+        if requested not in segment_text and "vertical" not in segment_text and "portrait" not in segment_text and "竖" not in segment_text:
+            errors.append(f"{sid}: segment prompt must state the {requested} or vertical/portrait framing contract")
+
+    return errors, warnings
+
+
 def validate_temporal_segments(payload: dict) -> tuple[list[str], list[str]]:
     errors: list[str] = []
     warnings: list[str] = []
@@ -484,6 +533,10 @@ def main() -> int:
     story_errors, story_warnings = validate_video_story(payload)
     errors.extend(story_errors)
     warnings.extend(story_warnings)
+
+    aspect_errors, aspect_warnings = validate_requested_aspect_ratio(payload)
+    errors.extend(aspect_errors)
+    warnings.extend(aspect_warnings)
 
     temporal_errors, temporal_warnings = validate_temporal_segments(payload)
     errors.extend(temporal_errors)

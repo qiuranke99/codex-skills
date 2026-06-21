@@ -92,6 +92,21 @@ def normalized(value: object) -> str:
     return re.sub(r"\s+", " ", str(value)).strip().lower()
 
 
+def ratio_key(value: object) -> str:
+    text = normalized(value)
+    match = re.search(r"(\d+(?:\.\d+)?)\s*[:x/]\s*(\d+(?:\.\d+)?)", text)
+    if not match:
+        return text
+    width = float(match.group(1))
+    height = float(match.group(2))
+    if width <= 0 or height <= 0:
+        return text
+    if width.is_integer() and height.is_integer():
+        divisor = math.gcd(int(width), int(height))
+        return f"{int(width) // divisor}:{int(height) // divisor}"
+    return f"{width:g}:{height:g}"
+
+
 def visible_product_text_lines(lock: dict) -> list[str]:
     lines: list[str] = []
     for value in [lock.get("product_name_text"), lock.get("primary_label_text")]:
@@ -192,6 +207,14 @@ def validate_product_storyboard_prompt(run_dir: Path, shot_plan: dict) -> list[s
             errors.append(f"04_storyboard_image_prompts.md: missing product lock evidence for {field}")
 
     if is_product_plan(shot_plan):
+        requested_ratio = ratio_key(shot_plan.get("requested_video_aspect_ratio", ""))
+        if requested_ratio:
+            if "panel aspect ratio" not in prompt_text or requested_ratio not in prompt_text:
+                errors.append(
+                    "04_storyboard_image_prompts.md: missing Panel Aspect Ratio matching requested_video_aspect_ratio; "
+                    "each storyboard cell must match the final video frame ratio even when sheet canvas differs"
+                )
+
         for block in CREATIVE_PROMPT_BLOCKS:
             if block not in prompt_text:
                 errors.append(f"04_storyboard_image_prompts.md: missing {block.title()} block")
@@ -212,6 +235,11 @@ def validate_product_storyboard_prompt(run_dir: Path, shot_plan: dict) -> list[s
                 errors.append(f"04_storyboard_image_prompts.md: missing panel prompt for {shot_id}")
                 continue
             snippet_norm = normalized(snippet)
+            shot_ratio = ratio_key(shot.get("aspect_ratio", ""))
+            if requested_ratio and (shot_ratio != requested_ratio or requested_ratio not in snippet_norm):
+                errors.append(
+                    f"04_storyboard_image_prompts.md: {shot_id} prompt must state aspect_ratio: {requested_ratio}"
+                )
             if visibility not in snippet_norm:
                 errors.append(
                     f"04_storyboard_image_prompts.md: {shot_id} prompt must state product_visibility: {visibility}"
@@ -358,12 +386,31 @@ def validate_timing_consistency(route: dict, shot_plan: dict, video_payload: dic
             if field in route and field in shot_plan and not values_match:
                 errors.append(f"02_shot_plan.json: {field}={shot_plan[field]!r} does not match route value {route[field]!r}")
 
+        if route.get("requested_video_aspect_ratio"):
+            route_ratio = ratio_key(route.get("requested_video_aspect_ratio"))
+            shot_ratio = ratio_key(shot_plan.get("requested_video_aspect_ratio"))
+            if route_ratio != shot_ratio:
+                errors.append(
+                    "02_shot_plan.json: requested_video_aspect_ratio="
+                    f"{shot_plan.get('requested_video_aspect_ratio')!r} does not match route value "
+                    f"{route.get('requested_video_aspect_ratio')!r}"
+                )
+
     if video_payload is not None:
         segments = video_payload.get("segments")
         if isinstance(segments, list) and len(segments) != expected_segments:
             errors.append(
                 f"08_google_omni_video_prompts.json: segment count {len(segments)} does not match route video_segment_count={expected_segments}"
             )
+        if route.get("requested_video_aspect_ratio") and video_payload.get("requested_video_aspect_ratio"):
+            route_ratio = ratio_key(route.get("requested_video_aspect_ratio"))
+            video_ratio = ratio_key(video_payload.get("requested_video_aspect_ratio"))
+            if route_ratio != video_ratio:
+                errors.append(
+                    "08_google_omni_video_prompts.json: requested_video_aspect_ratio="
+                    f"{video_payload.get('requested_video_aspect_ratio')!r} does not match route value "
+                    f"{route.get('requested_video_aspect_ratio')!r}"
+                )
 
     return errors
 

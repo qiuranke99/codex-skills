@@ -135,6 +135,9 @@ class CinematicLanguageRoutingTests(unittest.TestCase):
         )
 
         self.assertEqual(routed["duration_seconds"], 30)
+        self.assertEqual(routed["requested_video_aspect_ratio"], "9:16")
+        self.assertEqual(routed["aspect_ratio_source"], "brief.aspect_ratio")
+        self.assertEqual(routed["aspect_contract"], "panel_must_match_video_sheet_canvas_may_differ")
         self.assertEqual(routed["video_segment_count"], 3)
         self.assertEqual(routed["storyboard_sheet_count"], 3)
         self.assertEqual(routed["director_concept_board_count"], 3)
@@ -144,6 +147,34 @@ class CinematicLanguageRoutingTests(unittest.TestCase):
         self.assertIn("N panels are decided only after", routed["video_generation_handoff"]["duration_mapping"])
         self.assertIn("not an equal-seconds-per-panel rule", routed["video_generation_handoff"]["storyboard_sheet_role"])
         assert_no_route_panel_fields(self, routed)
+
+    def test_route_normalizes_structured_video_aspect_ratio(self) -> None:
+        routed = run_router(
+            {
+                "brief": "30s high-end lipstick product ad for mobile vertical delivery",
+                "requested_video_aspect_ratio": "1080x1920",
+                "reference_images": [{"path": "product.jpg"}],
+            }
+        )
+
+        self.assertEqual(routed["requested_video_aspect_ratio"], "9:16")
+        self.assertEqual(routed["aspect_ratio_source"], "intake.requested_video_aspect_ratio")
+        self.assertEqual(routed["brief_detected_video_aspect_ratio"], "9:16")
+        self.assertEqual(routed["aspect_contract"], "panel_must_match_video_sheet_canvas_may_differ")
+
+    def test_route_flags_aspect_ratio_conflict_with_structured_intake_precedence(self) -> None:
+        routed = run_router(
+            {
+                "brief": "30s high-end lipstick product ad, 9:16",
+                "requested_video_aspect_ratio": "16:9",
+                "reference_images": [{"path": "product.jpg"}],
+            }
+        )
+
+        self.assertEqual(routed["requested_video_aspect_ratio"], "16:9")
+        self.assertEqual(routed["aspect_ratio_source"], "intake.requested_video_aspect_ratio")
+        self.assertEqual(routed["brief_detected_video_aspect_ratio"], "9:16")
+        self.assertIn("aspect_ratio_conflict_intake_overrides_brief", routed["escalation_triggers"])
 
     def test_production_handoff_uses_segment_aligned_keyframe_boards(self) -> None:
         routed = run_router(

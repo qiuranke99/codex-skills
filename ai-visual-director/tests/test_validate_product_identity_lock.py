@@ -51,7 +51,7 @@ def base_shot(idx: int) -> dict:
     ]
     return {
         "shot_id": f"SH_{idx:03d}",
-        "aspect_ratio": "16:9",
+        "aspect_ratio": "9:16",
         "scene": "blue-gray product world with white serum bottle on reflective tray",
         "arc_position": [
             "origin",
@@ -89,6 +89,86 @@ def base_shot(idx: int) -> dict:
         "eye_trace": "viewer enters on bottle shoulder, drops to label panel, exits toward tray edge",
         "depth_strategy": "foreground tray rim, midground product bottle, background soft glass forms",
         "reference_parity": "preserve product bottle proportion and front label placement from the user reference",
+        "reference_transform": [
+            "translate the reference's hard diagonal platform into a water-reflection threshold, not the same white plinth",
+            "turn the reference's red field into a pale clinical stripe of light that controls the reveal",
+            "convert the product-on-corner isolation into a withheld reflection sequence",
+            "use the reference's metallic/specular tension as tactile label proof instead of another lipstick-on-step angle",
+            "move from reference geometry into fingertip interaction so the shot adds story information",
+            "transform product solitude into a use-action proof, not another centered object portrait",
+            "convert the reference's empty red negative space into a product-absent hydration metaphor",
+            "bend the reference's diagonal ledge into a circular ripple return path",
+            "resolve the reference's hero isolation as a final earned vertical packshot",
+        ][idx - 1],
+        "shot_function_signature": {
+            "information_delta": [
+                "introduce the water rule before the viewer sees any product",
+                "reveal one real component clue: black cap edge and pale blue stripe reflection",
+                "show that the product exists but withhold the readable package",
+                "answer the first identity question with a readable full product view",
+                "prove label geometry and stripe material at inspection distance",
+                "change product role from display object to touched usable object",
+                "remove the product to show the benefit metaphor caused by the use action",
+                "return the viewer from benefit metaphor to product identity through reflection",
+                "resolve all prior clues into the final exact front-facing product memory",
+            ][idx - 1],
+            "desire_delta": [
+                "create curiosity through absence and controlled negative space",
+                "raise desire by showing a precise component without satisfying the full reveal",
+                "increase anticipation through occlusion and cropped product presence",
+                "satisfy identity curiosity while opening the need for proof",
+                "shift desire from appearance to tactile product credibility",
+                "make the product feel usable and close to skin",
+                "turn desire into imagined hydration benefit",
+                "pull benefit desire back toward purchase object",
+                "convert desire into final product authority and recall",
+            ][idx - 1],
+            "product_role_delta": [
+                "product absent as a withheld promise",
+                "product appears only as component evidence",
+                "product becomes partial silhouette evidence",
+                "product becomes first readable identity",
+                "product becomes typography and material proof",
+                "product becomes touched-use proof",
+                "product absent so benefit can occupy the frame",
+                "product returns as reflected memory",
+                "product becomes final purchase authority",
+            ][idx - 1],
+            "event_type": [
+                "origin_rule",
+                "component_clue",
+                "withheld_reveal",
+                "identity_reveal",
+                "material_proof",
+                "use_action",
+                "benefit_metaphor",
+                "return_bridge",
+                "final_authority",
+            ][idx - 1],
+            "camera_relation_key": [
+                "vertical_negative_space_wide",
+                "top_macro_component_insert",
+                "low_occluded_partial",
+                "three_quarter_first_read",
+                "overhead_label_macro",
+                "low_touch_partial",
+                "abstract_surface_close",
+                "side_reflection_crop",
+                "front_vertical_packshot",
+            ][idx - 1],
+            "reference_transform_id": f"RT_{idx:03d}",
+            "redundancy_risk": [
+                "could become empty mood if the water rule is not legible",
+                "could become another macro beauty detail unless it reveals only one component clue",
+                "could repeat plinth geometry unless foreground occlusion changes the story information",
+                "could become early packshot wall unless followed by proof and use beats",
+                "could repeat typography glamour unless it tests exact label facts",
+                "could become generic hand beauty unless contact changes product role",
+                "could feel unrelated unless motion continuity carries the fingertip energy",
+                "could repeat product silhouette unless reflection explicitly bridges benefit back to identity",
+                "could repeat the first reveal unless it resolves all prior clues as final authority",
+            ][idx - 1],
+        },
         "main_subject": "user-provided serum bottle product",
         "main_action": "product remains upright while light sweeps across the front label area",
         "body_pose": "not applicable for product-only shot",
@@ -117,6 +197,7 @@ def shot_plan_agent_ledger() -> list[dict]:
             "output_evidence": [
                 "02_shot_plan.json#/creative_concept_candidates",
                 "02_shot_plan.json#/creative_concept",
+                "02_shot_plan.json#/reference_deconstruction",
             ],
             "decision_summary": "Generated two concept candidates and selected the droplet-reflection concept.",
             "status": "completed",
@@ -164,6 +245,7 @@ def shot_plan_agent_ledger() -> list[dict]:
             "output_evidence": [
                 "02_shot_plan.json#/concept_council",
                 "02_shot_plan.json#/product_identity_lock",
+                "02_shot_plan.json#/reference_deconstruction",
             ],
             "decision_summary": "Approved material, color, product-fidelity, and anti-plastic constraints.",
             "status": "completed",
@@ -178,6 +260,7 @@ def make_plan(include_identity_lock: bool) -> dict:
         "project_title": "Serum product ad",
         "project_type": "premium_product_ad",
         "duration_seconds": 30,
+        "requested_video_aspect_ratio": "9:16",
         "storyboard_sheet_count": 3,
         "panel_count": 9,
         "panels_per_sheet": [4, 3, 2],
@@ -199,6 +282,84 @@ def make_plan(include_identity_lock: bool) -> dict:
                 "reason_to_select_or_reject": "rejected because it feels too diagnostic and leaves less room for tactile beauty use",
             },
         ],
+        "reference_deconstruction": {
+            "references": [
+                {
+                    "reference_id": "REF_001",
+                    "role": "product_identity_and_style_reference",
+                    "observed_visual_facts": [
+                        "lipstick stands isolated against a deep red negative field",
+                        "white platform edge creates a strong diagonal path into the product",
+                        "metallic lipstick tube and clear base create crisp specular contact shadows",
+                    ],
+                    "transferable_principles": [
+                        "use hard geometry to control when the product becomes readable",
+                        "let red or color pressure shape desire before the product fills the frame",
+                        "preserve material contrast between pigment, metal, acrylic, and white architectural support",
+                    ],
+                    "must_not_copy_surface_elements": [
+                        "do not repeat the same lipstick-on-step corner composition",
+                        "do not make every panel a red-background product closeup",
+                        "do not use the white platform as an unchanged staircase motif",
+                    ],
+                    "assigned_agent_owner": "art_director_agent",
+                }
+            ],
+            "source_image_dna": {
+                "composition_principles": [
+                    "the reference uses a product isolated against an architectural edge instead of filling the whole frame",
+                    "diagonal white geometry creates a hard path for the eye before the red object is read",
+                    "large negative space makes the product feel controlled and expensive",
+                ],
+                "light_material_logic": [
+                    "red pigment reads through glossy highlights rather than flat color fill",
+                    "white platform and transparent package surfaces create cold specular contrast",
+                    "metal and acrylic edges need crisp contact shadows to avoid CGI softness",
+                ],
+                "negative_space_strategy": [
+                    "empty red field should create withheld desire rather than become repeated background wallpaper",
+                    "white geometric voids should guide reveal timing rather than appear as the same staircase in every shot",
+                ],
+                "motion_implications": [
+                    "the diagonal ledge implies a gliding reveal path across the vertical frame",
+                    "the lipstick angle suggests rotation and edge reveal rather than static repeated packshots",
+                ],
+            },
+            "creative_translation": {
+                "borrow": [
+                    "borrow the reference's red/white edge tension and isolated product authority",
+                    "borrow the hard shadow and polished material contrast between product and architectural support",
+                ],
+                "transform": [
+                    "turn the diagonal ledge into a water-reflection threshold that changes across shots",
+                    "turn the red field into a moving color pressure that appears only when the product earns attention",
+                    "turn product isolation into a script arc: withheld component, tactile proof, benefit metaphor, final authority",
+                ],
+                "reject": [
+                    "do not repeat the same product-on-white-step composition",
+                    "do not reuse the red background as a wallpaper in every panel",
+                    "do not make multiple macro lipstick angles without a new story event",
+                ],
+                "creative_leap": "A clinical droplet converts the reference's hard diagonal product stage into a cause-and-effect hydration world that reveals the serum through reflection, touch, and final authority.",
+                "new_mechanism": {
+                    "borrowed_dna_ids": ["REF_001.diagonal_edge", "REF_001.red_negative_space", "REF_001.specular_material_contrast"],
+                    "transformed_into": "a water-reflection threshold, pale clinical color pressure, and tactile label-proof chain",
+                    "new_story_world_rule": "only water, reflection, refraction, and touch may reveal the product or return it to final authority",
+                    "rejects_surface_copy_ids": ["REF_001.white_step", "REF_001.red_wallpaper", "REF_001.repeated_lipstick_angle"],
+                },
+            },
+            "literal_copy_risks": [
+                "repeating white step geometry until every shot feels like the same plinth",
+                "using red background and product closeups as surface decoration without story change",
+                "turning every panel into a product angle instead of moving through world, proof, use, benefit, and payoff",
+            ],
+            "agent_responsibility": {
+                "creative_director_agent": "owns the creative leap from reference DNA to a new advertising mechanism; must veto surface extraction masquerading as concept",
+                "art_director_agent": "owns material, color, negative-space, and literal-copy vetoes so the reference becomes visual grammar, not repeated props",
+                "screenwriter_agent": "owns timecoded progression so each beat changes desire, information, or product role instead of repeating beauty coverage",
+                "director_agent": "owns shot-to-shot difference, panel aspect, camera motivation, and final rejection of repetitive composition",
+            },
+        },
         "concept_council": {
             "creative_director": "select concept_a for stronger first-read material logic and cleaner product-reference hierarchy",
             "director": "approve concept_a because each reveal can become a segment-mapped shot with clear motion motivation",
@@ -288,6 +449,8 @@ def make_plan(include_identity_lock: bool) -> dict:
                 "segment_id": "SEG_01",
                 "time_range": "0s-10s",
                 "beat": "origin, withheld reveal, and first readable view",
+                "sheet_canvas_aspect_ratio": "16:9",
+                "panel_aspect_ratio": "9:16",
                 "shots": shots[:4],
             },
             {
@@ -295,6 +458,8 @@ def make_plan(include_identity_lock: bool) -> dict:
                 "segment_id": "SEG_02",
                 "time_range": "10s-20s",
                 "beat": "identity proof and tactile use action",
+                "sheet_canvas_aspect_ratio": "16:9",
+                "panel_aspect_ratio": "9:16",
                 "shots": shots[4:7],
             },
             {
@@ -302,6 +467,8 @@ def make_plan(include_identity_lock: bool) -> dict:
                 "segment_id": "SEG_03",
                 "time_range": "20s-30s",
                 "beat": "return bridge and final authority",
+                "sheet_canvas_aspect_ratio": "16:9",
+                "panel_aspect_ratio": "9:16",
                 "shots": shots[7:],
             },
         ],
@@ -484,6 +651,51 @@ class ProductIdentityLockTests(unittest.TestCase):
         self.assertEqual(code, 0, result)
         self.assertTrue(result["ok"], result)
 
+    def test_shot_plan_requires_reference_deconstruction_before_storyboard(self) -> None:
+        plan = make_plan(include_identity_lock=True)
+        del plan["reference_deconstruction"]
+
+        code, result = run_validator(plan)
+
+        self.assertNotEqual(code, 0)
+        self.assertFalse(result["ok"])
+        self.assertTrue(
+            any("reference_deconstruction" in error for error in result["errors"]),
+            result["errors"],
+        )
+
+    def test_shot_plan_rejects_literal_reference_copy_as_creative_leap(self) -> None:
+        plan = make_plan(include_identity_lock=True)
+        plan["reference_deconstruction"]["creative_translation"]["creative_leap"] = (
+            "Copy the same stairs, same red background, and same product-on-white-plinth composition from the reference."
+        )
+        plan["sheets"][0]["shots"][0]["reference_transform"] = (
+            "copy the same white plinth and same red background from the reference"
+        )
+
+        code, result = run_validator(plan)
+
+        self.assertNotEqual(code, 0)
+        self.assertFalse(result["ok"])
+        self.assertTrue(
+            any("creative_leap" in error or "reference_transform" in error for error in result["errors"]),
+            result["errors"],
+        )
+
+    def test_storyboard_panels_must_match_requested_video_aspect_ratio(self) -> None:
+        plan = make_plan(include_identity_lock=True)
+        plan["sheets"][0]["panel_aspect_ratio"] = "16:9"
+        plan["sheets"][0]["shots"][0]["aspect_ratio"] = "16:9"
+
+        code, result = run_validator(plan)
+
+        self.assertNotEqual(code, 0)
+        self.assertFalse(result["ok"])
+        self.assertTrue(
+            any("requested_video_aspect_ratio" in error or "panel_aspect_ratio" in error for error in result["errors"]),
+            result["errors"],
+        )
+
     def test_shot_plan_requires_agent_activation_ledger(self) -> None:
         plan = make_plan(include_identity_lock=True)
         del plan["agent_activation_ledger"]
@@ -619,6 +831,32 @@ class ProductIdentityLockTests(unittest.TestCase):
         self.assertFalse(result["ok"])
         self.assertTrue(
             any("distinct scene_arena" in error or "weak dramatic_event" in error for error in result["errors"]),
+            result["errors"],
+        )
+
+    def test_product_ads_reject_semantic_repetition_even_when_surface_words_vary(self) -> None:
+        plan = make_plan(include_identity_lock=True)
+        for index, shot in enumerate([shot for sheet in plan["sheets"] for shot in sheet["shots"]], start=1):
+            shot["scene_arena"] = f"distinct red pressure chamber {index}"
+            shot["visual_mechanism"] = f"distinct glamour color pressure variant {index} reveals a polished surface"
+            shot["dramatic_event"] = f"a different polished red highlight crosses the product surface variant {index}"
+            shot["reference_transform"] = f"transform reference color into a named glamour pressure variant {index}"
+            shot["shot_function_signature"] = {
+                "information_delta": "same desire pressure variation",
+                "desire_delta": f"slightly intensify the same glamour desire variant {index}",
+                "product_role_delta": "same product glamour object variation",
+                "event_type": "glamour_surface_reveal",
+                "camera_relation_key": "macro_product_glamour_relation",
+                "reference_transform_id": f"RT_REPEAT_{index:03d}",
+                "redundancy_risk": "risk of repeated glamour surface coverage disguised with new words",
+            }
+
+        code, result = run_validator(plan)
+
+        self.assertNotEqual(code, 0)
+        self.assertFalse(result["ok"])
+        self.assertTrue(
+            any("semantic redundancy" in error or "information_delta" in error for error in result["errors"]),
             result["errors"],
         )
 

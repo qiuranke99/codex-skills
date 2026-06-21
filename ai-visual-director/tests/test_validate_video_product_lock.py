@@ -147,6 +147,7 @@ def make_bad_visual_identity_prompt() -> dict:
 
 def make_locked_video_prompt() -> dict:
     return {
+        "requested_video_aspect_ratio": "9:16",
         "video_story": make_video_story(),
         "agent_activation_ledger": video_agent_ledger(),
         "required_reference_setup": {
@@ -199,6 +200,7 @@ def make_locked_video_prompt() -> dict:
                 "segment_id": "SEG_01_0s_10s",
                 "time_range": "0s-10s",
                 "purpose": "Reveal the locked real product without rebuilding it.",
+                "aspect_ratio": "9:16",
                 "source_shots": ["SH_001", "SH_002", "SH_003"],
                 "product_visibility": "full_visible",
                 "product_identity_reference": "Belle-purple-product-sheet.jpeg",
@@ -215,9 +217,9 @@ def make_locked_video_prompt() -> dict:
                     "champagne-gold rounded cap, visible internal spray tube, original printed label layout, no metal plate."
                 ),
                 "forbidden_visual_additions": "No metal plate, no front plaque, no extra badge, no extra emblem, no new label panel.",
-                "first_frame": "Lavender petal macro; product is not visible yet.",
+                "first_frame": "9:16 vertical lavender petal macro; product is not visible yet.",
                 "last_frame": (
-                    "The same real rectangular transparent lavender-purple bottle is visible front 3/4, "
+                    "The same real rectangular transparent lavender-purple bottle is visible front 3/4 in a 9:16 vertical frame, "
                     "champagne-gold cap on, internal spray tube visible, original label layout in place."
                 ),
                 "story_beats": [
@@ -326,6 +328,19 @@ class VideoProductLockTests(unittest.TestCase):
 
         self.assertEqual(code, 0, result)
         self.assertTrue(result["ok"], result)
+
+    def test_video_prompts_reject_segment_aspect_ratio_mismatch(self) -> None:
+        payload = make_locked_video_prompt()
+        payload["segments"][0]["aspect_ratio"] = "16:9"
+
+        code, result = run_validator(payload)
+
+        self.assertNotEqual(code, 0)
+        self.assertFalse(result["ok"])
+        self.assertTrue(
+            any("aspect_ratio" in error for error in result["errors"]),
+            result["errors"],
+        )
 
     def test_video_prompts_require_prompt_expert_and_director_activation(self) -> None:
         payload = make_locked_video_prompt()

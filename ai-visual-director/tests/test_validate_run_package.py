@@ -63,8 +63,13 @@ def three_segment_video_prompt() -> dict:
             }
             for idx, shot_id in enumerate(shot_ids)
         ]
-        segment["first_frame"] = f"{shot_ids[0]} first approved storyboard state."
-        segment["last_frame"] = f"{shot_ids[-1]} final approved storyboard state with temporal change."
+        segment["first_frame"] = f"9:16 vertical frame: {shot_ids[0]} first approved storyboard state."
+        segment["last_frame"] = f"9:16 vertical frame: {shot_ids[-1]} final approved storyboard state with temporal change."
+        segment["visual_style"] = "Restrained vertical 9:16 product TVC; product identity outranks style references."
+        segment["omni_prompt"] = (
+            "Generate a 9:16 vertical Google Omni segment. "
+            + segment["omni_prompt"]
+        )
         segment["cut_strategy"] = "multi-shot segment with explicit internal_shots and time spans"
         segments.append(segment)
     payload["segments"] = segments
@@ -241,6 +246,9 @@ def populate_run_dir(run_dir: Path, storyboard_prompt: str) -> None:
             "production_mode": "standard_fast",
             "video_backend": "google_omni",
             "duration_seconds": 30,
+            "requested_video_aspect_ratio": "9:16",
+            "aspect_ratio_source": "brief.aspect_ratio",
+            "aspect_contract": "panel_must_match_video_sheet_canvas_may_differ",
             "video_segment_seconds": 10,
             "storyboard_sheet_count": 3,
             "video_segment_count": 3,
@@ -286,6 +294,10 @@ def valid_storyboard_prompt() -> str:
     return """
 # Storyboard Sheet 01 Prompt
 
+Panel Aspect Ratio: 9:16 for every storyboard cell. Sheet Canvas Aspect Ratio:
+16:9 is allowed only as the outer contact-sheet canvas; do not mix horizontal
+and vertical panel frames inside the sheet.
+
 Story Engine: A clinical droplet teaches a reflective world to reveal the serum
 only after its hydration logic is proven.
 Creative Concept: A single clinical droplet teaches the world to behave like
@@ -316,47 +328,47 @@ center text HYDRATING SERUM, lower text 30 ml, centered front label rectangle,
 and pale blue stripe; embossed or relief marks: none_visible.
 
 Panel plan:
-- SH_001 [product_visibility: not_visible] [scene_arena: clinical droplet world]
+- SH_001 [aspect_ratio: 9:16] [product_visibility: not_visible] [scene_arena: clinical droplet world]
   [scene_role: origin world] [dramatic_event: a suspended droplet trembles and
   establishes the water logic before any package appears] [visual_mechanism:
   droplet highlight foreshadows the pale blue label stripe]. No product, no
   bottle, no package, no label, and no product text in this panel.
-- SH_002 [product_visibility: detail_only] [scene_arena: reflective tray
+- SH_002 [aspect_ratio: 9:16] [product_visibility: detail_only] [scene_arena: reflective tray
   threshold] [scene_role: material clue] [dramatic_event: the black cap edge
   arrives as a reflected clue before the full package is shown]
   [visual_mechanism: tray reflection turns the droplet highlight into a
   product-component reveal]. Draw only the rounded black cap edge and pale blue
   stripe reflection, not the full bottle.
-- SH_003 [product_visibility: partial_visible] [scene_arena: reflective tray
+- SH_003 [aspect_ratio: 9:16] [product_visibility: partial_visible] [scene_arena: reflective tray
   threshold] [scene_role: partial reveal] [dramatic_event: a cropped shoulder
   slides behind the tray rim and withholds the full bottle] [visual_mechanism:
   foreground tray occlusion turns the package into a withheld silhouette].
-- SH_004 [product_visibility: full_visible] [scene_arena: reflective tray
+- SH_004 [aspect_ratio: 9:16] [product_visibility: full_visible] [scene_arena: reflective tray
   threshold] [scene_role: first full reveal] [dramatic_event: the tray
   reflection completes the silhouette and lets the first readable product view
   arrive] [visual_mechanism: the reflection opens like a stage slit]. Draw the
   exact LUMA / HYDRATING SERUM / 30 ml product with white cylindrical bottle,
   rounded black cap, front label rectangle, pale blue stripe, and no gold metal
   plate, no metal badge, no front plaque, no extra emblem.
-- SH_005 [product_visibility: detail_only] [scene_arena: label stripe
+- SH_005 [aspect_ratio: 9:16] [product_visibility: detail_only] [scene_arena: label stripe
   inspection] [scene_role: typography proof] [dramatic_event: macro focus tests
   the pale blue stripe and label rectangle as proof of product identity]
   [visual_mechanism: a moving specular line connects the stripe to the earlier
   droplet path].
-- SH_006 [product_visibility: partial_visible] [scene_arena: fingertip
+- SH_006 [aspect_ratio: 9:16] [product_visibility: partial_visible] [scene_arena: fingertip
   interaction table] [scene_role: use action] [dramatic_event: a fingertip
   nudges only the cropped base so the object becomes tactile rather than
   worshipped] [visual_mechanism: fingertip pressure starts a rotation].
-- SH_007 [product_visibility: not_visible] [scene_arena: hydration ripple world]
+- SH_007 [aspect_ratio: 9:16] [product_visibility: not_visible] [scene_arena: hydration ripple world]
   [scene_role: benefit metaphor] [dramatic_event: the fingertip action resolves
   as a smooth water ripple with no package in frame] [visual_mechanism: the
   rotation energy transfers into a skin-like hydration ripple]. No product, no
   bottle, no package, no label, and no product text in this panel.
-- SH_008 [product_visibility: partial_visible] [scene_arena: hydration ripple
+- SH_008 [aspect_ratio: 9:16] [product_visibility: partial_visible] [scene_arena: hydration ripple
   world] [scene_role: return bridge] [dramatic_event: the ripple reflection
   catches a cropped bottle silhouette and pulls the eye back to identity]
   [visual_mechanism: the circular ripple deforms into the product reflection].
-- SH_009 [product_visibility: full_visible] [scene_arena: clean packshot memory
+- SH_009 [aspect_ratio: 9:16] [product_visibility: full_visible] [scene_arena: clean packshot memory
   space] [scene_role: final authority] [dramatic_event: the ripple energy stops
   and the product holds as the final memory image] [visual_mechanism: the
   reflected ripple becomes the stable base highlight]. Final front packshot of
@@ -476,6 +488,22 @@ no front plaque, no extra emblem.
         self.assertFalse(result["ok"])
         self.assertTrue(
             any("Product Visibility Rhythm" in error or "product_visibility" in error for error in result["errors"]),
+            result["errors"],
+        )
+
+    def test_run_package_rejects_storyboard_prompt_without_panel_aspect_ratio(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            run_dir = Path(tmp)
+            prompt = valid_storyboard_prompt().replace("Panel Aspect Ratio: 9:16", "Panel Shape: mixed")
+            prompt = prompt.replace("[aspect_ratio: 9:16] ", "")
+            populate_run_dir(run_dir, prompt)
+
+            code, result = run_validator(run_dir)
+
+        self.assertNotEqual(code, 0)
+        self.assertFalse(result["ok"])
+        self.assertTrue(
+            any("Panel Aspect Ratio" in error or "aspect_ratio: 9:16" in error for error in result["errors"]),
             result["errors"],
         )
 
@@ -626,6 +654,28 @@ Upload the fixed-grid storyboard sheet and ask the video model to make the whole
         self.assertFalse(result["ok"])
         self.assertTrue(
             any("director/shot-plan owned" in error for error in result["errors"]),
+            result["errors"],
+        )
+
+    def test_run_package_rejects_route_and_shot_plan_aspect_mismatch(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            run_dir = Path(tmp)
+            populate_run_dir(run_dir, valid_storyboard_prompt())
+            shot_plan_path = run_dir / "02_shot_plan.json"
+            shot_plan = json.loads(shot_plan_path.read_text(encoding="utf-8"))
+            shot_plan["requested_video_aspect_ratio"] = "16:9"
+            for sheet in shot_plan["sheets"]:
+                sheet["panel_aspect_ratio"] = "16:9"
+                for shot in sheet["shots"]:
+                    shot["aspect_ratio"] = "16:9"
+            write_json(shot_plan_path, shot_plan)
+
+            code, result = run_validator(run_dir)
+
+        self.assertNotEqual(code, 0)
+        self.assertFalse(result["ok"])
+        self.assertTrue(
+            any("requested_video_aspect_ratio" in error for error in result["errors"]),
             result["errors"],
         )
 

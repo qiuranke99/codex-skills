@@ -30,6 +30,8 @@ REQUIRED_SHOT_FIELDS = [
     "eye_trace",
     "depth_strategy",
     "reference_parity",
+    "reference_transform",
+    "shot_function_signature",
     "main_subject",
     "main_action",
     "body_pose",
@@ -121,6 +123,41 @@ WEAK_STORY_ENGINE_WORDS = re.compile(
     r"\b(product\s*\+\s*petals|petals\s*\+\s*glass|glass\s*\+\s*light sweep|premium product reveal|beautiful packshot)\b",
     re.IGNORECASE,
 )
+LITERAL_REFERENCE_COPY_WORDS = re.compile(
+    r"\b(copy|clone|duplicate|replicate|same as reference|use the same|extract elements|literal|"
+    r"surface elements?|same stairs?|same plinth|same pedestal|same diagonal block|same red background|"
+    r"just reuse|just mirror)\b|"
+    r"照抄|复制|克隆|照搬|直接使用|提取元素|表层元素|同样的台阶|同样的底座|同样的斜面|同样的红背景",
+    re.IGNORECASE,
+)
+REFERENCE_DNA_AGENT_ROLES = [
+    "creative_director_agent",
+    "art_director_agent",
+    "screenwriter_agent",
+    "director_agent",
+]
+REQUIRED_REFERENCE_ENTRY_FIELDS = [
+    "reference_id",
+    "role",
+    "observed_visual_facts",
+    "transferable_principles",
+    "must_not_copy_surface_elements",
+    "assigned_agent_owner",
+]
+REQUIRED_SHOT_FUNCTION_FIELDS = [
+    "information_delta",
+    "desire_delta",
+    "product_role_delta",
+    "event_type",
+    "camera_relation_key",
+    "reference_transform_id",
+    "redundancy_risk",
+]
+WEAK_DELTA_WORDS = re.compile(
+    r"^(same|similar|none|n/a|no change|minor variation|variation|beauty variation|glamour variation)$|"
+    r"同样|相同|无变化|小变化|换角度|变体",
+    re.IGNORECASE,
+)
 ANTI_PLASTIC_WORDS = re.compile(
     r"material|texture|tactile|grain|halation|lens|reflection|refraction|shadow|contact|imperfect|"
     r"physical|real|natural|micro|specular|surface|glass|skin|metal|fabric|motion blur|"
@@ -179,10 +216,10 @@ REQUIRED_SHOT_PLAN_AGENT_ROLES = {
     "art_director_agent",
 }
 SHOT_PLAN_AGENT_OUTPUT_REQUIREMENTS = {
-    "creative_director_agent": ["creative_concept_candidates", "creative_concept"],
+    "creative_director_agent": ["creative_concept_candidates", "creative_concept", "reference_deconstruction"],
     "director_agent": ["concept_council", "director_script_approval", "storyboard_layout_decision"],
     "screenwriter_agent": ["timecoded_script_map"],
-    "art_director_agent": ["concept_council", "product_identity_lock"],
+    "art_director_agent": ["concept_council", "product_identity_lock", "reference_deconstruction"],
 }
 
 
@@ -233,6 +270,32 @@ def as_list(value: object) -> list[str]:
 
 def normalized(value: object) -> str:
     return re.sub(r"\s+", " ", str(value)).strip().lower()
+
+
+def ratio_key(value: object) -> str:
+    text = normalized(value)
+    match = re.search(r"(\d+(?:\.\d+)?)\s*[:x/]\s*(\d+(?:\.\d+)?)", text)
+    if not match:
+        return text
+    width = float(match.group(1))
+    height = float(match.group(2))
+    if width <= 0 or height <= 0:
+        return text
+    if width.is_integer() and height.is_integer():
+        divisor = math.gcd(int(width), int(height))
+        return f"{int(width) // divisor}:{int(height) // divisor}"
+    ratio = width / height
+    common = {
+        "9:16": 9 / 16,
+        "16:9": 16 / 9,
+        "1:1": 1,
+        "4:5": 4 / 5,
+        "3:4": 3 / 4,
+    }
+    for key, target in common.items():
+        if abs(ratio - target) < 0.01:
+            return key
+    return f"{width:g}:{height:g}"
 
 
 def visible_text_lines(lock: dict) -> list[str]:
@@ -411,6 +474,135 @@ def is_concrete_creative_value(value: object) -> bool:
     if WEAK_CREATIVE_WORDS.search(text):
         return False
     return True
+
+
+def concrete_items(value: object) -> list[str]:
+    return [item for item in as_list(value) if is_concrete_creative_value(item)]
+
+
+def validate_reference_deconstruction(plan: dict) -> tuple[list[str], list[str]]:
+    errors: list[str] = []
+    warnings: list[str] = []
+
+    if not plan.get("reference_roles"):
+        return errors, warnings
+    if not is_product_plan(plan) and str(plan.get("project_type", "")).strip() not in {"premium_product_ad", "product_ad"}:
+        return errors, warnings
+
+    deconstruction = plan.get("reference_deconstruction")
+    if not isinstance(deconstruction, dict):
+        errors.append("plan: reference_deconstruction is required before creative concept when reference images drive the storyboard")
+        return errors, warnings
+
+    references = deconstruction.get("references")
+    if not isinstance(references, list) or not references:
+        errors.append("reference_deconstruction: references[] must deconstruct each supplied reference image separately")
+    else:
+        for idx, reference in enumerate(references, start=1):
+            if not isinstance(reference, dict):
+                errors.append(f"reference_deconstruction.references[{idx}]: must be an object")
+                continue
+            for field in REQUIRED_REFERENCE_ENTRY_FIELDS:
+                if field in {"observed_visual_facts", "transferable_principles", "must_not_copy_surface_elements"}:
+                    if len(concrete_items(reference.get(field))) < 3:
+                        errors.append(f"reference_deconstruction.references[{idx}]: {field} needs at least 3 concrete items")
+                elif not str(reference.get(field, "")).strip():
+                    errors.append(f"reference_deconstruction.references[{idx}]: missing {field}")
+            owner = str(reference.get("assigned_agent_owner", "")).strip()
+            if owner and owner not in REFERENCE_DNA_AGENT_ROLES:
+                errors.append(f"reference_deconstruction.references[{idx}]: assigned_agent_owner must be one of the mandatory shot-plan agents")
+
+    dna = deconstruction.get("source_image_dna")
+    if not isinstance(dna, dict):
+        errors.append("reference_deconstruction: missing source_image_dna")
+        dna = {}
+    dna_requirements = {
+        "composition_principles": 3,
+        "light_material_logic": 3,
+        "negative_space_strategy": 2,
+        "motion_implications": 2,
+    }
+    for field, minimum in dna_requirements.items():
+        items = concrete_items(dna.get(field))
+        if len(items) < minimum:
+            errors.append(f"reference_deconstruction.source_image_dna: {field} needs at least {minimum} concrete items")
+
+    translation = deconstruction.get("creative_translation")
+    if not isinstance(translation, dict):
+        errors.append("reference_deconstruction: missing creative_translation")
+        translation = {}
+    translation_requirements = {
+        "borrow": 2,
+        "transform": 3,
+        "reject": 3,
+    }
+    for field, minimum in translation_requirements.items():
+        items = concrete_items(translation.get(field))
+        if len(items) < minimum:
+            errors.append(f"reference_deconstruction.creative_translation: {field} needs at least {minimum} concrete items")
+
+    leap = str(translation.get("creative_leap", "")).strip()
+    if not is_concrete_creative_value(leap):
+        errors.append("reference_deconstruction.creative_translation: creative_leap is missing or weak")
+    if LITERAL_REFERENCE_COPY_WORDS.search(leap):
+        errors.append("reference_deconstruction.creative_translation: creative_leap must transform reference DNA, not copy surface elements")
+
+    mechanism = translation.get("new_mechanism")
+    if not isinstance(mechanism, dict):
+        errors.append("reference_deconstruction.creative_translation: missing new_mechanism")
+        mechanism = {}
+    if len(concrete_items(mechanism.get("borrowed_dna_ids"))) < 1:
+        errors.append("reference_deconstruction.creative_translation.new_mechanism: borrowed_dna_ids must link to deconstructed reference DNA")
+    if len(concrete_items(mechanism.get("rejects_surface_copy_ids"))) < 1:
+        errors.append("reference_deconstruction.creative_translation.new_mechanism: rejects_surface_copy_ids must link to vetoed surface-copy risks")
+    for field in ["transformed_into", "new_story_world_rule"]:
+        if not is_concrete_creative_value(mechanism.get(field)):
+            errors.append(f"reference_deconstruction.creative_translation.new_mechanism: missing or weak {field}")
+
+    risks = concrete_items(deconstruction.get("literal_copy_risks"))
+    if len(risks) < 3:
+        errors.append("reference_deconstruction: literal_copy_risks needs at least 3 concrete risks to veto")
+
+    responsibility = deconstruction.get("agent_responsibility")
+    if not isinstance(responsibility, dict):
+        errors.append("reference_deconstruction: missing agent_responsibility")
+        responsibility = {}
+    for role in REFERENCE_DNA_AGENT_ROLES:
+        value = responsibility.get(role)
+        if not is_concrete_creative_value(value):
+            errors.append(f"reference_deconstruction.agent_responsibility: missing or weak {role}")
+
+    return errors, warnings
+
+
+def validate_requested_aspect_ratio(plan: dict) -> tuple[list[str], list[str]]:
+    errors: list[str] = []
+    warnings: list[str] = []
+
+    requested_raw = str(plan.get("requested_video_aspect_ratio", "")).strip()
+    requested = ratio_key(requested_raw)
+    if not requested_raw:
+        errors.append("plan: requested_video_aspect_ratio is required so storyboard panels match the final video frame")
+        return errors, warnings
+
+    for sheet in plan.get("sheets", []):
+        sheet_id = sheet.get("sheet_id", "<unknown>")
+        panel_ratio = ratio_key(sheet.get("panel_aspect_ratio", ""))
+        if panel_ratio != requested:
+            errors.append(
+                f"{sheet_id}: panel_aspect_ratio {sheet.get('panel_aspect_ratio')!r} must match requested_video_aspect_ratio {plan.get('requested_video_aspect_ratio')!r}"
+            )
+        for shot in sheet.get("shots", []):
+            if not isinstance(shot, dict):
+                continue
+            sid = shot.get("shot_id", "<unknown-shot>")
+            shot_ratio = ratio_key(shot.get("aspect_ratio", ""))
+            if shot_ratio != requested:
+                errors.append(
+                    f"{sid}: aspect_ratio {shot.get('aspect_ratio')!r} must match requested_video_aspect_ratio {plan.get('requested_video_aspect_ratio')!r}; storyboard sheet canvas may differ, but every panel/cell must match the video frame ratio"
+                )
+
+    return errors, warnings
 
 
 def is_weak_dramatic_event(value: object) -> bool:
@@ -623,6 +815,12 @@ def validate_creative_director_standard(plan: dict) -> tuple[list[str], list[str
                 elif not is_concrete_creative_value(value):
                     errors.append(f"{sid}: missing or weak {field}")
 
+            reference_transform = shot.get("reference_transform", "")
+            if not is_concrete_creative_value(reference_transform):
+                errors.append(f"{sid}: missing or weak reference_transform; state how this panel transforms reference DNA instead of copying it")
+            elif LITERAL_REFERENCE_COPY_WORDS.search(str(reference_transform)):
+                errors.append(f"{sid}: reference_transform copies reference surface elements instead of transforming visual DNA")
+
             if str(shot.get("scene_arena", "")).strip():
                 scene_arenas.add(norm(shot.get("scene_arena", "")))
             if str(shot.get("visual_mechanism", "")).strip():
@@ -725,6 +923,71 @@ def validate_product_visibility_rhythm(plan: dict) -> tuple[list[str], list[str]
             errors.append(
                 f"{sheet_id}: needs at least one non-product-led storyboard panel; "
                 "do not let product identity lock consume every composition"
+            )
+
+    return errors, warnings
+
+
+def validate_semantic_progression(plan: dict) -> tuple[list[str], list[str]]:
+    errors: list[str] = []
+    warnings: list[str] = []
+
+    if not is_product_plan(plan) or is_packshot_exception(plan):
+        return errors, warnings
+
+    shots = [
+        shot
+        for sheet in plan.get("sheets", [])
+        for shot in sheet.get("shots", [])
+        if isinstance(shot, dict)
+    ]
+    if not shots:
+        return errors, warnings
+
+    signature_counts: dict[tuple[str, str, str], int] = {}
+    previous_information_delta = ""
+    previous_role_delta = ""
+    for shot in shots:
+        sid = shot.get("shot_id", "<unknown-shot>")
+        signature = shot.get("shot_function_signature")
+        if not isinstance(signature, dict):
+            errors.append(f"{sid}: missing shot_function_signature for semantic progression and redundancy control")
+            continue
+
+        for field in REQUIRED_SHOT_FUNCTION_FIELDS:
+            value = signature.get(field)
+            if field in {"event_type", "camera_relation_key", "reference_transform_id"}:
+                if len(str(value).strip()) < 4:
+                    errors.append(f"{sid}: shot_function_signature missing or weak {field}")
+            elif not is_concrete_creative_value(value):
+                errors.append(f"{sid}: shot_function_signature missing or weak {field}")
+
+        information_delta = norm(signature.get("information_delta", ""))
+        product_role_delta = norm(signature.get("product_role_delta", ""))
+        if WEAK_DELTA_WORDS.search(information_delta):
+            errors.append(f"{sid}: information_delta must add new viewer information, not a same-beat variation")
+        if WEAK_DELTA_WORDS.search(product_role_delta):
+            errors.append(f"{sid}: product_role_delta must change the product role or explain why this beat is necessary")
+        if previous_information_delta and information_delta == previous_information_delta:
+            errors.append(f"{sid}: consecutive shots repeat the same information_delta")
+        if previous_role_delta and product_role_delta == previous_role_delta:
+            errors.append(f"{sid}: consecutive shots repeat the same product_role_delta")
+        previous_information_delta = information_delta
+        previous_role_delta = product_role_delta
+
+        key = (
+            norm(signature.get("event_type", "")),
+            norm(shot.get("product_visibility", "")),
+            norm(signature.get("camera_relation_key", "")),
+        )
+        if all(key):
+            signature_counts[key] = signature_counts.get(key, 0) + 1
+
+    for (event_type, visibility, camera_relation), count in signature_counts.items():
+        if count > 2:
+            errors.append(
+                "plan: semantic redundancy detected; "
+                f"event_type={event_type!r}, product_visibility={visibility!r}, camera_relation_key={camera_relation!r} appears {count} times"
             )
 
     return errors, warnings
@@ -925,6 +1188,14 @@ def main() -> int:
     errors.extend(workflow_errors)
     warnings.extend(workflow_warnings)
 
+    aspect_errors, aspect_warnings = validate_requested_aspect_ratio(plan)
+    errors.extend(aspect_errors)
+    warnings.extend(aspect_warnings)
+
+    reference_errors, reference_warnings = validate_reference_deconstruction(plan)
+    errors.extend(reference_errors)
+    warnings.extend(reference_warnings)
+
     if not plan.get("continuity_locks"):
         errors.append("plan: missing continuity_locks")
 
@@ -939,6 +1210,10 @@ def main() -> int:
     rhythm_errors, rhythm_warnings = validate_product_visibility_rhythm(plan)
     errors.extend(rhythm_errors)
     warnings.extend(rhythm_warnings)
+
+    semantic_errors, semantic_warnings = validate_semantic_progression(plan)
+    errors.extend(semantic_errors)
+    warnings.extend(semantic_warnings)
 
     creative_errors, creative_warnings = validate_creative_director_standard(plan)
     errors.extend(creative_errors)

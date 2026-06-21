@@ -6,6 +6,7 @@
     "project_title",
     "project_type",
     "duration_seconds",
+    "requested_video_aspect_ratio",
     "storyboard_sheet_count",
     "video_segment_count",
     "panel_count",
@@ -14,6 +15,7 @@
     "shots_per_video_segment",
     "agent_activation_ledger",
     "creative_concept_candidates",
+    "reference_deconstruction",
     "concept_council",
     "timecoded_script_map",
     "director_script_approval",
@@ -26,6 +28,10 @@
     "project_title": {"type": "string"},
     "project_type": {"type": "string"},
     "duration_seconds": {"type": "number"},
+    "requested_video_aspect_ratio": {
+      "type": "string",
+      "description": "The requested final video frame ratio, for example 9:16. Every storyboard panel/cell must match this ratio even when the overall sheet canvas uses another ratio."
+    },
     "storyboard_sheet_count": {"type": "integer", "minimum": 1},
     "storyboard_grid_mode": {"type": "string"},
     "panel_count": {"type": "integer", "minimum": 1},
@@ -103,6 +109,110 @@
         },
         "additionalProperties": false
       }
+    },
+    "reference_deconstruction": {
+      "type": "object",
+      "required": [
+        "references",
+        "source_image_dna",
+        "creative_translation",
+        "literal_copy_risks",
+        "agent_responsibility"
+      ],
+      "properties": {
+        "references": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "type": "object",
+            "required": [
+              "reference_id",
+              "role",
+              "observed_visual_facts",
+              "transferable_principles",
+              "must_not_copy_surface_elements",
+              "assigned_agent_owner"
+            ],
+            "properties": {
+              "reference_id": {"type": "string"},
+              "role": {"type": "string"},
+              "observed_visual_facts": {"type": "array", "items": {"type": "string"}, "minItems": 3},
+              "transferable_principles": {"type": "array", "items": {"type": "string"}, "minItems": 3},
+              "must_not_copy_surface_elements": {"type": "array", "items": {"type": "string"}, "minItems": 3},
+              "assigned_agent_owner": {
+                "enum": [
+                  "creative_director_agent",
+                  "art_director_agent",
+                  "screenwriter_agent",
+                  "director_agent"
+                ]
+              }
+            },
+            "additionalProperties": false
+          }
+        },
+        "source_image_dna": {
+          "type": "object",
+          "required": [
+            "composition_principles",
+            "light_material_logic",
+            "negative_space_strategy",
+            "motion_implications"
+          ],
+          "properties": {
+            "composition_principles": {"type": "array", "items": {"type": "string"}, "minItems": 3},
+            "light_material_logic": {"type": "array", "items": {"type": "string"}, "minItems": 3},
+            "negative_space_strategy": {"type": "array", "items": {"type": "string"}, "minItems": 2},
+            "motion_implications": {"type": "array", "items": {"type": "string"}, "minItems": 2}
+          },
+          "additionalProperties": false
+        },
+        "creative_translation": {
+          "type": "object",
+          "required": ["borrow", "transform", "reject", "creative_leap", "new_mechanism"],
+          "properties": {
+            "borrow": {"type": "array", "items": {"type": "string"}, "minItems": 2},
+            "transform": {"type": "array", "items": {"type": "string"}, "minItems": 3},
+            "reject": {"type": "array", "items": {"type": "string"}, "minItems": 3},
+            "creative_leap": {"type": "string"},
+            "new_mechanism": {
+              "type": "object",
+              "required": [
+                "borrowed_dna_ids",
+                "transformed_into",
+                "new_story_world_rule",
+                "rejects_surface_copy_ids"
+              ],
+              "properties": {
+                "borrowed_dna_ids": {"type": "array", "items": {"type": "string"}, "minItems": 1},
+                "transformed_into": {"type": "string"},
+                "new_story_world_rule": {"type": "string"},
+                "rejects_surface_copy_ids": {"type": "array", "items": {"type": "string"}, "minItems": 1}
+              },
+              "additionalProperties": false
+            }
+          },
+          "additionalProperties": false
+        },
+        "literal_copy_risks": {"type": "array", "items": {"type": "string"}, "minItems": 3},
+        "agent_responsibility": {
+          "type": "object",
+          "required": [
+            "creative_director_agent",
+            "art_director_agent",
+            "screenwriter_agent",
+            "director_agent"
+          ],
+          "properties": {
+            "creative_director_agent": {"type": "string"},
+            "art_director_agent": {"type": "string"},
+            "screenwriter_agent": {"type": "string"},
+            "director_agent": {"type": "string"}
+          },
+          "additionalProperties": false
+        }
+      },
+      "additionalProperties": false
     },
     "concept_council": {
       "type": "object",
@@ -259,12 +369,20 @@
       "type": "array",
       "items": {
         "type": "object",
-        "required": ["sheet_id", "segment_id", "time_range", "beat", "shots"],
+        "required": ["sheet_id", "segment_id", "time_range", "beat", "panel_aspect_ratio", "shots"],
         "properties": {
           "sheet_id": {"type": "string"},
           "segment_id": {"type": "string"},
           "time_range": {"type": "string"},
           "beat": {"type": "string"},
+          "sheet_canvas_aspect_ratio": {
+            "type": "string",
+            "description": "Optional overall bitmap canvas ratio; may differ from the video ratio when it helps pack vertical panels into a legible sheet."
+          },
+          "panel_aspect_ratio": {
+            "type": "string",
+            "description": "Aspect ratio for every panel/cell in this storyboard sheet. Must match requested_video_aspect_ratio."
+          },
           "shots": {
             "type": "array",
             "minItems": 1,
@@ -290,6 +408,8 @@
                 "eye_trace",
                 "depth_strategy",
                 "reference_parity",
+                "reference_transform",
+                "shot_function_signature",
                 "main_subject",
                 "main_action",
                 "body_pose",
@@ -326,6 +446,29 @@
                 "eye_trace": {"type": "string"},
                 "depth_strategy": {"type": "string"},
                 "reference_parity": {"type": "string"},
+                "reference_transform": {"type": "string"},
+                "shot_function_signature": {
+                  "type": "object",
+                  "required": [
+                    "information_delta",
+                    "desire_delta",
+                    "product_role_delta",
+                    "event_type",
+                    "camera_relation_key",
+                    "reference_transform_id",
+                    "redundancy_risk"
+                  ],
+                  "properties": {
+                    "information_delta": {"type": "string"},
+                    "desire_delta": {"type": "string"},
+                    "product_role_delta": {"type": "string"},
+                    "event_type": {"type": "string"},
+                    "camera_relation_key": {"type": "string"},
+                    "reference_transform_id": {"type": "string"},
+                    "redundancy_risk": {"type": "string"}
+                  },
+                  "additionalProperties": false
+                },
                 "main_subject": {"type": "string"},
                 "main_action": {"type": "string"},
                 "body_pose": {"type": "string"},

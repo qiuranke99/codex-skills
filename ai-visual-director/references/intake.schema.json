@@ -17,6 +17,11 @@
       "minimum": 1,
       "default": 10
     },
+    "requested_video_aspect_ratio": {
+      "type": "string",
+      "pattern": "^(9:16|16:9|1:1|4:5|3:4|[0-9]{2,5}x[0-9]{2,5})$",
+      "description": "Final video frame ratio. Storyboard sheet canvas may differ, but every storyboard panel/cell must match this ratio."
+    },
     "video_backend": {
       "enum": ["google_omni", "google_flow", "veo_api", "runway", "kling", "luma", "multi_backend"],
       "default": "google_omni"

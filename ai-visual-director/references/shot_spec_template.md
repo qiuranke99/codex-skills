@@ -16,6 +16,8 @@ A strong spec must answer four questions:
 2. Why is the camera here, at this size and angle?
 3. Why does this shot cut from the previous shot and into the next shot?
 4. What must remain stable so the downstream artist or generator does not drift?
+5. If references are supplied, what visual DNA is transformed instead of copied?
+6. What frame ratio must the downstream video system obey in each panel?
 
 ## 2. Stable Terminology
 
@@ -174,6 +176,8 @@ If a response must be shortened, preserve fields in this order:
 27. `avoid`
 28. `duration`
 29. `aspect_ratio`
+30. `reference_transform`
+31. `shot_function_signature`
 
 Rationale: the downstream artist or generator must know what to draw, where the viewer is, what action is happening, and what cannot drift before it needs aesthetic or technical refinements.
 
@@ -183,6 +187,7 @@ Rationale: the downstream artist or generator must know what to draw, where the 
 |---|---|---|---|
 | `SH_###` | Stable shot ID for revision. | `SH_004` | `next shot` |
 | `aspect_ratio` | Frame ratio if relevant. | `9:16 vertical` | `cinematic` |
+| `panel_aspect_ratio` | Storyboard cell ratio. Must match the final video frame, even when the sheet canvas is a different ratio. | `9:16 for every panel/cell; sheet may be 16:9 contact sheet` | `mixed storyboard panels` |
 | `scene` | Place, time, and story beat context. | `rainy Tokyo crossing, first scale reveal` | `city` |
 | `arc_position` | Where this keyframe sits in the ad film's arc. | `origin`, `first rule violation`, `earned reveal`, `benefit proof`, `final authority` | `middle` |
 | `story_beat` | The story change this keyframe proves. | `the product earns visibility after the ripple reveals its label geometry` | `product shot` |
@@ -190,6 +195,8 @@ Rationale: the downstream artist or generator must know what to draw, where the 
 | `scene_role` | The panel's commercial or story function. | `benefit metaphor`, `partial reveal threshold`, `final authority` | `beauty` |
 | `dramatic_event` | On-screen event or transformation. | `the elevator reflection folds into the bottle silhouette` | `light sweeps across product` |
 | `visual_mechanism` | Repeatable image logic that causes the reveal or cut. | `corridor reflection matches the bottle edge and motivates the cut` | `premium reflection` |
+| `reference_transform` | How this shot transforms reference DNA into new image logic without copying the supplied image's surface staging. | `borrows red/white diagonal tension and turns it into a rotating threshold gate that wipes across the lipstick bullet` | `same as reference` |
+| `shot_function_signature` | Semantic fingerprint preventing repetition: information delta, desire delta, product-role delta, event type, camera relation, reference transform ID, and redundancy risk. | `information_delta: lipstick is first seen as hidden weapon-like silhouette; product_role_delta: absent -> myth object; event_type: conceal_reveal` | `beauty variation` |
 | `duration` | Timing, required for timed ads or animatics. | `1.2s`, `hold 3s` | `short` |
 | `dramatic_beat` | What changes or what this shot does emotionally/narratively/persuasively. | `viewer realizes the street is now tiny below her` | `emotional moment` |
 | `shot_purpose` | Why this shot exists in the sequence. | `prove giant scale through taxi-to-shoe comparison` | `make it epic` |
@@ -249,6 +256,29 @@ Product Visibility Rhythm: SH_001 not_visible -> SH_002 detail_only -> ...
   readable marks and forbidden additions.
 ```
 
+Storyboard contact sheets have two ratios:
+
+- `sheet_canvas_aspect_ratio`: the outer board image. It may be `16:9`,
+  `3:2`, or another practical layout that fits the chosen number of panels.
+- `panel_aspect_ratio`: the ratio of every storyboard cell. It must match the
+  requested final video frame, for example every cell is `9:16` for a vertical
+  video. Mixed horizontal/vertical cells are a contract failure, not a style
+  choice.
+
+When writing storyboard image prompts, include this line before the panel list:
+
+```text
+Panel Aspect Ratio: 9:16 for every storyboard cell. Sheet Canvas Aspect Ratio:
+16:9 contact sheet is acceptable because the panel/cell ratio remains 9:16.
+```
+
+Then repeat the ratio on every panel line:
+
+```text
+- SH_001 [aspect_ratio: 9:16] [product_visibility: not_visible]: ...
+- SH_002 [aspect_ratio: 9:16] [product_visibility: detail_only]: ...
+```
+
 For premium product ads, do not leave the creative scene layer implicit:
 
 ```text
@@ -274,11 +304,14 @@ Use this format when the user says `给手绘分镜用`, asks for clean handoff 
 ```yaml
 SH_001
 aspect_ratio:
+panel_aspect_ratio:
 scene:
 scene_arena:
 scene_role:
 dramatic_event:
 visual_mechanism:
+reference_transform:
+shot_function_signature:
 duration:
 dramatic_beat:
 shot_purpose:
@@ -483,21 +516,27 @@ Rules: every shot has one visual job; inserts are punctuation, not filler; repea
 Use when the user supplies one or more reference images.
 
 ```markdown
-## Reference Image Extraction
+## Reference Image Deconstruction
 
+- reference_id:
 - function:
-- visible subject(s):
-- shot size:
-- camera angle:
-- lens feel:
-- composition:
-- foreground:
-- midground:
-- background:
-- pose / gesture:
-- scale relationships:
-- continuity elements to preserve:
-- elements to ignore or reinterpret:
+- observed_visual_facts:
+  - subject / product / prop facts:
+  - shot size / camera angle / lens feel:
+  - composition / negative space:
+  - foreground / midground / background:
+  - light / material / color behavior:
+  - pose / gesture / scale relationships:
+- transferable_principles:
+  - composition principle:
+  - light/material principle:
+  - rhythm or motion implication:
+  - commercial attention tactic:
+- must_not_copy_surface_elements:
+  - repeated product-on-plinth staging:
+  - exact background/prop layout unless user locks it:
+  - decorative color extraction without new image logic:
+- assigned_agent_owner:
 ```
 
 Rules:
@@ -505,8 +544,16 @@ Rules:
 - Separate observed facts from interpretation.
 - Do not treat every reference equally.
 - Follow the user-assigned function of each reference.
-- If the user wants a sequence from one image, create one anchor shot that stays close to the reference, then derive motivated continuation shots.
+- If the user wants a sequence from one image, create at most one anchor shot
+  that stays close to the reference, then derive motivated continuation shots
+  from transformed visual DNA.
 - First-frame composition/camera outranks other references only when the user explicitly says it is locked or asks to preserve the reference shot.
+- The creative director owns the leap from reference DNA to a new concept; the
+  art director owns the surface-copy veto and material/color grammar; the
+  screenwriter owns beat progression; the director owns camera motivation,
+  aspect ratio, and semantic redundancy control.
+- A sequence that merely repeats the reference's product, plinth, background,
+  angle, and color in several panels has failed before storyboard generation.
 
 Conflict priority:
 
@@ -607,6 +654,9 @@ Before final output, verify every shot:
 - It includes axis, screen direction, and eyeline when relevant.
 - It includes scale proof when scale matters.
 - It includes continuity lock when a subject recurs.
+- It includes `reference_transform` when references are supplied.
+- It includes `shot_function_signature` with a real information/desire/product-role delta.
+- Its `aspect_ratio` matches the requested final video ratio.
 - For user-provided products, it includes a product identity lock and per-product-shot visibility/action notes.
 - It includes specific avoid notes for likely drift.
 
@@ -625,6 +675,11 @@ Before final output, verify the sequence:
 - Axis, eyeline, and screen direction survive shot-to-shot.
 - Product/character/prop continuity survives shot-to-shot.
 - Inserts function as proof or rhythm punctuation, not filler.
+- Consecutive shots do not share the same information delta, product-role delta,
+  event type, and camera relation unless an explicit rhythmic repetition is
+  justified.
+- Every storyboard panel/cell uses the requested video aspect ratio, even if
+  the outer contact sheet canvas uses another practical ratio.
 - The final shot resolves, complicates, or deliberately leaves a clear question.
 
 ## 18. Revision and Versioning Rules
@@ -653,6 +708,9 @@ Before final output, verify the sequence:
 | Internal emotion | `she feels afraid` without drawable evidence. | Convert to stillness, gaze, breath, hand tension, posture, or object interaction. |
 | Scale unproven | Giant/miniature/macro is asserted. | Add familiar reference objects in frame. |
 | Product function vague | Product appears but operation is unclear. | Show hand operation, state change, proof detail, and final orientation. |
+| Reference surface copy | Panels repeat the supplied image's product pose, plinth, background, or color layout without a new visual mechanism. | Re-run reference deconstruction; keep transferable principles and reject surface elements before writing shots. |
+| Storyboard panel ratio mismatch | A vertical video brief produces mixed horizontal and vertical panels. | Set `panel_aspect_ratio` equal to the requested final video ratio on every panel; only the sheet canvas may differ. |
+| Semantic repetition hidden by new adjectives | Several shots say different mood words but carry the same information/product role. | Rewrite `shot_function_signature`; each shot must change information, desire, product role, event type, or camera relation. |
 | Too many camera moves | Every shot pans/dollies/cranes. | Use movement only when it changes information, emotion, geography, or rhythm. |
 | Shot buffet | Many cool shots, no progression. | Use establish → reveal → action/proof → reaction → consequence. |
 | Reference overfit | Every shot copies one image. | Keep one anchor shot, then derive motivated continuation shots. |

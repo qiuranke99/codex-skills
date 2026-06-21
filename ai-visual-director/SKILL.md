@@ -16,24 +16,28 @@ Run this order:
 
 1. Intake: brief, duration, dimensions, product image, visual references, and feasibility.
 2. Reference roles: product identity reference outranks style, lighting, environment, mood, and motion references.
-3. Product identity lock before route or shot planning when a real product is supplied.
-4. Route and duration: infer duration and segment seconds from brief text when structured intake is absent; default only when no time cue exists.
-5. Mandatory agent activation: start `creative_director_agent`,
+3. Reference deconstruction: each reference image must be decomposed into observed facts, transferable principles, and forbidden surface-copy risks before creative concept selection.
+4. Product identity lock before route or shot planning when a real product is supplied.
+5. Route, duration, and aspect: infer duration, segment seconds, and requested video aspect ratio from structured intake or brief text when structured intake is absent; default only when no time cue exists.
+6. Mandatory agent activation: start `creative_director_agent`,
    `director_agent`, `screenwriter_agent`, and `art_director_agent`; record all
    four in `02_shot_plan.json.agent_activation_ledger` before concept council,
    script, storyboard, or shot-plan validation.
-6. Story engine: advertising logline, dramatic question, world rule, product role, story arc, motion language, and anti-plastic material rules.
-7. Beat map: allocate story beats across director concept boards, approved
+7. Story engine: advertising logline, dramatic question, world rule, product role, story arc, motion language, and anti-plastic material rules.
+8. Beat map: allocate story beats across director concept boards, approved
    keyframe packets, and Google Omni segments; do not equate one sheet, one
    panel, or one story beat with one video cut.
-8. Shot plan: concrete keyframe specs for every storyboard panel.
-9. Automated structure, story, motion, product-fidelity, agent-ledger, and anti-plastic validation.
-10. Internal revision until validation passes or the remaining risk is explicit.
-11. Generate one storyboard image per sheet with Codex image generation when available.
-12. Start `google_omni_prompt_expert_agent` after approved storyboard packets;
+9. Shot plan: concrete keyframe specs for every storyboard panel, including
+   `reference_transform`, `shot_function_signature`, and aspect-ratio evidence.
+10. Automated structure, story, semantic progression, aspect-ratio,
+    product-fidelity, agent-ledger, and anti-plastic validation.
+11. Internal revision until validation passes or the remaining risk is explicit.
+12. Generate one storyboard image per sheet with Codex image generation when available.
+13. Start `google_omni_prompt_expert_agent` after approved storyboard packets;
     record it and the director approval in
     `08_google_omni_video_prompts.json.agent_activation_ledger`.
-13. Generate Google Omni prompts as concise temporal motion contracts.
+14. Generate Google Omni prompts as concise temporal motion contracts with the
+    same requested video aspect ratio as the storyboard panels.
 
 If a required agent cannot be started and recorded, stop and report a hard
 blocker. Do not simulate the agent in prose and continue.
@@ -88,6 +92,37 @@ copying surface style blindly:
 Every shot plan must include reference parity decisions. If a storyboard sheet only
 resembles the reference by keywords, not hierarchy, depth, light, material, or
 visual restraint, treat it as a failure.
+
+Reference parity is not enough. Every run using reference images must also
+include a structured `reference_deconstruction`:
+
+- `references[]`: one entry per supplied reference image with observed visual
+  facts, transferable principles, forbidden surface-copy elements, and the
+  accountable agent owner;
+- `source_image_dna`: composition, light/material logic, negative space, and
+  motion implications;
+- `creative_translation`: what is borrowed, transformed, rejected, and the new
+  advertising mechanism created from the reference DNA;
+- `literal_copy_risks`: concrete ways the storyboard could collapse into
+  repeated surface extraction;
+- `agent_responsibility`: what the creative director, art director,
+  screenwriter, and director each must veto.
+
+Failure ownership is explicit:
+
+- `creative_director_agent` owns the concept leap and must reject literal
+  reference extraction presented as an idea;
+- `art_director_agent` owns material, color, negative-space, and surface-copy
+  vetoes;
+- `screenwriter_agent` owns semantic progression: every beat must change
+  information, desire, product role, or viewer question;
+- `director_agent` owns shot-function variety, panel aspect, camera motivation,
+  and the final rejection of repetitive compositions.
+
+Every storyboard shot must include `reference_transform` and
+`shot_function_signature`. A shot whose function is just another glamour
+surface reveal, product angle, or color-pressure variant is a failure even if
+the camera angle, scene name, or prose changes.
 
 ## Creative Concept Gate
 
@@ -175,6 +210,9 @@ cinematic_language_reference_required:
 cinematic_language_triggers:
 cinematic_language_depth:
 recommended_references:
+requested_video_aspect_ratio:
+aspect_ratio_source:
+aspect_contract:
 ```
 
 If `cinematic_language_reference_required` is `true`, read
@@ -195,6 +233,10 @@ Default duration logic:
 - route decisions must not estimate storyboard panel count, grid layout, or
   shots per segment. Those fields belong only in `02_shot_plan.json` after
   creative concept, timecoded script map, and director approval;
+- when the user specifies `9:16`, `16:9`, `1:1`, `4:5`, `3:4`, `1080x1920`,
+  vertical, portrait, horizontal, landscape, 竖屏, or 横屏, carry the normalized
+  `requested_video_aspect_ratio` into the route, shot plan, storyboard prompts,
+  and video prompt JSON;
 - for the Google Omni speed path, `storyboard_sheet_count` equals
   `video_segment_count`: each executable 10s segment gets one dynamic N-panel
   storyboard sheet and one JSON temporal prompt. N is director-decided from the
@@ -274,6 +316,8 @@ attention_order:
 eye_trace:
 depth_strategy:
 reference_parity:
+reference_transform:
+shot_function_signature:
 main_subject:
 main_action:
 body_pose:
@@ -292,6 +336,12 @@ camera is there, what story beat changes from the prior shot, what is in
 foreground / midground / background, and what must not drift. Do not use adjectives such as
 `cinematic`, `luxury`, `premium`, or `beautiful` as substitutes for staging,
 lens relation, action, material behavior, or continuity facts.
+
+`shot_function_signature` must include `information_delta`, `desire_delta`,
+`product_role_delta`, `event_type`, `camera_relation_key`,
+`reference_transform_id`, and `redundancy_risk`. This is the semantic
+anti-repetition contract: the director may echo a motif, but cannot repeat the
+same shot function with new adjectives.
 
 Every product-ad panel also needs a creative scene layer:
 
@@ -382,8 +432,10 @@ Each internal sheet prompt must contain:
 
 - declared dynamic grid instruction selected by the director for that sheet's
   actual N panels;
-- aspect ratio and title strip behavior;
+- `Aspect Contract`: final video aspect ratio, sheet canvas aspect ratio, and
+  the rule that every panel/cell must match the final video ratio;
 - the exact declared number of panel descriptions with shot IDs;
+- every panel line must include `[aspect_ratio: <requested_video_aspect_ratio>]`;
 - per-panel camera angle, shot size, subject/action, and depth layers;
 - reference parity decisions;
 - product identity lock when a product appears;
@@ -476,6 +528,11 @@ segments must include `product_visibility`, `product_identity_reference`, and
 When a segment is pasted into Google Omni, include the required reference setup,
 the full product identity lock, and the selected segment together. A segment
 without the lock is underspecified and may drift into a generic mood object.
+
+Video prompts must carry `requested_video_aspect_ratio` at the JSON root and
+`aspect_ratio` on each segment. The paste-ready segment prompt must state the
+same vertical/portrait/horizontal framing contract; do not rely on a storyboard
+sheet to imply output dimensions.
 
 Do not instruct the user or video model to upload the storyboard sheet as the
 sole input for a full 30-second generation. Use the storyboard sheet as a visual
