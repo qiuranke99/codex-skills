@@ -152,11 +152,11 @@ PROPOSAL_MAP = {
     },
     "panel_separation_failure": {
         "target_file": "references/blue_gray_previs_style_bible.md",
-        "hypothesis": "The image prompt is not enforcing a readable 3x3 panel grid strongly enough.",
-        "rule": "Every storyboard sheet prompt must require clear 3x3 separation and reject merged panels.",
+        "hypothesis": "The image prompt is not enforcing a readable dynamic N-panel storyboard grid strongly enough.",
+        "rule": "Every storyboard sheet prompt must require clear separation for its declared grid layout and reject merged, missing, or extra panels.",
         "applies_when": "Generated sheet has missing, merged, or ambiguous panels.",
         "risk": "Some storyboard styles use loose gutters; separation still must be readable.",
-        "regression": "A generated sheet with eight visible panels or merged panels must be regenerated.",
+        "regression": "A generated sheet whose visible panel count or layout does not match panels_per_sheet/grid_layouts must be regenerated.",
     },
     "identity_drift": {
         "target_file": "SKILL.md",

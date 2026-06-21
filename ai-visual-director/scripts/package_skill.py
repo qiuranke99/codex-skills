@@ -11,7 +11,7 @@ from datetime import datetime, timezone
 from pathlib import Path
 
 
-EXCLUDE_DIRS = {"__pycache__", ".pytest_cache"}
+EXCLUDE_DIRS = {"__pycache__", ".pytest_cache", "skillopt_runs"}
 EXCLUDE_SUFFIXES = {".pyc", ".tmp"}
 
 

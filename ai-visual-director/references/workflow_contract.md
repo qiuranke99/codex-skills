@@ -7,7 +7,7 @@ main `SKILL.md` focused on routing while preserving a strict delivery process.
 
 Use this skill for director-led visual planning, storyboard bitmap images, and
 video-generation prompt packs. It is not a generic image prompt writer or a
-9-grid template. The skill must produce sequence logic, product/character/
+fixed-grid storyboard template. The skill must produce sequence logic, product/character/
 location continuity, reference-role decisions, story-engine evidence, and
 validation evidence. The final user-facing output is only storyboard image(s)
 and Google Omni video prompts; internal artifacts exist to make those outputs
@@ -39,17 +39,47 @@ allows it.
    `cinematic_language_reference_required: true`, read
    `references/cinematic_language_decision_matrix.md` before shot planning.
    If it is false, do not load that reference for ordinary product-ad boards.
-8. Shot plan: write `02_shot_plan.json` against `references/shot_plan.schema.json`.
-9. Structure validation: run `scripts/validate_shot_plan.py`.
-10. Internal revision: fix validation failures before image generation or video prompts.
-11. Storyboard image generation: one bitmap storyboard image per sheet when image generation is available; keep prompt text as an internal artifact or fallback only.
-12. Video segment prompts: temporal segments with first/last frame, 1-4 story
-    beats, camera plan, cut strategy, subject/environment motion, motion
-    continuity, product lock, and anti-plastic constraints.
-13. Video validation: run `scripts/validate_video_segments.py`; structured video
+8. Mandatory agent activation: follow `AGENTS.md`. Start
+   `creative_director_agent`, `director_agent`, `screenwriter_agent`, and
+   `art_director_agent`, then record their `completed` entries in
+   `02_shot_plan.json.agent_activation_ledger`. If any required agent is
+   missing, skipped, simulated, or blocked, do not proceed to concept council or
+   shot planning.
+9. Internal concept council: creative director proposes creative candidates,
+   then director, screenwriter, and art director produce structured vetoes and
+   a final `director_resolution` without asking the user to choose unless the
+   user explicitly requests an approval checkpoint.
+10. Timecoded script map: screenwriter writes the exact-duration script map;
+   director approves it before storyboard planning.
+11. Shot plan: write `02_shot_plan.json` against
+   `references/shot_plan.schema.json`; only here, after director approval, set
+   `panel_count`, `panels_per_sheet`, `grid_layouts`, and
+   `shots_per_video_segment`.
+12. Structure validation: run `scripts/validate_shot_plan.py`.
+13. Internal revision: fix validation failures before image generation or video prompts.
+14. Storyboard and approved-keyframe planning: for the Google Omni speed path,
+    create one dynamic-N bitmap storyboard sheet per executable 10-second
+    segment when image generation is available; also prepare mapped source-shot
+    ranges or keyframe packets per executable video segment.
+15. Google Omni expert activation: start `google_omni_prompt_expert_agent`
+    after approved storyboard packets exist. `08_google_omni_video_prompts.json`
+    must include completed prompt-expert and director entries in
+    `agent_activation_ledger`; without them, video validation fails.
+16. Video segment prompts: temporal segments with first/last frame, controlled
+    story beats/source shots, camera plan, cut strategy, subject/environment
+    motion, motion continuity, product lock, and anti-plastic constraints. Any
+    multi-shot segment requires explicit internal shot time spans and
+    transitions.
+17. Video validation: run `scripts/validate_video_segments.py`; structured video
     JSON is required for a complete run.
-14. Final QC: run `scripts/validate_run_package.py` on the run directory.
-15. Report only storyboard image path(s), Google Omni prompt path, validation status, and remaining hard risks.
+18. Final QC: run `scripts/validate_run_package.py` on the run directory.
+19. Report only storyboard image path(s), Google Omni prompt path, validation
+    status, remaining hard risks, and the minimal segment-usage rule needed to
+    prevent misuse of the storyboard sheet as a video input.
+
+The activation ledger is not optional metadata. It is the evidence that the
+role gate ran and produced a stage artifact. Validators reject missing,
+non-completed, or simulated role entries.
 
 `00_route_decision.json` may include:
 
@@ -174,18 +204,51 @@ the product is absent. Treat the values as narrative rhythm:
 - `full_visible`: inspection-grade product view with exact visible text,
   component inventory, and forbidden additions locked.
 
-For non-catalog 9-panel product sheets, use this hard minimum rhythm: no more
-than 4 `full_visible` shots; at least 1 `not_visible` shot; at least 3
-`detail_only` or `partial_visible` shots; and at least 2 panels whose main
-subject is not the product or package. If the user asks for catalog, listing,
-e-commerce, SKU, packshot-only, or detail-board work, state that exception in
-the `visual_strategy`.
+For non-catalog dynamic-N product sheets, scale the rhythm to the actual story:
+avoid full-visible packshot walls; use `not_visible` world/benefit shots when
+the script needs a world before product authority; use `detail_only` or
+`partial_visible` proof shots when they protect identity without repeating the
+same full package; and include non-product-led panels when the product identity
+lock would otherwise consume every composition. If the user asks for catalog,
+listing, e-commerce, SKU, packshot-only, or detail-board work, state that
+exception in the `visual_strategy`.
 
-## 6. Storyboard Sheet Rule
+## 6. Storyboard, Approved Keyframe, And Segment Rule
 
-Storyboard panels are director keyframes, not mandatory edit points. A 10-second
-film can use a 9-panel sheet to think through composition, cause/effect, and
-visual memory without becoming a nine-cut video.
+Storyboard panels are script-level shot/cut planning units. They map the edit
+rhythm, but they are not generation calls. A 10-second Omni segment can contain
+multiple mapped source shots without becoming multiple model calls.
+
+Separate three control layers:
+
+- `dynamic_segment_storyboards`: storyboard sheets whose panel count is
+  determined by creative concept, timecoded script map, and director approval;
+- `source_shot_ranges` or `approved_keyframe_packets`: model-facing source
+  ranges, first/last frames, or multi-keyframe anchors for each executable
+  generation segment;
+- `temporal_segment_prompts`: concise motion contracts for each generation
+  segment.
+
+Storyboard panel count follows the approved script map, not a fixed grid.
+`panel_count` equals the intended shot/cut count. For the Google Omni speed
+path, `storyboard_sheet_count` equals `video_segment_count`: each 10-second
+generation segment receives one dynamic N-panel storyboard sheet and one JSON
+temporal prompt. N may differ by segment. Do not turn panels into separate
+generations.
+
+For Google Omni/Flow, the executable handoff is the product identity reference,
+the visual reference if available, the product identity lock, the segment's
+source-shot range, and one temporal segment prompt at a time. For Veo API and
+Runway, prefer cleaner single-scene or low-cut segments unless capability is
+explicitly available. For Kling or Luma, use structured multi-shot or keyframe
+controls when available. If a tool accepts only one image reference, prefer the
+product identity reference or the segment's start/end keyframe over a dense
+overview sheet.
+
+For other backends, use the backend capability profile instead of assuming the
+Omni speed contract. If a backend cannot execute dense multi-shot segments,
+reduce the segment's internal shot density or switch to keyframe/shot-level
+generation only after a documented failure.
 
 A rough storyboard style is not permission to omit product facts. If a product
 faces camera, the sheet prompt must instruct the artist/model to draw the real
@@ -224,7 +287,8 @@ still governs the visible faces and components.
 
 Each segment must be a concise motion contract, not a storyboard transcription:
 
-- 1-4 `story_beats`;
+- multi-shot segments must include `internal_shots` with shot IDs, time spans,
+  camera states, transitions, and purposes;
 - first frame and last frame must differ;
 - `camera_plan` must name a physical camera state or movement;
 - `cut_strategy` must say whether the segment is one continuous move, a hidden
@@ -234,7 +298,14 @@ Each segment must be a concise motion contract, not a storyboard transcription:
 - `anti_plastic_constraints` must specify material, lens, light, shadow,
   texture, or physical-detail behavior.
 
-Do not paste nine storyboard panels into one 10-second Omni/Veo prompt.
+Do not paste the entire storyboard contact sheet into one 10-second prompt. Use
+only the mapped source-shot range for that segment.
+
+Do not use the storyboard sheet as the sole reference image for a product video
+segment when a product identity reference is available. The product reference
+outranks the storyboard sheet. Use the storyboard sheet only as optional visual
+planning context, and only together with the product identity lock and the
+selected temporal segment prompt.
 
 ## 8. Required Run Directory
 
@@ -246,12 +317,15 @@ Use these canonical artifact names when producing a complete run:
 02_shot_plan.json
 03_director_qc.json
 04_storyboard_image_prompts.md
+05_agent_orchestration.json
 storyboard_sheet_01.png
-storyboard_sheet_02.png
+storyboard_sheet_02.png  # only when route asks for a second sheet
 08_google_omni_video_prompts.md
 08_google_omni_video_prompts.json
 09_final_qc_report.md
 10_run_package_validation.json
+11_video_generation_handoff.md
+approved_keyframe_packets/  # required for production_handoff/certification
 ```
 
 Bitmap storyboard sheets are optional only when image generation cannot run in

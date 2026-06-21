@@ -21,9 +21,46 @@ def make_video_story() -> dict:
         "story_arc": ["material omen", "earned product reveal", "settled identity payoff"],
         "world_rule": "Reflections and foreground glass reveal the product; the package never builds itself from mist.",
         "emotional_turn": "The viewer moves from curiosity to confidence when the exact package resolves.",
-        "duration_strategy": "One 10-second segment carries one reveal with 3 temporal beats, not nine quick cuts.",
+        "duration_strategy": "One 10-second segment can carry multiple controlled source shots when time spans and transitions are explicit.",
         "anti_plastic_strategy": "Use real glass thickness, contact shadows, imperfect specular edges, lens softness, and restrained film grain to avoid waxy plastic CGI.",
     }
+
+
+def video_agent_ledger() -> list[dict]:
+    return [
+        {
+            "agent_role": "director_agent",
+            "stage": "video_prompt_approval",
+            "started_at": "2026-06-21T00:04:00Z",
+            "input_evidence": [
+                "02_shot_plan.json#/sheets",
+                "02_shot_plan.json#/storyboard_layout_decision",
+            ],
+            "output_evidence": [
+                "08_google_omni_video_prompts.json#/segments",
+                "08_google_omni_video_prompts.json#/segments/0/source_shots",
+            ],
+            "decision_summary": "Approved the segment source-shot ranges and video prompt direction.",
+            "status": "completed",
+            "blocks_next_stage_until": "director-approved source_shots and segments exist",
+        },
+        {
+            "agent_role": "google_omni_prompt_expert_agent",
+            "stage": "omni_prompt_translation",
+            "started_at": "2026-06-21T00:05:00Z",
+            "input_evidence": [
+                "02_shot_plan.json#/sheets",
+                "08_google_omni_video_prompts.json#/required_reference_setup",
+            ],
+            "output_evidence": [
+                "08_google_omni_video_prompts.json#/segments",
+                "08_google_omni_video_prompts.json#/segments/0/omni_prompt",
+            ],
+            "decision_summary": "Translated director-approved storyboard packets into Google Omni segment prompts.",
+            "status": "completed",
+            "blocks_next_stage_until": "paste-ready segment prompts exist",
+        },
+    ]
 
 
 def make_bad_video_prompt() -> dict:
@@ -111,6 +148,7 @@ def make_bad_visual_identity_prompt() -> dict:
 def make_locked_video_prompt() -> dict:
     return {
         "video_story": make_video_story(),
+        "agent_activation_ledger": video_agent_ledger(),
         "required_reference_setup": {
             "product_identity_reference": "Belle-purple-product-sheet.jpeg",
             "product_identity_role": "highest_priority_product_identity",
@@ -187,10 +225,33 @@ def make_locked_video_prompt() -> dict:
                     "glass slide reveals the locked bottle silhouette",
                     "front 3/4 product identity settles into the authority frame",
                 ],
+                "internal_shots": [
+                    {
+                        "shot_id": "SH_001",
+                        "time_span": "0s-3s",
+                        "camera_state": "macro slide across lavender petal and foreground glass",
+                        "transition": "glass refraction carries the motion into the next source shot",
+                        "purpose": "open with material atmosphere before product visibility",
+                    },
+                    {
+                        "shot_id": "SH_002",
+                        "time_span": "3s-7s",
+                        "camera_state": "controlled slide past foreground glass toward the locked bottle silhouette",
+                        "transition": "same lateral camera energy becomes a restrained orbit",
+                        "purpose": "reveal product form without changing package facts",
+                    },
+                    {
+                        "shot_id": "SH_003",
+                        "time_span": "7s-10s",
+                        "camera_state": "slow orbit settles into a readable front three-quarter authority frame",
+                        "transition": "motion settles into a final product hold",
+                        "purpose": "lock final visible product identity and label layout",
+                    },
+                ],
                 "camera_plan": (
                     "Camera slides past foreground glass, then makes a controlled orbit that shows the full bottle front."
                 ),
-                "cut_strategy": "one continuous reveal with no more than three internal beats; no nine-panel quick-cut montage",
+                "cut_strategy": "one continuous reveal with three internal beats; no full contact-sheet dump",
                 "subject_motion": (
                     "Product turns only as a photographed packshot object; label text, cap, spray tube, body shape, and surface components stay exact."
                 ),
@@ -266,20 +327,81 @@ class VideoProductLockTests(unittest.TestCase):
         self.assertEqual(code, 0, result)
         self.assertTrue(result["ok"], result)
 
-    def test_video_prompts_reject_nine_storyboard_panels_as_one_segment(self) -> None:
+    def test_video_prompts_require_prompt_expert_and_director_activation(self) -> None:
         payload = make_locked_video_prompt()
-        segment = payload["segments"][0]
-        segment["source_shots"] = [f"SH_{idx:03d}" for idx in range(1, 10)]
-        segment["story_beats"] = [f"panel {idx} cut" for idx in range(1, 10)]
+        payload["agent_activation_ledger"] = [
+            entry
+            for entry in payload["agent_activation_ledger"]
+            if entry["agent_role"] != "google_omni_prompt_expert_agent"
+        ]
 
         code, result = run_validator(payload)
 
         self.assertNotEqual(code, 0)
         self.assertFalse(result["ok"])
         self.assertTrue(
-            any("too many story_beats" in error or "too many source_shots" in error for error in result["errors"]),
+            any("google_omni_prompt_expert_agent" in error for error in result["errors"]),
             result["errors"],
         )
+
+    def test_video_prompts_reject_simulated_prompt_expert(self) -> None:
+        payload = make_locked_video_prompt()
+        payload["agent_activation_ledger"][1]["status"] = "simulated"
+
+        code, result = run_validator(payload)
+
+        self.assertNotEqual(code, 0)
+        self.assertFalse(result["ok"])
+        self.assertTrue(
+            any("status must be completed" in error for error in result["errors"]),
+            result["errors"],
+        )
+
+    def test_video_prompts_reject_dense_panel_dump_without_internal_shot_timing(self) -> None:
+        payload = make_locked_video_prompt()
+        segment = payload["segments"][0]
+        segment["source_shots"] = [f"SH_{idx:03d}" for idx in range(1, 10)]
+        segment["story_beats"] = [f"panel {idx} cut" for idx in range(1, 10)]
+        segment.pop("internal_shots", None)
+
+        code, result = run_validator(payload)
+
+        self.assertNotEqual(code, 0)
+        self.assertFalse(result["ok"])
+        self.assertTrue(
+            any("multi-shot segment requires internal_shots" in error or "dense storyboard-panel list" in error for error in result["errors"]),
+            result["errors"],
+        )
+
+    def test_video_prompts_allow_controlled_multi_shot_ten_second_segment(self) -> None:
+        payload = make_locked_video_prompt()
+        segment = payload["segments"][0]
+        segment["source_shots"] = [f"SH_{idx:03d}" for idx in range(1, 8)]
+        segment["story_beats"] = [
+            "petal macro wipes left to right",
+            "glass ridge catches lavender refraction",
+            "partial bottle edge enters through foreground blur",
+            "label-side silhouette crosses a specular streak",
+            "cap highlight resolves as the camera arcs",
+            "full 3/4 bottle locks into readable identity",
+            "final authority hold with mist settling behind the product",
+        ]
+        segment["internal_shots"] = [
+            {
+                "shot_id": f"SH_{idx:03d}",
+                "time_span": f"{idx - 1}.0s-{idx}.2s",
+                "camera_state": "controlled slide/orbit with physical lens motion",
+                "transition": "match movement through glass reflection",
+                "purpose": "advance the reveal while preserving product identity",
+            }
+            for idx in range(1, 8)
+        ]
+        segment["cut_strategy"] = "seven controlled internal shots with time spans, reflection-motivated transitions, and a final readable product hold"
+
+        code, result = run_validator(payload)
+
+        self.assertEqual(code, 0, result)
+        self.assertTrue(result["ok"], result)
 
     def test_video_prompts_reject_static_first_last_frame(self) -> None:
         payload = make_locked_video_prompt()

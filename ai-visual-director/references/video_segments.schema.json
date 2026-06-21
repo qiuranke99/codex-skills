@@ -2,8 +2,46 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "title": "Google Omni Video Segments",
   "type": "object",
-  "required": ["video_story", "segments"],
+  "required": ["video_story", "agent_activation_ledger", "segments"],
   "properties": {
+    "agent_activation_ledger": {
+      "type": "array",
+      "minItems": 2,
+      "items": {
+        "type": "object",
+        "required": [
+          "agent_role",
+          "stage",
+          "started_at",
+          "input_evidence",
+          "output_evidence",
+          "decision_summary",
+          "status",
+          "blocks_next_stage_until"
+        ],
+        "properties": {
+          "agent_role": {
+            "enum": ["director_agent", "google_omni_prompt_expert_agent"]
+          },
+          "stage": {"type": "string"},
+          "started_at": {"type": "string"},
+          "input_evidence": {
+            "type": "array",
+            "minItems": 1,
+            "items": {"type": "string"}
+          },
+          "output_evidence": {
+            "type": "array",
+            "minItems": 1,
+            "items": {"type": "string"}
+          },
+          "decision_summary": {"type": "string"},
+          "status": {"enum": ["completed"]},
+          "blocks_next_stage_until": {"type": "string"}
+        },
+        "additionalProperties": false
+      }
+    },
     "video_story": {
       "type": "object",
       "required": [
@@ -139,7 +177,26 @@
           "segment_id": {"type": "string"},
           "time_range": {"type": "string"},
           "purpose": {"type": "string"},
-          "source_shots": {"type": "array", "items": {"type": "string"}},
+          "source_shots": {
+            "type": "array",
+            "items": {"type": "string"},
+            "minItems": 1
+          },
+          "internal_shots": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "required": ["shot_id", "time_span", "camera_state", "transition", "purpose"],
+              "properties": {
+                "shot_id": {"type": "string"},
+                "time_span": {"type": "string"},
+                "camera_state": {"type": "string"},
+                "transition": {"type": "string"},
+                "purpose": {"type": "string"}
+              },
+              "additionalProperties": false
+            }
+          },
           "product_visibility": {
             "enum": ["full_visible", "partial_visible", "detail_only", "not_visible"]
           },
@@ -163,8 +220,7 @@
           "story_beats": {
             "type": "array",
             "items": {"type": "string"},
-            "minItems": 1,
-            "maxItems": 4
+            "minItems": 1
           },
           "camera_plan": {"type": "string"},
           "cut_strategy": {"type": "string"},

@@ -1,0 +1,116 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "AI Visual Director Agent Orchestration",
+  "type": "object",
+  "required": ["schema_version", "required_agents", "invocations", "stage_gates"],
+  "properties": {
+    "schema_version": {"const": "1.0"},
+    "run_id": {"type": "string"},
+    "required_agents": {
+      "type": "array",
+      "minItems": 5,
+      "uniqueItems": true,
+      "items": {
+        "enum": [
+          "creative_director_agent",
+          "director_agent",
+          "screenwriter_agent",
+          "art_director_agent",
+          "google_omni_prompt_expert_agent"
+        ]
+      }
+    },
+    "invocations": {
+      "type": "array",
+      "minItems": 5,
+      "items": {
+        "type": "object",
+        "required": [
+          "agent",
+          "stage",
+          "status",
+          "blocking",
+          "input_refs",
+          "output_refs",
+          "vetoes",
+          "decision",
+          "decision_summary",
+          "consumed_by"
+        ],
+        "properties": {
+          "agent": {
+            "enum": [
+              "creative_director_agent",
+              "director_agent",
+              "screenwriter_agent",
+              "art_director_agent",
+              "google_omni_prompt_expert_agent"
+            ]
+          },
+          "stage": {"type": "string"},
+          "status": {"enum": ["completed"]},
+          "blocking": {"type": "boolean"},
+          "started_after": {"type": "array", "items": {"type": "string"}},
+          "input_refs": {"type": "array", "minItems": 1, "items": {"type": "string"}},
+          "output_refs": {"type": "array", "minItems": 1, "items": {"type": "string"}},
+          "vetoes": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "required": ["severity", "reason"],
+              "properties": {
+                "severity": {"enum": ["advisory", "blocking"]},
+                "reason": {"type": "string"}
+              },
+              "additionalProperties": false
+            }
+          },
+          "decision": {"type": "string"},
+          "decision_summary": {"type": "string"},
+          "handoff_to": {
+            "type": "array",
+            "items": {
+              "enum": [
+                "creative_director_agent",
+                "director_agent",
+                "screenwriter_agent",
+                "art_director_agent",
+                "google_omni_prompt_expert_agent"
+              ]
+            }
+          },
+          "consumed_by": {"type": "array", "minItems": 1, "items": {"type": "string"}}
+        },
+        "additionalProperties": false
+      }
+    },
+    "stage_gates": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "required": ["gate", "requires_completed", "next_step", "next_allowed", "blockers"],
+        "properties": {
+          "gate": {"type": "string"},
+          "requires_completed": {
+            "type": "array",
+            "items": {
+              "enum": [
+                "creative_director_agent",
+                "director_agent",
+                "screenwriter_agent",
+                "art_director_agent",
+                "google_omni_prompt_expert_agent"
+              ]
+            }
+          },
+          "next_step": {"type": "string"},
+          "next_allowed": {"type": "boolean"},
+          "blockers": {"type": "array", "items": {"type": "string"}}
+        },
+        "additionalProperties": false
+      }
+    }
+  },
+  "additionalProperties": false
+}

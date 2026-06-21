@@ -7,7 +7,7 @@ description: Use when the user asks for AI visual direction, product-ad film con
 
 ## Core Rule
 
-Do not start with a 9-grid. For brief + product image + visual reference work,
+Do not start with a fixed storyboard grid. For brief + product image + visual reference work,
 first invent the ad film's story engine, then derive storyboard images and
 Google Omni video prompts from that engine. Do not answer with one long prompt
 or a repeated product-angle sequence.
@@ -18,13 +18,25 @@ Run this order:
 2. Reference roles: product identity reference outranks style, lighting, environment, mood, and motion references.
 3. Product identity lock before route or shot planning when a real product is supplied.
 4. Route and duration: infer duration and segment seconds from brief text when structured intake is absent; default only when no time cue exists.
-5. Story engine: advertising logline, dramatic question, world rule, product role, story arc, motion language, and anti-plastic material rules.
-6. Beat map: allocate story beats across storyboard sheets and Google Omni segments; do not equate one sheet, one panel, or one story beat with one video cut.
-7. Shot plan: concrete keyframe specs for every storyboard panel.
-8. Automated structure, story, motion, product-fidelity, and anti-plastic validation.
-9. Internal revision until validation passes or the remaining risk is explicit.
-10. Generate one storyboard image per sheet with Codex image generation when available.
-11. Generate Google Omni prompts as concise temporal motion contracts.
+5. Mandatory agent activation: start `creative_director_agent`,
+   `director_agent`, `screenwriter_agent`, and `art_director_agent`; record all
+   four in `02_shot_plan.json.agent_activation_ledger` before concept council,
+   script, storyboard, or shot-plan validation.
+6. Story engine: advertising logline, dramatic question, world rule, product role, story arc, motion language, and anti-plastic material rules.
+7. Beat map: allocate story beats across director concept boards, approved
+   keyframe packets, and Google Omni segments; do not equate one sheet, one
+   panel, or one story beat with one video cut.
+8. Shot plan: concrete keyframe specs for every storyboard panel.
+9. Automated structure, story, motion, product-fidelity, agent-ledger, and anti-plastic validation.
+10. Internal revision until validation passes or the remaining risk is explicit.
+11. Generate one storyboard image per sheet with Codex image generation when available.
+12. Start `google_omni_prompt_expert_agent` after approved storyboard packets;
+    record it and the director approval in
+    `08_google_omni_video_prompts.json.agent_activation_ledger`.
+13. Generate Google Omni prompts as concise temporal motion contracts.
+
+If a required agent cannot be started and recorded, stop and report a hard
+blocker. Do not simulate the agent in prose and continue.
 
 Final user-facing output must contain only:
 
@@ -45,6 +57,7 @@ product identity, unknown target duration, or conflicting reference roles.
 Use progressive disclosure. Read only the files needed for the requested output:
 
 - Required run order, product-fidelity gates, artifact names, and final validation: `references/workflow_contract.md`.
+- Mandatory agent roles, stage gates, and activation ledger: `AGENTS.md`.
 - Shot-spec fields and handoff grammar: `references/shot_spec_template.md`.
 - Advanced cinematic language, VFX/virtual production, sound-aware shot planning, color pipeline, camera report, and complex handoff routing: read `references/cinematic_language_decision_matrix.md` only when `00_route_decision.json` sets `cinematic_language_reference_required: true` or the user explicitly asks for those modes.
 - Production-mode routing, escalation triggers, and director playbooks: `references/director_kernel.md`.
@@ -72,7 +85,7 @@ copying surface style blindly:
 - negative constraints: what the reference refuses to show;
 - restraint: what the reference deliberately leaves empty or unresolved.
 
-Every shot plan must include reference parity decisions. If a 9-panel sheet only
+Every shot plan must include reference parity decisions. If a storyboard sheet only
 resembles the reference by keywords, not hierarchy, depth, light, material, or
 visual restraint, treat it as a failure.
 
@@ -131,7 +144,7 @@ metaphor shots. Product-absent panels must explicitly keep the product,
 package, label, logo, and product text out of the frame. `detail_only` panels
 draw only the specified real component or material fact; `partial_visible`
 panels crop, occlude, reflect, or reveal only part of the locked product. Do
-not let a global product lock turn a 9-panel sheet into a wall of packshots.
+not let a global product lock turn a dynamic contact sheet into a wall of packshots.
 
 Full-visible product shots must carry the exact visible text/wordmark/logo/mark
 inventory from the real reference. If the real product has a raised wordmark,
@@ -176,24 +189,60 @@ Default duration logic:
   as `10s`, `20秒`, `40s`, `60秒`; if still unknown, default to 30s and mark
   `duration_missing_defaulted`;
 - infer `video_segment_seconds` from structured intake first, then brief text
-  such as `10s/段`; if still unknown, default to 10s;
-- storyboard sheet count = 1 for <=30s, 2 for <=60s, otherwise
-  `ceil(duration_seconds / 30)`;
-- panel count = `storyboard_sheet_count * 9`, where panels are director
-  keyframes or narrative evidence frames, not mandatory video cuts;
-- video segment count = `ceil(duration_seconds / video_segment_seconds)`, default segment length 10 seconds.
+  such as `10s/段`; for Google Omni speed runs normalize generation units to
+  10s so a 30s film routes to 3 generations unless the user explicitly chooses a
+  different backend workflow;
+- route decisions must not estimate storyboard panel count, grid layout, or
+  shots per segment. Those fields belong only in `02_shot_plan.json` after
+  creative concept, timecoded script map, and director approval;
+- for the Google Omni speed path, `storyboard_sheet_count` equals
+  `video_segment_count`: each executable 10s segment gets one dynamic N-panel
+  storyboard sheet and one JSON temporal prompt. N is director-decided from the
+  approved script, not from duration or tempo presets;
+- `panel_count` equals the final director-planned shot/cut count from the
+  approved script map. `panels_per_sheet`, `grid_layouts`, and
+  `shots_per_video_segment` must be declared by the director in the shot plan
+  and may be uneven across segments;
+- video segment count = `ceil(duration_seconds / video_segment_seconds)`, with
+  default segment length 10 seconds for Omni speed runs;
+- each video segment receives its mapped source-shot range and internal shot
+  timing in the video prompt JSON.
 
-Do not equate one storyboard sheet with one video segment, and do not paste 9
-storyboard panels into a 10-second quick-cut video prompt. A 10-second ad is
-normally 1 storyboard sheet / 9 keyframes / 1 Google Omni prompt with 2-3 story
-beats. A 40-second ad is normally 2 storyboard sheets / 18 keyframes / 4 Google
-Omni prompts of about 10 seconds each.
+Storyboard panels are shot/cut planning units, but not generation calls. Do not
+hard-code any grid count for any duration. Do not turn panels into separate
+generations. For Omni speed runs, one generation segment can contain multiple
+mapped panels when the JSON supplies internal shot timing, transitions, and
+source-shot intent.
+
+Backend capability matters:
+
+- `google_omni` / `google_flow`: default speed path, up to 10s multi-shot
+  temporal segments. Use product identity reference plus the selected segment
+  source-shot range; the storyboard sheet is a director overview.
+- `veo_api` / `runway`: treat as single-scene or low-cut segment backends unless
+  a newer capability is explicitly available. Do not rely on dense contact
+  sheets as the sole model-facing input.
+- `kling`: can use structured multi-shot controls when available.
+- `luma`: prefer discrete keyframes/multi-keyframes over a dense overview sheet.
+
+Examples:
+
+- 10s Omni speed run: 1 executable segment, 1 dynamic N-panel storyboard sheet,
+  1 JSON prompt; the director decides N after the script map.
+- 30s Omni speed run: 3 executable segments, 3 dynamic N-panel storyboard
+  sheets, 3 JSON prompts; each sheet can have a different panel count.
+- 60s Omni speed run: 6 executable segments, 6 dynamic N-panel storyboard
+  sheets, 6 JSON prompts; panel distribution is uneven when the story demands
+  uneven rhythm.
 
 Production modes:
 
 - `standard_fast`: one route, one shot plan, automated validation, internal revision if needed, then prompts and final QC.
 - `rush`: shortest valid path; no optional sub-agent review.
 - `premium_pitch`: add deeper reference parity, stronger motif discipline, and a fuller QC report.
+- `production_handoff`: approved keyframes, segment-level keyframe packets,
+  multi-backend bidding, edit/sound/color assumptions, and clip QC/failure log
+  readiness.
 - `certification`: run offline audit and package verification before claiming completion.
 
 Escalate when references conflict, regulated or likeness-sensitive claims appear,
@@ -259,15 +308,19 @@ Every product-ad panel also needs a creative scene layer:
 For product ads, the sequence must include product identity, material proof,
 texture proof, use action or interaction, benefit metaphor or proof, and final
 packshot clarity unless the user specifies another structure. A non-catalog
-9-panel product sheet must also preserve product visibility rhythm:
+dynamic-N product sheet must also preserve product visibility rhythm, scaled to
+the actual panel count:
 
-- maximum 4 `full_visible` product shots per 9 panels;
-- at least 1 `not_visible` origin/world/benefit/metaphor shot;
-- at least 3 `detail_only` or `partial_visible` transition/proof shots;
-- at least 2 panels whose main subject is not the product or package;
-- the first full-visible product reveal should not arrive in panel 1 or 2
-  unless the user explicitly requests a catalog, listing, or packshot-only
-  board.
+- avoid full-visible packshot walls unless the user explicitly requests a
+  catalog, listing, SKU, e-commerce, or packshot-only board;
+- include `not_visible` origin/world/benefit/metaphor shots when the story needs
+  a world or benefit before product authority;
+- include `detail_only` or `partial_visible` transition/proof shots when they
+  help preserve product identity without repeating the same full package;
+- include non-product-led panels when the product lock would otherwise consume
+  every composition;
+- make the first full-visible product reveal earned by the script, not by a
+  fixed panel number.
 
 ## Validation Gates
 
@@ -327,9 +380,10 @@ unless image generation is unavailable; keep it as an internal artifact.
 
 Each internal sheet prompt must contain:
 
-- exact 3x3 grid instruction;
+- declared dynamic grid instruction selected by the director for that sheet's
+  actual N panels;
 - aspect ratio and title strip behavior;
-- nine panel descriptions with shot IDs;
+- the exact declared number of panel descriptions with shot IDs;
 - per-panel camera angle, shot size, subject/action, and depth layers;
 - reference parity decisions;
 - product identity lock when a product appears;
@@ -389,17 +443,20 @@ rough hand-drawn production storyboard sheet, animatic previs sketch, director's
 
 ## Google Omni Video Prompts
 
-Create video prompts by temporal segment, not by storyboard sheet or storyboard
-panel. Every segment must be a paste-ready motion contract with first frame,
-last frame, 1-4 story beats, camera plan, cut strategy, subject motion,
-environment motion, motion continuity, continuity lock, visual style,
-anti-plastic constraints, and negative constraints.
+Create video prompts by temporal segment, not by storyboard sheet or individual
+generation-per-panel. Every segment must be a paste-ready motion contract with
+first frame, last frame, controlled story beats/source shots, camera plan,
+cut strategy, subject motion, environment motion, motion continuity, continuity
+lock, visual style, anti-plastic constraints, and negative constraints. Any
+multi-shot segment must include explicit `internal_shots` with time spans,
+camera states, transitions, and purposes.
 
 For each segment, keep the final prompt concise. The internal JSON can be
 structured and strict; the paste-ready prompt should be natural language that
-states what moves, how the camera moves, how the scene changes over time, and
-which identity/material facts must stay locked. Do not repeat all storyboard
-panels as a nine-cut montage.
+states what moves, how the camera moves, how the scene changes over time, which
+mapped source shots it covers, and which identity/material facts must stay
+locked. Do not paste the whole contact sheet as a generic montage; use only the
+segment's source-shot range.
 
 For product video, start the prompt file with `Required Reference Setup` and
 `Product Identity Lock`. The user product original, packshot, or multi-angle
@@ -420,6 +477,14 @@ When a segment is pasted into Google Omni, include the required reference setup,
 the full product identity lock, and the selected segment together. A segment
 without the lock is underspecified and may drift into a generic mood object.
 
+Do not instruct the user or video model to upload the storyboard sheet as the
+sole input for a full 30-second generation. Use the storyboard sheet as a visual
+planning reference only when the tool supports reference images; the executable
+video input is the product identity reference plus the selected temporal segment
+prompt, its source-shot range, and its lock. If a platform only accepts one
+image and one prompt, prefer the product identity reference over the storyboard
+contact sheet for product ads.
+
 ## Required Internal Artifacts And Final Deliverables
 
 Use a run directory with stable names:
@@ -431,12 +496,15 @@ run_dir/
   02_shot_plan.json
   03_director_qc.json
   04_storyboard_image_prompts.md  # internal fallback/prompt trace
+  05_agent_orchestration.json
   storyboard_sheet_01.png
-  storyboard_sheet_02.png
+  storyboard_sheet_02.png  # only when route asks for a second sheet
   08_google_omni_video_prompts.md
   08_google_omni_video_prompts.json
   09_final_qc_report.md
   10_run_package_validation.json
+  11_video_generation_handoff.md
+  approved_keyframe_packets/  # required for production_handoff/certification
   _observer/
     events.jsonl
     candidate_rules.json

@@ -14,10 +14,12 @@ from pathlib import Path
 
 REQUIRED_FILES = [
     "SKILL.md",
+    "AGENTS.md",
     "agents/openai.yaml",
     "references/intake.schema.json",
     "references/shot_plan.schema.json",
     "references/video_segments.schema.json",
+    "references/agent_orchestration.schema.json",
     "references/audit.schema.json",
     "references/observer_event.schema.json",
     "references/rule_candidate.schema.json",
@@ -35,6 +37,7 @@ REQUIRED_FILES = [
     "scripts/validate_shot_plan.py",
     "scripts/validate_video_segments.py",
     "scripts/validate_run_package.py",
+    "scripts/validate_agent_orchestration.py",
     "scripts/score_audit.py",
     "scripts/observe_run.py",
     "scripts/create_observer_packet.py",
@@ -86,6 +89,7 @@ def main() -> int:
         "references/intake.schema.json",
         "references/shot_plan.schema.json",
         "references/video_segments.schema.json",
+        "references/agent_orchestration.schema.json",
         "references/audit.schema.json",
         "references/observer_event.schema.json",
         "references/rule_candidate.schema.json",
@@ -151,14 +155,29 @@ def main() -> int:
             expected = {
                 "project_type": "premium_product_ad",
                 "production_mode": "standard_fast",
-                "storyboard_sheet_count": 2,
-                "panel_count": 18,
+                "storyboard_sheet_count": 4,
+                "storyboard_artifact_policy": "per_segment_dynamic_n_panel_storyboard",
+                "storyboard_grid_mode": "director_decided_dynamic_n_panel_per_segment",
+                "panel_count_status": "deferred_to_director_after_script",
+                "segment_keyframe_packet_count": 4,
                 "video_segment_count": 4,
                 "cinematic_language_reference_required": False,
             }
             for key, value in expected.items():
                 if routed.get(key) != value:
                     errors.append(f"route sample expected {key}={value}, got {routed.get(key)!r}")
+            for forbidden in [
+                "tempo_profile",
+                "average_seconds_per_shot",
+                "panel_count",
+                "panel_count_source",
+                "panels_per_sheet",
+                "grid_layouts",
+                "shots_per_video_segment",
+                "max_panels_per_sheet",
+            ]:
+                if forbidden in routed:
+                    errors.append(f"route sample must not emit director-owned field: {forbidden}")
 
     observer_script = skill_dir / "scripts/observe_run.py"
     if observer_script.exists():

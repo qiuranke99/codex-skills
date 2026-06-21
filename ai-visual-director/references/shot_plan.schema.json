@@ -8,6 +8,16 @@
     "duration_seconds",
     "storyboard_sheet_count",
     "video_segment_count",
+    "panel_count",
+    "panels_per_sheet",
+    "grid_layouts",
+    "shots_per_video_segment",
+    "agent_activation_ledger",
+    "creative_concept_candidates",
+    "concept_council",
+    "timecoded_script_map",
+    "director_script_approval",
+    "storyboard_layout_decision",
     "story_engine",
     "continuity_locks",
     "sheets"
@@ -17,9 +27,132 @@
     "project_type": {"type": "string"},
     "duration_seconds": {"type": "number"},
     "storyboard_sheet_count": {"type": "integer", "minimum": 1},
-    "panel_count": {"type": "integer", "minimum": 9},
+    "storyboard_grid_mode": {"type": "string"},
+    "panel_count": {"type": "integer", "minimum": 1},
+    "panels_per_sheet": {
+      "type": "array",
+      "items": {"type": "integer", "minimum": 1},
+      "minItems": 1
+    },
+    "grid_layouts": {
+      "type": "array",
+      "items": {"type": "string"},
+      "minItems": 1
+    },
+    "shots_per_video_segment": {
+      "type": "array",
+      "items": {"type": "integer", "minimum": 1},
+      "minItems": 1
+    },
     "video_segment_count": {"type": "integer", "minimum": 1},
     "visual_strategy": {"type": "string"},
+    "agent_activation_ledger": {
+      "type": "array",
+      "minItems": 4,
+      "items": {
+        "type": "object",
+        "required": [
+          "agent_role",
+          "stage",
+          "started_at",
+          "input_evidence",
+          "output_evidence",
+          "decision_summary",
+          "status",
+          "blocks_next_stage_until"
+        ],
+        "properties": {
+          "agent_role": {
+            "enum": [
+              "creative_director_agent",
+              "director_agent",
+              "screenwriter_agent",
+              "art_director_agent"
+            ]
+          },
+          "stage": {"type": "string"},
+          "started_at": {"type": "string"},
+          "input_evidence": {
+            "type": "array",
+            "minItems": 1,
+            "items": {"type": "string"}
+          },
+          "output_evidence": {
+            "type": "array",
+            "minItems": 1,
+            "items": {"type": "string"}
+          },
+          "decision_summary": {"type": "string"},
+          "status": {"enum": ["completed"]},
+          "blocks_next_stage_until": {"type": "string"}
+        },
+        "additionalProperties": false
+      }
+    },
+    "creative_concept_candidates": {
+      "type": "array",
+      "minItems": 2,
+      "items": {
+        "type": "object",
+        "required": ["concept_id", "logline", "visual_world", "reason_to_select_or_reject"],
+        "properties": {
+          "concept_id": {"type": "string"},
+          "logline": {"type": "string"},
+          "visual_world": {"type": "string"},
+          "reason_to_select_or_reject": {"type": "string"}
+        },
+        "additionalProperties": false
+      }
+    },
+    "concept_council": {
+      "type": "object",
+      "required": ["creative_director", "director", "screenwriter", "art_director", "final_concept_decision"],
+      "properties": {
+        "creative_director": {"type": "string"},
+        "director": {"type": "string"},
+        "screenwriter": {"type": "string"},
+        "art_director": {"type": "string"},
+        "final_concept_decision": {"type": "string"},
+        "unresolved_vetos": {"type": "array", "items": {"type": "string"}}
+      },
+      "additionalProperties": false
+    },
+    "timecoded_script_map": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "required": ["time_range", "beat", "visual_event", "product_role", "director_intent"],
+        "properties": {
+          "time_range": {"type": "string"},
+          "beat": {"type": "string"},
+          "visual_event": {"type": "string"},
+          "product_role": {"type": "string"},
+          "director_intent": {"type": "string"}
+        },
+        "additionalProperties": false
+      }
+    },
+    "director_script_approval": {
+      "type": "object",
+      "required": ["approved", "rationale"],
+      "properties": {
+        "approved": {"type": "boolean"},
+        "rationale": {"type": "string"}
+      },
+      "additionalProperties": false
+    },
+    "storyboard_layout_decision": {
+      "type": "object",
+      "required": ["policy", "rationale", "panel_count_source", "segment_mapping_source"],
+      "properties": {
+        "policy": {"type": "string"},
+        "rationale": {"type": "string"},
+        "panel_count_source": {"type": "string"},
+        "segment_mapping_source": {"type": "string"}
+      },
+      "additionalProperties": false
+    },
     "story_engine": {
       "type": "object",
       "required": [
@@ -126,15 +259,15 @@
       "type": "array",
       "items": {
         "type": "object",
-        "required": ["sheet_id", "time_range", "beat", "shots"],
+        "required": ["sheet_id", "segment_id", "time_range", "beat", "shots"],
         "properties": {
           "sheet_id": {"type": "string"},
+          "segment_id": {"type": "string"},
           "time_range": {"type": "string"},
           "beat": {"type": "string"},
           "shots": {
             "type": "array",
-            "minItems": 9,
-            "maxItems": 9,
+            "minItems": 1,
             "items": {
               "type": "object",
               "required": [

@@ -79,20 +79,31 @@ Duration arcs:
 - 40s: slow discovery 0-10, tactile proof 10-20, use/benefit 20-30, authority 30-40.
 - 60s: add a second turn or human/world response; do not add more product angles.
 
-For one 9-keyframe sheet:
-1. world/ingredient establish
-2. macro ingredient or material detail
-3. motion bridge into product world
-4. product silhouette reveal
-5. 3/4 hero product identity
-6. opening/useable product detail
-7. texture proof macro
-8. benefit metaphor or use-action bridge
-9. final packshot or sheet payoff
+Dynamic N-panel segment storyboards:
 
-Panels are keyframes, not mandatory edit points. A 10-second film can use one
-9-panel sheet without becoming nine quick cuts. For 40s, default to 2 sheets /
-18 keyframes and 4 temporal video prompts unless the brief needs more coverage.
+1. creative director proposes creative concept candidates from the product image,
+   visual/style references, platform, duration, and backend constraints;
+2. director, screenwriter, and art director run a structured veto review and
+   produce one `director_resolution`;
+3. screenwriter writes the `timecoded_script_map` for the exact requested
+   duration;
+4. director approves the script map and decides `panel_count`,
+   `panels_per_sheet`, `grid_layouts`, and `shots_per_video_segment`;
+5. for the Google Omni speed path, create one dynamic N-panel storyboard sheet
+   per executable 10-second segment. N can differ by segment.
+
+The route never infers panel count, shot count, or grid layout from duration or
+tempo. Those values live in `02_shot_plan.json` only after the script map and
+director resolution exist.
+
+For executable AI video handoff, separate:
+
+- dynamic N-panel segment storyboard sheets for story rhythm and visual memory;
+- source-shot ranges or model-facing keyframes for each executable generation
+  segment;
+- temporal video prompts: `ceil(duration_seconds / video_segment_seconds)`,
+  normalized to 10-second Google Omni units for speed runs unless a different
+  backend workflow is explicitly selected.
 
 Minimum shot mix per sheet: 1 establishing, 2 macro/insert, 1 hero product angle, 1 movement bridge, 1 payoff.
 
@@ -100,15 +111,18 @@ Product visibility rhythm is mandatory for real product storyboards. The
 product lock preserves facts only when the product is visible; it must not make
 every panel a full bottle view.
 
-Per non-catalog 9-panel sheet:
+Per non-catalog dynamic-N sheet:
 
-- maximum 4 `full_visible` product shots;
-- at least 1 `not_visible` origin/world/benefit/metaphor shot;
-- at least 3 `detail_only` or `partial_visible` shots;
-- at least 2 panels led by something other than the product/package;
-- the first full-visible reveal should be earned by origin, detail, or partial
-  beats unless the brief explicitly says catalog, listing, SKU, e-commerce, or
-  packshot-only.
+- avoid full-visible packshot walls unless the brief explicitly says catalog,
+  listing, SKU, e-commerce, or packshot-only;
+- include `not_visible` origin/world/benefit/metaphor shots when the script
+  needs world or benefit proof before product authority;
+- include `detail_only` or `partial_visible` transition/proof shots when they
+  protect identity without repeating the same full package;
+- include non-product-led panels when the product identity lock would otherwise
+  consume every composition;
+- the first full-visible reveal should be earned by story logic, not by a fixed
+  panel position.
 
 Use this default visibility arc unless the brief gives a stronger one:
 
@@ -125,12 +139,13 @@ Every panel also needs:
 - `dramatic_event`: the on-screen event or transformation;
 - `visual_mechanism`: how the world rule makes this image happen.
 
-Per 9-panel sheet, use at least 3 distinct `scene_arena` values, 3 distinct
-`visual_mechanism` values, and 4 distinct `scene_role` values. If the sheet can
-be summarized as "more macro details of the same object with different crops",
-it is still a failure even when product visibility counts pass.
+Per dynamic-N sheet, use at least 3 distinct `scene_arena` values, 3 distinct
+`visual_mechanism` values, and 4 distinct `scene_role` values when the sheet is
+long enough; scale down for shorter sheets. If the sheet can be summarized as
+"more macro details of the same object with different crops", it is still a
+failure even when product visibility counts pass.
 
-Forbidden defaults: nine centered product packshots, repeated eye-level table shots, abstract luxury language without visible proof.
+Forbidden defaults: centered product packshot walls, repeated eye-level table shots, abstract luxury language without visible proof.
 
 ### Beauty Or Fashion
 

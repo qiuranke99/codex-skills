@@ -230,11 +230,12 @@ For real product work, product packaging is identity. If the user provides a pro
 | `forbidden_visual_additions` | Required for `full_visible`: physical or graphic facts absent from the reference and not allowed in this panel. | `no gold metal plate, no badge, no front plaque, no extra emblem, no new label panel` | `no mistakes` |
 
 Use `product_visibility` as rhythm, not as a yes/no note. In a non-catalog
-9-panel product storyboard, the default ceiling is 4 `full_visible` shots. The
-sheet also needs at least 1 `not_visible` origin/world/benefit/metaphor panel,
-at least 3 `detail_only` or `partial_visible` panels, and at least 2 panels led
-by something other than the product/package. This keeps the product identity
-lock from turning every frame into a bottle, box, or label close-up.
+dynamic-N product storyboard, keep full-visible product shots below about 45%
+of the sheet, include at least one `not_visible` origin/world/benefit/metaphor
+panel once the sheet has 4 or more panels, keep about one third
+`detail_only`/`partial_visible` panels, and include non-product-led panels
+scaled to sheet length. This keeps the product identity lock from turning every
+frame into a bottle, box, or label close-up.
 
 Storyboard prompts must restate the rhythm per panel:
 

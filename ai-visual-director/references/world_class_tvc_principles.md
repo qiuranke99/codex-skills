@@ -71,10 +71,14 @@ For a 40s premium product TVC:
 - 20-30s: use/benefit, human or metaphor motion;
 - 30-40s: slowdown into authority, packshot, final memory image.
 
-Use 2 storyboard sheets / 18 keyframes by default unless the brief needs more
-coverage. Vary shot size and camera relation by beat. Do not make all panels
-equally intense, and do not translate keyframes into a one-to-one quick-cut
-video edit.
+For this 40s structure, derive panel count from the timecoded script map and
+director resolution. In the Google Omni speed path, pair the four executable
+10s temporal prompts with four dynamic N-panel segment storyboard sheets. N can
+change by segment. In production handoff or multi-backend bidding mode, add
+source-shot ranges, first/last frames, or backend-specific keyframe controls
+before generation. Vary shot size and camera relation by beat. Do not make all
+panels equally intense, do not treat the sheet as the sole video input, and do
+not turn panels into one generation per shot.
 
 ### 8. Product Proof Beats Product Worship
 

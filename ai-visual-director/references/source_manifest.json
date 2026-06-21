@@ -5,18 +5,18 @@
   "canonical_packaged_references": [
     {
       "path": "SKILL.md",
-      "sha256": "77665d7a025177170c03bf94e5cf745ee471b9d77f718a19c962f13b373b1228",
-      "purpose": "primary skill router with story-first ad-film workflow, user-facing output boundary, duration-aware route logic, product identity contract, storyboard image generation rules, Google Omni temporal prompt contract, and validation gates"
+      "sha256": "362371fbee496d9b2b62d59c8f20a2db9a44f07077e9299959dd5915ae9dc59e",
+      "purpose": "primary skill router with mandatory agent activation, script-first ad-film workflow, internal creative concept council, director-decided dynamic N-panel segment storyboards, product identity contract, Google Omni temporal prompt JSON contract, video handoff rule, and validation gates"
     },
     {
       "path": "agents/openai.yaml",
-      "sha256": "a36b1ef68c753b95264a2da0a51be65bb3cdbea59a65174e465477b0a12d42df",
-      "purpose": "agent interface metadata and default prompt for story-first storyboard images plus Google Omni prompts"
+      "sha256": "55fd35a88514b85777a026972fffb50bba5d6f3750545200e47b79cbcc1d3b80",
+      "purpose": "agent interface metadata plus startup policy requiring five completed role agents and startup evidence before downstream work"
     },
     {
       "path": "references/workflow_contract.md",
-      "sha256": "b27600b0e323f1c0662b14d3adc8ba6ce38f57b735589e9a3cd7e2cecae8c36f",
-      "purpose": "required run order, story engine gate, product-fidelity gates, storyboard keyframe semantics, Google Omni temporal segment contract, internal artifact names, and final user-facing output boundary"
+      "sha256": "b280dd1bfa385c3be1c7bd9a3abe58e3bc235589b57e218c1957fbebf8c09f24",
+      "purpose": "required run order, mandatory agent orchestration gates, creative concept council, timecoded script gate, product-fidelity gates, dynamic N-panel segment storyboard semantics, temporal segment contract, video generation handoff artifact, internal artifact names, and final user-facing output boundary"
     },
     {
       "path": "references/cinematic_language_decision_matrix.md",
@@ -40,18 +40,18 @@
     },
     {
       "path": "references/intake.schema.json",
-      "sha256": "c8f2bd3af3d3ea1d69f6afd4631475ab6bc3f8cecc155789efef10a0b7b5c1fa",
-      "purpose": "intake contract including production, observer, advanced cinematic language, and complex delivery modes"
+      "sha256": "99abfdffca4ff724c4859fb45acfdcb5090f5612cf1915fd188cdfc369e71f4d",
+      "purpose": "intake contract including duration, backend, reference images, production handoff, observer, advanced cinematic language, and complex delivery modes without upstream shot-count or tempo presets"
     },
     {
       "path": "references/shot_plan.schema.json",
-      "sha256": "9dc3ca484956b7154d057ff1c5d89caae33759b3e670b4bbcaaa7f8f07364e37",
-      "purpose": "shot-plan contract including story_engine fields, creative concept fields, per-shot story beat/camera motivation/material truth, product identity visual-fact lock, product visibility rhythm, and full-visible storyboard product fidelity fields"
+      "sha256": "20d9d255a4c93a546a3b3c296766ae77b8965dd27fe3c2117a83208d145ea135",
+      "purpose": "shot-plan contract including required agent_activation_ledger, creative concept candidates, concept council, timecoded script map, director approval, dynamic panel distribution, story_engine fields, product identity lock, product visibility rhythm, and full-visible storyboard product fidelity fields"
     },
     {
       "path": "references/video_segments.schema.json",
-      "sha256": "0dd11bb9efbe7b8ac7d5cabc17b23a71c3ea357aad14bbefc516996f36db8c35",
-      "purpose": "Google Omni video segment contract including video_story, temporal story beats, camera/cut/motion continuity, anti-plastic constraints, product reference setup, and full-view product fidelity fields"
+      "sha256": "19ad477a4954e341a88fea1123adf5e39a5d1b889678a90f4267a7af04906d27",
+      "purpose": "Google Omni video segment contract including required prompt-expert/director agent_activation_ledger, video_story, source shots, internal shot timing, camera/cut/motion continuity, anti-plastic constraints, product reference setup, and full-view product fidelity fields"
     },
     {
       "path": "references/audit.schema.json",
@@ -60,17 +60,17 @@
     },
     {
       "path": "references/director_kernel.md",
-      "sha256": "f3437392b7b54f6bf6946d8371649a18e3f1b247074eeea7a01d1ed99576e697",
-      "purpose": "production-mode routing, story-engine product-ad playbooks, duration-aware arcs, product visibility-rhythm requirements, and escalation triggers"
+      "sha256": "a7731e1210f45b3d48560c91ac2751c8f805d9bc05c06a893419a821cc944902",
+      "purpose": "production-mode routing, story-engine product-ad playbooks, duration-aware arcs, mandatory creative-director-led concept candidates, dynamic N-panel segment storyboard policy, product visibility-rhythm requirements, and escalation triggers"
     },
     {
       "path": "references/world_class_tvc_principles.md",
-      "sha256": "b4eca0e84d44fc94975dd422ae59638eda927c283bde99338b6a66ed01167d60",
-      "purpose": "world-class TVC principles, reference parity, attention choreography, story/keyframe duration budgets, anti-plastic production texture rules, product visibility rhythm, and video product visual-fact lock rules"
+      "sha256": "e397748a56341e641348b66f78dab2f42f69eeba9eda7bbdddb8d76a557aa781",
+      "purpose": "world-class TVC principles, reference parity, attention choreography, script-derived rhythm, segment-aligned Omni execution, anti-plastic production texture rules, product visibility rhythm, and video product visual-fact lock rules"
     },
     {
       "path": "references/shot_spec_template.md",
-      "sha256": "5d8a16a6a842f90e19aee8192e9c36dd3accea216d51ff15952f1b3029b93cd7",
+      "sha256": "e760724019e0e1924a3973e31ab83b1bc8dfce48ad9cb053b493bd31c07f192e",
       "purpose": "shot-spec grammar including story beat, arc position, camera motivation, motion continuity, material truth, creative scene fields, handoff fields, and product identity lock grammar"
     },
     {
@@ -90,23 +90,23 @@
     },
     {
       "path": "scripts/route_project.py",
-      "sha256": "9743a59f6c3c3f93ed5db4ceed835a2632f38f9a1cddc4421dbfb95a10aba361",
-      "purpose": "intake routing, brief-text duration parsing, production-mode inference, duration-aware storyboard keyframe count, video segment count, story beat recommendations, and advanced cinematic-language reference routing"
+      "sha256": "133b9caec4987e8bc7539051840f3d44036393b650fd5bb189a9e673e3aa556b",
+      "purpose": "intake routing, brief-text duration parsing, production-mode inference, backend contract selection, Google Omni segment/storyboard slot count, script-first panel-count deferral, mandatory agent workflow notes, story beat recommendations, and advanced cinematic-language reference routing"
     },
     {
       "path": "scripts/validate_shot_plan.py",
-      "sha256": "fceaca7bce036c1f4d7a2217a9904f42546eef83cf1efdbb38ec540b5b8d245b",
-      "purpose": "shot-plan structural gate including story_engine enforcement, count consistency, creative concept and scene-mechanism enforcement, product identity lock enforcement, product visibility-rhythm gates, exact visible text checks, and forbidden visual addition detection"
+      "sha256": "a49c12db3a04a58c6bd248fd7550a083e86ff6180a94c2c232121245eda612d8",
+      "purpose": "shot-plan structural gate including mandatory shot-plan agent activation, script-first workflow enforcement, count consistency, creative concept and scene-mechanism enforcement, product identity lock enforcement, product visibility-rhythm gates, exact visible text checks, and forbidden visual addition detection"
     },
     {
       "path": "scripts/validate_video_segments.py",
-      "sha256": "ffaaa1cc9ec7f29ae555e04863f37ffaa726d350717cb3072e191df111127f91",
-      "purpose": "Google Omni video segment validator including video_story enforcement, temporal beat and source-keyframe limits, camera/motion/anti-plastic gates, product reference setup, exact visible product text gates, and forbidden visual additions"
+      "sha256": "d4a78bf429a158b6907b0adddd1d1db96a7b85830bae25ceac77e1bd6e57f555",
+      "purpose": "Google Omni video segment validator including mandatory director/prompt-expert activation, video_story enforcement, multi-shot internal timing gates, camera/motion/anti-plastic gates, product reference setup, exact visible product text gates, and forbidden visual additions"
     },
     {
       "path": "scripts/validate_run_package.py",
-      "sha256": "9fe72c383f1efcd3d94a4a12602c8e0f6aee42eb6eb6422222e888ccdeacb5c5",
-      "purpose": "completed run-directory validator for required artifacts, mandatory structured video JSON, shot/video gates, storyboard prompt story-engine blocks, product text carry-through, per-panel product visibility rhythm, and final QC readiness"
+      "sha256": "fbe11c31d877a2bd81510da4d27a7ad640a361617cc47ebc4a5543fbd7654fec",
+      "purpose": "completed run-directory validator for required artifacts including 05_agent_orchestration.json, mandatory structured video JSON, route/shot/video timing consistency, route-owned panel-field rejection, director agent evidence, shot/video/orchestration gates, storyboard prompt story-engine blocks, product text carry-through, and handoff misuse guards"
     },
     {
       "path": "scripts/score_audit.py",
@@ -115,7 +115,7 @@
     },
     {
       "path": "scripts/observe_run.py",
-      "sha256": "c9bded328a465bdb3ff39dfc42780cbf22f036bfc18860b104e8c2f946281ad7",
+      "sha256": "09d6a99a53a704c256f68251cbd44e94287fe99e506f503d9ba47f7c9a58a9c1",
       "purpose": "non-blocking observer event logging, validator ingestion, product identity mismatch classification, single-run candidate generation, and cross-run aggregation"
     },
     {
@@ -125,33 +125,48 @@
     },
     {
       "path": "scripts/package_skill.py",
-      "sha256": "3b458e63b1ec8b769248a547516f9a537ec47334b86fe38c3db1b8dbbb75ad99",
-      "purpose": "skill packaging helper"
+      "sha256": "842d4b6e3f64bab48c8ec915596fa763425a1c2db8fbee307778ba4b7d76f8b0",
+      "purpose": "skill packaging helper that excludes legacy run archives and cache files"
     },
     {
       "path": "scripts/verify_skill_package.py",
-      "sha256": "81394c571a2bc209a300910223f86f8871a6f0894b06c12b6522c4eff47aaaf2",
-      "purpose": "self-contained package verification including manifest hash checks, observer smoke tests, product/video/run-package/cinematic-routing regression tests, and duration-aware route expectations"
+      "sha256": "b6be3dce9bef5744e16feeb840a3039584f4fbd7e06f68e3cf59359718d0730f",
+      "purpose": "self-contained package verification including manifest hash checks, required AGENTS and orchestration files, route panel-field rejection, observer smoke tests, product/video/run-package/cinematic-routing regression tests, and segment-aligned route expectations"
     },
     {
       "path": "tests/test_validate_product_identity_lock.py",
-      "sha256": "14adce40f8496e984b66d08fb7ff479f8cb4a5bf659c3474b8d14144a2fd6226",
-      "purpose": "regression tests for story_engine enforcement, product packaging fidelity, count consistency, packshot-wall visibility rhythm, creative concept, and scene-mechanism gates in the shot-plan validator"
+      "sha256": "923f298260de85349bde066583f51fbfba0af74a183cfecd6bcf4ee7ad2174d9",
+      "purpose": "regression tests for mandatory shot-plan agent activation, script-first shot-plan workflow, product packaging fidelity, variable segment panel distribution, count consistency, packshot-wall visibility rhythm, creative concept, and scene-mechanism gates"
     },
     {
       "path": "tests/test_validate_video_product_lock.py",
-      "sha256": "b19a314aab59da55c971bed0ef707a2678c7a45a6b6b425895dd76964a9c63d9",
-      "purpose": "regression tests for Google Omni video_story and temporal prompt gates, full-visible product text fidelity, forbidden visual additions, static-frame rejection, nine-panel quick-cut rejection, and lens-motion freedom"
+      "sha256": "3c0dea4ecb738b233ca5d0d1f6be4835d19bb058e64fe091e3b0f04687fc2fd7",
+      "purpose": "regression tests for mandatory video prompt expert/director activation, Google Omni video_story and temporal prompt gates, full-visible product text fidelity, forbidden visual additions, static-frame rejection, missing internal_shots rejection, controlled multi-shot segment acceptance, and lens-motion freedom"
     },
     {
       "path": "tests/test_validate_run_package.py",
-      "sha256": "d5b4243151defd4203d798845b48668e775eb7df9793da0a750ab641887fa7c2",
-      "purpose": "regression tests for completed run-package validation, mandatory structured video JSON, storyboard prompt story-engine blocks, product text carry-through, and per-panel visibility rhythm"
+      "sha256": "8a09402fd0a24c7d0b709ffa8a21cf399d5b29f4a36f0f3d37e0a508362ef011",
+      "purpose": "regression tests for completed run-package validation, mandatory 05_agent_orchestration, director QC agent evidence, mandatory structured video JSON, route-owned panel-field rejection, segment/storyboard timing consistency, product text carry-through, per-panel visibility rhythm, and video-generation handoff misuse rejection"
     },
     {
       "path": "tests/test_cinematic_language_routing.py",
-      "sha256": "888e4e72a3331d04d412e0607e9d57ac08c805eee8f1efaccfe688f58ba3450c",
-      "purpose": "regression tests for brief-text duration parsing, keyframe-not-cut storyboard semantics, conditional advanced cinematic-language routing, and refined non-full-source reference import"
+      "sha256": "351da891d90d41b24e58cbdbbefd74be5171de94b8e1d81a8784bd6e84b3fecf",
+      "purpose": "regression tests for brief-text duration parsing, route-level panel-count deferral, segment-aligned storyboard slots, production handoff routing, conditional advanced cinematic-language routing, and refined non-full-source reference import"
+    },
+    {
+      "path": "AGENTS.md",
+      "sha256": "dd4108ca37b866c93c740e335b9bd32a52322cdefe72a9e2adba540529dfaaab",
+      "purpose": "mandatory role-agent contract defining creative director, director, screenwriter, art director, and Google Omni prompt expert stage gates, activation ledger requirements, and non-simulation policy"
+    },
+    {
+      "path": "references/agent_orchestration.schema.json",
+      "sha256": "d8e14208dfef015caf7337918190b9749cb2c23bc190b640302a35f12d772f69",
+      "purpose": "canonical 05_agent_orchestration.json contract for required agent invocations, stage gates, input/output references, vetoes, downstream consumption, and next_allowed blockers"
+    },
+    {
+      "path": "scripts/validate_agent_orchestration.py",
+      "sha256": "d736689afcaf51fa503f414befebefaf90bc434784fcd8f158dc01bed0823bbe",
+      "purpose": "canonical agent orchestration validator for required completed agents, stage gates, blocking vetoes, input/output JSON refs, downstream consumption, and Google Omni prompt expert output coverage"
     }
   ],
   "notes": [

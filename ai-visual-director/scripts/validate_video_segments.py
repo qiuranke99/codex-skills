@@ -102,6 +102,12 @@ REQUIRED_LOCK_FIELDS = [
     "forbidden_visual_additions",
     "full_view_fidelity_rule",
 ]
+REQUIRED_INTERNAL_SHOT_FIELDS = ["shot_id", "time_span", "camera_state", "transition", "purpose"]
+REQUIRED_VIDEO_AGENT_ROLES = {"director_agent", "google_omni_prompt_expert_agent"}
+VIDEO_AGENT_OUTPUT_REQUIREMENTS = {
+    "director_agent": ["source_shots", "segments"],
+    "google_omni_prompt_expert_agent": ["segments", "omni_prompt"],
+}
 
 
 def load_payload(path: str) -> dict:
@@ -136,6 +142,64 @@ def as_list(value: object) -> list[str]:
 
 def normalized(value: str) -> str:
     return re.sub(r"\s+", " ", value).strip().lower()
+
+
+def evidence_blob(value: object) -> str:
+    return normalized(text_blob(value))
+
+
+def validate_agent_activation_ledger(payload: dict) -> tuple[list[str], list[str]]:
+    errors: list[str] = []
+    warnings: list[str] = []
+
+    ledger = payload.get("agent_activation_ledger")
+    if not isinstance(ledger, list) or not ledger:
+        errors.append("agent_activation_ledger: missing required video agent activation ledger")
+        return errors, warnings
+
+    by_role: dict[str, dict] = {}
+    for idx, entry in enumerate(ledger, start=1):
+        if not isinstance(entry, dict):
+            errors.append(f"agent_activation_ledger[{idx}]: entry must be an object")
+            continue
+        role = str(entry.get("agent_role", "")).strip()
+        if role in by_role:
+            errors.append(f"agent_activation_ledger: duplicate entry for {role}")
+        if role:
+            by_role[role] = entry
+        if entry.get("status") != "completed":
+            errors.append(f"agent_activation_ledger[{idx}]: {role or '<missing-role>'} status must be completed")
+        for field in [
+            "agent_role",
+            "stage",
+            "started_at",
+            "input_evidence",
+            "output_evidence",
+            "decision_summary",
+            "blocks_next_stage_until",
+        ]:
+            if field in {"input_evidence", "output_evidence"}:
+                if not as_list(entry.get(field)):
+                    errors.append(f"agent_activation_ledger[{idx}]: {role or '<missing-role>'} missing {field}")
+            elif not str(entry.get(field, "")).strip():
+                errors.append(f"agent_activation_ledger[{idx}]: {role or '<missing-role>'} missing {field}")
+        if role and role not in REQUIRED_VIDEO_AGENT_ROLES:
+            errors.append(f"agent_activation_ledger[{idx}]: unexpected video agent_role {role!r}")
+
+    missing = sorted(REQUIRED_VIDEO_AGENT_ROLES - set(by_role))
+    for role in missing:
+        errors.append(f"agent_activation_ledger: missing required completed agent {role}")
+
+    for role, needles in VIDEO_AGENT_OUTPUT_REQUIREMENTS.items():
+        entry = by_role.get(role)
+        if not entry:
+            continue
+        output_blob = evidence_blob(entry.get("output_evidence", ""))
+        for needle in needles:
+            if normalized(needle) not in output_blob:
+                errors.append(f"agent_activation_ledger: {role} output_evidence must reference {needle}")
+
+    return errors, warnings
 
 
 def positive_segment_blob(segment: dict) -> str:
@@ -327,12 +391,36 @@ def validate_temporal_segments(payload: dict) -> tuple[list[str], list[str]]:
         story_beats = segment.get("story_beats")
         if not isinstance(story_beats, list) or not story_beats:
             errors.append(f"{sid}: story_beats must be a non-empty list")
-        elif len(story_beats) > 4:
-            errors.append(f"{sid}: too many story_beats ({len(story_beats)}); do not paste a 9-panel storyboard into one video segment")
 
         source_shots = segment.get("source_shots")
-        if isinstance(source_shots, list) and len(source_shots) > 4:
-            errors.append(f"{sid}: too many source_shots ({len(source_shots)}); one Omni/Veo segment should reference only the keyframes it can actually animate")
+        internal_shots = segment.get("internal_shots")
+        if isinstance(source_shots, list) and len(source_shots) > 1:
+            if not isinstance(internal_shots, list) or not internal_shots:
+                errors.append(
+                    f"{sid}: multi-shot segment requires internal_shots with time spans, transitions, and shot purposes"
+                )
+            elif len(internal_shots) != len(source_shots):
+                errors.append(
+                    f"{sid}: internal_shots has {len(internal_shots)} entries, "
+                    f"but source_shots has {len(source_shots)}"
+                )
+        if isinstance(internal_shots, list):
+            for shot_idx, internal_shot in enumerate(internal_shots, start=1):
+                if not isinstance(internal_shot, dict):
+                    errors.append(f"{sid}: internal_shots[{shot_idx}] must be an object")
+                    continue
+                for field in REQUIRED_INTERNAL_SHOT_FIELDS:
+                    if not has_nonempty(internal_shot.get(field)):
+                        errors.append(f"{sid}: internal_shots[{shot_idx}] missing {field}")
+        if (
+            isinstance(story_beats, list)
+            and len(story_beats) > 4
+            and not isinstance(internal_shots, list)
+            and all(re.search(r"\b(panel|shot)\s*\d+\b|SH_\d{3}", str(beat), re.IGNORECASE) for beat in story_beats)
+        ):
+            errors.append(
+                f"{sid}: dense storyboard-panel list needs internal_shots with time spans, transitions, and shot purposes"
+            )
 
         first_frame = normalized(str(segment.get("first_frame", "")))
         last_frame = normalized(str(segment.get("last_frame", "")))
@@ -384,6 +472,10 @@ def main() -> int:
         for field in REQUIRED_SEGMENT_FIELDS:
             if not has_nonempty(segment.get(field)):
                 errors.append(f"{sid}: missing {field}")
+
+    agent_errors, agent_warnings = validate_agent_activation_ledger(payload)
+    errors.extend(agent_errors)
+    warnings.extend(agent_warnings)
 
     product_errors, product_warnings = validate_product_video(payload)
     errors.extend(product_errors)

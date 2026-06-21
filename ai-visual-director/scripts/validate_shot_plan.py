@@ -4,6 +4,7 @@
 from __future__ import annotations
 
 import json
+import math
 import re
 import sys
 from pathlib import Path
@@ -171,6 +172,18 @@ REQUIRED_PRODUCT_LOCK_FIELDS = [
     "forbidden_visual_additions",
     "full_view_fidelity_rule",
 ]
+REQUIRED_SHOT_PLAN_AGENT_ROLES = {
+    "creative_director_agent",
+    "director_agent",
+    "screenwriter_agent",
+    "art_director_agent",
+}
+SHOT_PLAN_AGENT_OUTPUT_REQUIREMENTS = {
+    "creative_director_agent": ["creative_concept_candidates", "creative_concept"],
+    "director_agent": ["concept_council", "director_script_approval", "storyboard_layout_decision"],
+    "screenwriter_agent": ["timecoded_script_map"],
+    "art_director_agent": ["concept_council", "product_identity_lock"],
+}
 
 
 def load_plan(path: str) -> dict:
@@ -237,6 +250,64 @@ def visible_text_lines(lock: dict) -> list[str]:
             seen.add(key)
             unique.append(line)
     return unique
+
+
+def evidence_blob(value: object) -> str:
+    return normalized(text_blob(value))
+
+
+def validate_agent_activation_ledger(plan: dict) -> tuple[list[str], list[str]]:
+    errors: list[str] = []
+    warnings: list[str] = []
+
+    ledger = plan.get("agent_activation_ledger")
+    if not isinstance(ledger, list) or not ledger:
+        errors.append("agent_activation_ledger: missing required shot-plan agent activation ledger")
+        return errors, warnings
+
+    by_role: dict[str, dict] = {}
+    for idx, entry in enumerate(ledger, start=1):
+        if not isinstance(entry, dict):
+            errors.append(f"agent_activation_ledger[{idx}]: entry must be an object")
+            continue
+        role = str(entry.get("agent_role", "")).strip()
+        if role in by_role:
+            errors.append(f"agent_activation_ledger: duplicate entry for {role}")
+        if role:
+            by_role[role] = entry
+        if entry.get("status") != "completed":
+            errors.append(f"agent_activation_ledger[{idx}]: {role or '<missing-role>'} status must be completed")
+        for field in [
+            "agent_role",
+            "stage",
+            "started_at",
+            "input_evidence",
+            "output_evidence",
+            "decision_summary",
+            "blocks_next_stage_until",
+        ]:
+            if field in {"input_evidence", "output_evidence"}:
+                if not as_list(entry.get(field)):
+                    errors.append(f"agent_activation_ledger[{idx}]: {role or '<missing-role>'} missing {field}")
+            elif not str(entry.get(field, "")).strip():
+                errors.append(f"agent_activation_ledger[{idx}]: {role or '<missing-role>'} missing {field}")
+        if role and role not in REQUIRED_SHOT_PLAN_AGENT_ROLES:
+            errors.append(f"agent_activation_ledger[{idx}]: unexpected shot-plan agent_role {role!r}")
+
+    missing = sorted(REQUIRED_SHOT_PLAN_AGENT_ROLES - set(by_role))
+    for role in missing:
+        errors.append(f"agent_activation_ledger: missing required completed agent {role}")
+
+    for role, needles in SHOT_PLAN_AGENT_OUTPUT_REQUIREMENTS.items():
+        entry = by_role.get(role)
+        if not entry:
+            continue
+        output_blob = evidence_blob(entry.get("output_evidence", ""))
+        for needle in needles:
+            if normalized(needle) not in output_blob:
+                errors.append(f"agent_activation_ledger: {role} output_evidence must reference {needle}")
+
+    return errors, warnings
 
 
 def missing_full_view_text_lines(lock: dict, shot: dict) -> list[str]:
@@ -382,6 +453,68 @@ def validate_story_engine(plan: dict) -> tuple[list[str], list[str]]:
     return errors, warnings
 
 
+def validate_script_first_workflow(plan: dict) -> tuple[list[str], list[str]]:
+    errors: list[str] = []
+    warnings: list[str] = []
+
+    if "tempo_profile" in plan:
+        errors.append("plan: tempo_profile is not allowed in shot_plan; director decides rhythm after the script map")
+
+    candidates = plan.get("creative_concept_candidates")
+    if not isinstance(candidates, list) or len(candidates) < 2:
+        errors.append("plan: creative_concept_candidates must contain at least 2 internally reviewed routes")
+
+    council = plan.get("concept_council")
+    if not isinstance(council, dict):
+        errors.append("plan: missing concept_council structured veto review")
+    else:
+        for field in ["creative_director", "director", "screenwriter", "art_director", "final_concept_decision"]:
+            if not has_concrete_language(council.get(field, "")):
+                errors.append(f"concept_council: missing or weak {field}")
+        unresolved = council.get("unresolved_vetos", [])
+        if isinstance(unresolved, list) and unresolved:
+            errors.append("concept_council: unresolved_vetos must be empty before shot planning")
+
+    script_map = plan.get("timecoded_script_map")
+    if not isinstance(script_map, list) or not script_map:
+        errors.append("plan: timecoded_script_map is required before storyboard panels")
+    else:
+        for idx, beat in enumerate(script_map, start=1):
+            if not isinstance(beat, dict):
+                errors.append(f"timecoded_script_map[{idx}]: must be an object")
+                continue
+            for field in ["time_range", "beat", "visual_event", "product_role", "director_intent"]:
+                if field == "time_range":
+                    if not str(beat.get(field, "")).strip():
+                        errors.append(f"timecoded_script_map[{idx}]: missing {field}")
+                elif not has_concrete_language(beat.get(field, "")):
+                    errors.append(f"timecoded_script_map[{idx}]: missing or weak {field}")
+
+    approval = plan.get("director_script_approval")
+    if not isinstance(approval, dict):
+        errors.append("plan: director_script_approval is required")
+    else:
+        if approval.get("approved") is not True:
+            errors.append("director_script_approval: approved must be true before storyboard planning")
+        if not has_concrete_language(approval.get("rationale", "")):
+            errors.append("director_script_approval: missing rationale")
+
+    layout = plan.get("storyboard_layout_decision")
+    if not isinstance(layout, dict):
+        errors.append("plan: storyboard_layout_decision is required")
+    else:
+        for field in ["policy", "rationale", "panel_count_source", "segment_mapping_source"]:
+            if not has_concrete_language(layout.get(field, "")):
+                errors.append(f"storyboard_layout_decision: missing or weak {field}")
+        source_blob = normalized(text_blob(layout.get("panel_count_source", ""), layout.get("rationale", "")))
+        if any(bad in source_blob for bad in ["tempo_estimate", "tempo profile", "script_shot_count", "default grid"]):
+            errors.append(
+                "storyboard_layout_decision: panel count must come from approved script/director plan, not tempo estimates or intake shot counts"
+            )
+
+    return errors, warnings
+
+
 def validate_plan_counts(plan: dict, sheets: list[dict]) -> tuple[list[str], list[str]]:
     errors: list[str] = []
     warnings: list[str] = []
@@ -396,9 +529,49 @@ def validate_plan_counts(plan: dict, sheets: list[dict]) -> tuple[list[str], lis
     if expected_panel_count is not None and int(expected_panel_count) != len(shots):
         errors.append(f"plan: panel_count={expected_panel_count}, but sheets contain {len(shots)} shots")
 
+    panels_per_sheet = plan.get("panels_per_sheet")
+    if isinstance(panels_per_sheet, list):
+        panel_values = [int(value) for value in panels_per_sheet]
+        if len(panel_values) != len(sheets):
+            errors.append(f"plan: panels_per_sheet has {len(panel_values)} entries, but sheets has {len(sheets)}")
+        elif any(value != len(sheet.get("shots", [])) for value, sheet in zip(panel_values, sheets)):
+            errors.append("plan: panels_per_sheet must match the actual shot count in each sheet")
+        if expected_panel_count is not None and sum(panel_values) != int(expected_panel_count):
+            errors.append(f"plan: panels_per_sheet sums to {sum(panel_values)}, but panel_count={expected_panel_count}")
+
+    grid_layouts = plan.get("grid_layouts")
+    if isinstance(grid_layouts, list) and len(grid_layouts) != len(sheets):
+        errors.append(f"plan: grid_layouts has {len(grid_layouts)} entries, but sheets has {len(sheets)}")
+
     video_segment_count = plan.get("video_segment_count")
     if video_segment_count is not None and int(video_segment_count) < 1:
         errors.append("plan: video_segment_count must be at least 1")
+
+    storyboard_sheet_count = plan.get("storyboard_sheet_count")
+    if storyboard_sheet_count is not None and video_segment_count is not None:
+        if int(storyboard_sheet_count) != int(video_segment_count):
+            errors.append(
+                "plan: storyboard_sheet_count must equal video_segment_count for segment-aligned Google Omni storyboards"
+            )
+
+    shots_per_video_segment = plan.get("shots_per_video_segment")
+    if isinstance(shots_per_video_segment, list):
+        shot_values = [int(value) for value in shots_per_video_segment]
+        if video_segment_count is not None and len(shot_values) != int(video_segment_count):
+            errors.append(
+                f"plan: shots_per_video_segment has {len(shot_values)} entries, "
+                f"but video_segment_count={video_segment_count}"
+            )
+        if expected_panel_count is not None and sum(shot_values) != int(expected_panel_count):
+            errors.append(
+                f"plan: shots_per_video_segment sums to {sum(shot_values)}, but panel_count={expected_panel_count}"
+            )
+
+    if isinstance(panels_per_sheet, list) and isinstance(shots_per_video_segment, list):
+        panel_values = [int(value) for value in panels_per_sheet]
+        shot_values = [int(value) for value in shots_per_video_segment]
+        if panel_values != shot_values:
+            errors.append("plan: panels_per_sheet must match shots_per_video_segment for segment-aligned storyboard sheets")
 
     duration_seconds = plan.get("duration_seconds")
     if duration_seconds is not None and float(duration_seconds) <= 0:
@@ -432,7 +605,7 @@ def validate_creative_director_standard(plan: dict) -> tuple[list[str], list[str
     for sheet in plan.get("sheets", []):
         sheet_id = sheet.get("sheet_id", "<unknown>")
         shots = [shot for shot in sheet.get("shots", []) if isinstance(shot, dict)]
-        if len(shots) != 9:
+        if not shots:
             continue
 
         scene_arenas: set[str] = set()
@@ -461,14 +634,18 @@ def validate_creative_director_standard(plan: dict) -> tuple[list[str], list[str
                 weak_event_count += 1
                 errors.append(f"{sid}: weak dramatic_event; name an on-screen event, tension, or transformation")
 
-        if len(scene_arenas) < 3:
-            errors.append(f"{sheet_id}: needs at least 3 distinct scene_arena values, found {len(scene_arenas)}")
-        if len(visual_mechanisms) < 3:
-            errors.append(f"{sheet_id}: needs at least 3 distinct visual_mechanism values, found {len(visual_mechanisms)}")
-        if len(scene_roles) < 4:
-            errors.append(f"{sheet_id}: needs at least 4 distinct scene_role values, found {len(scene_roles)}")
-        if weak_event_count > 2:
-            errors.append(f"{sheet_id}: too many weak dramatic events ({weak_event_count}/9)")
+        min_scene_arenas = min(3, len(shots))
+        min_visual_mechanisms = min(3, len(shots))
+        min_scene_roles = min(4, len(shots))
+        weak_event_limit = max(1, math.ceil(len(shots) * 0.25))
+        if len(scene_arenas) < min_scene_arenas:
+            errors.append(f"{sheet_id}: needs at least {min_scene_arenas} distinct scene_arena values, found {len(scene_arenas)}")
+        if len(visual_mechanisms) < min_visual_mechanisms:
+            errors.append(f"{sheet_id}: needs at least {min_visual_mechanisms} distinct visual_mechanism values, found {len(visual_mechanisms)}")
+        if len(scene_roles) < min_scene_roles:
+            errors.append(f"{sheet_id}: needs at least {min_scene_roles} distinct scene_role values, found {len(scene_roles)}")
+        if weak_event_count > weak_event_limit:
+            errors.append(f"{sheet_id}: too many weak dramatic events ({weak_event_count}/{len(shots)})")
 
     return errors, warnings
 
@@ -519,7 +696,7 @@ def validate_product_visibility_rhythm(plan: dict) -> tuple[list[str], list[str]
     for sheet in plan.get("sheets", []):
         sheet_id = sheet.get("sheet_id", "<unknown>")
         shots = [shot for shot in sheet.get("shots", []) if isinstance(shot, dict)]
-        if len(shots) != 9:
+        if not shots:
             continue
 
         visibility_values = [str(shot.get("product_visibility", "")).strip() for shot in shots]
@@ -530,24 +707,23 @@ def validate_product_visibility_rhythm(plan: dict) -> tuple[list[str], list[str]
         detail_or_partial_count = visibility_values.count("detail_only") + visibility_values.count("partial_visible")
         not_visible_count = visibility_values.count("not_visible")
         non_product_led_count = sum(1 for shot in shots if not product_dominates_positive_subject(shot))
-
-        if full_visible_count > 4:
+        if full_visible_count == len(shots) and len(shots) >= 3:
             errors.append(
-                f"{sheet_id}: too many full-visible product shots ({full_visible_count}/9); "
+                f"{sheet_id}: too many full-visible product shots ({full_visible_count}/{len(shots)}); "
                 "avoid packshot wall rhythm unless the brief explicitly asks for a catalog or packshot-only board"
             )
-        if detail_or_partial_count < 3:
+        if detail_or_partial_count == 0 and len(shots) >= 4:
             errors.append(
-                f"{sheet_id}: needs at least 3 detail_only/partial_visible transition or proof shots, "
+                f"{sheet_id}: needs at least one detail_only/partial_visible transition or proof shot, "
                 f"found {detail_or_partial_count}"
             )
-        if not_visible_count < 1:
+        if not_visible_count == 0 and len(shots) >= 4:
             errors.append(
-                f"{sheet_id}: needs at least 1 product-not-visible origin/world/benefit/metaphor shot"
+                f"{sheet_id}: needs at least one product-not-visible origin/world/benefit/metaphor shot"
             )
-        if non_product_led_count < 2:
+        if non_product_led_count == 0 and len(shots) >= 4:
             errors.append(
-                f"{sheet_id}: needs at least 2 non-product-led storyboard panels; "
+                f"{sheet_id}: needs at least one non-product-led storyboard panel; "
                 "do not let product identity lock consume every composition"
             )
 
@@ -644,8 +820,10 @@ def validate_sheet(sheet: dict) -> tuple[list[str], list[str]]:
     sheet_id = sheet.get("sheet_id", "<unknown>")
     shots = sheet.get("shots", [])
 
-    if len(shots) != 9:
-        errors.append(f"{sheet_id}: expected exactly 9 shots, found {len(shots)}")
+    if not shots:
+        errors.append(f"{sheet_id}: expected at least 1 shot")
+    if not str(sheet.get("segment_id", "")).strip():
+        errors.append(f"{sheet_id}: missing segment_id for segment-aligned storyboard contract")
 
     shot_sizes = set()
     camera_angles = set()
@@ -698,17 +876,21 @@ def validate_sheet(sheet: dict) -> tuple[list[str], list[str]]:
         if centered_static_run >= 3:
             errors.append(f"{sid}: 3 consecutive centered static shots detected")
 
-    if len([x for x in shot_sizes if x]) < 5:
-        errors.append(f"{sheet_id}: needs at least 5 distinct shot-size choices, found {len(shot_sizes)}")
-    if len([x for x in camera_angles if x]) < 4:
-        errors.append(f"{sheet_id}: needs at least 4 distinct camera-angle choices, found {len(camera_angles)}")
-    if len([x for x in movements if x]) < 3:
-        errors.append(f"{sheet_id}: needs at least 3 distinct camera-movement states, found {len(movements)}")
-    if not has_establishing:
+    min_shot_sizes = min(5, len(shots))
+    min_camera_angles = min(4, len(shots))
+    min_movements = min(3, len(shots))
+    min_macro_count = 2 if len(shots) >= 6 else (1 if len(shots) >= 3 else 0)
+    if len([x for x in shot_sizes if x]) < min_shot_sizes:
+        errors.append(f"{sheet_id}: needs at least {min_shot_sizes} distinct shot-size choices, found {len(shot_sizes)}")
+    if len([x for x in camera_angles if x]) < min_camera_angles:
+        errors.append(f"{sheet_id}: needs at least {min_camera_angles} distinct camera-angle choices, found {len(camera_angles)}")
+    if len([x for x in movements if x]) < min_movements:
+        errors.append(f"{sheet_id}: needs at least {min_movements} distinct camera-movement states, found {len(movements)}")
+    if len(shots) >= 4 and not has_establishing:
         errors.append(f"{sheet_id}: missing establishing/world/wide shot")
-    if macro_count < 2:
-        errors.append(f"{sheet_id}: needs at least 2 macro/insert/detail shots, found {macro_count}")
-    if not has_special_angle:
+    if macro_count < min_macro_count:
+        errors.append(f"{sheet_id}: needs at least {min_macro_count} macro/insert/detail shots, found {macro_count}")
+    if len(shots) >= 4 and not has_special_angle:
         errors.append(f"{sheet_id}: missing high/low/top/overhead/ground-level camera angle")
 
     return errors, warnings
@@ -734,6 +916,14 @@ def main() -> int:
     count_errors, count_warnings = validate_plan_counts(plan, sheets)
     errors.extend(count_errors)
     warnings.extend(count_warnings)
+
+    agent_errors, agent_warnings = validate_agent_activation_ledger(plan)
+    errors.extend(agent_errors)
+    warnings.extend(agent_warnings)
+
+    workflow_errors, workflow_warnings = validate_script_first_workflow(plan)
+    errors.extend(workflow_errors)
+    warnings.extend(workflow_warnings)
 
     if not plan.get("continuity_locks"):
         errors.append("plan: missing continuity_locks")

@@ -17,6 +17,10 @@
       "minimum": 1,
       "default": 10
     },
+    "video_backend": {
+      "enum": ["google_omni", "google_flow", "veo_api", "runway", "kling", "luma", "multi_backend"],
+      "default": "google_omni"
+    },
     "reference_images": {
       "type": "array",
       "items": {
@@ -40,7 +44,7 @@
       "default": ["storyboard_sheets", "google_omni_prompts", "qc_report"]
     },
     "production_mode": {
-      "enum": ["standard_fast", "rush", "premium_pitch", "certification"],
+      "enum": ["standard_fast", "rush", "premium_pitch", "production_handoff", "certification"],
       "default": "standard_fast"
     },
     "observer_mode": {

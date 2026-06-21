@@ -4,6 +4,7 @@
 from __future__ import annotations
 
 import json
+import math
 import re
 import subprocess
 import sys
@@ -16,14 +17,17 @@ REQUIRED_ARTIFACTS = [
     "02_shot_plan.json",
     "03_director_qc.json",
     "04_storyboard_image_prompts.md",
+    "05_agent_orchestration.json",
     "08_google_omni_video_prompts.md",
     "09_final_qc_report.md",
+    "11_video_generation_handoff.md",
 ]
 
 JSON_ARTIFACTS = [
     "00_route_decision.json",
     "02_shot_plan.json",
     "03_director_qc.json",
+    "05_agent_orchestration.json",
 ]
 
 OPTIONAL_VIDEO_JSON = [
@@ -58,6 +62,15 @@ CREATIVE_PANEL_FIELDS = [
     "dramatic_event",
     "visual_mechanism",
 ]
+SEGMENT_HANDOFF_WORDS = re.compile(
+    r"exactly one segment|one temporal segment|one segment prompt at a time|"
+    r"selected temporal segment|paste exactly one",
+    re.IGNORECASE,
+)
+PRODUCT_REFERENCE_WORDS = re.compile(
+    r"product identity reference|product reference|original product image|product image",
+    re.IGNORECASE,
+)
 
 
 def load_json(path: Path) -> tuple[dict | None, str | None]:
@@ -141,9 +154,10 @@ def shot_prompt_snippet(prompt_text: str, shot_id: str, max_chars: int = 420) ->
     return prompt_text[match.start() : match.start() + max_chars]
 
 
-def run_validator(script: Path, artifact: Path) -> tuple[bool, dict | str]:
+def run_validator(script: Path, artifact: Path, extra_args: list[str] | None = None) -> tuple[bool, dict | str]:
+    extra_args = extra_args or []
     proc = subprocess.run(
-        [sys.executable, str(script), str(artifact)],
+        [sys.executable, str(script), str(artifact), *extra_args],
         text=True,
         capture_output=True,
         check=False,
@@ -213,6 +227,147 @@ def validate_product_storyboard_prompt(run_dir: Path, shot_plan: dict) -> list[s
     return errors
 
 
+def validate_video_generation_handoff(run_dir: Path, route: dict, shot_plan: dict) -> list[str]:
+    errors: list[str] = []
+    path = run_dir / "11_video_generation_handoff.md"
+    if not path.exists():
+        return errors
+
+    raw = path.read_text(encoding="utf-8")
+    text = normalized(raw)
+
+    required_pairs = [
+        ("Required Reference Setup", "required reference setup"),
+        ("Product Identity Lock", "product identity lock"),
+    ]
+    for label, needle in required_pairs:
+        if needle not in text:
+            errors.append(f"11_video_generation_handoff.md: missing {label} usage rule")
+
+    if not SEGMENT_HANDOFF_WORDS.search(raw):
+        errors.append(
+            "11_video_generation_handoff.md: must instruct the user to paste exactly one temporal segment prompt at a time"
+        )
+
+    if not (
+        "not the primary video-model input" in text
+        or "not the sole input" in text
+        or "not upload the fixed-grid storyboard sheet as the only reference" in text
+    ):
+        errors.append(
+            "11_video_generation_handoff.md: must state that the storyboard sheet is not the primary/sole video-model input"
+        )
+
+    if "not a clip count" not in text and "not a single-shot generation plan" not in text:
+        errors.append(
+            "11_video_generation_handoff.md: must state that the storyboard is not a clip count or single-shot generation plan"
+        )
+    if "not equal" not in text:
+        errors.append("11_video_generation_handoff.md: must state 'not equal'")
+
+    segment_count = int(route.get("video_segment_count", 0) or 0)
+    if segment_count > 1 and "separately" not in text:
+        errors.append(
+            "11_video_generation_handoff.md: multi-segment runs must say segments are generated or evaluated separately"
+        )
+
+    if is_product_plan(shot_plan) and not PRODUCT_REFERENCE_WORDS.search(raw):
+        errors.append(
+            "11_video_generation_handoff.md: product runs must prioritize the product identity/reference image"
+        )
+
+    return errors
+
+
+def validate_director_qc_agent_evidence(qc: dict) -> list[str]:
+    errors: list[str] = []
+    evidence = qc.get("director_agent_evidence")
+    if not isinstance(evidence, dict):
+        errors.append("03_director_qc.json: missing director_agent_evidence")
+        return errors
+    if str(evidence.get("agent_role", "")).strip() != "director_agent":
+        errors.append("03_director_qc.json: director_agent_evidence.agent_role must be director_agent")
+    refs = evidence.get("evidence_refs")
+    if not isinstance(refs, list) or not refs:
+        errors.append("03_director_qc.json: director_agent_evidence.evidence_refs must be a non-empty list")
+    elif not any("05_agent_orchestration.json" in str(ref) for ref in refs):
+        errors.append("03_director_qc.json: director_agent_evidence must reference 05_agent_orchestration.json")
+    return errors
+
+
+def numeric(value: object) -> float | None:
+    if value in (None, ""):
+        return None
+    try:
+        return float(value)
+    except (TypeError, ValueError):
+        return None
+
+
+def validate_timing_consistency(route: dict, shot_plan: dict, video_payload: dict | None) -> list[str]:
+    errors: list[str] = []
+    duration = numeric(route.get("duration_seconds"))
+    segment_seconds = numeric(route.get("video_segment_seconds"))
+    if duration is None or segment_seconds is None:
+        errors.append("00_route_decision.json: missing duration_seconds or video_segment_seconds")
+        return errors
+    if duration <= 0 or segment_seconds <= 0:
+        errors.append("00_route_decision.json: duration_seconds and video_segment_seconds must be positive")
+        return errors
+
+    expected_segments = max(1, math.ceil(duration / segment_seconds))
+    route_segments = int(route.get("video_segment_count", 0) or 0)
+    if route_segments != expected_segments:
+        errors.append(
+            f"00_route_decision.json: video_segment_count={route_segments} does not match "
+            f"ceil(duration_seconds/video_segment_seconds)={expected_segments}"
+        )
+
+    route_sheets = int(route.get("storyboard_sheet_count", 0) or 0)
+    if route_sheets < 1:
+        errors.append("00_route_decision.json: storyboard_sheet_count must be at least 1")
+    if route_sheets != route_segments:
+        errors.append(
+            "00_route_decision.json: storyboard_sheet_count must equal video_segment_count for the Google Omni speed path"
+        )
+
+    route_owned_panel_fields = [
+        "tempo_profile",
+        "average_seconds_per_shot",
+        "panel_count",
+        "panel_count_source",
+        "panels_per_sheet",
+        "grid_layouts",
+        "shots_per_video_segment",
+        "max_panels_per_sheet",
+    ]
+    for field in route_owned_panel_fields:
+        if field in route:
+            errors.append(
+                f"00_route_decision.json: {field} is director/shot-plan owned and must not be emitted by route_project"
+            )
+
+    if shot_plan:
+        for field in ["duration_seconds", "storyboard_sheet_count", "video_segment_count"]:
+            route_value = numeric(route.get(field))
+            shot_value = numeric(shot_plan.get(field))
+            if route_value is not None and shot_value is not None:
+                values_match = math.isclose(route_value, shot_value)
+            else:
+                values_match = normalized(route.get(field)) == normalized(shot_plan.get(field))
+            if field in route and field in shot_plan and not values_match:
+                errors.append(f"02_shot_plan.json: {field}={shot_plan[field]!r} does not match route value {route[field]!r}")
+
+    if video_payload is not None:
+        segments = video_payload.get("segments")
+        if isinstance(segments, list) and len(segments) != expected_segments:
+            errors.append(
+                f"08_google_omni_video_prompts.json: segment count {len(segments)} does not match route video_segment_count={expected_segments}"
+            )
+
+    return errors
+
+
 def main() -> int:
     if len(sys.argv) != 2:
         print("usage: validate_run_package.py <run_dir>", file=sys.stderr)
@@ -248,24 +403,57 @@ def main() -> int:
                 errors.append(f"invalid JSON {rel}: root must be an object")
 
         skill_dir = Path(__file__).resolve().parents[1]
+        orchestration_path = run_dir / "05_agent_orchestration.json"
+        if orchestration_path.exists():
+            ok, payload = run_validator(
+                skill_dir / "scripts" / "validate_agent_orchestration.py",
+                orchestration_path,
+                [str(run_dir)],
+            )
+            if not ok:
+                errors.append(f"05_agent_orchestration.json failed validate_agent_orchestration.py: {payload}")
+
         shot_plan_path = run_dir / "02_shot_plan.json"
         if shot_plan_path.exists():
             ok, payload = run_validator(skill_dir / "scripts" / "validate_shot_plan.py", shot_plan_path)
             if not ok:
                 errors.append(f"02_shot_plan.json failed validate_shot_plan.py: {payload}")
 
+        qc = loaded_json.get("03_director_qc.json", {})
+        if qc:
+            errors.extend(validate_director_qc_agent_evidence(qc))
+
         shot_plan = loaded_json.get("02_shot_plan.json", {})
         if shot_plan:
             errors.extend(validate_product_storyboard_prompt(run_dir, shot_plan))
+            errors.extend(
+                validate_video_generation_handoff(
+                    run_dir,
+                    loaded_json.get("00_route_decision.json", {}),
+                    shot_plan,
+                )
+            )
 
+        route = loaded_json.get("00_route_decision.json", {})
         video_json = next((run_dir / rel for rel in OPTIONAL_VIDEO_JSON if (run_dir / rel).exists()), None)
+        video_payload: dict | None = None
         if video_json:
             checked.append(video_json.name)
+            payload, error = load_json(video_json)
+            if error:
+                errors.append(f"invalid JSON {video_json.name}: {error}")
+            elif isinstance(payload, dict):
+                video_payload = payload
+            else:
+                errors.append(f"invalid JSON {video_json.name}: root must be an object")
             ok, payload = run_validator(skill_dir / "scripts" / "validate_video_segments.py", video_json)
             if not ok:
                 errors.append(f"{video_json.name} failed validate_video_segments.py: {payload}")
         else:
             errors.append("missing structured video prompt JSON; markdown-only Google Omni prompts cannot be validated")
+
+        if route:
+            errors.extend(validate_timing_consistency(route, shot_plan, video_payload))
 
     result = {
         "ok": not errors,
