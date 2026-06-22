@@ -17,7 +17,7 @@ Codex discovery root: `C:\Users\Administrator\.codex\skills`
 
 ## Codex Discovery Entries
 
-As of 2026-06-22, the seven user-maintained skills above are installed for Codex discovery as Windows directory junctions:
+As of 2026-06-22, the six user-maintained skills above are installed for Codex discovery as Windows directory junctions:
 
 | Codex entry | Junction target |
 | --- | --- |
