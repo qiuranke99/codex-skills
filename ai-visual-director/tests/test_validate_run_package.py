@@ -59,6 +59,11 @@ def three_segment_video_prompt() -> dict:
                 "time_span": f"{idx * 2}s-{idx * 2 + 2}s",
                 "camera_state": "director-approved physical camera move for this source shot",
                 "transition": "match movement through water, glass reflection, or product silhouette",
+                "transition_grammar": "reflection, water motion, or silhouette match cut preserving product geometry",
+                "edit_bridge": "the outgoing material cue becomes the incoming camera or product-read cue",
+                "lens_progression_role": "segment-level lens step from world clue to proof or authority frame",
+                "shot_to_shot_causality": "each internal shot unlocks the next information, proof, or product-memory state",
+                "motion_continuity": "camera, water, or reflection energy carries across the internal shot boundary",
                 "purpose": "execute the mapped storyboard panel while preserving product identity",
             }
             for idx, shot_id in enumerate(shot_ids)
@@ -312,7 +317,7 @@ interaction table -> hydration ripple world -> clean packshot memory space.
 Visual Mechanism: droplet, tray reflection, label stripe, fingertip ripple, and
 final packshot form one cause-and-effect chain.
 Anti-plastic: real glass reflection, contact shadow, tactile tray edges,
-physical water behavior, subtle paper grain, and restrained blue-gray graphite.
+physical water behavior, subtle paper grain, and restrained production-board contrast.
 
 Product Lock Evidence: surface text inventory includes front wordmark LUMA,
 center text HYDRATING SERUM, lower text 30 ml, centered front label rectangle,

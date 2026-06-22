@@ -31,8 +31,6 @@ REQUIRED_FILES = [
     "references/world_class_tvc_principles.md",
     "references/shot_spec_template.md",
     "references/good_shotlist_examples.md",
-    "references/blue_gray_previs_style_bible.md",
-    "assets/blue_gray_previs_reference.jpeg",
     "scripts/route_project.py",
     "scripts/validate_shot_plan.py",
     "scripts/validate_video_segments.py",
@@ -47,6 +45,7 @@ REQUIRED_FILES = [
     "tests/test_validate_video_product_lock.py",
     "tests/test_validate_run_package.py",
     "tests/test_cinematic_language_routing.py",
+    "tests/test_skill_contract_quality.py",
 ]
 
 
@@ -85,6 +84,14 @@ def main() -> int:
         if ref in text:
             errors.append(f"SKILL.md still references non-packaged path: {ref}")
 
+    retired_style_paths = [
+        "references/" + "blue" + "_gray_previs_style_bible.md",
+        "assets/" + "blue" + "_gray_previs_reference.jpeg",
+    ]
+    for rel in retired_style_paths:
+        if (skill_dir / rel).exists():
+            errors.append(f"retired storyboard style dependency still exists: {rel}")
+
     for rel in [
         "references/intake.schema.json",
         "references/shot_plan.schema.json",
@@ -106,6 +113,10 @@ def main() -> int:
     if manifest_path.exists():
         try:
             manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
+            manifest_paths = [entry.get("path") for entry in manifest.get("canonical_packaged_references", [])]
+            for rel in retired_style_paths:
+                if rel in manifest_paths:
+                    errors.append(f"source_manifest.json still packages retired storyboard style dependency: {rel}")
             for entry in manifest.get("canonical_packaged_references", []):
                 rel = entry.get("path")
                 expected_hash = entry.get("sha256")
@@ -311,6 +322,20 @@ def main() -> int:
         if test_proc.returncode != 0:
             errors.append(
                 "cinematic language routing regression test failed: "
+                f"{test_proc.stderr.strip() or test_proc.stdout.strip()}"
+            )
+
+    skill_contract_test = skill_dir / "tests/test_skill_contract_quality.py"
+    if skill_contract_test.exists():
+        test_proc = subprocess.run(
+            [sys.executable, str(skill_contract_test)],
+            text=True,
+            capture_output=True,
+            check=False,
+        )
+        if test_proc.returncode != 0:
+            errors.append(
+                "skill contract quality regression test failed: "
                 f"{test_proc.stderr.strip() or test_proc.stdout.strip()}"
             )
 

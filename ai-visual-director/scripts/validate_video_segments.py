@@ -20,6 +20,10 @@ REQUIRED_SEGMENT_FIELDS = [
     "last_frame",
     "story_beats",
     "camera_plan",
+    "lens_progression",
+    "transition_grammar",
+    "edit_bridge",
+    "motivated_camera_path",
     "cut_strategy",
     "subject_motion",
     "environment_motion",
@@ -104,7 +108,18 @@ REQUIRED_LOCK_FIELDS = [
     "forbidden_visual_additions",
     "full_view_fidelity_rule",
 ]
-REQUIRED_INTERNAL_SHOT_FIELDS = ["shot_id", "time_span", "camera_state", "transition", "purpose"]
+REQUIRED_INTERNAL_SHOT_FIELDS = [
+    "shot_id",
+    "time_span",
+    "camera_state",
+    "transition",
+    "transition_grammar",
+    "edit_bridge",
+    "lens_progression_role",
+    "shot_to_shot_causality",
+    "motion_continuity",
+    "purpose",
+]
 REQUIRED_VIDEO_AGENT_ROLES = {"director_agent", "google_omni_prompt_expert_agent"}
 VIDEO_AGENT_OUTPUT_REQUIREMENTS = {
     "director_agent": ["source_shots", "segments"],
@@ -129,6 +144,8 @@ def text_blob(*values: object) -> str:
 
 
 def has_nonempty(value: object) -> bool:
+    if value is None:
+        return False
     if isinstance(value, list):
         return any(str(item).strip() for item in value)
     return bool(str(value).strip())

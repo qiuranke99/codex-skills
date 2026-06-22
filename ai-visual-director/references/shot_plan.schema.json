@@ -169,12 +169,28 @@
         },
         "creative_translation": {
           "type": "object",
-          "required": ["borrow", "transform", "reject", "creative_leap", "new_mechanism"],
+          "required": [
+            "borrow",
+            "transform",
+            "reject",
+            "creative_leap",
+            "new_mechanism",
+            "reference_to_world_transformation",
+            "invented_scene_architecture",
+            "prop_logic",
+            "material_system",
+            "set_piece_invention"
+          ],
           "properties": {
             "borrow": {"type": "array", "items": {"type": "string"}, "minItems": 2},
             "transform": {"type": "array", "items": {"type": "string"}, "minItems": 3},
             "reject": {"type": "array", "items": {"type": "string"}, "minItems": 3},
             "creative_leap": {"type": "string"},
+            "reference_to_world_transformation": {"type": "string"},
+            "invented_scene_architecture": {"type": "string"},
+            "prop_logic": {"type": "string"},
+            "material_system": {"type": "string"},
+            "set_piece_invention": {"type": "string"},
             "new_mechanism": {
               "type": "object",
               "required": [
@@ -294,6 +310,68 @@
       "items": {"type": "string"},
       "description": "Per-shot product visibility rhythm, for example SH_001 not_visible -> SH_002 detail_only -> SH_003 partial_visible."
     },
+    "category_strategy": {
+      "type": "object",
+      "required": [
+        "category_truth",
+        "purchase_ritual",
+        "shelf_memory",
+        "ritual_proof",
+        "brand_altitude",
+        "claim_restraint",
+        "rejected_category_cliches"
+      ],
+      "properties": {
+        "category_truth": {"type": "string"},
+        "purchase_ritual": {"type": "string"},
+        "shelf_memory": {"type": "string"},
+        "ritual_proof": {"type": "string"},
+        "brand_altitude": {"type": "string"},
+        "claim_restraint": {"type": "string"},
+        "rejected_category_cliches": {"type": "array", "items": {"type": "string"}, "minItems": 3}
+      },
+      "additionalProperties": false
+    },
+    "director_language": {
+      "type": "object",
+      "required": [
+        "lens_progression",
+        "transition_grammar",
+        "edit_bridge",
+        "motivated_camera_path",
+        "shot_to_shot_causality",
+        "coverage_strategy"
+      ],
+      "properties": {
+        "lens_progression": {"type": "string"},
+        "transition_grammar": {"type": "string"},
+        "edit_bridge": {"type": "string"},
+        "motivated_camera_path": {"type": "string"},
+        "shot_to_shot_causality": {"type": "string"},
+        "coverage_strategy": {"type": "string"}
+      },
+      "additionalProperties": false
+    },
+    "art_direction_invention": {
+      "type": "object",
+      "required": [
+        "reference_to_world_transformation",
+        "invented_scene_architecture",
+        "prop_logic",
+        "material_system",
+        "category_coded_restraint",
+        "set_piece_invention"
+      ],
+      "properties": {
+        "reference_to_world_transformation": {"type": "string"},
+        "invented_scene_architecture": {"type": "string"},
+        "prop_logic": {"type": "string"},
+        "material_system": {"type": "string"},
+        "category_coded_restraint": {"type": "string"},
+        "set_piece_invention": {"type": "string"}
+      },
+      "additionalProperties": false
+    },
     "creative_concept": {
       "type": "object",
       "required": [
@@ -399,16 +477,29 @@
                 "shot_size",
                 "camera_angle",
                 "lens_feel",
+                "lens_progression_role",
                 "camera_movement",
                 "camera_motivation",
+                "motivated_camera_path",
+                "coverage_strategy",
                 "motion_continuity",
                 "material_truth",
+                "transition_in",
+                "transition_out",
+                "edit_bridge",
+                "shot_to_shot_causality",
                 "cut_logic",
                 "attention_order",
                 "eye_trace",
                 "depth_strategy",
                 "reference_parity",
                 "reference_transform",
+                "reference_to_world_transformation",
+                "invented_scene_architecture",
+                "prop_logic",
+                "material_system",
+                "category_coded_restraint",
+                "set_piece_invention",
                 "shot_function_signature",
                 "main_subject",
                 "main_action",
@@ -437,21 +528,38 @@
                 "shot_size": {"type": "string"},
                 "camera_angle": {"type": "string"},
                 "lens_feel": {"type": "string"},
+                "lens_progression_role": {"type": "string"},
                 "camera_movement": {"type": "string"},
                 "camera_motivation": {"type": "string"},
+                "motivated_camera_path": {"type": "string"},
+                "coverage_strategy": {"type": "string"},
                 "motion_continuity": {"type": "string"},
                 "material_truth": {"type": "string"},
+                "transition_in": {"type": "string"},
+                "transition_out": {"type": "string"},
+                "edit_bridge": {"type": "string"},
+                "shot_to_shot_causality": {"type": "string"},
                 "cut_logic": {"type": "string"},
                 "attention_order": {"type": "string"},
                 "eye_trace": {"type": "string"},
                 "depth_strategy": {"type": "string"},
                 "reference_parity": {"type": "string"},
                 "reference_transform": {"type": "string"},
+                "reference_to_world_transformation": {"type": "string"},
+                "invented_scene_architecture": {"type": "string"},
+                "prop_logic": {"type": "string"},
+                "material_system": {"type": "string"},
+                "category_coded_restraint": {"type": "string"},
+                "set_piece_invention": {"type": "string"},
                 "shot_function_signature": {
                   "type": "object",
                   "required": [
                     "information_delta",
                     "desire_delta",
+                    "purchase_ritual_delta",
+                    "shelf_memory_delta",
+                    "ritual_proof_delta",
+                    "claim_safety",
                     "product_role_delta",
                     "event_type",
                     "camera_relation_key",
@@ -461,6 +569,10 @@
                   "properties": {
                     "information_delta": {"type": "string"},
                     "desire_delta": {"type": "string"},
+                    "purchase_ritual_delta": {"type": "string"},
+                    "shelf_memory_delta": {"type": "string"},
+                    "ritual_proof_delta": {"type": "string"},
+                    "claim_safety": {"type": "string"},
                     "product_role_delta": {"type": "string"},
                     "event_type": {"type": "string"},
                     "camera_relation_key": {"type": "string"},

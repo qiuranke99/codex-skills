@@ -38,49 +38,53 @@ allows it.
 6. Story engine: define advertising logline, dramatic question, world rule,
    product role, story arc, motion language, duration design, and anti-plastic
    material rules.
-7. Creative concept: define big idea, audience desire, story tension, world
+7. Category strategy: for premium beauty, premium skincare,
+   fast-moving consumer goods, or luxury goods, define category truth, purchase
+   ritual, shelf memory, ritual proof, brand altitude, claim restraint, and
+   rejected category cliches before creative concept selection.
+8. Creative concept: define big idea, audience desire, story tension, world
    rule, visual mechanism, scene ladder, and signature images. It must derive
    from the story engine, not from a product-angle template.
-8. Advanced cinematic-language routing: if `00_route_decision.json` sets
+9. Advanced cinematic-language routing: if `00_route_decision.json` sets
    `cinematic_language_reference_required: true`, read
    `references/cinematic_language_decision_matrix.md` before shot planning.
    If it is false, do not load that reference for ordinary product-ad boards.
-9. Mandatory agent activation: follow `AGENTS.md`. Start
-   `creative_director_agent`, `director_agent`, `screenwriter_agent`, and
-   `art_director_agent`, then record their `completed` entries in
-   `02_shot_plan.json.agent_activation_ledger`. If any required agent is
-   missing, skipped, simulated, or blocked, do not proceed to concept council or
-   shot planning.
-10. Internal concept council: creative director proposes creative candidates,
-   then director, screenwriter, and art director produce structured vetoes and
-   a final `director_resolution` without asking the user to choose unless the
-   user explicitly requests an approval checkpoint.
-11. Timecoded script map: screenwriter writes the exact-duration script map;
-   director approves it before storyboard planning.
-12. Shot plan: write `02_shot_plan.json` against
-   `references/shot_plan.schema.json`; only here, after director approval, set
-   `panel_count`, `panels_per_sheet`, `grid_layouts`, and
-   `shots_per_video_segment`. Each shot must include `reference_transform`,
-   `shot_function_signature`, and the requested aspect ratio.
-13. Structure validation: run `scripts/validate_shot_plan.py`.
-14. Internal revision: fix validation failures before image generation or video prompts.
-15. Storyboard and approved-keyframe planning: for the Google Omni speed path,
+10. Mandatory agent activation: follow `AGENTS.md`. Start
+    `creative_director_agent`, `director_agent`, `screenwriter_agent`, and
+    `art_director_agent`, then record their `completed` entries in
+    `02_shot_plan.json.agent_activation_ledger`. If any required agent is
+    missing, skipped, simulated, or blocked, do not proceed to concept council or
+    shot planning.
+11. Internal concept council: creative director proposes creative candidates,
+    then director, screenwriter, and art director produce structured vetoes and
+    a final `director_resolution` without asking the user to choose unless the
+    user explicitly requests an approval checkpoint.
+12. Timecoded script map: screenwriter writes the exact-duration script map;
+    director approves it before storyboard planning.
+13. Shot plan: write `02_shot_plan.json` against
+    `references/shot_plan.schema.json`; only here, after director approval, set
+    `panel_count`, `panels_per_sheet`, `grid_layouts`, and
+    `shots_per_video_segment`. Each shot must include `reference_transform`,
+    `shot_function_signature`, and the requested aspect ratio.
+14. Structure validation: run `scripts/validate_shot_plan.py`.
+15. Internal revision: fix validation failures before image generation or video prompts.
+16. Storyboard and approved-keyframe planning: for the Google Omni speed path,
     create one dynamic-N bitmap storyboard sheet per executable 10-second
     segment when image generation is available; also prepare mapped source-shot
     ranges or keyframe packets per executable video segment.
-16. Google Omni expert activation: start `google_omni_prompt_expert_agent`
+17. Google Omni expert activation: start `google_omni_prompt_expert_agent`
     after approved storyboard packets exist. `08_google_omni_video_prompts.json`
     must include completed prompt-expert and director entries in
     `agent_activation_ledger`; without them, video validation fails.
-17. Video segment prompts: temporal segments with first/last frame, controlled
+18. Video segment prompts: temporal segments with first/last frame, controlled
     story beats/source shots, camera plan, cut strategy, subject/environment
     motion, motion continuity, product lock, requested aspect ratio, and
     anti-plastic constraints. Any multi-shot segment requires explicit internal
     shot time spans and transitions.
-18. Video validation: run `scripts/validate_video_segments.py`; structured video
+19. Video validation: run `scripts/validate_video_segments.py`; structured video
     JSON is required for a complete run.
-19. Final QC: run `scripts/validate_run_package.py` on the run directory.
-20. Report only storyboard image path(s), Google Omni prompt path, validation
+20. Final QC: run `scripts/validate_run_package.py` on the run directory.
+21. Report only storyboard image path(s), Google Omni prompt path, validation
     status, remaining hard risks, and the minimal segment-usage rule needed to
     prevent misuse of the storyboard sheet as a video input.
 
@@ -120,6 +124,36 @@ Required fields:
 
 Reject story engines that can be summarized as `product + petals + glass +
 light sweep`, `premium product reveal`, or `beautiful packshot sequence`.
+
+## 3A. Category Strategy Gate
+
+For premium beauty, premium skincare, fast-moving consumer goods, and luxury
+goods, do not let the concept council start from generic luxury mood. Create a
+`category_strategy` object first:
+
+- `category_truth`: what this category really sells beyond the product format;
+- `purchase_ritual`: the moment, counter, shelf, mirror, hand, usage, gifting,
+  refill, or replenishment ritual that makes the product commercially real;
+- `shelf_memory`: the silhouette, color block, gesture, or mnemonic image that
+  would survive after a fast store/feed impression;
+- `ritual_proof`: the visible use, texture, sensorial, ingredient, craft, or
+  status proof that earns belief without overclaiming;
+- `brand_altitude`: mass, premium, prestige, couture, clinical, apothecary,
+  fashion, or lifestyle distance from the viewer;
+- `claim_restraint`: what the film must imply visually instead of saying as a
+  medical, performance, or scientific claim;
+- `rejected_category_cliches`: the category defaults being refused, such as
+  petals plus packshot, lab liquid plus chrome, endless macro droplets, empty
+  boutique plinths, or generic influencer mirror use.
+
+The screenwriter must convert the category strategy into `information_delta`,
+`desire_delta`, `product_role_delta`, `purchase_ritual_delta`, and
+`shelf_memory_delta` across the timecoded script map. The creative director must
+turn it into a premise. The director must turn it into lens progression,
+transition grammar, edit bridge logic, and shot-to-shot causality. The art
+director must turn it into reference-to-world transformation, invented scene
+architecture, prop logic, material system, category-coded restraint, and
+set-piece invention.
 
 ## 4. Creative Concept Gate
 
@@ -162,7 +196,16 @@ Reference images are not prop libraries. Before the creative concept is final,
 - transferable principles;
 - surface elements that must not be copied;
 - the assigned agent owner for each reference;
-- a `new_mechanism` that links borrowed DNA to a new story world rule.
+- a `new_mechanism` that links borrowed DNA to a new story world rule;
+- `reference_to_world_transformation`: what reference DNA becomes in the new
+  film world;
+- `invented_scene_architecture`: the new location, set-piece, spatial rule, or
+  arena invented from the reference logic;
+- `prop_logic`: which props exist, why they exist, and which visible reference
+  props are forbidden surface copy;
+- `material_system`: the surfaces, optical behavior, and tactile proof that
+  give the world category credibility;
+- `set_piece_invention`: the memorable on-screen event that goes beyond mood.
 
 If the storyboard only repeats a reference's visible props, background color,
 platform, angle, or product pose, the failure is not generic. Assign it:
@@ -290,12 +333,14 @@ Omni speed contract. If a backend cannot execute dense multi-shot segments,
 reduce the segment's internal shot density or switch to keyframe/shot-level
 generation only after a documented failure.
 
-A rough storyboard style is not permission to omit product facts. If a product
-faces camera, the sheet prompt must instruct the artist/model to draw the real
-product silhouette, component inventory, label placement, and every readable
-short text/mark from the product lock. For microtext that cannot be rendered at
-thumbnail scale, preserve the real block geometry and any readable primary
-mark; never replace it with generic pseudo-text.
+A storyboard finish is not permission to omit product facts. Storyboard image
+generation must produce legible production-planning sheets, not a fixed house
+style. If a product faces camera, the sheet prompt must instruct the
+artist/model to draw the real product silhouette, component inventory, label
+placement, and every readable short text/mark from the product lock. For
+microtext that cannot be rendered at thumbnail scale, preserve the real block
+geometry and any readable primary mark; never replace it with generic
+pseudo-text.
 
 Global bans such as `no readable text`, `no logo`, or `no labels` are invalid
 unless they explicitly exempt user-provided product packaging marks.
@@ -328,13 +373,16 @@ still governs the visible faces and components.
 Each segment must be a concise motion contract, not a storyboard transcription:
 
 - multi-shot segments must include `internal_shots` with shot IDs, time spans,
-  camera states, transitions, and purposes;
+  camera states, transition grammar, edit bridge purpose, lens progression
+  role, shot-to-shot causality, and purposes;
 - first frame and last frame must differ;
 - `camera_plan` must name a physical camera state or movement;
 - `cut_strategy` must say whether the segment is one continuous move, a hidden
   transition, or a small beat sequence;
 - `subject_motion`, `environment_motion`, and `motion_continuity` must state
   what changes over time;
+- `motivated_camera_path` must say what the camera reveals, withholds,
+  compares, follows, or transforms;
 - `anti_plastic_constraints` must specify material, lens, light, shadow,
   texture, or physical-detail behavior.
 

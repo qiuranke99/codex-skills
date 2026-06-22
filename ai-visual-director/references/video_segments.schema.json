@@ -168,6 +168,10 @@
           "last_frame",
           "story_beats",
           "camera_plan",
+          "lens_progression",
+          "transition_grammar",
+          "edit_bridge",
+          "motivated_camera_path",
           "cut_strategy",
           "subject_motion",
           "environment_motion",
@@ -192,12 +196,28 @@
             "type": "array",
             "items": {
               "type": "object",
-              "required": ["shot_id", "time_span", "camera_state", "transition", "purpose"],
+              "required": [
+                "shot_id",
+                "time_span",
+                "camera_state",
+                "transition",
+                "transition_grammar",
+                "edit_bridge",
+                "lens_progression_role",
+                "shot_to_shot_causality",
+                "motion_continuity",
+                "purpose"
+              ],
               "properties": {
                 "shot_id": {"type": "string"},
                 "time_span": {"type": "string"},
                 "camera_state": {"type": "string"},
                 "transition": {"type": "string"},
+                "transition_grammar": {"type": "string"},
+                "edit_bridge": {"type": "string"},
+                "lens_progression_role": {"type": "string"},
+                "shot_to_shot_causality": {"type": "string"},
+                "motion_continuity": {"type": "string"},
                 "purpose": {"type": "string"}
               },
               "additionalProperties": false
@@ -229,6 +249,10 @@
             "minItems": 1
           },
           "camera_plan": {"type": "string"},
+          "lens_progression": {"type": "string"},
+          "transition_grammar": {"type": "string"},
+          "edit_bridge": {"type": "string"},
+          "motivated_camera_path": {"type": "string"},
           "cut_strategy": {"type": "string"},
           "subject_motion": {"type": "string"},
           "environment_motion": {"type": "string"},

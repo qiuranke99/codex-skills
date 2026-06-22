@@ -44,6 +44,33 @@ eye_trace: gaze enters on bright droplet at upper left, falls diagonally to prod
 
 If the viewer can look anywhere with equal priority, the frame is not directed.
 
+### 3A. Category Intelligence Is Direction
+
+Premium beauty, premium skincare, fast-moving consumer goods, and luxury goods
+do not share one "premium" image language. Before shot planning, name the
+category truth, purchase ritual, shelf memory, ritual proof, and brand altitude.
+
+- premium beauty often sells gaze, identity, application gesture, transformation
+  threshold, and a memory image that survives social/feed speed;
+- premium skincare often sells ritual proof, texture, skin tactility, clinical
+  restraint, ingredient credibility, and credible before/after implication
+  without unsafe claims;
+- fast-moving consumer goods need instant shelf memory, appetite or use proof,
+  pack recognition, repeat purchase rhythm, and one simple mnemonic action;
+- luxury goods sell distance, scarcity, craft, finish, restraint, service
+  ritual, heritage pressure, and symbolic ownership more than feature coverage.
+
+The creative director owns the premise; the screenwriter owns desire and ritual
+change; the director owns lens progression, transition grammar, edit bridge,
+motivated camera path, coverage strategy, and shot-to-shot causality; the art
+director owns reference-to-world transformation, invented scene architecture,
+prop logic, material system, category-coded restraint, and set-piece invention.
+
+Reject work that uses category labels as adjectives. A beauty film must know
+what kind of beauty ritual it is dramatizing. A luxury film must know what is
+withheld. A fast-moving consumer goods film must create recall under speed. A
+skincare film must make proof visible without overclaiming.
+
 ### 4. Depth Is Meaning
 
 Foreground, midground, and background are not decoration:
@@ -183,4 +210,11 @@ Reject or revise if any of these are true:
 - product, material, or character identity drifts;
 - a product-video prompt can be pasted without its product identity lock;
 - full-visible product shots omit or misspell visible text, suppress embossing/relief marks, invent labels/logos/claims, or add non-reference components such as metal plates, badges, plaques, extra panels, or wrong hardware;
+- the director cannot explain the lens progression, transition grammar, edit
+  bridge, motivated camera path, coverage strategy, and shot-to-shot causality;
+- the art direction copies reference props instead of creating
+  reference-to-world transformation, invented scene architecture, prop logic,
+  material system, category-coded restraint, and set-piece invention;
+- the category strategy lacks category truth, purchase ritual, shelf memory, or
+  ritual proof;
 - the reference image quality appears only as mood words, not compositional decisions.

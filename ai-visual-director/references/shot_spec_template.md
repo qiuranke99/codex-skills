@@ -18,6 +18,10 @@ A strong spec must answer four questions:
 4. What must remain stable so the downstream artist or generator does not drift?
 5. If references are supplied, what visual DNA is transformed instead of copied?
 6. What frame ratio must the downstream video system obey in each panel?
+7. What category truth, purchase ritual, shelf memory, and ritual proof make
+   the ad commercially specific?
+8. What lens progression, transition grammar, edit bridge, and shot-to-shot
+   causality connect this shot to the sequence?
 
 ## 2. Stable Terminology
 
@@ -86,6 +90,11 @@ Before writing a shot list, silently diagnose the scene. Do not expose the full 
 - `rhythm`: where to hold, accelerate, use inserts, reset to wide, or resolve.
 - `continuity_anchors`: character, wardrobe, hairstyle, product shape, product state, prop state, location, light direction, screen direction, scale.
 - `redundancy_risk`: repeated size, angle, subject, information, or emotional beat.
+- `category_strategy`: category truth, purchase ritual, shelf memory, ritual
+  proof, brand altitude, and claim restraint for premium beauty, premium
+  skincare, fast-moving consumer goods, or luxury goods.
+- `reference_to_world_transformation`: how supplied reference DNA becomes a new
+  world, set-piece, material system, and prop logic instead of copied staging.
 
 ### Director priority order
 
@@ -95,10 +104,11 @@ Before writing a shot list, silently diagnose the scene. Do not expose the full 
 4. Spatial continuity.
 5. Blocking and performance.
 6. Edit logic.
-7. Rhythm.
-8. Scale and visual proof.
-9. Composition and lens feel.
-10. Style.
+7. Lens progression and transition grammar.
+8. Rhythm.
+9. Scale and visual proof.
+10. Composition and lens feel.
+11. Style.
 
 Style is last. Style must never override readability, continuity, axis, eyeline, product clarity, or the user’s explicit requirements.
 
@@ -178,6 +188,12 @@ If a response must be shortened, preserve fields in this order:
 29. `aspect_ratio`
 30. `reference_transform`
 31. `shot_function_signature`
+32. `category_truth`, `purchase_ritual`, `shelf_memory`, `ritual_proof`
+33. `transition_in`, `transition_out`, `edit_bridge`, `shot_to_shot_causality`
+34. `lens_progression_role`, `motivated_camera_path`, `coverage_strategy`
+35. `reference_to_world_transformation`, `invented_scene_architecture`,
+    `prop_logic`, `material_system`, `category_coded_restraint`,
+    `set_piece_invention`
 
 Rationale: the downstream artist or generator must know what to draw, where the viewer is, what action is happening, and what cannot drift before it needs aesthetic or technical refinements.
 
@@ -197,6 +213,23 @@ Rationale: the downstream artist or generator must know what to draw, where the 
 | `visual_mechanism` | Repeatable image logic that causes the reveal or cut. | `corridor reflection matches the bottle edge and motivates the cut` | `premium reflection` |
 | `reference_transform` | How this shot transforms reference DNA into new image logic without copying the supplied image's surface staging. | `borrows red/white diagonal tension and turns it into a rotating threshold gate that wipes across the lipstick bullet` | `same as reference` |
 | `shot_function_signature` | Semantic fingerprint preventing repetition: information delta, desire delta, product-role delta, event type, camera relation, reference transform ID, and redundancy risk. | `information_delta: lipstick is first seen as hidden weapon-like silhouette; product_role_delta: absent -> myth object; event_type: conceal_reveal` | `beauty variation` |
+| `category_truth` | Commercial truth behind the category moment. | `premium skincare sells credible ritual proof, not fantasy cure` | `skincare is premium` |
+| `purchase_ritual` | Where purchase, replenishment, gifting, testing, shelf scan, or use ritual becomes visible. | `counter tester ritual becomes a clean one-pump proof beat` | `people buy it` |
+| `shelf_memory` | The fast-recognition silhouette, color block, gesture, or mnemonic image. | `white cylinder and pale-blue stripe return as a vertical light memory` | `brand awareness` |
+| `ritual_proof` | Visible texture, use, craft, ingredient, sensory, or status proof. | `serum meniscus clings to glass before fingertip contact` | `feels good` |
+| `transition_in` | How the shot is entered from the previous shot. | `match cut from droplet ellipse into pump top ellipse` | `cut in` |
+| `transition_out` | How the shot hands attention to the next shot. | `foreground veil wipes to reveal the reflected bottle edge` | `smooth transition` |
+| `edit_bridge` | The visual, motion, material, sound-implied, color, or product-logic bridge that makes the cut necessary. | `the same diagonal specular line exits cap and enters corridor chrome` | `nice edit` |
+| `shot_to_shot_causality` | What this shot causes the next shot to know, desire, prove, or resolve. | `partial label recognition creates the need for a full authority reveal` | `next angle` |
+| `lens_progression_role` | How this shot changes the sequence's shot size, lens feel, POV, or spatial pressure. | `moves from macro proof into medium ritual context` | `35mm` |
+| `motivated_camera_path` | What camera movement reveals, withholds, follows, compares, or transforms. | `dolly follows the tester pump travel until reflection becomes product silhouette` | `slow push-in` |
+| `coverage_strategy` | What is covered, withheld, repeated, or skipped to avoid product-angle inventory. | `withhold full pack until ritual proof has earned it` | `cover all angles` |
+| `reference_to_world_transformation` | How reference quality becomes a new world rule or scene, not copied props. | `reference's glass corridor hierarchy becomes a skincare counter threshold` | `same mood` |
+| `invented_scene_architecture` | New arena, threshold, shelf, room, counter, corridor, landscape, or spatial device. | `floating refill counter whose drawers open only along the serum light path` | `nice set` |
+| `prop_logic` | Why every prop exists commercially and cinematically. | `tester pump, blotting card, and tray each mark purchase ritual phases` | `luxury props` |
+| `material_system` | Surfaces and optical behavior that prove category credibility. | `etched glass, paper fiber, serum meniscus, and soft clinical bounce` | `premium materials` |
+| `category_coded_restraint` | What is removed or suppressed because the category requires discipline. | `no flowers, no fake lab screens, no miracle skin claim typography` | `minimal` |
+| `set_piece_invention` | Memorable event or object behavior invented from the reference and brand promise. | `the counter drawers close into the bottle's exact silhouette` | `hero shot` |
 | `duration` | Timing, required for timed ads or animatics. | `1.2s`, `hold 3s` | `short` |
 | `dramatic_beat` | What changes or what this shot does emotionally/narratively/persuasively. | `viewer realizes the street is now tiny below her` | `emotional moment` |
 | `shot_purpose` | Why this shot exists in the sequence. | `prove giant scale through taxi-to-shoe comparison` | `make it epic` |
@@ -305,6 +338,10 @@ Use this format when the user says `给手绘分镜用`, asks for clean handoff 
 SH_001
 aspect_ratio:
 panel_aspect_ratio:
+category_truth:
+purchase_ritual:
+shelf_memory:
+ritual_proof:
 scene:
 scene_arena:
 scene_role:
@@ -318,7 +355,14 @@ shot_purpose:
 shot_size:
 camera_angle:
 lens_feel:
+lens_progression_role:
 camera_movement:
+motivated_camera_path:
+coverage_strategy:
+transition_in:
+transition_out:
+edit_bridge:
+shot_to_shot_causality:
 cut_logic:
 panel_moment:
 pov_alignment:
@@ -335,6 +379,12 @@ midground:
 background:
 scale_reference:
 continuity_lock:
+reference_to_world_transformation:
+invented_scene_architecture:
+prop_logic:
+material_system:
+category_coded_restraint:
+set_piece_invention:
 must_preserve:
 avoid:
 ```

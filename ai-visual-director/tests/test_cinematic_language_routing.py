@@ -87,7 +87,7 @@ class CinematicLanguageRoutingTests(unittest.TestCase):
     def test_route_parses_duration_and_segment_seconds_from_brief_text(self) -> None:
         routed = run_router(
             {
-                "brief": "高端护肤产品广告，40s，Google Omni 10s/段，一张产品图，一张蓝灰视觉参考图",
+                "brief": "高端护肤产品广告，40s，Google Omni 10s/段，一张产品图，一张视觉风格参考图",
                 "reference_images": [{"path": "product.jpg"}, {"path": "style.jpg"}],
             }
         )

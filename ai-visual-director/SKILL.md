@@ -1,6 +1,6 @@
 ---
 name: ai-visual-director
-description: Use when the user asks for AI visual direction, product-ad film concepts, reference-image-to-storyboard work, cinematic shot planning, storyboard images, Google Omni/Veo-style video prompts, 故事板, 分镜, 9宫格, 蓝灰手绘稿, or turning brief/product/style references into director-led ad film deliverables.
+description: Use when the user asks for AI visual direction, product-ad film concepts, reference-image-to-storyboard work, cinematic shot planning, storyboard images, Google Omni/Veo-style video prompts, 故事板, 分镜, 9宫格, or turning brief/product/style references into director-led ad film deliverables.
 ---
 
 # AI Visual Director
@@ -68,7 +68,7 @@ Use progressive disclosure. Read only the files needed for the requested output:
 - World-class TVC principles, attention choreography, reference parity, and image-to-shot translation: `references/world_class_tvc_principles.md`.
 - Non-blocking observer sidecar behavior and learning-loop rules: `references/observer_protocol.md`.
 - Non-generic shot progression examples: `references/good_shotlist_examples.md`.
-- Blue-gray previs sketch visual target: `references/blue_gray_previs_style_bible.md`; inspect `assets/blue_gray_previs_reference.jpeg` when style drift is likely.
+- Storyboard image quality, art-direction translation, and reference-to-world transformation are governed by `references/world_class_tvc_principles.md`, `references/director_kernel.md`, and `references/shot_spec_template.md`; do not impose a fixed sketch, wash, or house style unless the user supplies one.
 - Structured contracts: `references/intake.schema.json`, `references/shot_plan.schema.json`, `references/video_segments.schema.json`, `references/audit.schema.json`, `references/observer_event.schema.json`, and `references/rule_candidate.schema.json`.
 
 Do not depend on project-root notes, old local templates, or files outside this
@@ -123,6 +123,42 @@ Every storyboard shot must include `reference_transform` and
 `shot_function_signature`. A shot whose function is just another glamour
 surface reveal, product angle, or color-pressure variant is a failure even if
 the camera angle, scene name, or prose changes.
+
+## Category Intelligence And Role Gates
+
+Before concept lock, identify the category logic. At minimum, decide whether
+the work behaves like `premium beauty`, `premium skincare`,
+`fast-moving consumer goods`, `luxury goods`, or a hybrid. Each role must then
+write category-specific evidence rather than generic luxury language:
+
+- `category truth`: what the buyer already believes about the category and what
+  the film must challenge, intensify, simplify, or make desirable;
+- `purchase ritual`: the tactile or social behavior around discovery,
+  inspection, use, replenishment, gifting, display, or status;
+- `shelf memory`: the silhouette, color block, package geometry, gesture, or
+  end-frame memory that should survive after the video;
+- `ritual proof`: the visible action, material response, ingredient behavior,
+  skin/hair/object interaction, or use moment that makes the promise credible;
+- `brand altitude`: whether the film should behave as mass desire, premium
+  proof, luxury restraint, clinical authority, sensual fantasy, or cultural
+  object.
+
+Role gates are accountable:
+
+- `creative_director_agent` must turn category truth into a fresh advertising
+  premise, not a mood board. It owns the leap from reference DNA to commercial
+  desire.
+- `screenwriter_agent` must make every beat change information, desire,
+  product role, purchase ritual, or shelf memory.
+- `director_agent` must design `lens progression`, `transition grammar`,
+  `edit bridge`, motivated camera path, coverage strategy, and
+  shot-to-shot causality before approving a storyboard.
+- `art_director_agent` must transform references into a new material world:
+  reference-to-world transformation, invented scene architecture, prop logic,
+  material system, category-coded restraint, and set-piece invention.
+- `google_omni_prompt_expert_agent` must preserve the approved category,
+  product, camera, transition, and material contracts inside concise segment
+  prompts rather than flattening them into a montage.
 
 ## Creative Concept Gate
 
@@ -290,7 +326,7 @@ Production modes:
 Escalate when references conflict, regulated or likeness-sensitive claims appear,
 the user asks to imitate a living artist or brand campaign too closely, product
 identity is unclear, or generation visibly breaks identity, panel separation, or
-the blue-gray storyboard grammar.
+the approved art-direction and storyboard-readability contract.
 
 ## Shot Planning
 
@@ -439,7 +475,8 @@ Each internal sheet prompt must contain:
 - per-panel camera angle, shot size, subject/action, and depth layers;
 - reference parity decisions;
 - product identity lock when a product appears;
-- blue-gray hand-drawn previs style block;
+- approved art-direction block derived from category strategy and references;
+  do not force a fixed sketch, wash, pencil, or house style;
 - negative constraints against polish, fake UI, invented captions, extra panels, photorealism, and panel bleeding.
 
 For user-provided products, the sheet prompt must explicitly preserve the exact
@@ -487,10 +524,15 @@ This is not decorative metadata. It is the antidote to repetitive bottle
 details: the image model needs to know the scene, event, and mechanism that make
 each panel different.
 
-Base style phrase:
+Base image-style rule:
 
 ```text
-rough hand-drawn production storyboard sheet, animatic previs sketch, director's working storyboard thumbnails, loose black pencil linework, dark graphite searching lines, visible construction lines, very light blue-gray storyboard wash, sparse tonal blocks, clean white paper background, simplified faceless characters when people appear, sparse cinematic environment detail, linework primary, wash secondary
+Use the approved art-direction language from the shot plan. If the user does
+not supply a visual finish, create a clean production storyboard image whose
+first job is legible shot design: clear panel boundaries, readable camera
+angle, shot size, subject/action, foreground/midground/background, product
+identity, and transition intent. Do not impose a fixed sketch aesthetic, color
+wash, pencil imitation, or decorative house style.
 ```
 
 ## Google Omni Video Prompts

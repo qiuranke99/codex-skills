@@ -233,6 +233,11 @@ def make_locked_video_prompt() -> dict:
                         "time_span": "0s-3s",
                         "camera_state": "macro slide across lavender petal and foreground glass",
                         "transition": "glass refraction carries the motion into the next source shot",
+                        "transition_grammar": "refraction wipe with matching lateral motion and no hard product rebuild",
+                        "edit_bridge": "foreground glass motion becomes the reveal path for the locked bottle silhouette",
+                        "lens_progression_role": "macro material omen before product recognition",
+                        "shot_to_shot_causality": "the petal and glass material cue creates permission for the silhouette reveal",
+                        "motion_continuity": "lateral slide energy continues into the next internal shot",
                         "purpose": "open with material atmosphere before product visibility",
                     },
                     {
@@ -240,6 +245,11 @@ def make_locked_video_prompt() -> dict:
                         "time_span": "3s-7s",
                         "camera_state": "controlled slide past foreground glass toward the locked bottle silhouette",
                         "transition": "same lateral camera energy becomes a restrained orbit",
+                        "transition_grammar": "motion carry from slide into orbit while keeping label geometry stable",
+                        "edit_bridge": "the bottle edge catches the same specular line that exited the glass",
+                        "lens_progression_role": "partial reveal expands from material clue into readable product form",
+                        "shot_to_shot_causality": "partial silhouette recognition creates the need for front identity authority",
+                        "motion_continuity": "slide slows into the beginning of the final orbit",
                         "purpose": "reveal product form without changing package facts",
                     },
                     {
@@ -247,12 +257,21 @@ def make_locked_video_prompt() -> dict:
                         "time_span": "7s-10s",
                         "camera_state": "slow orbit settles into a readable front three-quarter authority frame",
                         "transition": "motion settles into a final product hold",
+                        "transition_grammar": "orbit-to-hold resolution with eye trace landing on the original label layout",
+                        "edit_bridge": "the specular line stops on the cap and front label as final proof",
+                        "lens_progression_role": "final authority frame after reveal and proof beats",
+                        "shot_to_shot_causality": "front identity resolves the prior silhouette and material cues",
+                        "motion_continuity": "orbit decelerates into a stable readable packshot",
                         "purpose": "lock final visible product identity and label layout",
                     },
                 ],
                 "camera_plan": (
                     "Camera slides past foreground glass, then makes a controlled orbit that shows the full bottle front."
                 ),
+                "lens_progression": "macro material omen to partial silhouette to readable front three-quarter authority frame",
+                "transition_grammar": "glass refraction wipe, lateral motion carry, restrained orbit, then orbit-to-hold resolution",
+                "edit_bridge": "foreground glass, bottle edge, cap highlight, and label layout carry the eye through every cutless internal beat",
+                "motivated_camera_path": "the camera moves only to reveal the locked silhouette, preserve label readability, and settle product authority",
                 "cut_strategy": "one continuous reveal with three internal beats; no full contact-sheet dump",
                 "subject_motion": (
                     "Product turns only as a photographed packshot object; label text, cap, spray tube, body shape, and surface components stay exact."
@@ -407,6 +426,11 @@ class VideoProductLockTests(unittest.TestCase):
                 "time_span": f"{idx - 1}.0s-{idx}.2s",
                 "camera_state": "controlled slide/orbit with physical lens motion",
                 "transition": "match movement through glass reflection",
+                "transition_grammar": "reflection-motivated motion carry with stable product geometry",
+                "edit_bridge": "the same specular line leads from one internal shot into the next",
+                "lens_progression_role": "controlled reveal step within the segment's macro-to-authority progression",
+                "shot_to_shot_causality": "each internal shot reveals one additional product identity or material proof fact",
+                "motion_continuity": "slide and orbit momentum stay continuous across the internal shot boundary",
                 "purpose": "advance the reveal while preserving product identity",
             }
             for idx in range(1, 8)
@@ -417,6 +441,21 @@ class VideoProductLockTests(unittest.TestCase):
 
         self.assertEqual(code, 0, result)
         self.assertTrue(result["ok"], result)
+
+    def test_video_prompts_require_director_transition_contracts(self) -> None:
+        payload = make_locked_video_prompt()
+        segment = payload["segments"][0]
+        del segment["transition_grammar"]
+        del segment["internal_shots"][0]["edit_bridge"]
+
+        code, result = run_validator(payload)
+
+        self.assertNotEqual(code, 0)
+        self.assertFalse(result["ok"])
+        self.assertTrue(
+            any("transition_grammar" in error or "edit_bridge" in error for error in result["errors"]),
+            result["errors"],
+        )
 
     def test_video_prompts_reject_static_first_last_frame(self) -> None:
         payload = make_locked_video_prompt()

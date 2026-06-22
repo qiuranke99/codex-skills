@@ -35,7 +35,8 @@ Escalate from `standard_fast` to `premium_pitch` or `certification` only if:
 - the user asks for a launch campaign, major client pitch, or multiple creative territories;
 - the user requests regulated benefit claims, medical/financial/legal proof, celebrity likeness, or close brand imitation;
 - the structural gate fails twice;
-- generated sheets break product/character identity, panel separation, or blue-gray previs style.
+- generated sheets break product/character identity, panel separation, aspect
+  ratio, storyboard readability, or the approved art-direction contract.
 
 ## Route Playbooks
 
@@ -48,6 +49,10 @@ material/use proof -> benefit metaphor -> final authority.
 Before shot planning, define `story_engine` and then the creative concept.
 Product beauty is not a concept. A premium product ad must have:
 
+- a `category_truth` for premium beauty, premium skincare, fast-moving consumer
+  goods, or luxury goods when those categories apply;
+- a `purchase_ritual`, `shelf_memory`, `ritual_proof`, `brand_altitude`, and
+  `claim_restraint` that make the commercial category concrete;
 - an `advertising_logline` that sells the idea, not the product category;
 - a `dramatic_question` that names what is withheld, crossed, awakened,
   transformed, or resolved;
@@ -65,6 +70,36 @@ Product beauty is not a concept. A premium product ad must have:
 - a `visual_mechanism` that motivates reveals and cuts;
 - a `scene_ladder` with at least three distinct arenas or phases;
 - at least three `signature_images` that are not all product details.
+
+Director output is not complete until it states:
+
+- `lens_progression`: how shot size, angle, lens feel, and point of view change
+  as desire, information, proof, or authority changes;
+- `transition_grammar`: what kinds of cuts, wipes, match cuts, occlusions,
+  reflections, motion carries, or hidden transitions belong to this film;
+- `edit_bridge`: the visual, motion, sound-implied, color, material, or
+  product-logic bridge that makes each cut necessary;
+- `shot_to_shot_causality`: what new knowledge, desire, proof, ritual, or shelf
+  memory each shot creates for the next one;
+- `motivated_camera_path`: what every camera move reveals, withholds, compares,
+  follows, or transforms;
+- `coverage_strategy`: what is deliberately covered, withheld, repeated, or
+  skipped so the film does not become product-angle inventory.
+
+Art direction output is not complete until it states:
+
+- `reference_to_world_transformation`: how the supplied reference logic becomes
+  a new commercial world instead of copied staging;
+- `invented_scene_architecture`: new arenas, thresholds, counters, rooms,
+  corridors, shelves, mirrors, landscapes, or ritual spaces invented from the
+  reference DNA;
+- `prop_logic`: why every prop exists commercially and cinematically;
+- `material_system`: the surfaces, optical behavior, tactile detail, and
+  physical proof that fit the category;
+- `category_coded_restraint`: what is removed so the world feels premium,
+  clinical, prestige, mass, couture, apothecary, or luxury by design;
+- `set_piece_invention`: the memorable event or object behavior that could not
+  be recovered from the reference image alone.
 
 Weak concept pattern: petals -> glass -> cap -> label -> packshot. This is
 ingredient/product coverage, not advertising direction. Upgrade it into a

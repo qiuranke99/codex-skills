@@ -135,7 +135,7 @@ PROPOSAL_MAP = {
         "regression": "Three consecutive centered static mid shots must fail without an explicit repetition rationale.",
     },
     "readable_text": {
-        "target_file": "references/blue_gray_previs_style_bible.md",
+        "target_file": "references/shot_spec_template.md",
         "hypothesis": "Storyboard image prompts are allowing unrelated text-like marks that violate the storyboard cleanliness constraint.",
         "rule": "Storyboard sheets must reject captions, subtitles, shot numbers, handwritten notes, fake labels, and unrelated readable text while preserving user-provided product packaging marks.",
         "applies_when": "Post-image QC detects non-product readable text or text-like panel labels.",
@@ -151,7 +151,7 @@ PROPOSAL_MAP = {
         "regression": "A user-provided bottle labeled LUMA / HYDRATING SERUM / 30 ml with no front metal plate must not become a blank cosmetic bottle, a different fake brand, misspelled text, or a bottle with an added metal badge/plaque in a full-visible video segment.",
     },
     "panel_separation_failure": {
-        "target_file": "references/blue_gray_previs_style_bible.md",
+        "target_file": "references/workflow_contract.md",
         "hypothesis": "The image prompt is not enforcing a readable dynamic N-panel storyboard grid strongly enough.",
         "rule": "Every storyboard sheet prompt must require clear separation for its declared grid layout and reject merged, missing, or extra panels.",
         "applies_when": "Generated sheet has missing, merged, or ambiguous panels.",
@@ -163,7 +163,7 @@ PROPOSAL_MAP = {
         "hypothesis": "Product or character identity locks are not strong enough across sheet generation.",
         "rule": "Product and character identity references must be converted into continuity locks before prompting.",
         "applies_when": "Generated or planned shots change product shape, person identity, or required prop structure.",
-        "risk": "Stylized previs can simplify identity; the lock concerns structure, not finish.",
+        "risk": "A rough or stylized storyboard finish can simplify identity; the lock concerns structure, not finish.",
         "regression": "A product with a cylindrical pump cannot become a flat jar across panels.",
     },
     "static_panel_dump": {

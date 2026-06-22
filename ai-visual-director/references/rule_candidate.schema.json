@@ -55,9 +55,9 @@
       "enum": [
         "SKILL.md",
         "references/director_kernel.md",
+        "references/workflow_contract.md",
         "references/world_class_tvc_principles.md",
         "references/shot_spec_template.md",
-        "references/blue_gray_previs_style_bible.md",
         "references/observer_protocol.md",
         "scripts/route_project.py",
         "scripts/validate_shot_plan.py",

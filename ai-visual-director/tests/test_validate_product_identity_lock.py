@@ -52,7 +52,7 @@ def base_shot(idx: int) -> dict:
     return {
         "shot_id": f"SH_{idx:03d}",
         "aspect_ratio": "9:16",
-        "scene": "blue-gray product world with white serum bottle on reflective tray",
+        "scene": "cool pearl product world with white serum bottle on reflective tray",
         "arc_position": [
             "origin",
             "material clue",
@@ -80,10 +80,27 @@ def base_shot(idx: int) -> dict:
         "shot_size": shot_sizes[idx - 1],
         "camera_angle": angles[idx - 1],
         "lens_feel": "slightly wide product-table spatial feel",
+        "lens_progression_role": [
+            "open from product absence with wide spatial pressure before any pack recognition",
+            "compress into macro component proof so the cap clue earns attention",
+            "shift to low occluded partial view to withhold full identity",
+            "expand into first readable product authority after the reflection cue",
+            "return to macro inspection for typography and material proof",
+            "drop into tactile use proximity so the product becomes handled, not worshipped",
+            "remove product coverage and let benefit metaphor carry the rhythm",
+            "bridge from metaphor back into cropped product memory",
+            "settle into final front authority after the prior proof beats",
+        ][idx - 1],
         "camera_movement": movements[idx - 1],
         "camera_motivation": "camera movement follows the water/reflection rule instead of circling the product arbitrarily",
+        "motivated_camera_path": "camera reveals, withholds, or follows the water/reflection rule that causes this exact beat",
+        "coverage_strategy": "withhold full product coverage until proof and ritual beats earn each readable view",
         "motion_continuity": "each motion inherits energy from the prior droplet, tray, fingertip, or ripple beat",
         "material_truth": "real glass reflections, contact shadows, tactile tray edges, and restrained graphite storyboard texture avoid waxy CGI",
+        "transition_in": "enter through a matched droplet, reflection, cap edge, or ripple direction from the prior shot",
+        "transition_out": "exit by handing the eye to the next water, glass, product, or fingertip motion cue",
+        "edit_bridge": "material highlight and motion direction bridge this cut to the next proof beat",
+        "shot_to_shot_causality": "this shot changes what the next shot is allowed to reveal about product, ritual, or benefit",
         "cut_logic": "advance from product world to package proof and final payoff",
         "attention_order": "first product silhouette, second label panel, third reflective tray",
         "eye_trace": "viewer enters on bottle shoulder, drops to label panel, exits toward tray edge",
@@ -100,6 +117,12 @@ def base_shot(idx: int) -> dict:
             "bend the reference's diagonal ledge into a circular ripple return path",
             "resolve the reference's hero isolation as a final earned vertical packshot",
         ][idx - 1],
+        "reference_to_world_transformation": "turn reference geometry into a clinical skincare counter world governed by water, tray reflection, and touch",
+        "invented_scene_architecture": "reflective tester counter, tray threshold, fingertip table, ripple surface, and clean packshot memory space",
+        "prop_logic": "tray, tester surface, droplet, fingertip, and reflection each prove a purchase or use ritual beat",
+        "material_system": "etched glass, pearl-white bottle, black cap edge, pale blue stripe, water meniscus, contact shadow, and soft clinical bounce",
+        "category_coded_restraint": "no flowers, no fake lab screen, no miracle claim typography, no extra badges, no influencer mirror clutter",
+        "set_piece_invention": "the tray reflection and ripple repeatedly reshape into the bottle silhouette before the final authority frame",
         "shot_function_signature": {
             "information_delta": [
                 "introduce the water rule before the viewer sees any product",
@@ -123,6 +146,40 @@ def base_shot(idx: int) -> dict:
                 "pull benefit desire back toward purchase object",
                 "convert desire into final product authority and recall",
             ][idx - 1],
+            "purchase_ritual_delta": [
+                "introduce the silent counter before the tester object appears",
+                "show a component clue like a tester inspection moment",
+                "withhold full package as the viewer scans for identity",
+                "complete the first product recognition moment",
+                "turn label inspection into counter-level proof",
+                "move from looking to handled use",
+                "pause purchase object so benefit can be imagined",
+                "return benefit memory toward the object",
+                "resolve into the product the viewer would recognize on shelf",
+            ][idx - 1],
+            "shelf_memory_delta": [
+                "seed pearl-white and pale-blue vertical memory without showing the bottle",
+                "attach the black cap edge to the pale-blue stripe clue",
+                "make the cropped cylinder silhouette memorable",
+                "connect silhouette, stripe, and label into first recognition",
+                "reinforce the label rectangle and stripe as mnemonic marks",
+                "associate touch with the cylindrical base",
+                "replace object with a circular hydration memory",
+                "pull the memory back into bottle reflection",
+                "lock the front product view as final recall",
+            ][idx - 1],
+            "ritual_proof_delta": [
+                "water behavior sets up credible skincare ritual proof",
+                "component clue proves physical packaging material",
+                "occlusion keeps proof incomplete until reveal",
+                "full reveal proves package identity before use proof",
+                "macro label and stripe prove inspection-grade identity",
+                "fingertip pressure proves use proximity",
+                "ripple proves sensorial benefit without a medical claim",
+                "reflection proves benefit memory returns to product",
+                "final hold proves purchase authority without overclaim",
+            ][idx - 1],
+            "claim_safety": "show hydration ritual and tactile proof visually without making medical or quantified skin claims",
             "product_role_delta": [
                 "product absent as a withheld promise",
                 "product appears only as component evidence",
@@ -268,11 +325,40 @@ def make_plan(include_identity_lock: bool) -> dict:
         "shots_per_video_segment": [4, 3, 2],
         "video_segment_count": 3,
         "agent_activation_ledger": shot_plan_agent_ledger(),
+        "category_strategy": {
+            "category_truth": "premium skincare sells credible ritual proof, tactile control, and repeatable shelf memory rather than fantasy cure",
+            "purchase_ritual": "the counter tester moment moves from silent shelf scan to one-pump tactile proof and final pack recognition",
+            "shelf_memory": "white cylindrical bottle, black cap edge, pale blue stripe, and vertical label rectangle return as a repeated memory system",
+            "ritual_proof": "water meniscus, fingertip pressure, label inspection, and reflection behavior prove hydration through visible ritual",
+            "brand_altitude": "prestige clinical skincare: restrained, precise, cool, sensorial, and never loud or miracle-claim driven",
+            "claim_restraint": "the film implies hydration through texture and ritual; it does not promise medical repair or quantified efficacy",
+            "rejected_category_cliches": [
+                "petals drifting behind a serum packshot",
+                "fake laboratory screens and floating molecule icons",
+                "endless macro droplets without purchase or use ritual",
+            ],
+        },
+        "director_language": {
+            "lens_progression": "wide absence to macro component clue, low occluded partial reveal, first readable product, tactile use, product-absent benefit, and final front authority",
+            "transition_grammar": "match cuts, reflection wipes, foreground tray occlusion, ripple motion carry, and label-stripe eye-trace handoffs",
+            "edit_bridge": "each cut uses water direction, cap geometry, label stripe, fingertip pressure, or reflected silhouette as the bridge",
+            "motivated_camera_path": "camera moves only to reveal, withhold, compare, follow, or transform the water/reflection ritual proof",
+            "shot_to_shot_causality": "each shot earns the next information state: absence, clue, partial identity, full identity, proof, use, benefit, return, memory",
+            "coverage_strategy": "withhold full product views, use detail and partial shots as proof, and reserve final front coverage for recall",
+        },
+        "art_direction_invention": {
+            "reference_to_world_transformation": "reference edge tension becomes a skincare counter world where water and reflection control product recognition",
+            "invented_scene_architecture": "reflective tray threshold, tester counter, fingertip interaction table, ripple surface, and packshot memory space",
+            "prop_logic": "tray, droplet, tester surface, fingertip, and reflection are allowed only when they advance purchase ritual or proof",
+            "material_system": "etched glass, pearl bottle, black cap, pale blue stripe, water meniscus, soft clinical bounce, and contact shadows",
+            "category_coded_restraint": "remove flowers, fake lab UI, miracle-claim typography, excessive chrome, and influencer mirror clutter",
+            "set_piece_invention": "the counter reflection repeatedly reshapes into the bottle silhouette, then settles into final pack recognition",
+        },
         "creative_concept_candidates": [
             {
                 "concept_id": "concept_a",
                 "logline": "A clinical droplet earns the serum reveal through water, tray reflection, and tactile use proof.",
-                "visual_world": "cool blue-gray reflective tray world with precise glass and water behavior",
+                "visual_world": "cool pearlescent reflective tray world with precise glass and water behavior",
                 "reason_to_select_or_reject": "selected because it gives product identity a clear causal reveal instead of static packshots",
             },
             {
@@ -347,6 +433,11 @@ def make_plan(include_identity_lock: bool) -> dict:
                     "new_story_world_rule": "only water, reflection, refraction, and touch may reveal the product or return it to final authority",
                     "rejects_surface_copy_ids": ["REF_001.white_step", "REF_001.red_wallpaper", "REF_001.repeated_lipstick_angle"],
                 },
+                "reference_to_world_transformation": "the reference's hard edge tension becomes a skincare counter ritual governed by water, reflection, and touch",
+                "invented_scene_architecture": "a reflective tester counter opens into tray threshold, fingertip table, ripple surface, and final packshot memory space",
+                "prop_logic": "droplet, tray, fingertip, and reflection each exist to prove purchase ritual or product identity rather than decorate the frame",
+                "material_system": "pearl bottle, black cap, pale blue stripe, etched glass, water meniscus, contact shadow, and soft clinical bounce",
+                "set_piece_invention": "the counter reflection deforms into the bottle silhouette before the final exact product authority frame",
             },
             "literal_copy_risks": [
                 "repeating white step geometry until every shot feels like the same plinth",
@@ -411,7 +502,7 @@ def make_plan(include_identity_lock: bool) -> dict:
                 "a hydration ripple resolves into the final exact product identity",
             ],
             "product_role": "the serum is the proof object that becomes inevitable after the world demonstrates its hydration behavior",
-            "reference_synthesis": "product reference controls package identity; visual references control blue-gray lighting, tray depth, and restrained atmosphere only",
+            "reference_synthesis": "product reference controls package identity; visual references control cool pearlescent lighting, tray depth, and restrained atmosphere only",
             "duration_design": "30 seconds use three segment-aligned dynamic N-panel storyboards; panels are director-planned shots, not a preset grid",
             "motion_language": "slow dolly, tray slide, fingertip pressure, ripple transfer, and final locked push-in",
             "anti_plastic_rules": "real glass reflection, contact shadow, micro texture, physical water behavior, lens softness, and restrained grain",
@@ -802,6 +893,37 @@ class ProductIdentityLockTests(unittest.TestCase):
             result["errors"],
         )
 
+    def test_product_ads_require_category_strategy_before_concept(self) -> None:
+        plan = make_plan(include_identity_lock=True)
+        del plan["category_strategy"]
+
+        code, result = run_validator(plan)
+
+        self.assertNotEqual(code, 0)
+        self.assertFalse(result["ok"])
+        self.assertTrue(
+            any("category_strategy" in error for error in result["errors"]),
+            result["errors"],
+        )
+
+    def test_product_ads_require_director_and_art_direction_contracts(self) -> None:
+        plan = make_plan(include_identity_lock=True)
+        del plan["director_language"]["transition_grammar"]
+        del plan["art_direction_invention"]["invented_scene_architecture"]
+
+        code, result = run_validator(plan)
+
+        self.assertNotEqual(code, 0)
+        self.assertFalse(result["ok"])
+        self.assertTrue(
+            any("director_language" in error for error in result["errors"]),
+            result["errors"],
+        )
+        self.assertTrue(
+            any("art_direction_invention" in error for error in result["errors"]),
+            result["errors"],
+        )
+
     def test_shot_plan_rejects_panel_count_that_disagrees_with_actual_shots(self) -> None:
         plan = make_plan(include_identity_lock=True)
         plan["panel_count"] = 999
@@ -844,6 +966,10 @@ class ProductIdentityLockTests(unittest.TestCase):
             shot["shot_function_signature"] = {
                 "information_delta": "same desire pressure variation",
                 "desire_delta": f"slightly intensify the same glamour desire variant {index}",
+                "purchase_ritual_delta": f"repeat the same cosmetic inspection gesture variant {index}",
+                "shelf_memory_delta": f"repeat the same red glamour shelf-memory cue variant {index}",
+                "ritual_proof_delta": f"repeat the same polished surface proof variant {index}",
+                "claim_safety": "visual glamour only; no quantified or medical product claims",
                 "product_role_delta": "same product glamour object variation",
                 "event_type": "glamour_surface_reveal",
                 "camera_relation_key": "macro_product_glamour_relation",

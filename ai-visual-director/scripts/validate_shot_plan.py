@@ -21,16 +21,29 @@ REQUIRED_SHOT_FIELDS = [
     "shot_size",
     "camera_angle",
     "lens_feel",
+    "lens_progression_role",
     "camera_movement",
     "camera_motivation",
+    "motivated_camera_path",
+    "coverage_strategy",
     "motion_continuity",
     "material_truth",
+    "transition_in",
+    "transition_out",
+    "edit_bridge",
+    "shot_to_shot_causality",
     "cut_logic",
     "attention_order",
     "eye_trace",
     "depth_strategy",
     "reference_parity",
     "reference_transform",
+    "reference_to_world_transformation",
+    "invented_scene_architecture",
+    "prop_logic",
+    "material_system",
+    "category_coded_restraint",
+    "set_piece_invention",
     "shot_function_signature",
     "main_subject",
     "main_action",
@@ -101,6 +114,31 @@ REQUIRED_CREATIVE_CONCEPT_FIELDS = [
     "scene_ladder",
     "signature_images",
 ]
+REQUIRED_CATEGORY_STRATEGY_FIELDS = [
+    "category_truth",
+    "purchase_ritual",
+    "shelf_memory",
+    "ritual_proof",
+    "brand_altitude",
+    "claim_restraint",
+    "rejected_category_cliches",
+]
+REQUIRED_DIRECTOR_LANGUAGE_FIELDS = [
+    "lens_progression",
+    "transition_grammar",
+    "edit_bridge",
+    "motivated_camera_path",
+    "shot_to_shot_causality",
+    "coverage_strategy",
+]
+REQUIRED_ART_DIRECTION_INVENTION_FIELDS = [
+    "reference_to_world_transformation",
+    "invented_scene_architecture",
+    "prop_logic",
+    "material_system",
+    "category_coded_restraint",
+    "set_piece_invention",
+]
 REQUIRED_CREATIVE_SHOT_FIELDS = [
     "scene_arena",
     "scene_role",
@@ -147,6 +185,10 @@ REQUIRED_REFERENCE_ENTRY_FIELDS = [
 REQUIRED_SHOT_FUNCTION_FIELDS = [
     "information_delta",
     "desire_delta",
+    "purchase_ritual_delta",
+    "shelf_memory_delta",
+    "ritual_proof_delta",
+    "claim_safety",
     "product_role_delta",
     "event_type",
     "camera_relation_key",
@@ -559,6 +601,18 @@ def validate_reference_deconstruction(plan: dict) -> tuple[list[str], list[str]]
         if not is_concrete_creative_value(mechanism.get(field)):
             errors.append(f"reference_deconstruction.creative_translation.new_mechanism: missing or weak {field}")
 
+    for field in [
+        "reference_to_world_transformation",
+        "invented_scene_architecture",
+        "prop_logic",
+        "material_system",
+        "set_piece_invention",
+    ]:
+        if not is_concrete_creative_value(translation.get(field)):
+            errors.append(f"reference_deconstruction.creative_translation: missing or weak {field}")
+        elif LITERAL_REFERENCE_COPY_WORDS.search(str(translation.get(field))):
+            errors.append(f"reference_deconstruction.creative_translation: {field} must invent from reference DNA, not copy surface staging")
+
     risks = concrete_items(deconstruction.get("literal_copy_risks"))
     if len(risks) < 3:
         errors.append("reference_deconstruction: literal_copy_risks needs at least 3 concrete risks to veto")
@@ -641,6 +695,55 @@ def validate_story_engine(plan: dict) -> tuple[list[str], list[str]]:
 
     if not ANTI_PLASTIC_WORDS.search(text_blob(story.get("anti_plastic_rules", ""))):
         errors.append("story_engine: anti_plastic_rules must specify material, texture, lens, light, shadow, or physical-detail controls")
+
+    return errors, warnings
+
+
+def validate_category_strategy(plan: dict) -> tuple[list[str], list[str]]:
+    errors: list[str] = []
+    warnings: list[str] = []
+
+    if not is_product_plan(plan) or is_packshot_exception(plan):
+        return errors, warnings
+
+    strategy = plan.get("category_strategy")
+    if not isinstance(strategy, dict):
+        errors.append("plan: product ad requires category_strategy before creative concept")
+        return errors, warnings
+
+    for field in REQUIRED_CATEGORY_STRATEGY_FIELDS:
+        value = strategy.get(field)
+        if field == "rejected_category_cliches":
+            if len(concrete_items(value)) < 3:
+                errors.append("category_strategy: rejected_category_cliches needs at least 3 concrete category defaults")
+        elif not is_concrete_creative_value(value):
+            errors.append(f"category_strategy: missing or weak {field}")
+
+    return errors, warnings
+
+
+def validate_role_output_contract(plan: dict) -> tuple[list[str], list[str]]:
+    errors: list[str] = []
+    warnings: list[str] = []
+
+    if not is_product_plan(plan) or is_packshot_exception(plan):
+        return errors, warnings
+
+    director_language = plan.get("director_language")
+    if not isinstance(director_language, dict):
+        errors.append("plan: product ad requires director_language with lens progression, transition grammar, edit bridge, and shot-to-shot causality")
+        director_language = {}
+    for field in REQUIRED_DIRECTOR_LANGUAGE_FIELDS:
+        if not is_concrete_creative_value(director_language.get(field)):
+            errors.append(f"director_language: missing or weak {field}")
+
+    art_direction = plan.get("art_direction_invention")
+    if not isinstance(art_direction, dict):
+        errors.append("plan: product ad requires art_direction_invention with reference-to-world transformation and invented scene architecture")
+        art_direction = {}
+    for field in REQUIRED_ART_DIRECTION_INVENTION_FIELDS:
+        if not is_concrete_creative_value(art_direction.get(field)):
+            errors.append(f"art_direction_invention: missing or weak {field}")
 
     return errors, warnings
 
@@ -1202,6 +1305,14 @@ def main() -> int:
     story_errors, story_warnings = validate_story_engine(plan)
     errors.extend(story_errors)
     warnings.extend(story_warnings)
+
+    category_errors, category_warnings = validate_category_strategy(plan)
+    errors.extend(category_errors)
+    warnings.extend(category_warnings)
+
+    role_contract_errors, role_contract_warnings = validate_role_output_contract(plan)
+    errors.extend(role_contract_errors)
+    warnings.extend(role_contract_warnings)
 
     product_errors, product_warnings = validate_product_identity(plan)
     errors.extend(product_errors)

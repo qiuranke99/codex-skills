@@ -10,11 +10,79 @@ validation.
 
 | Agent | Must Start Before | Required Output |
 |---|---|---|
-| `creative_director_agent` | creative concept selection | creative concept candidates, rejected-route rationale, concept novelty test, and reference-DNA-to-new-mechanism leap |
-| `director_agent` | script approval, shot planning, storyboard layout, video prompt approval | director resolution, script approval, panel/segment mapping, per-panel aspect enforcement, semantic redundancy vetoes, final overrides |
-| `screenwriter_agent` | shot planning | exact-duration `timecoded_script_map` and beat progression where information, desire, and product role change |
-| `art_director_agent` | final concept decision and shot planning | reference-image deconstruction, surface-copy veto, material/color/negative-space/world-rule constraints |
-| `google_omni_prompt_expert_agent` | video prompt JSON | model-facing segment prompt translation from approved storyboard packets |
+| `creative_director_agent` | creative concept selection | creative concept candidates, rejected-route rationale, concept novelty test, category truth, purchase ritual, shelf memory, and reference-DNA-to-new-mechanism leap |
+| `director_agent` | script approval, shot planning, storyboard layout, video prompt approval | director resolution, script approval, panel/segment mapping, per-panel aspect enforcement, lens progression, transition grammar, edit bridge, coverage strategy, semantic redundancy vetoes, final overrides |
+| `screenwriter_agent` | shot planning | exact-duration `timecoded_script_map`, beat progression, purchase ritual, shelf memory, and changes in information, desire, product role, and ritual proof |
+| `art_director_agent` | final concept decision and shot planning | reference-image deconstruction, surface-copy veto, reference-to-world transformation, invented scene architecture, prop logic, material system, category-coded restraint, and set-piece invention |
+| `google_omni_prompt_expert_agent` | video prompt JSON | model-facing segment prompt translation from approved storyboard packets with product, category, transition, camera, and material contracts preserved |
+
+## Category Expertise Contract
+
+Every non-catalog commercial run must name the category intelligence that the
+agents are using. The minimum category set is `premium beauty`,
+`premium skincare`, `fast-moving consumer goods`, `luxury goods`, or a hybrid.
+The output evidence must include:
+
+- `category truth`: what the audience already believes, fears, wants, or
+  recognizes in the category;
+- `purchase ritual`: how the object is discovered, inspected, used, gifted,
+  replenished, displayed, or remembered;
+- `shelf memory`: the package silhouette, color block, gesture, end-frame, or
+  object behavior that should survive after the ad;
+- `ritual proof`: the action, material response, skin/hair/object interaction,
+  ingredient behavior, or practical use beat that makes the promise credible;
+- `brand altitude`: mass desire, premium proof, luxury restraint, clinical
+  authority, sensual fantasy, cultural object, or another explicit altitude.
+
+Do not let these become labels. The role output must connect them to a shot,
+cut, scene, prop, gesture, or video prompt decision.
+
+## Role-Specific Quality Gates
+
+`creative_director_agent` owns the advertising leap:
+
+- turn category truth into a commercial premise, not a mood board;
+- reject concepts that are only fragrance mist, product glow, flower macro,
+  liquid splash, marble plinth, or "luxury atmosphere";
+- define the desire conflict, the category convention being inverted, and the
+  shelf memory the film should leave behind.
+
+`director_agent` owns camera and edit intelligence:
+
+- design a `lens progression` across the sequence, not isolated attractive
+  shots;
+- define `transition grammar`: match cut, occlusion wipe, light bridge,
+  reflection bridge, motion carry, graphic match, eye-trace cut, or deliberate
+  hard reset;
+- define an `edit bridge` for every segment boundary and key shot transition;
+- define a motivated camera path, coverage strategy, shot-to-shot causality,
+  eye-trace continuity, and what each cut changes in knowledge, desire, proof,
+  product role, or rhythm.
+
+`screenwriter_agent` owns temporal persuasion:
+
+- make the timecoded script map progress through information, desire, purchase
+  ritual, ritual proof, shelf memory, and product role;
+- reject repeated beauty beats even when the visual surface changes;
+- make product absence, detail, partial reveal, and full reveal serve the
+  story rather than a coverage quota.
+
+`art_director_agent` owns image invention:
+
+- perform `reference-to-world transformation`, not reference replication;
+- invent scene architecture, prop logic, material system, category-coded
+  restraint, set-piece invention, and product-adjacent objects from the
+  reference DNA;
+- veto copied backgrounds, plinths, props, palettes, and product poses unless
+  the user explicitly locks them.
+
+`google_omni_prompt_expert_agent` owns executable motion:
+
+- translate the approved storyboard packets into concise temporal contracts;
+- preserve camera transitions, product identity, material behavior, category
+  altitude, and segment-level edit bridges;
+- reject montage prompts that lose the director's lens progression or the art
+  director's invented scene architecture.
 
 ## Stage Gates
 
@@ -52,13 +120,19 @@ and `stage_gates[].next_allowed`.
 Each role is accountable for specific failure classes:
 
 - `creative_director_agent`: weak concept, literal reference extraction, no new
-  advertising mechanism.
+  advertising mechanism, missing category truth, missing purchase ritual, weak
+  shelf memory, or no category-specific desire conflict.
 - `art_director_agent`: surface-copying reference props/backgrounds/platforms,
-  weak material or negative-space translation.
+  weak material or negative-space translation, no reference-to-world
+  transformation, no invented scene architecture, weak prop logic, weak
+  category-coded restraint, or missing set-piece invention.
 - `screenwriter_agent`: repeated beat function, no information/desire/product
-  role delta across the script.
+  role delta across the script, no ritual proof, no purchase ritual, or no
+  shelf memory progression.
 - `director_agent`: repeated shot function, mixed panel aspect ratios, weak
-  camera motivation, or panels that cannot guide the requested video frame.
+  camera motivation, no lens progression, weak transition grammar, missing
+  edit bridge, no shot-to-shot causality, or panels that cannot guide the
+  requested video frame.
 
 If the runtime provides real Codex subagents, use real subagents and record
 their artifact outputs. If the runtime does not provide a subagent mechanism,
