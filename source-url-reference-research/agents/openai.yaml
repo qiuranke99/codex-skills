@@ -1,4 +1,0 @@
-interface:
-  display_name: "Source URL Reference Research"
-  short_description: "Find verified visual references"
-  default_prompt: "Use $source-url-reference-research to find verified visual references and automatically create an image reference pack for image-reference requests."

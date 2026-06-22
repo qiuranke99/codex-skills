@@ -15,7 +15,7 @@ The output is not a list of attractive links. It is a ranked evidence set that e
 
 - Use this skill when the center of gravity is finding precise reference films before ideation, pitching, scripting, storyboard work, or shooting.
 - If the user already provides one specific reference video and asks to adapt it, use `reference-video-product-adapter`.
-- If the task is broad visual source research with image packs, use `source-url-reference-research`.
+- If the task is broad visual source research with image packs, this skill is out of scope; use a dedicated image-reference workflow if one is installed.
 - If the task is a whole local project folder, brief, budget, selling points, and production handoff, use `commercial-video-project-planning`.
 - Do not download videos. Return source pages and verification notes.
 - Do not bypass login, private accounts, paywalls, DRM, region blocks, or hotlink restrictions. Label access limits.

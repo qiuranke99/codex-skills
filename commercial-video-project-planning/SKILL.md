@@ -23,7 +23,7 @@ Use this skill when the user asks for any of:
 Do not use it for:
 
 - a single reference-video adaptation package -> use `reference-video-product-adapter`,
-- pure public-web visual research without project planning -> use `source-url-reference-research`,
+- pure public-web visual research without project planning -> out of scope unless it can be reframed as project planning or TVC reference-video research,
 - recurring autonomous maintenance inside `D:\Agent\video_script_agent` -> use that repo's CLI and automation.
 
 ## Workflow

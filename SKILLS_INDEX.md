@@ -8,7 +8,6 @@ Codex discovery root: `C:\Users\Administrator\.codex\skills`
 
 | Skill | Target path | Purpose | Original path | Status |
 | --- | --- | --- | --- | --- |
-| `source-url-reference-research` | `D:\AI\skill\source-url-reference-research` | Source URL first visual reference research for images/videos, with evidence links and no original-media downloads. | `C:\Users\Administrator\.codex\skills\source-url-reference-research` | active |
 | `tvc-reference-video-research` | `D:\AI\skill\tvc-reference-video-research` | Finds precise source-backed TVC-grade reference videos from commercial briefs across Vimeo, YouTube, 新片场, and accountable brand/agency/director/production sources. | `C:\Users\Administrator\.codex\skills\tvc-reference-video-research` | active |
 | `commercial-video-project-planning` | `D:\AI\skill\commercial-video-project-planning` | Source-aware planning for commercial or product-video project folders, including brief, selling points, creative treatment, budget plan, and production handoff. | `C:\Users\Administrator\.codex\skills\commercial-video-project-planning` | active |
 | `reference-video-product-adapter` | `D:\AI\skill\reference-video-product-adapter` | Adapts a reference video plus product materials into an AI video plan, shot list, storyboard prompt, platform prompt, and asset checklist. | `C:\Users\Administrator\.codex\skills\reference-video-product-adapter`; duplicate identical source: `D:\ai-workspace\03-workflows\codex\skills\reference-video-product-adapter` | active |
@@ -20,11 +19,10 @@ Codex discovery root: `C:\Users\Administrator\.codex\skills`
 
 ## Codex Discovery Entries
 
-As of 2026-06-17, the nine user-maintained skills above are installed for Codex discovery as Windows directory junctions:
+As of 2026-06-22, the eight user-maintained skills above are installed for Codex discovery as Windows directory junctions:
 
 | Codex entry | Junction target |
 | --- | --- |
-| `C:\Users\Administrator\.codex\skills\source-url-reference-research` | `D:\AI\skill\source-url-reference-research` |
 | `C:\Users\Administrator\.codex\skills\tvc-reference-video-research` | `D:\AI\skill\tvc-reference-video-research` |
 | `C:\Users\Administrator\.codex\skills\commercial-video-project-planning` | `D:\AI\skill\commercial-video-project-planning` |
 | `C:\Users\Administrator\.codex\skills\reference-video-product-adapter` | `D:\AI\skill\reference-video-product-adapter` |
