@@ -1,4 +1,0 @@
-interface:
-  display_name: "TVC Reference Video Research"
-  short_description: "Find precise source-backed TVC reference videos."
-  default_prompt: "Use $tvc-reference-video-research to find precise TVC-grade reference videos for this commercial brief."
