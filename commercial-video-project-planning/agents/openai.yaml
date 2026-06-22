@@ -1,4 +1,0 @@
-interface:
-  display_name: "Commercial Video Project Planning"
-  short_description: "Plan product videos from project folders"
-  default_prompt: "Use $commercial-video-project-planning to read this project folder and produce a source-aware brief, copy direction, and shot-planning package."

@@ -9,8 +9,6 @@ Codex discovery root: `C:\Users\Administrator\.codex\skills`
 | Skill | Target path | Purpose | Original path | Status |
 | --- | --- | --- | --- | --- |
 | `tvc-reference-video-research` | `D:\AI\skill\tvc-reference-video-research` | Finds precise source-backed TVC-grade reference videos from commercial briefs across Vimeo, YouTube, 新片场, and accountable brand/agency/director/production sources. | `C:\Users\Administrator\.codex\skills\tvc-reference-video-research` | active |
-| `commercial-video-project-planning` | `D:\AI\skill\commercial-video-project-planning` | Source-aware planning for commercial or product-video project folders, including brief, selling points, creative treatment, budget plan, and production handoff. | `C:\Users\Administrator\.codex\skills\commercial-video-project-planning` | active |
-| `reference-video-product-adapter` | `D:\AI\skill\reference-video-product-adapter` | Adapts a reference video plus product materials into an AI video plan, shot list, storyboard prompt, platform prompt, and asset checklist. | `C:\Users\Administrator\.codex\skills\reference-video-product-adapter`; duplicate identical source: `D:\ai-workspace\03-workflows\codex\skills\reference-video-product-adapter` | active |
 | `cinematic-composition-prompt-director` | `D:\AI\skill\cinematic-composition-prompt-director` | Converts scene ideas, rough prompts, or image observations into exactly 10 film-still composition prompts with camera-language diversity and audit gates. | `C:\Users\Administrator\.codex\skills\cinematic-composition-prompt-director` | active |
 | `ai-visual-director` | `D:\AI\skill\ai-visual-director` | Story-first AI visual director for product-ad briefs, product images, and visual references; no fixed storyboard house style; enforces premium beauty/skincare/FMCG/luxury category strategy plus creative director, director, screenwriter, art director, and Google Omni prompt expert gates before dynamic segment storyboards and structured Omni video prompts can pass validation. | `https://github.com/qiuranke99/ai-visual-director-skill` | active |
 | `seedance-prompt-en` | `D:\AI\skill\seedance-prompt-en` | English prompt writing guide for Jimeng Seedance 2.0 multimodal AI video generation, including @ references, camera language, extension/editing, ads, short dramas, and educational content. | `https://github.com/dexhunter/seedance2-skill` | active |
@@ -19,13 +17,11 @@ Codex discovery root: `C:\Users\Administrator\.codex\skills`
 
 ## Codex Discovery Entries
 
-As of 2026-06-22, the eight user-maintained skills above are installed for Codex discovery as Windows directory junctions:
+As of 2026-06-22, the seven user-maintained skills above are installed for Codex discovery as Windows directory junctions:
 
 | Codex entry | Junction target |
 | --- | --- |
 | `C:\Users\Administrator\.codex\skills\tvc-reference-video-research` | `D:\AI\skill\tvc-reference-video-research` |
-| `C:\Users\Administrator\.codex\skills\commercial-video-project-planning` | `D:\AI\skill\commercial-video-project-planning` |
-| `C:\Users\Administrator\.codex\skills\reference-video-product-adapter` | `D:\AI\skill\reference-video-product-adapter` |
 | `C:\Users\Administrator\.codex\skills\cinematic-composition-prompt-director` | `D:\AI\skill\cinematic-composition-prompt-director` |
 | `C:\Users\Administrator\.codex\skills\ai-visual-director` | `D:\AI\skill\ai-visual-director` |
 | `C:\Users\Administrator\.codex\skills\seedance-prompt-en` | `D:\AI\skill\seedance-prompt-en` |

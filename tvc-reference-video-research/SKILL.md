@@ -14,9 +14,9 @@ The output is not a list of attractive links. It is a ranked evidence set that e
 ## Boundaries
 
 - Use this skill when the center of gravity is finding precise reference films before ideation, pitching, scripting, storyboard work, or shooting.
-- If the user already provides one specific reference video and asks to adapt it, use `reference-video-product-adapter`.
+- If the user already provides one specific reference video and asks to adapt it, this skill is out of scope unless they want source-backed reference evaluation rather than adaptation.
 - If the task is broad visual source research with image packs, this skill is out of scope; use a dedicated image-reference workflow if one is installed.
-- If the task is a whole local project folder, brief, budget, selling points, and production handoff, use `commercial-video-project-planning`.
+- If the task is a whole local project folder, brief, budget, selling points, and production handoff, this skill is out of scope; handle only the reference-video research slice unless the user supplies another planning workflow.
 - Do not download videos. Return source pages and verification notes.
 - Do not bypass login, private accounts, paywalls, DRM, region blocks, or hotlink restrictions. Label access limits.
 - Do not call a reference `verified` unless the source page was opened or browser-verified and the video relevance was actually checked.
