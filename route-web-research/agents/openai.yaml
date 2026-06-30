@@ -1,0 +1,4 @@
+interface:
+  display_name: "Route Web Research"
+  short_description: "Route web research and crawling tools"
+  default_prompt: "Use $route-web-research to find primary sources, extract evidence, and route fallbacks across the installed web research tools."

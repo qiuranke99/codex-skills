@@ -10,19 +10,17 @@ Codex discovery root: `C:\Users\Administrator\.codex\skills`
 
 ## Maintained Skills
 
-No user-maintained skills are currently active in this canonical workspace.
-
 | Skill | Target path | Purpose | Original path | Status |
 | --- | --- | --- | --- | --- |
-| _None_ | _None_ | _No active maintained skills_ | _None_ | inactive |
+| `route-web-research` | `D:\AI\skill\route-web-research` | Route web search, source discovery, crawling, scraping, browser automation, and document-to-Markdown conversion across the installed global-search toolchain with evidence validation. | Created in canonical workspace | active |
 
 ## Codex Discovery Entries
 
-As of 2026-06-30, no user-maintained skills from this workspace are installed for Codex discovery.
+As of 2026-06-30, this workspace exposes the following user-maintained Codex discovery entries.
 
 | Codex entry | Junction target |
 | --- | --- |
-| _None_ | _None_ |
+| `C:\Users\Administrator\.codex\skills\route-web-research` | `D:\AI\skill\route-web-research` |
 
 ## Skipped Sources
 
