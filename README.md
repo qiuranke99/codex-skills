@@ -25,7 +25,7 @@ Only `AGENTS.md`, `README.md`, `SKILLS_INDEX.md`, and skill directories should b
 
 ## Rules
 
-- Use concise, readable folder names such as `cinematic-composition-prompt-director`.
+- Use concise, readable folder names such as `<domain-purpose-workflow>`.
 - Preserve the complete skill directory structure when archiving a skill.
 - Do not archive system, official, plugin cache, runtime, or third-party generated skills here.
 - Do not modify skill contents during archival unless a path reference is obviously broken by the move.

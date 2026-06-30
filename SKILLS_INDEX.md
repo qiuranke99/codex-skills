@@ -2,29 +2,27 @@
 
 Migration date: 2026-05-27
 
+Last updated: 2026-06-30
+
 Canonical root: `D:\AI\skill`
 
 Codex discovery root: `C:\Users\Administrator\.codex\skills`
 
+## Maintained Skills
+
+No user-maintained skills are currently active in this canonical workspace.
+
 | Skill | Target path | Purpose | Original path | Status |
 | --- | --- | --- | --- | --- |
-| `cinematic-composition-prompt-director` | `D:\AI\skill\cinematic-composition-prompt-director` | Converts scene ideas, rough prompts, or image observations into exactly 10 film-still composition prompts with camera-language diversity and audit gates. | `C:\Users\Administrator\.codex\skills\cinematic-composition-prompt-director` | active |
-| `ai-visual-director` | `D:\AI\skill\ai-visual-director` | Story-first AI visual director for product-ad briefs, product images, and visual references; no fixed storyboard house style; enforces premium beauty/skincare/FMCG/luxury category strategy plus creative director, director, screenwriter, art director, and Google Omni prompt expert gates before dynamic segment storyboards and structured Omni video prompts can pass validation. | `https://github.com/qiuranke99/ai-visual-director-skill` | active |
-| `seedance-prompt-en` | `D:\AI\skill\seedance-prompt-en` | English prompt writing guide for Jimeng Seedance 2.0 multimodal AI video generation, including @ references, camera language, extension/editing, ads, short dramas, and educational content. | `https://github.com/dexhunter/seedance2-skill` | active |
-| `seedance-prompt-zh` | `D:\AI\skill\seedance-prompt-zh` | Chinese prompt writing guide for Jimeng Seedance 2.0 multimodal AI video generation, including @ references, camera replication, effects, extension/editing, ads, short dramas, and educational content. | `https://github.com/dexhunter/seedance2-skill/tree/main/zh` | active |
-| `kling-promot` | `D:\AI\skill\kling-promot` | World-class Kling 3.0 and Kling VIDEO 3.0 Omni prompt director for text/image/video/audio references, elements, custom multi-shot, native audio, dialogue, and API-oriented prompt payloads. | Local skill created from official Kling documentation plus prompt-pattern research; display name: `Kling-Promot` | active |
+| _None_ | _None_ | _No active maintained skills_ | _None_ | inactive |
 
 ## Codex Discovery Entries
 
-As of 2026-06-22, the five user-maintained skills above are installed for Codex discovery as Windows directory junctions:
+As of 2026-06-30, no user-maintained skills from this workspace are installed for Codex discovery.
 
 | Codex entry | Junction target |
 | --- | --- |
-| `C:\Users\Administrator\.codex\skills\cinematic-composition-prompt-director` | `D:\AI\skill\cinematic-composition-prompt-director` |
-| `C:\Users\Administrator\.codex\skills\ai-visual-director` | `D:\AI\skill\ai-visual-director` |
-| `C:\Users\Administrator\.codex\skills\seedance-prompt-en` | `D:\AI\skill\seedance-prompt-en` |
-| `C:\Users\Administrator\.codex\skills\seedance-prompt-zh` | `D:\AI\skill\seedance-prompt-zh` |
-| `C:\Users\Administrator\.codex\skills\kling-promot` | `D:\AI\skill\kling-promot` |
+| _None_ | _None_ |
 
 ## Skipped Sources
 
