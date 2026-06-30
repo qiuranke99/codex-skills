@@ -12,7 +12,7 @@ Codex discovery root: `C:\Users\Administrator\.codex\skills`
 
 | Skill | Target path | Purpose | Original path | Status |
 | --- | --- | --- | --- | --- |
-| `route-web-research` | `D:\AI\skill\route-web-research` | Route web search, source discovery, crawling, scraping, browser automation, and document-to-Markdown conversion across the installed global-search toolchain with evidence validation. | Created in canonical workspace | active |
+| _None_ | _None_ | _None_ | _None_ | _None_ |
 
 ## Codex Discovery Entries
 
@@ -20,7 +20,7 @@ As of 2026-06-30, this workspace exposes the following user-maintained Codex dis
 
 | Codex entry | Junction target |
 | --- | --- |
-| `C:\Users\Administrator\.codex\skills\route-web-research` | `D:\AI\skill\route-web-research` |
+| _None_ | _None_ |
 
 ## Skipped Sources
 
