@@ -16,7 +16,7 @@ Codex discovery root: `C:\Users\Administrator\.codex\skills`
 
 ## Codex Discovery Entries
 
-As of 2026-06-30, this workspace exposes the following user-maintained Codex discovery entries.
+As of 2026-07-01, this workspace exposes the following user-maintained Codex discovery entries.
 
 | Codex entry | Junction target |
 | --- | --- |
