@@ -2,7 +2,7 @@
 
 Migration date: 2026-05-27
 
-Last updated: 2026-06-30
+Last updated: 2026-07-01
 
 Canonical root: `D:\AI\skill`
 
@@ -12,7 +12,7 @@ Codex discovery root: `C:\Users\Administrator\.codex\skills`
 
 | Skill | Target path | Purpose | Original path | Status |
 | --- | --- | --- | --- | --- |
-| _None_ | _None_ | _None_ | _None_ | _None_ |
+| `character-final-lock-board` | `D:\AI\skill\character-final-lock-board` | Generate final locked character asset boards from person/model and wardrobe references using direct image generation plus QA. | `D:\AI视觉工作室\.agents\skills\character-final-lock-board` | Active |
 
 ## Codex Discovery Entries
 
@@ -20,7 +20,7 @@ As of 2026-06-30, this workspace exposes the following user-maintained Codex dis
 
 | Codex entry | Junction target |
 | --- | --- |
-| _None_ | _None_ |
+| `C:\Users\Administrator\.codex\skills\character-final-lock-board` | `D:\AI\skill\character-final-lock-board` |
 
 ## Skipped Sources
 
