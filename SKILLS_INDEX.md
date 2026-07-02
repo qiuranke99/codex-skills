@@ -2,7 +2,7 @@
 
 Migration date: 2026-05-27
 
-Last updated: 2026-07-01
+Last updated: 2026-07-02
 
 Canonical root: `D:\AI\skill`
 
@@ -14,15 +14,17 @@ Codex discovery root: `C:\Users\Administrator\.codex\skills`
 | --- | --- | --- | --- | --- |
 | `character-final-lock-board` | `D:\AI\skill\character-final-lock-board` | Generate final locked character asset boards from person/model and wardrobe references using direct image generation plus QA. | `D:\AI视觉工作室\.agents\skills\character-final-lock-board` | Active |
 | `character-final-lock-board-high-angle-version` | `D:\AI\skill\character-final-lock-board-high-angle-version` | Generate high-angle final character lock boards from person/model and wardrobe references using direct image generation plus QA. | `D:\AI视觉工作室\.agents\skills\character-final-lock-board-high-angle-version` | Active |
+| `cinematic_shot_image_explorer` | `D:\AI\skill\cinematic_shot_image_explorer` | Turn ideas, rough prompts, reference images, products, characters, scenes, or visual directions into exactly 10 cinematic film-still image prompts and 10 generated images. | `D:\AI视觉工作室\.agents\skills\cinematic_shot_image_explorer` | Active |
 
 ## Codex Discovery Entries
 
-As of 2026-07-01, this workspace exposes the following user-maintained Codex discovery entries.
+As of 2026-07-02, this workspace exposes the following user-maintained Codex discovery entries.
 
 | Codex entry | Junction target |
 | --- | --- |
 | `C:\Users\Administrator\.codex\skills\character-final-lock-board` | `D:\AI\skill\character-final-lock-board` |
 | `C:\Users\Administrator\.codex\skills\character-final-lock-board-high-angle-version` | `D:\AI\skill\character-final-lock-board-high-angle-version` |
+| `C:\Users\Administrator\.codex\skills\cinematic_shot_image_explorer` | `D:\AI\skill\cinematic_shot_image_explorer` |
 
 ## Skipped Sources
 
