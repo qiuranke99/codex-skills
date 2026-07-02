@@ -1,0 +1,4 @@
+interface:
+  display_name: "Packaging Product Identity + Label Lock Board"
+  short_description: "Clean 8-angle packaging label lock."
+  default_prompt: "Use $packaging-product-identity-label-lock-board to create one clean 8-angle packaging product identity and label-copy lock board from my product reference images."
