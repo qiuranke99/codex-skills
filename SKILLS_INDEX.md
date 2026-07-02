@@ -16,6 +16,7 @@ Codex discovery root: `C:\Users\Administrator\.codex\skills`
 | `character-final-lock-board-high-angle-version` | `D:\AI\skill\character-final-lock-board-high-angle-version` | Generate high-angle final character lock boards from person/model and wardrobe references using direct image generation plus QA. | `D:\AI视觉工作室\.agents\skills\character-final-lock-board-high-angle-version` | Active |
 | `cinematic_shot_image_explorer` | `D:\AI\skill\cinematic_shot_image_explorer` | Turn ideas, rough prompts, reference images, products, characters, scenes, or visual directions into exactly 10 cinematic film-still image prompts and 10 generated images. | `D:\AI视觉工作室\.agents\skills\cinematic_shot_image_explorer` | Active |
 | `cinematic_world_builder` | `D:\AI\skill\cinematic_world_builder` | Turn ideas, settings, atmospheres, cultures, places, names, genres, image descriptions, or reference images into a coherent cinematic world and exactly 9 film-still visual prompts. | `D:\AI视觉工作室\.agents\skills\cinematic_world_builder` | Active |
+| `complex-structure-product-asset-lock-board` | `D:\AI\skill\complex-structure-product-asset-lock-board` | Create separate video-ready complex structure product asset boards that lock structure overview, critical closeups, state variants, interface/operation areas, decomposition relationships, materials, and high-risk nodes using Codex built-in `/image gen` plus QA. | `D:\AI视觉工作室\.agents\skills\complex-structure-product-asset-lock-board` | Active |
 | `multi-angle-product-identity-lock-board` | `D:\AI\skill\multi-angle-product-identity-lock-board` | Directly generate six-view product identity lock boards for low-risk products using Codex built-in `/image gen` plus QA. | `D:\AI视觉工作室\.agents\skills\multi-angle-product-identity-lock-board` | Active |
 | `packaging-product-identity-label-lock-board` | `D:\AI\skill\packaging-product-identity-label-lock-board` | Directly generate clean 8-angle packaging product identity and label-copy lock boards with logo, key copy, material details, high/low perspective, QA, and no non-product text pollution. | `D:\AI视觉工作室\.agents\skills\packaging-product-identity-label-lock-board` | Active |
 
@@ -29,6 +30,7 @@ As of 2026-07-02, this workspace exposes the following user-maintained Codex dis
 | `C:\Users\Administrator\.codex\skills\character-final-lock-board-high-angle-version` | `D:\AI\skill\character-final-lock-board-high-angle-version` |
 | `C:\Users\Administrator\.codex\skills\cinematic_shot_image_explorer` | `D:\AI\skill\cinematic_shot_image_explorer` |
 | `C:\Users\Administrator\.codex\skills\cinematic_world_builder` | `D:\AI\skill\cinematic_world_builder` |
+| `C:\Users\Administrator\.codex\skills\complex-structure-product-asset-lock-board` | `D:\AI\skill\complex-structure-product-asset-lock-board` |
 | `C:\Users\Administrator\.codex\skills\multi-angle-product-identity-lock-board` | `D:\AI\skill\multi-angle-product-identity-lock-board` |
 | `C:\Users\Administrator\.codex\skills\packaging-product-identity-label-lock-board` | `D:\AI\skill\packaging-product-identity-label-lock-board` |
 

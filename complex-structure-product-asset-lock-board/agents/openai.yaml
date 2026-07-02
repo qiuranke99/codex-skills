@@ -1,0 +1,4 @@
+interface:
+  display_name: "Complex Structure Product Asset Lock Board"
+  short_description: "Lock complex product structure for AI video continuity."
+  default_prompt: "Use $complex-structure-product-asset-lock-board to turn these complex product references into a video-ready structural asset lock package."
