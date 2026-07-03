@@ -1,15 +1,20 @@
 ---
 name: complex-structure-product-asset-lock-board
-description: "Use when the user provides product reference images for complex structures, complex mechanical or electronic devices, multi-part objects, articulated/folding/open-close products, products with multiple states, interfaces, controls, connectors, support nodes, hidden top/bottom/back details, or high-risk structural nodes, and needs a video-ready Complex Structure Product Asset Lock package. Directly call Codex built-in /image gen to create separate 16:9 asset boards that lock structure overview, critical closeups, state variants, interface/operation areas, and decomposition relationships; never treat this as a simple multi-angle product board, poster, or prompt-only task."
+description: "Use when the user provides product reference images for complex structures, complex mechanical or electronic devices, multi-part objects, articulated/folding/open-close products, products with multiple states, interfaces, controls, connectors, support nodes, hidden top/bottom/back details, or high-risk structural nodes, and needs a video-ready Complex Structure Product Asset Lock package. First run a full source sufficiency gate; if any required view, state, interface, mechanism, decomposition relationship, or high-risk detail is missing or unverifiable, do not call /image gen and return not_approved with the required reference-image list. Call /image gen only for full_approved packages, then output the final image-generation prompt used for each delivered QA-passing board as chat text, not trace or hidden reasoning."
 ---
 
 # Complex Structure Product Asset Lock Board
 
 Chinese name: 复杂结构产品资产锁定板
 
-Create a complex-structure asset package for downstream image and video generation. The leading rule is **structural lock**: preserve the product's real structure, part hierarchy, connection logic, state logic, interfaces, materials, and high-risk nodes before caring about beauty.
+Create a complex-structure product asset package for downstream image and video generation. The leading rule is **source-supported structural lock**: generate asset-board images only when the references are sufficient to lock the whole required structure without guessing.
 
-This skill is not a pretty product rendering workflow, not a single crowded collage, not a poster, not a generic multi-angle board, and not an engineering drawing unless the user explicitly asks for that style.
+This skill has only two final outcomes:
+
+- `full_approved`: all required source evidence exists, image generation is allowed, and every required board can be generated and QA-checked.
+- `not_approved`: either the source gate fails before image generation, or generated boards fail QA after an approved source gate. In both cases, no generated image is delivered, registered, reused, or treated as a video-ready asset board. If the source gate fails, no `/image gen` call is allowed and the user receives a concrete missing-reference list.
+
+There is no intermediate asset package in this skill.
 
 ## Scope
 
@@ -28,13 +33,13 @@ Use another workflow when:
 - the hard problem is dense packaging text, label copy, logo, specs, ingredients, or certifications on packaging: use `packaging-product-identity-label-lock-board`;
 - the user asks only for an ad scene, mood image, poster, prompt rewrite, or concept exploration without structural locking.
 
-Completion criterion: accept the task only when complex structural stability is a core success factor.
+Completion criterion: accept the task only when complex structural stability is the core success factor.
 
-## Input Gate
+## Input Audit
 
-Require at least one product visual reference. If no product image exists, ask for reference images instead of inventing the product.
+Require at least one product visual reference. If no product image exists, output `not_approved` and ask for product reference images instead of inventing the product.
 
-Before image generation, study every uploaded reference and classify each image as one or more of:
+Before any image generation, study every uploaded reference and classify each image as one or more of:
 
 - overall view;
 - multi-angle view;
@@ -55,12 +60,52 @@ Then extract the structural lock map:
 - primary body, secondary structures, and key components;
 - connection, support, load-bearing, hierarchy, front/back/left/right/top/bottom relationships;
 - asymmetry and non-mirrored features;
-- top, bottom, back, underside, or hidden structures that are visible or source-supported;
+- top, bottom, back, underside, and hidden structures;
 - moving, folding, opening, detachable, telescoping, or modular parts;
 - interfaces, controls, contact areas, and human-operation zones;
 - material directions, surface textures, seams, joints, and drift-prone local regions.
 
-Completion criterion: every reference image has a role, and the product's structure can be described without inventing unseen critical details.
+Completion criterion: every reference image has a role, and every required structure is either verified by source evidence or placed on the missing-reference list before generation is considered.
+
+## Full Source Sufficiency Gate
+
+Run this gate before `/image gen`. If any required item fails, stop and output `not_approved`. Do not generate any asset-board image.
+
+Required evidence for `full_approved`:
+
+- the 8 structural overview views: front, back, left side, right side, 3/4 front, 3/4 rear, top, bottom / underside;
+- enough closeup evidence for every high-risk node identified in the risk audit;
+- every state endpoint that exists in the product or is expected in downstream video;
+- every interface, port, control, connector, operation area, and user-contact zone expected to appear;
+- every visible layer, accessory, lid/body, inner/outer, module, assembly, or decomposition relationship expected to appear;
+- material and texture evidence for high-risk material zones;
+- enough resolution and clarity to verify shape, position, orientation, hierarchy, and left/right/front/back/top/bottom relationships.
+
+Create an internal **Structural Coverage Matrix** before generation. Track:
+
+- `view_id`: front, back, left, right, 3/4 front, 3/4 rear, top, bottom / underside;
+- `state_id`: every stable state endpoint and every state expected from product function or supplied references unless the brief explicitly excludes it;
+- `node_id`: every high-risk structural node from the Critical Node Registry;
+- `interface_id`: every port, control, button, connector, contact surface, and operation zone;
+- `material_zone`: every high-risk material or finish region;
+- `hidden_no_fill_zone`: every hidden, blocked, internal, underside, back, cavity, or uncertain region that must not be invented;
+- `required_source`, `status`, and `failure_reason`.
+
+For each required item, classify evidence only as:
+
+- `verified`: supplied directly or cross-verified by multiple references with no structural contradiction.
+- `missing`: absent, hidden, cropped, too blurry, too low-resolution, contradictory, or only guessable.
+
+Rules:
+
+- The 8 structural overview views require direct visible source evidence. Cross-verification may support only continuous, non-hidden, non-occluded surfaces; it may not replace true top, bottom / underside, back, hidden, or mechanism evidence.
+- `missing` anywhere in a required view, board, state, interface, mechanism, high-risk node, or decomposition relationship forces `not_approved`.
+- Do not infer, approximate, mirror, beautify, or synthesize missing structure to satisfy the gate.
+- Do not call `/image gen` until every required item is `verified`.
+- Do not create a reduced board set when evidence is incomplete.
+- Do not let user pressure, downstream urgency, shot avoidance, text descriptions, generated guesses, or prompt constraints override missing source evidence.
+
+Completion criterion: the workflow has a binary gate decision: `full_approved` may proceed to image generation; `not_approved` stops image generation and lists required references.
 
 ## Risk Audit
 
@@ -73,36 +118,65 @@ Identify the nodes that video models are most likely to damage. Prioritize:
 - mesh, perforation, fabric, carbon fiber, rubber, metal, plastic, transparent/translucent material transitions;
 - any asymmetric, easily simplified, easily merged, easily omitted, or easily mirror-flipped area.
 
-Classify each important node:
+Build a **Critical Node Registry**. Every node must include:
 
-- `locked`: visible enough to generate and check;
-- `inferred`: partly visible, structurally plausible, but not source-confirmed;
-- `blocked`: critical and not visible enough to lock.
+- `node_id`;
+- owning component and connected component;
+- front/back/left/right/top/bottom position;
+- left-side, right-side, centered, or asymmetric status;
+- symmetric counterpart, if any;
+- source image evidence;
+- required closeup board cell;
+- mechanism role, if it moves, supports load, folds, locks, slides, hinges, or connects parts.
 
-Only report a hard blocker when a missing view or detail would make a critical structural lock unreliable. Do not stop unrelated boards because one node is blocked.
+Every high-risk node must be `verified` before image generation. If any high-risk node is `missing`, the result is `not_approved`.
 
-Completion criterion: high-risk nodes are ranked before boards are planned.
+Completion criterion: all high-risk nodes are verified, or the missing-reference list names the exact node and required reference image.
 
-## Asset Package Plan
+## Motion And Hidden-Structure Logic
 
-Always generate separate boards. Do not compress all information into one busy image.
+For every moving, folding, opening, sliding, rotating, detachable, telescoping, latching, locking, or load-bearing mechanism, lock:
 
-Fixed boards, never omit:
+- endpoint A and endpoint B;
+- pivot axis, slide direction, rotation direction, travel path, or separation path;
+- stop point, latch point, lock point, contact point, clearance, and collision boundary;
+- user operation surface and force/contact area;
+- which components move together and which stay fixed.
+
+If any required motion logic is missing, output `not_approved` before image generation.
+
+Create a **Hidden Structure / No-Fill Map**:
+
+- mark hidden, internal, underside, back, occluded, cavity, blocked, or uncertain regions that must not be invented;
+- if a hidden region will appear in downstream video and no source evidence exists, classify it as `missing`;
+- if a hidden region will not appear, keep it invisible or neutral instead of exposing fabricated internals;
+- never use a decomposition board to reveal an unsupported internal mechanism.
+
+Completion criterion: every motion mechanism and every no-fill zone is represented in the Structural Coverage Matrix before generation.
+
+## Required Boards
+
+If and only if the Full Source Sufficiency Gate passes, generate separate boards. Do not compress all information into one busy image.
+
+Fixed boards, never omit after approval:
 
 1. **Structure Overview Board**: lock overall spatial structure and proportions.
 2. **Critical Structure Closeup Board**: lock the most drift-prone local nodes.
 
-Automatically add extension boards when the audit calls for them:
+Automatically required boards:
 
-3. **State Variation Board**: add when the product has key stable states.
-4. **Interface / Operation Board**: add when ports, controls, buttons, contact zones, or operation logic matter.
-5. **Structural Decomposition Relationship Board**: add when layered, modular, inner/outer, accessory, assembly, lid/body, or part hierarchy relationships matter.
+3. **State Variation Board**: required when the product has meaningful stable states.
+4. **Interface / Operation Board**: required when ports, controls, buttons, contact zones, or operation logic matter.
+5. **Structural Decomposition Relationship Board**: required when layered, modular, inner/outer, accessory, assembly, lid/body, or part hierarchy relationships matter.
+6. **Material / Finish Lock Board**: required when high-risk material or finish zones matter.
 
-Completion criterion: the plan names every board that will be generated and explains which audit finding activates each extension board.
+If any required board lacks source evidence, stop before generation and return `not_approved`.
+
+Completion criterion: every required board can be generated from verified evidence before `/image gen` is called.
 
 ## Board Specifications
 
-All boards default to:
+All generated boards must use:
 
 - separate generated image per board;
 - horizontal 16:9, 4K ultra-clear;
@@ -114,7 +188,7 @@ All boards default to:
 
 ### A. Structure Overview Board
 
-Generate one board with exactly these 8 complete views unless source evidence makes one view impossible:
+Generate one board with exactly these 8 complete verified views:
 
 1. front;
 2. back;
@@ -130,16 +204,13 @@ Requirements:
 - show the complete product in every view with no cropping of key structures;
 - keep one product identity across all views;
 - keep proportions, part positions, connection logic, material direction, front/back/left/right/top/bottom relationships, and asymmetry consistent;
-- treat top and bottom views as mandatory structural evidence, not decorative extras;
-- show back, top, bottom, and underside structures when they are source-supported;
+- treat top and bottom views as mandatory structural evidence;
 - never mirror a real asymmetric design into a symmetrical one;
 - never lock only the outline while letting internal structure drift.
 
-Completion criterion: the overview board gives video models a stable full-body structural reference from all eight structural directions.
-
 ### B. Critical Structure Closeup Board
 
-Generate at least 6 closeups. Expand to 8-12 closeups when complexity warrants it.
+Generate at least 6 closeups. This is a floor, not a cap. The actual count is determined by the Critical Node Registry; do not merge, omit, or down-rank real high-risk nodes to fit a fixed count.
 
 Choose closeups from the risk audit, not from prettiness:
 
@@ -150,13 +221,11 @@ Choose closeups from the risk audit, not from prettiness:
 - ports, buttons, levers, dials, grips, controls, user-contact surfaces;
 - material-risk regions such as mesh, perforation, fabric, carbon fiber, rubber, metal, plastic, glass, or mixed-material seams.
 
-Each closeup must retain enough surrounding context to reveal where the detail belongs. Avoid abstract crops that cannot be reattached to the product.
-
-Completion criterion: the closeup board locks the areas most likely to deform, disappear, merge, or be guessed incorrectly in video generation.
+Each closeup must retain enough surrounding context to reveal where the detail belongs.
 
 ### C. State Variation Board
 
-Add this board whenever the product has meaningful stable states.
+Generate this board only when every required state endpoint is verified.
 
 Cover at least 2 states, and 3-4 states when needed:
 
@@ -167,61 +236,47 @@ Cover at least 2 states, and 3-4 states when needed:
 - assembled / disassembled;
 - use state / static state.
 
-Requirements:
-
-- show clear static endpoints, not animation frames;
-- keep the same product identity across states;
-- do not change proportions, components, materials, or connection logic between states except where the real mechanism changes them;
-- do not invent an intermediate or final state without source evidence.
-
-Completion criterion: a downstream model can tell that all states are the same product in different stable configurations.
+Each state endpoint must keep the same view logic needed to understand its front/back/left/right/top/bottom relationships. For mechanisms that change shape, include enough verified views to preserve the motion axis, support relation, exposed hidden regions, and attachment logic across states.
 
 ### D. Interface / Operation Board
 
-Add this board whenever interfaces, controls, operation areas, or human-contact zones matter.
+Generate this board only when every required interface and operation area is verified.
 
-Cover:
-
-- buttons, switches, levers, knobs, dials, sliders, screens, grips, handles, contact surfaces;
-- ports, sockets, plugs, charging points, detachable connectors, cable entry points;
-- operation zones whose shape, position, boundary, or hierarchy must not drift.
-
-Requirements:
-
-- show the operation area clearly without turning the board into a manual;
-- lock shape, placement, boundaries, layer order, and surrounding structural context;
-- avoid explanatory arrows, labels, and instruction text unless the user explicitly requests them.
-
-Completion criterion: ports, controls, and operation zones are visually stable enough for close product shots and handling shots.
+Cover buttons, switches, levers, knobs, dials, sliders, screens, grips, handles, contact surfaces, ports, sockets, plugs, charging points, detachable connectors, and cable entry points.
 
 ### E. Structural Decomposition Relationship Board
 
-Add this board whenever the product has visible hierarchy, assembly logic, layered structure, modular parts, lids, inner/outer shells, accessories, or part nesting.
+Generate this board only when every required layer, module, accessory, lid/body, inner/outer, or assembly relationship is verified.
 
-Use mild separation or gentle decomposition. Do not default to a technical exploded diagram.
+Use mild separation or gentle decomposition. Do not default to a technical exploded diagram. Do not reveal or fabricate hidden internal mechanisms without source evidence.
 
-Requirements:
+### F. Material / Finish Lock Board
 
-- show which part belongs where;
-- show what sits above/below, inside/outside, front/back, attached/detached;
-- preserve real proportions, material identity, and assembly relationships;
-- do not reveal or fabricate hidden internal mechanisms without source evidence.
+Generate this board only when every high-risk material or finish zone is verified.
 
-Completion criterion: a downstream model can infer component ownership and assembly relationships without relying on text labels.
+Require this board for mixed materials, transparent or translucent parts, mesh, perforation, fabric, carbon fiber, rubber, metal highlight zones, matte plastic, glossy plastic, glass, coating transitions, or texture-scale-sensitive surfaces.
+
+Lock material boundaries, texture direction, reflection strength, translucency, perforation scale, weave or grain scale, edge transitions, and component ownership.
 
 ## Image Generation
 
-Call the available Codex image-generation capability directly, using Codex built-in `/image gen` when exposed by the interface. If no image-generation tool is callable, report this as a hard blocker and do not substitute a prompt-only deliverable.
+Call Codex built-in `/image gen` only after `full_approved`.
 
-Generate boards one by one from the asset package plan. Build an internal prompt for each board from:
+Build a `final_image_generation_prompt` for each planned board from:
 
 - all uploaded product references as the only product identity source;
-- the structural lock map;
-- the risk audit and node confidence labels;
-- the board-specific specification;
-- the global negative constraints.
+- the verified structural lock map;
+- the risk audit;
+- board-specific requirements;
+- global negative constraints.
 
-Do not show internal image prompts unless the user explicitly asks to inspect prompts.
+Do not show, draft, or provide image-generation prompts before the source gate reaches `full_approved`. If the user asks for prompts while source evidence is missing, output the `not_approved` missing-reference report instead.
+
+After `full_approved`, submit each `final_image_generation_prompt` to `/image gen` for its board. This prompt is the public image-generation prompt used for that delivered board, not trace, not hidden reasoning, not a source-audit log, and not a prompt-only substitute deliverable.
+
+After generation and QA, output the exact final prompt for each delivered QA-passing board in the user-facing reply under `本次图片生成提示词`. If a board is repaired or regenerated, output only the final prompt corresponding to the accepted board. If the exact final submitted prompt for a delivered board is unavailable or cannot be matched to the accepted board, the package fails QA with `prompt mismatch`.
+
+Never place prompts, prompt labels, prompt metadata, or prompt text inside generated images.
 
 Global negative constraints for every board:
 
@@ -230,49 +285,116 @@ Global negative constraints for every board:
 - no single overloaded collage pretending to complete the whole asset package;
 - no poster, advertisement, lifestyle scene, mood image, infographic, engineering blueprint, manual page, title-heavy layout, or non-product text pollution.
 
-Completion criterion: every planned board is generated as a separate image, or a specific board is marked blocked only because required source evidence or image-generation capability is missing.
+Completion criterion: `/image gen` is called only for `full_approved`; no image generation happens for `not_approved`.
 
-## QA And Continuation
+## QA Gate
 
-After each generated board, inspect it against the structural lock map.
+After each generated board, inspect it against the verified structural lock map before treating it as an asset-board image.
 
 Check:
 
 - same product identity across all boards;
 - same silhouette, proportions, main components, connections, material direction, state logic, and asymmetry;
 - full 8-view coverage for the Structure Overview Board, including top and bottom / underside;
-- closeups target the ranked high-risk nodes and keep enough context;
-- state boards preserve identity across stable endpoints;
-- interface boards preserve controls, ports, contact zones, and boundaries;
-- decomposition boards preserve part ownership and assembly hierarchy;
+- every `view_id` in the Structural Coverage Matrix passes;
+- every `node_id` in the Critical Node Registry appears in the correct board cell and keeps enough context;
+- every `state_id` preserves identity, motion logic, and verified stable endpoints;
+- every `interface_id` preserves verified controls, ports, contact zones, and boundaries;
+- every `material_zone` preserves verified boundaries, texture direction, reflection, translucency, and scale;
+- every `hidden_no_fill_zone` remains hidden, neutral, or explicitly blocked rather than fabricated;
+- decomposition boards preserve verified part ownership and assembly hierarchy;
+- every delivered board has one matching `final_image_generation_prompt` in `本次图片生成提示词`;
+- the number of entries in `final_image_generation_prompts` equals the number of delivered QA-passing boards;
+- every visible prompt corresponds to the final accepted `/image gen` result, not a rejected attempt or after-the-fact reconstruction;
+- prompts include the board type, verified source identity, verified structural constraints, relevant matrix or registry items, 16:9 4K neutral board requirements, and no-text-pollution constraints;
+- prompts do not include hidden reasoning, source-audit trace, unsupported inferred structure, or instructions to add labels, arrows, titles, legends, callouts, or non-product text;
+- no prompt text appears inside the generated image;
 - no invented part, missing real part, false symmetry, left/right swap, hidden-structure hallucination, decorative text pollution, poster style, or simple-product-board downgrade.
 
-If a board fails but generation can continue, repair or add the narrowest necessary board rather than stopping at analysis. Prioritize repairs:
+If generated output fails these checks while source evidence remains sufficient, repair or regenerate the failed board in the current run. Do not include failed attempts in the asset package.
 
-1. missing or wrong critical structure;
-2. false symmetry, left/right/front/back/top/bottom error;
-3. missing top, bottom, underside, or back view;
-4. state inconsistency;
-5. interface/control drift;
-6. decomposition/part ownership confusion;
-7. material or high-risk detail drift;
-8. non-product text pollution or layout clutter.
+If the current run still cannot produce a QA-passing full package after available repair attempts, the final result is `not_approved` with reason `generated_board_failed_qa`. The rejected generated images are not asset-board deliverables, must not be registered or reused, and do not create a limited package. Do not hide failure behind a softer status.
 
-Completion criterion: final delivery either has all required boards generated and checked, or names the precise missing source evidence that blocks the remaining structural lock.
+## Not Approved Output
+
+When the source gate fails, do not call `/image gen`. Output only a concise Chinese not-approved report:
+
+- `source_gate_status`: `not_approved`;
+- `approval_status`: `not_approved`;
+- `not_approved_reason`: `source_insufficient`;
+- `image_generation_decision`: `refuse_generation`;
+- `video_handoff_status`: `blocked_do_not_use`;
+- `generated_assets_delivered`: `none`;
+- `asset_registry_status`: `do_not_register_or_reuse`;
+- `prompt_reuse_status`: `no_reusable_prompt_allowed`;
+- `prompt_output_status`: `no_prompt_output_for_not_approved`;
+- reason;
+- provided references summary;
+- missing required reference images;
+- affected required boards;
+- affected high-risk nodes, states, interfaces, or decomposition relationships;
+- minimum new reference set needed to rerun;
+- asset registry instruction: do not register, reuse, or treat this as a video-ready asset lock package;
+- statement that no asset-board images, reusable image/video prompts, partial video-safe ranges, asset IDs, or downstream-use instructions were produced because doing so would require guessing complex structure.
+- statement that no image-generation prompts are output because no QA-passing deliverable exists.
+- statement that `final_image_generation_prompts` and `final_image_generation_prompt` are not output for `not_approved`.
+
+When generated boards fail QA after a `full_approved` source gate and cannot be repaired in the current run, output a concise Chinese rejection report:
+
+- `source_gate_status`: `full_approved`;
+- `approval_status`: `not_approved`;
+- `not_approved_reason`: `generated_board_failed_qa`;
+- `image_generation_decision`: `call_image_gen`;
+- `video_handoff_status`: `blocked_do_not_use`;
+- `generated_assets_delivered`: `none`;
+- `asset_registry_status`: `do_not_register_or_reuse`;
+- `prompt_reuse_status`: `no_reusable_prompt_allowed`;
+- `prompt_output_status`: `no_prompt_output_for_not_approved`;
+- failed boards;
+- failed structural checks;
+- repair attempts made;
+- minimum fix needed to rerun or regenerate;
+- asset registry instruction: do not register, reuse, or treat rejected generated images as a video-ready asset lock package.
+- statement that no image-generation prompts are output because rejected generated boards are not deliverables.
+- statement that `final_image_generation_prompts` and `final_image_generation_prompt` are not output for `not_approved`.
+
+The missing-reference list must be concrete, for example:
+
+- true back view;
+- true top view;
+- true bottom / underside view;
+- left and right side views;
+- 3/4 rear view;
+- hinge / pivot closeups;
+- wheel group / underside mechanism closeups;
+- port / button / control-area closeups;
+- open and closed state references;
+- folded and expanded state references;
+- assembled and disassembled references;
+- lid/body, inner/outer, accessory attachment, or module relationship references;
+- material/texture closeups for mesh, perforation, fabric, carbon fiber, rubber, metal, plastic, glass, or translucent zones.
 
 ## Output Contract
 
-Default user-facing reply is concise and in Chinese. Include the generated images or image results, then report only:
+If `full_approved`, include generated images or image results, then report only:
 
-- 本次生成了哪些资产板；
-- 哪些是固定板；
-- 哪些是自动扩展板；
-- 发现了哪些硬阻塞，如有；
-- 本次复杂结构资产包已锁定哪些关键内容；
-- QA 结果：`approved` / `conditional` / `not_approved`。
+- `source_gate_status`: `full_approved`;
+- `approval_status`: `full_approved`;
+- `image_generation_decision`: `call_image_gen`;
+- `video_handoff_status`: `full_approved_video_ready`;
+- `generated_assets_delivered`: `complete_package`;
+- `asset_registry_status`: `register_video_ready_asset_package`;
+- `prompt_reuse_status`: `reusable_only_with_this_QA_passing_package`;
+- `prompt_output_status`: `delivered_as_chat_text_not_trace`;
+- `final_image_generation_prompts`: same entries as `本次图片生成提示词`;
+- asset registry instruction: register or reuse only this QA-passing package as the video-ready complex-structure asset lock package;
+- generated boards;
+- fixed boards;
+- automatically required boards;
+- `本次图片生成提示词`: for each delivered board, output `board_id`, `board_name`, `prompt_role: public_final_image_generation_prompt`, `prompt_scope: accepted_QA_passing_board_only`, and `final_image_generation_prompt`;
+- verified key contents;
+- QA result.
 
-Do not output a long tutorial, internal prompt dump, or text-only plan when image generation is available.
+If `not_approved`, do not include generated images, reusable image/video prompts, style prompts, shot prompts, partial video-safe ranges, asset IDs, asset registry entries, or any downstream-use instruction except `blocked_do_not_use` and the missing-reference or rejected-board report. If the reason is `source_insufficient`, provide the required-reference list. If the reason is `generated_board_failed_qa`, provide the rejected-board QA report and no reusable image assets.
 
-Use `conditional` when some useful boards were generated but one or more critical views/details are `inferred` or `blocked`. Use `not_approved` when structure, identity, state logic, or high-risk nodes drift enough that the package should not be used for downstream video continuity.
-
-End condition: the complex product has a video-ready structural asset package consisting of separate generated boards, with fixed structure overview and critical closeup boards plus every automatically required extension board, and the user can tell exactly what is locked, inferred, blocked, or rejected.
+End condition: either a fully source-supported generated asset package passes QA as `full_approved`, the run stops before image generation as `not_approved` with exact additional product reference images required, or rejected generated boards are reported as `not_approved` with no deliverable assets and no video handoff.
