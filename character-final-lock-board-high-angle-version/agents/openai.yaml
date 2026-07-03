@@ -1,6 +1,6 @@
 interface:
   display_name: "Character Final Lock Board High Angle"
-  short_description: "Generate high-angle character boards with prompts."
-  default_prompt: "Use $character-final-lock-board-high-angle-version with my model reference and wardrobe reference to generate one high-angle final character lock board image, prompt trace, and QA."
+  short_description: "Generate high-angle boards and exact prompts."
+  default_prompt: "Use $character-final-lock-board-high-angle-version with my model reference and wardrobe reference to generate one high-angle final character lock board image, the exact image generation prompt, and QA."
 policy:
   allow_implicit_invocation: true
