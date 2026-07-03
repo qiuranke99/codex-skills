@@ -1,15 +1,15 @@
 ---
 name: packaging-product-identity-label-lock-board
-description: "Use when the user provides packaging, bottle, box, pouch, can, tube, jar, carton, bag, or other label-heavy product references and needs one clean generated Packaging Product Identity + Label Lock Board for downstream ad image or video generation. Directly call Codex built-in /image gen to lock 8 video-ready product angles, logo, label layout, exact key copy, specs, certifications, and material details; never make prompt text the main deliverable."
+description: "Use when the user provides packaging, bottle, box, pouch, can, tube, jar, carton, bag, or other label-heavy product references and needs one clean generated Packaging Product Identity + Label Lock Board for downstream ad image or video generation. Directly call Codex built-in /image gen to lock 8 video-ready product angles, logo, label layout, exact key copy, specs, certifications, and material details, then output the final image-generation prompt as chat text; never replace the image with prompt-only output."
 ---
 
 # Packaging Product Identity + Label Lock Board
 
 Chinese name: 包装产品身份与标签文案双锁定资产板
 
-Generate one clean composite image asset board for a packaging product whose geometry, surface information, and video perspective must stay stable. The deliverable is the generated image plus concise QA, not an internal prompt.
+Generate one clean composite image asset board for a packaging product whose geometry, surface information, and video perspective must stay stable. The deliverable is the generated image, the final image-generation prompt used for that image, and concise QA.
 
-The leading rule is **clean board**: the generated image may contain only the product body, product views, product detail crops, and text/logos/patterns that truly exist on the product packaging. All asset names, labels, status, view names, explanations, and registry text stay in the chat reply, not inside the image.
+The leading rule is **clean board**: the generated image may contain only the product body, product views, product detail crops, and text/logos/patterns that truly exist on the product packaging. The image-generation prompt, asset names, labels, status, view names, explanations, and registry text stay in the chat reply, not inside the image.
 
 ## Scope
 
@@ -78,7 +78,9 @@ Apply confidence rules:
 - If top and bottom references are supplied, high-angle and low-angle perspectives may be high confidence.
 - If top or bottom references are missing, still generate high-angle and low-angle views for video usefulness, but mark them as `inferred`.
 - If only a front view exists and video use is requested, generate a forward-use 8-angle exploration board and mark non-front angles as `inferred`.
+- A forward-use exploration board is not a fully approved lock board. If back, side, top, or bottom sources are missing, the result can be at most `conditional` unless the missing faces are irrelevant to the user's requested lock.
 - If exact back, side, top, or bottom label copy is required without matching source, state: `缺少该角度的真实参考，无法保证该面标签逐字准确。`
+- Treat high-angle and low-angle views as video perspective references. They do not verify top labels, bottom labels, seals, cap codes, bottom marks, barcodes, or unseen structure unless the matching source reference was supplied.
 - Never present inferred angles as approved source truth.
 
 Completion criterion: every output angle can be reported as `approved`, `inferred`, or `needs_source`.
@@ -99,6 +101,7 @@ Rules:
 - Do not use gibberish as if it were real copy.
 - If exact text is required but the source is inadequate, still generate a useful forward asset board when possible, but mark the missing text as `needs_source`.
 - Require high-resolution label art or exact source text when word-for-word fidelity is a hard requirement.
+- One clean board cannot prove all dense microcopy word-for-word unless the user supplied high-resolution label or text sources. Approve only core readable copy and explicitly supplied closeup crops; keep unsupported dense back-label text as `needs_source` or `C_texture`.
 - Do not approve the board into the asset registry when any `A_exact` item is wrong or unverifiable.
 
 Completion criterion: exact-copy claims never exceed the available source evidence.
@@ -148,7 +151,9 @@ Completion criterion: the generated image is a clean visual reference board with
 
 Call the available Codex image-generation capability directly. Use Codex built-in `/image gen` when exposed by the interface. If no image-generation tool is callable, report a hard blocker; do not replace the deliverable with prompt-only output.
 
-Build the internal image-generation instruction from the input audit, source map, angle gate, copy classes, and board specification. Do not show the internal image prompt by default. Show it only if the user explicitly asks to inspect the prompt.
+Build a concrete `final_image_generation_prompt` from the input audit, source map, angle gate, copy classes, and board specification before generation. Use that prompt for `/image gen`. After generation, output that exact prompt in the chat as `本次图片生成提示词`.
+
+The prompt is a user-facing production handoff artifact. It is also non-product-native text, so it must stay outside the generated image. Do not output hidden reasoning, private deliberation, raw tool metadata, or model-call logs. If repair generations are used, output the final prompt used for the delivered image and state the revision count; include earlier repair prompts only when the user explicitly asks.
 
 Internal generation constraints:
 
@@ -161,7 +166,7 @@ Internal generation constraints:
 - do not redesign, premiumize, modernize, simplify, rebrand, relabel, recolor, resize, restyle, or advertise the product;
 - do not add any non-product-native words, labels, headings, asset names, numbers, arrows, callouts, UI panels, status marks, or explanatory graphics inside the image.
 
-Completion criterion: `/image gen` has been called for one clean composite image board, or missing image-generation capability has been reported as the only blocker.
+Completion criterion: `/image gen` has been called for one clean composite image board and the final image-generation prompt is available for the chat reply, or missing image-generation capability has been reported as the only blocker.
 
 ## QA Gate
 
@@ -197,9 +202,16 @@ Check video usability:
 - enough views and detail crops exist for downstream image/video models;
 - image reads as a clean asset reference board rather than an ad poster, infographic, spec sheet, or presentation slide.
 
+Check prompt trace:
+
+- final reply includes `本次图片生成提示词`;
+- the prompt corresponds to the final delivered image, not an abandoned draft;
+- the prompt is consistent with the source map, clean-board ban, 8-angle requirement, and repair state;
+- the prompt does not expose hidden reasoning, private deliberation, raw tool metadata, or model-call logs.
+
 Result levels:
 
-- `approved`: geometry, A-class text, logo, label placement, material, 8-angle perspective, no-text-pollution, and video usability pass.
+- `approved`: geometry, A-class text, logo, label placement, material, 8-angle perspective, no-text-pollution, video usability, source map, and prompt trace pass.
 - `conditional`: usable as a forward asset board, but some angles or copy are `inferred` or `needs_source`.
 - `not_approved`: geometry, logo, A-class text, material identity, perspective, or clean-board rule fails.
 
@@ -227,23 +239,29 @@ Do not rewrite the whole board instruction when one issue dominates. After two r
 - logo file;
 - material notes.
 
-Completion criterion: no more than two repair generations are attempted, and any remaining blocker is tied to missing source evidence or generation failure.
+After each repair, rerun the full QA gate. A repair that removes prompt/text pollution but breaks logo, A-class copy, geometry, material, or source-state honesty is still a failure.
+
+Completion criterion: no more than two repair generations are attempted, the final prompt corresponds to the delivered image, and any remaining blocker is tied to missing source evidence or generation failure.
 
 ## Output Contract
 
 Default user-facing reply is concise and in Chinese:
 
 1. include the generated single clean asset-board image or image result;
-2. provide the lock checklist;
-3. provide QA acceptance;
-4. state whether it can enter `Approved Packaging Asset Registry`;
-5. list missing source materials when needed.
+2. provide `本次图片生成提示词`, meaning the final image-generation prompt used for the delivered image;
+3. provide the lock checklist;
+4. provide QA acceptance;
+5. state whether it can enter `Approved Packaging Asset Registry`;
+6. list missing source materials when needed.
 
-Keep lock checklist, asset names, confidence labels, and QA results in chat text only. Do not put them inside the image.
+Keep the image-generation prompt, lock checklist, asset names, confidence labels, and QA results in chat text only. Do not put them inside the image.
 
 Use this structure:
 
 ```text
+本次图片生成提示词：
+<输出最终用于本次 /image gen 的提示词。若经过修正，输出最终交付图对应的最终提示词。>
+
 锁定清单：
 - 品牌：
 - 产品名：
@@ -285,11 +303,11 @@ If the user provides a concrete product name, replace `product` in registry IDs 
 
 Do not default to:
 
-- internal image prompt text;
 - long theory;
 - model-call details;
 - prompt-only response;
 - multi-image output;
-- generated image containing non-product labels, headings, view text, asset IDs, or QA text.
+- hidden reasoning or raw tool logs;
+- generated image containing the prompt, non-product labels, headings, view text, asset IDs, or QA text.
 
-End condition: one clean packaging product identity and label-copy lock board has been generated, QA is complete, and the user can tell which angles and text are `approved`, `inferred`, or `needs_source` without any of that metadata polluting the image itself.
+End condition: one clean packaging product identity and label-copy lock board has been generated, the final image-generation prompt has been output as chat text, QA is complete, and the user can tell which angles and text are `approved`, `inferred`, or `needs_source` without any of that metadata polluting the image itself.
