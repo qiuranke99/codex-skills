@@ -21,6 +21,7 @@ Codex discovery root: `C:\Users\Administrator\.codex\skills`
 | `complex-structure-product-asset-lock-board` | `D:\AI\skill\complex-structure-product-asset-lock-board` | Create separate video-ready complex structure product asset boards with a per-board source gate: generate every source-approved 16:9 4K board, block boards that need more references, support partial board-scoped deliverables, and output each delivered board's final image-generation prompt with no package-level prompt substitute. | `D:\AI视觉工作室\.agents\skills\complex-structure-product-asset-lock-board` | Active |
 | `multi-angle-product-identity-lock-board` | `D:\AI\skill\multi-angle-product-identity-lock-board` | Directly generate native-4K-verified six-view product identity lock boards for low-risk products using Codex built-in `/image gen`, exact `english_prompt_used` traceability, pixel-dimension verification, and QA. | `D:\AI视觉工作室\.agents\skills\multi-angle-product-identity-lock-board` | Active |
 | `packaging-product-identity-label-lock-board` | `D:\AI\skill\packaging-product-identity-label-lock-board` | Directly generate clean 8-angle packaging product identity and label-copy lock boards with logo, key copy, material details, high/low perspective, final image-generation prompt output, QA, and no non-product text pollution. | `D:\AI视觉工作室\.agents\skills\packaging-product-identity-label-lock-board` | Active |
+| `material-sensitive-product-master-asset-board` | `D:\AI\skill\material-sensitive-product-master-asset-board` | Directly generate one 16:9 Material-Sensitive Product Master Asset Board for transparent, glass, acrylic, translucent, liquid, cream, crystal-cut, mirror-metal, high-reflective, frosted, or multi-layer-shell products using Codex built-in `/image gen`, a dominant hero anchor, complementary angles, material-response closeups, critical structure details, optional logo/text micro reference, optional state window, exact final image-generation prompt output, and QA. | `D:\AI视觉工作室\.agents\skills\material-sensitive-product-master-asset-board` | Active |
 
 ## Codex Discovery Entries
 
@@ -37,6 +38,7 @@ As of 2026-07-04, this workspace exposes the following user-maintained Codex dis
 | `C:\Users\Administrator\.codex\skills\complex-structure-product-asset-lock-board` | `D:\AI\skill\complex-structure-product-asset-lock-board` |
 | `C:\Users\Administrator\.codex\skills\multi-angle-product-identity-lock-board` | `D:\AI\skill\multi-angle-product-identity-lock-board` |
 | `C:\Users\Administrator\.codex\skills\packaging-product-identity-label-lock-board` | `D:\AI\skill\packaging-product-identity-label-lock-board` |
+| `C:\Users\Administrator\.codex\skills\material-sensitive-product-master-asset-board` | `D:\AI\skill\material-sensitive-product-master-asset-board` |
 
 ## Skipped Sources
 
