@@ -1,11 +1,11 @@
 ---
 name: character-final-lock-board
-description: "Use when the user provides person or model reference images, optional wardrobe/shoe/accessory references, and optional character notes, and wants a final locked character asset board for AI video or image continuity. Directly generate one Character Final Lock Board image with GPT Image 2 or the available image generation tool; do not produce a candidate sheet or make prompt text the main deliverable."
+description: "Use when the user provides person or model reference images, optional wardrobe/shoe/accessory references, and optional character notes, and wants a final locked character asset board for AI video or image continuity. Directly generate one Character Final Lock Board image with GPT Image 2 or the available image generation tool, and output the exact image generation prompt used for the delivered image. Do not produce a candidate sheet or prompt-only result."
 ---
 
 # Character Final Lock Board
 
-Generate one final locked character asset board, not exploratory candidates. The deliverable is an actual image file plus optional `asset_record.yaml` and `qa_report.md`; the internal generation brief is process state, not the user-facing artifact.
+Generate one final locked character asset board, not exploratory candidates. The deliverable is an actual image file plus the exact image generation prompt used for that delivered image. `asset_record.yaml` and `qa_report.md` are recommended companion artifacts.
 
 ## Input Contract
 
@@ -32,7 +32,7 @@ Before generation, write a private lock summary for yourself:
 - `asset_id`: user-provided ID, otherwise a short timestamped ID such as `character_20260701_1530`.
 - `direction_notes`: only notes that do not break identity or wardrobe lock.
 
-Use the lock summary to build the generation call. Do not print it unless it is saved to `asset_record.yaml` or needed to explain a blocker.
+Use the lock summary to build the generation prompt. Do not print the lock summary unless it is saved to `asset_record.yaml` or needed to explain a blocker.
 
 ## Image Generation
 
@@ -40,7 +40,16 @@ Call the available Codex image-generation capability directly. Select GPT Image 
 
 Use all supplied reference images in the generation call when the tool supports reference attachments. The generation must create one final board from the locked identity and wardrobe, not multiple alternate identities.
 
-Internal generation brief:
+Build `final_generation_prompt` before the image-generation call. It must be the complete natural-language prompt actually sent to the image-generation tool, including board layout, identity lock, wardrobe lock, reference binding notes, and strict negatives. If you change the prompt to satisfy tool syntax, update `final_generation_prompt` before generation so the saved prompt and generated image stay traceable.
+
+Keep `final_generation_prompt` safe to return:
+
+- Refer to input images by attachment aliases such as `person_reference_1` and `wardrobe_reference_1`, not by local absolute paths.
+- Do not include private lock summaries, hidden reasoning, secrets, client-private notes, or unsupported identity claims.
+- State that the prompt depends on the same reference images used in the run and is not a standalone guarantee of identity reproduction.
+- Keep all prompt text outside the image. The generated board itself must still contain no text, labels, arrows, UI, watermarks, or gibberish.
+
+Prompt base:
 
 ```text
 Create one wide 16:9 or wider Character Final Lock Board for AI video continuity.
@@ -58,7 +67,9 @@ Wardrobe lock: preserve top, bottom, shoes, accessories, fabric type, core color
 Strict negatives: no headless model, no missing head, no face swap, no age change, no body type change, no identity change, no wardrobe redesign, no new unrelated clothing layer, no shoe-type change, no extra people, no indoor or outdoor scene, no cinematic lighting, no dramatic shadows, no poster, no fashion editorial, no illustration, no anime, no CGI, no 3D render, no concept art, no text, no title, no arrows, no labels, no logo, no watermark, no UI, no gibberish.
 ```
 
-Do not display this brief as the main answer. If the user explicitly asks for the prompt after delivery, provide it as secondary documentation.
+Save and return the exact `final_generation_prompt` used for the delivered image. The prompt is a required companion deliverable, but the image remains required; do not finish with prompt text alone.
+
+When generation is hard-blocked because no image-generation tool is callable, do not output a reusable generation prompt as if the run succeeded. Report the blocker and the missing capability.
 
 ## Output Contract
 
@@ -69,6 +80,7 @@ Save outputs in a run folder when filesystem access is available:
 Required:
 
 - `<asset_id>_final_lock_board.png` or the native image filename returned by the generator.
+- `<asset_id>_generation_prompt.md` containing the exact prompt used for the delivered image.
 
 Recommended:
 
@@ -89,11 +101,18 @@ shoe_source:
 accessory_source:
 direction_notes:
 image_path:
+generation_prompt_path:
+generation_prompt_sha256:
+generator_model:
+prompt_contract_version:
+final_generation_attempt:
 qa_report_path:
 revision_count:
 ```
 
-`qa_report.md` should contain the QA checklist, result, and whether regeneration was used.
+`qa_report.md` should contain the QA checklist, result, whether regeneration was used, and whether the delivered image is traceable to the returned prompt.
+
+If the image tool cannot save files but can return an image result, return the full prompt text in the user-facing reply and mark `prompt_saved: false` in the QA result. If filesystem access exists, prefer saving the prompt file and also include the full prompt text in the reply when it is not excessively long.
 
 ## QA Gate
 
@@ -113,7 +132,11 @@ Check:
 - silhouettes exist with two or three clean shapes;
 - background is white or light gray studio only;
 - no extra people appear;
-- no text, title, arrows, labels, logo, watermark, UI, or gibberish appears inside the image.
+- no text, title, arrows, labels, logo, watermark, UI, or gibberish appears inside the image;
+- the prompt artifact or returned prompt is the exact prompt used for the delivered image;
+- if regeneration occurred, the final prompt corresponds to the delivered regenerated image, not the rejected first attempt.
+- the prompt record does not contain local absolute paths, hidden reasoning, secrets, private lock summaries, or unsupported identity claims;
+- the prompt record states that it depends on the same reference images used in the run.
 
 Result levels:
 
@@ -121,15 +144,16 @@ Result levels:
 - `warn`: the image is usable but has a minor missing secondary element.
 - `fail`: identity/wardrobe drift, missing head, extra person, scene background, text pollution, or missing required full-body angles.
 
-If the first generation is an obvious `fail`, regenerate exactly once. The second attempt must emphasize identity consistency, wardrobe consistency, no text, no background, complete head-to-toe body views, and all required angles. After the second attempt, stop and deliver the best image with an honest QA result; do not loop.
+If the first generation is an obvious `fail`, regenerate exactly once. Save the rejected attempt prompt as `<asset_id>_generation_prompt_attempt_1.md` when filesystem access is available. The second attempt must emphasize identity consistency, wardrobe consistency, no text, no background, complete head-to-toe body views, and all required angles. Save the second prompt as the final `<asset_id>_generation_prompt.md` if that image is delivered. After the second attempt, stop and deliver the best image with an honest QA result; do not loop.
 
 ## User-Facing Reply
 
 Return only:
 
 - image path or generated image result;
+- `generation_prompt.md` path and the exact prompt text, or the exact prompt text with `prompt_saved: false` if no file could be written;
 - `asset_record.yaml` path if created;
 - `qa_report.md` path if created;
 - short QA result and whether one regeneration was used.
 
-Do not make the internal generation brief, prompt text, or a candidate sheet the primary output.
+Do not make prompt text a substitute for image generation, and do not produce a candidate sheet.

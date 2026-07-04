@@ -1,6 +1,6 @@
 interface:
   display_name: "Character Final Lock Board"
-  short_description: "Generate final character lock boards."
-  default_prompt: "Use $character-final-lock-board with my model reference and wardrobe reference to generate one final character lock board image plus QA."
+  short_description: "Generate character boards plus prompts."
+  default_prompt: "Use $character-final-lock-board with my model reference and wardrobe reference to generate one final character lock board image, output the exact image generation prompt, and run QA."
 policy:
   allow_implicit_invocation: true
