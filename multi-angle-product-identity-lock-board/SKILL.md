@@ -1,6 +1,6 @@
 ---
 name: multi-angle-product-identity-lock-board
-description: Directly generate a six-view product identity lock board for low-risk products using Codex built-in /image gen.
+description: Directly generate a native-4K-verified six-view product identity lock board for low-risk products using Codex built-in /image gen, and output the final English image-generation prompt used.
 ---
 
 # Multi-Angle Product Identity Lock Board
@@ -12,7 +12,7 @@ This skill creates one six-view multi-angle product identity lock board image fo
 
 The purpose is to lock product identity for downstream visual consistency, reusable product asset libraries, advertising image generation, video generation, storyboard creation, and commercial visualization.
 
-This skill is not a text-only instruction workflow. The default result is a generated image plus QA judgment. Do not stop at a written generation instruction unless the user explicitly asks not to generate an image.
+This skill is not a text-only instruction workflow. The default result is a generated image, the final English image-generation prompt used, resolution verification, and QA judgment. Do not stop at a written generation instruction unless the user explicitly asks not to generate an image.
 
 This skill is not for product redesign, advertising poster creation, lifestyle scene generation, packaging redesign, technical blueprinting, complex product reconstruction, exact label-copy lock, exact logo reproduction, or engineering-precision modeling.
 
@@ -169,6 +169,7 @@ Default board format:
 - one image
 - exactly six distinct product views
 - horizontal 16:9 board unless the user specifies another ratio
+- target native 3840x2160 UHD 4K raster output
 - clean commercial product identity board
 - neutral light gray or pure white background
 - soft diffused studio lighting
@@ -199,6 +200,28 @@ If the underside is more important than the top, replace the overhead top view w
 If the product's front and back are visually similar, include a 3/4 rear view to avoid repeated views.
 
 All six views must be meaningfully different. Avoid repeated or nearly duplicated camera angles. Each view must show the complete product with generous margins. No cropping. No overlap between product views. Do not add unrelated elements.
+
+## Resolution Contract
+
+This skill targets a native 3840x2160 (3840 x 2160) UHD 4K horizontal raster image for the final six-view product identity lock board.
+
+"4K" may only be claimed when the generated image artifact itself is verified at 3840x2160 (3840 x 2160) pixels or higher, with no post-generation resizing, interpolation, super-resolution, sharpening-upscale, screenshot enlargement, preview enlargement, or export enlargement.
+
+Request native 3840x2160 UHD 4K output from Codex built-in `/image gen`, with ultra-clear product detail and a horizontal 16:9 composition. Do not claim that `/image gen` was called with a specific size parameter unless that parameter is actually exposed by the available tool interface.
+
+A low-resolution generated image, including but not limited to 1672x941, 1792x1024, 1536x864, or any other sub-3840x2160 result, must never be upscaled and presented as 4K. Upscaling a low-resolution result does not satisfy this skill.
+
+After every `/image gen` result, inspect the actual pixel dimensions and provenance of the generated image file before QA approval.
+
+Classify resolution status only as:
+
+- `resolution_approved`: the original generated image artifact is verified at 3840x2160 pixels or higher, remains horizontal 16:9, and was not enlarged after generation.
+- `resolution_not_approved`: the generated image is below 3840x2160, has the wrong deliverable geometry, or was enlarged after generation.
+- `resolution_unverified`: the actual pixel dimensions or native generated provenance cannot be checked.
+
+`resolution_unverified` is a failing status.
+
+If native 3840x2160 output cannot be generated or verified, the result is not approved. Regenerate only if a native high-resolution generation path is available. If no such path is available, report `overall_lock_asset_status: blocked_resolution_contract` instead of delivering a lower-resolution board.
 
 ## Visual Style
 
@@ -329,12 +352,22 @@ If the product is suitable or manageable-risk, directly use Codex built-in `/ima
 
 Use the uploaded target product reference as the product identity source. Use any uploaded sample asset-board image only as layout/style reference. Generate one six-view product identity lock board image.
 
-Construct the internal image-generation instruction from the identity extraction and board plan. Do not expose this instruction to the user by default.
+Construct one final public English image-generation prompt from the identity extraction and board plan before calling `/image gen`. Freeze that prompt as the submitted generation instruction, use it for Codex built-in `/image gen`, and include the exact same prompt in the final response as `english_prompt_used`.
 
-Internal generation instruction must include:
+The prompt is an execution trace for prompt-image accountability. It is not a prompt-only substitute deliverable.
+
+When feasible, calculate and report `generation_prompt_sha256` for the exact submitted prompt. If the exact submitted prompt is unknown after generation, mark the run Not approved for prompt traceability failure. Do not reconstruct a cleaner prompt after the fact and present it as the submitted prompt.
+
+The prompt must be outside the generated image. Do not place prompt text, labels, captions, field names, or any other written content inside the product board image.
+
+Do not include hidden reasoning, scratchpad notes, source-risk deliberation, draft prompts, rejected candidates, or internal QA analysis inside `english_prompt_used`.
+
+Final English image-generation prompt must include:
 
 ```text
 Create one clean six-view product identity lock board of the exact same product shown in the uploaded target product reference image. Use the uploaded target product image as the only source of truth for product identity, silhouette, proportions, colors, materials, surface texture, visible construction details, logo placement, and visible markings.
+
+Target a native 3840x2160 UHD 4K horizontal raster image with ultra-clear product detail. This is a native-resolution requirement, not permission to upscale, resize, enlarge, or resample a smaller image after generation.
 
 Show the product in exactly six clearly distinct views arranged as a clean 2x3 studio product reference board: front view, rear view, left side profile, right side profile, slight overhead top view, and 3/4 front hero view. Each view must show the complete product with generous margins, no cropping, no overlap, and no repeated or nearly duplicated angles.
 
@@ -345,23 +378,40 @@ Use a neutral light gray or pure white studio background, soft diffused product 
 Negative constraints: no product redesign, no changed colors, no changed materials, no invented features, no missing parts, no duplicated angle, no distorted proportions, no warped geometry, no extra accessories, no fake text, no text overlays, no captions, no labels, no messy background, no cinematic scene, no dramatic lighting, no AI-looking plastic texture.
 ```
 
-Completion criterion: `/image gen` has been called or, if the image-generation tool is unavailable, the run is reported as blocked by missing image-generation capability. Do not silently fall back to text-only output.
+Completion criterion: `/image gen` has been called using the final English image-generation prompt with a native 3840x2160 UHD 4K target, and that exact same prompt is retained for the final response as `english_prompt_used`. If the image-generation tool is unavailable, report the run as blocked by missing image-generation capability. Do not silently fall back to text-only output.
 
-### Step 5 - QA
+### Step 5 - Resolution Verification
+
+Verify the actual pixel dimensions and native provenance of the generated image before QA approval.
+
+Resolution approved requires all of the following:
+
+1. actual pixel dimensions are verified as at least 3840x2160 (3840 x 2160);
+2. the board remains a horizontal 16:9 product identity lock board;
+3. the verified dimensions belong to the original generated image artifact, not a screenshot, preview, resized export, or post-processed copy;
+4. no upscaling, resizing, interpolation, super-resolution, or export enlargement was used after generation.
+
+Resolution not approved applies when the generated image is below 3840x2160, has the wrong deliverable geometry, or was enlarged after generation.
+
+Resolution unverified applies when actual pixel dimensions or native provenance cannot be checked. Resolution unverified is a failing status.
+
+Completion criterion: the generated board cannot receive overall Approved status unless resolution status is `resolution_approved`.
+
+### Step 6 - QA
 
 After image generation, inspect the generated result against the QA rules.
 
 Completion criterion: the response includes an Approved / Not approved judgment with the main failure reason if any.
 
-### Step 6 - Repair
+### Step 7 - Repair
 
 If the result fails, write one repair instruction targeting only the main failure. Do not change multiple variables at once.
 
 Completion criterion: the repair instruction is specific enough to drive a second `/image gen` attempt without widening scope.
 
-## Required Output Format
+## Required Output Format / Output Contract
 
-Default output is not a final English prompt. It is a generation action plus QA result.
+Default output is not prompt-only. It is a direct generation action plus the final English image-generation prompt used, resolution verification, and QA result.
 
 Always output these sections:
 
@@ -388,13 +438,69 @@ Write this section in Chinese using this exact structure:
 
 ### 3. Image Generation Action
 
-State that Codex built-in `/image gen` is being used to generate the six-view product identity lock board.
+State that Codex built-in `/image gen` is being used to generate the six-view product identity lock board with a native 3840x2160 UHD 4K target.
 
 Include the generated image result when available.
 
-Do not output the internal English generation instruction by default.
+State that the final English image-generation prompt below is the prompt used for generation, not a substitute for generation.
 
-### 4. QA Result
+### 4. Final English Image Generation Prompt
+
+Output exactly one complete English image-generation prompt: the exact same public prompt submitted to `/image gen`.
+
+Do not output multiple prompt variants unless the user explicitly asks for variants.
+
+Do not include hidden reasoning, drafts, prompt analysis, or unrelated prompt alternatives.
+
+Use this trace format:
+
+```text
+english_prompt_used:
+[exact English prompt submitted to Codex built-in /image gen]
+prompt_role: execution_trace_not_prompt_only_deliverable
+prompt_trace_status: verified / unverified
+generation_prompt_sha256: [sha256 of english_prompt_used when feasible] / unavailable
+```
+
+If `prompt_trace_status` is `unverified`, the overall result cannot be Approved.
+
+The prompt must preserve:
+
+- target product identity from the uploaded target product reference
+- six distinct views
+- native 3840x2160 UHD 4K target
+- clean commercial product identity board layout
+- no text inside the generated image
+- no labels, annotations, arrows, numbers, captions, watermarks, or graphic overlays inside the generated image
+- no product redesign, lifestyle scene, fake text, or extra accessories
+
+### 5. Resolution Verification
+
+Whenever an image is generated, report:
+
+```text
+resolution_status: resolution_approved / resolution_not_approved / resolution_unverified
+target_native_resolution: 3840x2160 UHD 4K
+generated_native_size: [width]x[height] / unavailable
+actual_pixel_dimensions: [width]x[height] / unavailable
+delivered_file_size: [width]x[height] / unavailable
+native_provenance_verified: Yes / No / Unknown
+post_generation_upscale_or_resize_used: No / Yes / Unknown
+native_4k_claim: true / false
+overall_lock_asset_status: approved_native_4k / not_approved_resolution / blocked_resolution_contract / not_approved_visual_qa
+resolution_evidence: ...
+resolution_failure_reason: ...
+```
+
+Overall QA may be Approved only when `resolution_status` is `resolution_approved`.
+
+`native_4k_claim` may be `true` only when `resolution_status` is `resolution_approved`. Otherwise it must be `false`.
+
+If the generated image is below 3840x2160, do not upscale it. Mark it `resolution_not_approved` and Not approved.
+
+If the generated image dimensions or native provenance cannot be inspected, mark it `resolution_unverified` and Not approved.
+
+### 6. QA Result
 
 ```text
 Approved / Not approved
@@ -402,7 +508,7 @@ Failure reason if any: ...
 Repair instruction if needed: ...
 ```
 
-If the product is Not suitable, skip sections 3 and 4 and output the scope refusal.
+If the product is Not suitable, skip sections 3, 4, 5, and 6 and output the scope refusal.
 
 ## No-Generation Text Exception
 
@@ -413,7 +519,7 @@ In text-only mode:
 - do not call `/image gen`
 - still perform applicability check
 - still summarize product identity
-- output one concise written image-generation instruction for later use
+- output one concise final English image-generation prompt for later use
 - clearly mark it as text-only because the user requested no direct image generation
 
 Text-only mode is never the default.
@@ -422,22 +528,28 @@ Text-only mode is never the default.
 
 Before finalizing, check:
 
-1. Is the product suitable for this skill?
-2. Are there exactly six views?
-3. Are all six views meaningfully different?
-4. Is the product fully visible in every view?
-5. Is there enough margin around each view?
-6. Is the silhouette preserved?
-7. Are the proportions preserved?
-8. Are the colors preserved?
-9. Are the materials preserved?
-10. Are visible details preserved?
-11. Has any structure been invented?
-12. Has any real structure been omitted?
-13. Were extra accessories added?
-14. Is there any fake text?
-15. Are there unwanted people, hands, scenes, props, labels, arrows, annotations, or text?
-16. Does the result read as a product identity lock board rather than an advertising poster?
+1. Is the final generated image verified as native 3840x2160 UHD 4K or higher, with no post-generation upscale or resize?
+2. Did the final response include exactly one English image-generation prompt used for `/image gen`?
+3. Is the prompt clearly marked as `english_prompt_used` and not presented as a prompt-only substitute?
+4. Is `prompt_trace_status` verified, with `generation_prompt_sha256` reported when feasible?
+5. Does the prompt match the target product identity extraction, six-view plan, native 3840x2160 target, and no-text image constraints?
+6. Is the product suitable for this skill?
+7. Are there exactly six views?
+8. Are all six views meaningfully different?
+9. Is the product fully visible in every view?
+10. Is there enough margin around each view?
+11. Is the silhouette preserved?
+12. Are the proportions preserved?
+13. Are the colors preserved?
+14. Are the materials preserved?
+15. Are visible details preserved?
+16. Has any structure been invented?
+17. Has any real structure been omitted?
+18. Were extra accessories added?
+19. Is there any fake text?
+20. Are there unwanted people, hands, scenes, props, labels, arrows, annotations, or text?
+21. Does the generated image contain zero prompt text, titles, view labels, numbers, captions, watermarks, or explanatory typography?
+22. Does the result read as a product identity lock board rather than an advertising poster?
 
 If any critical item fails, output:
 
@@ -445,9 +557,23 @@ If any critical item fails, output:
 Not approved. Failure reason: ... Suggested fix: ...
 ```
 
+If the resolution item fails, the overall QA result must be:
+
+```text
+Not approved. Failure reason: native 3840x2160 UHD 4K output was not verified. Suggested fix: regenerate only through a native high-resolution generation path; do not upscale the failed result.
+```
+
 ## Repair Rules
 
 When repairing a failed result, change only one main issue at a time.
+
+### Resolution Failure
+
+Do not upscale the failed image. Add:
+
+```text
+Regenerate as a native 3840x2160 UHD 4K horizontal product identity lock board. The result must be an original generated image artifact at 3840x2160 pixels or higher, not an upscaled, resized, enlarged, sharpened, super-resolution, screenshot, preview, or export-enlarged copy.
+```
 
 ### Repeated Angles
 
@@ -497,6 +623,30 @@ Add:
 Use only a plain neutral studio background. No room, no environment, no lifestyle setting, no props.
 ```
 
+### Text Pollution Inside Image
+
+Add:
+
+```text
+Regenerate the same six-view product identity board with no readable text anywhere inside the image. Remove all titles, view labels, numbers, arrows, captions, annotations, watermarks, UI text, fake logo text, and invented copy. Preserve product identity through silhouette, proportions, color, material, texture, and non-text structural details only.
+```
+
+### Missing English Prompt Trace
+
+Add:
+
+```text
+If the exact prompt actually submitted to `/image gen` is known, amend the final response by adding `english_prompt_used` exactly, plus `prompt_trace_status` and `generation_prompt_sha256` when feasible. If the exact submitted prompt is unknown, mark the run Not approved for prompt traceability failure. Do not reconstruct a prettier prompt after the fact and present it as the submitted prompt.
+```
+
+### Prompt-Only Default Failure
+
+Add:
+
+```text
+If the run produced only an English prompt without calling `/image gen`, mark it Not approved unless the user explicitly requested text-only mode. Correct by calling `/image gen` with the frozen public English prompt, then perform resolution verification and visual QA.
+```
+
 ## Hard Prohibitions
 
 Never output or encourage:
@@ -518,6 +668,8 @@ Never output or encourage:
 - invented features
 - fake labels
 - unrelated accessories
+- low-resolution upscale presented as 4K
+- post-generation resize presented as native 4K
 
 This skill only creates a six-view multi-angle product identity lock board for low-risk products.
 
@@ -527,7 +679,13 @@ The skill output is successful when it provides:
 
 1. a clear applicability judgment,
 2. a Chinese product identity lock summary,
-3. direct Codex built-in `/image gen` generation of one six-view product identity lock board,
-4. an Approved / Not approved QA result,
-5. no default text-only substitution,
-6. no scope creep into complex product locking, exact label-copy locking, product redesign, or advertising image generation.
+3. direct Codex built-in `/image gen` generation of one native 3840x2160-targeted six-view product identity lock board,
+4. `english_prompt_used`, containing the exact public English prompt submitted to `/image gen`,
+5. verified prompt traceability, including `generation_prompt_sha256` when feasible,
+6. verified actual pixel dimensions and native provenance,
+7. `resolution_approved` before any overall Approved result,
+8. an Approved / Not approved QA result,
+9. no default text-only substitution,
+10. no low-resolution upscale presented as 4K,
+11. no prompt text placed inside the generated image,
+12. no scope creep into complex product locking, exact label-copy locking, product redesign, or advertising image generation.

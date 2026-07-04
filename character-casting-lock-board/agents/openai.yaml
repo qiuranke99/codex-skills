@@ -1,0 +1,4 @@
+interface:
+  display_name: "Character Casting Lock Board"
+  short_description: "Text-free casting board plus prompt."
+  default_prompt: "Use $character-casting-lock-board to generate a text-free film casting lock board from my character reference images, and output the image generation prompt used for each delivered board."
