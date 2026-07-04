@@ -274,7 +274,7 @@ Build a separate `final_image_generation_prompt` for each planned board from:
 
 Do not show, draft, or provide image-generation prompts before the source gate reaches `full_approved`. If the user asks for prompts while source evidence is missing, output the `not_approved` missing-reference report instead.
 
-After `full_approved`, submit each `final_image_generation_prompt` to `/image gen` for its board. This prompt is the public image-generation prompt used for that delivered board, not trace, not hidden reasoning, not a source-audit log, and not a prompt-only substitute deliverable.
+After `full_approved`, submit each `final_image_generation_prompt` to `/image gen` for its board. This prompt is the public image-generation prompt used for that delivered board, not trace, not a trace, not hidden reasoning, not a hidden-reasoning log, not a source-audit log, and not a prompt-only substitute deliverable.
 
 After generation and QA, output the exact final prompt for each delivered QA-passing board in the user-facing reply under `本次图片生成提示词`. If a board is repaired or regenerated, output only the final prompt corresponding to the accepted board. If the exact final submitted prompt for a delivered board is unavailable or cannot be matched to the accepted board, the package fails QA with `prompt mismatch`.
 
