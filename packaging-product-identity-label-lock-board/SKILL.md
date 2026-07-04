@@ -23,7 +23,7 @@ Use this skill for packaging or label-heavy products such as bottles, boxes, pou
 Use a different workflow when:
 
 - text is minimal and only shape needs locking: use `multi-angle-product-identity-lock-board`;
-- the hard problem is mechanical structure, supports, joints, connectors, or engineering parts: use a complex-structure lock workflow if available;
+- the hard problem is mechanical structure, supports, joints, connectors, or engineering parts: do not use this packaging skill; handle the task with main-agent/custom-agent workflow unless a dedicated active production skill exists;
 - the hard problem is folded/unfolded, open/closed, deployed/stored, or use-state variation: use a state-change lock workflow if available;
 - the user only wants an ad poster, mood image, or scene concept: explain that product asset locking should come first.
 

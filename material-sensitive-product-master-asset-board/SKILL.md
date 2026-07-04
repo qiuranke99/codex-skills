@@ -24,7 +24,7 @@ Use another workflow when:
 
 - the product is simple, opaque, low-risk, and only needs a six-view identity board: use `multi-angle-product-identity-lock-board`;
 - exact packaging copy, label hierarchy, ingredients, specs, or certification text is the primary risk: use `packaging-product-identity-label-lock-board`;
-- mechanical topology, joints, interfaces, folding/open-close structure, or multiple engineering states are the primary risk: use `complex-structure-product-asset-lock-board`;
+- mechanical topology, joints, interfaces, folding/open-close structure, or multiple engineering states are the primary risk: do not use this material-sensitive skill; handle the task with main-agent/custom-agent workflow unless a dedicated active production skill exists;
 - the user wants a scene, character, cinematic still, ad poster, lifestyle visual, e-commerce layout, prompt rewrite, or marketing concept rather than a video-reference product asset board.
 
 If no usable product image exists, ask for product reference images instead of generating from imagination.
