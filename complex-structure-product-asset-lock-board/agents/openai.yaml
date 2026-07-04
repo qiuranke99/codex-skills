@@ -1,4 +1,4 @@
 interface:
   display_name: "Complex Structure Product Asset Lock Board"
-  short_description: "Gate, lock, and prompt-record each product board."
-  default_prompt: "Use $complex-structure-product-asset-lock-board to gate these complex product references first, then generate boards only if the source evidence reaches full_approved, and output one final image-generation prompt for each delivered QA-passing board."
+  short_description: "Gate and generate source-approved boards."
+  default_prompt: "Use $complex-structure-product-asset-lock-board to gate these complex product references per board, generate every source-approved board as 16:9 4K, block boards that need more references, and output one final image-generation prompt for each delivered QA-passing board."
