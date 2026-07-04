@@ -1,6 +1,6 @@
 ---
 name: complex-structure-product-asset-lock-board
-description: "Use when the user provides product reference images for complex structures, complex mechanical or electronic devices, multi-part objects, articulated/folding/open-close products, products with multiple states, interfaces, controls, connectors, support nodes, hidden top/bottom/back details, or high-risk structural nodes, and needs a video-ready Complex Structure Product Asset Lock package. First run a full source sufficiency gate; if any required view, state, interface, mechanism, decomposition relationship, or high-risk detail is missing or unverifiable, do not call /image gen and return not_approved with the required reference-image list. Call /image gen only for full_approved packages, then output the final image-generation prompt used for each delivered QA-passing board as chat text, not trace or hidden reasoning."
+description: "Use when the user provides product reference images for complex structures, complex mechanical or electronic devices, multi-part objects, articulated/folding/open-close products, products with multiple states, interfaces, controls, connectors, support nodes, hidden top/bottom/back details, or high-risk structural nodes, and needs a video-ready Complex Structure Product Asset Lock package. First run a full source sufficiency gate; if any required view, state, interface, mechanism, decomposition relationship, or high-risk detail is missing or unverifiable, do not call /image gen and return not_approved with the required reference-image list. Call /image gen only for full_approved packages, then output the final image-generation prompt used for each delivered QA-passing board as chat text, not trace, hidden reasoning, or a single package-level prompt."
 ---
 
 # Complex Structure Product Asset Lock Board
@@ -172,7 +172,9 @@ Automatically required boards:
 
 If any required board lacks source evidence, stop before generation and return `not_approved`.
 
-Completion criterion: every required board can be generated from verified evidence before `/image gen` is called.
+Before image generation, create a `required_board_manifest` with every required `board_id`, `board_name`, activation reason, and source-evidence basis. This manifest is internal until `full_approved`, but it controls generation, QA, and prompt count.
+
+Completion criterion: every required board can be generated from verified evidence before `/image gen` is called, and the `required_board_manifest` contains exactly the boards that must be delivered.
 
 ## Board Specifications
 
@@ -262,7 +264,7 @@ Lock material boundaries, texture direction, reflection strength, translucency, 
 
 Call Codex built-in `/image gen` only after `full_approved`.
 
-Build a `final_image_generation_prompt` for each planned board from:
+Build a separate `final_image_generation_prompt` for each planned board from:
 
 - all uploaded product references as the only product identity source;
 - the verified structural lock map;
@@ -275,6 +277,14 @@ Do not show, draft, or provide image-generation prompts before the source gate r
 After `full_approved`, submit each `final_image_generation_prompt` to `/image gen` for its board. This prompt is the public image-generation prompt used for that delivered board, not trace, not hidden reasoning, not a source-audit log, and not a prompt-only substitute deliverable.
 
 After generation and QA, output the exact final prompt for each delivered QA-passing board in the user-facing reply under `本次图片生成提示词`. If a board is repaired or regenerated, output only the final prompt corresponding to the accepted board. If the exact final submitted prompt for a delivered board is unavailable or cannot be matched to the accepted board, the package fails QA with `prompt mismatch`.
+
+Do not output a single master prompt, package-level prompt, complete-package prompt, shared prompt, summary prompt, overview prompt, board-set prompt, generic reusable prompt, or any other single prompt as a substitute for board-level prompts. Each `final_image_generation_prompt` must correspond to exactly one planned and delivered board. A prompt that covers multiple boards, uses `board_id` values such as `package`, `all_boards`, or `complete_package`, or cannot be matched one-to-one to a delivered QA-passing board fails QA with `prompt_scope_mismatch`.
+
+Prompts must be board-distinct. Two prompt entries must not be identical or differ only by `board_id`, `board_name`, ordering, numbering, or generic wording. Each prompt must include the board type and board-specific requirements for its own generated board.
+
+After each board passes QA, bind its prompt entry to the accepted generated result with `accepted_result_ref`. If an accepted board has no matchable result reference, the package fails QA with `prompt mismatch`.
+
+`generation_prompt_sha256`, trace notes, audit logs, or summaries may be internal or optional evidence only; they never satisfy `final_image_generation_prompt` and never replace the public final prompt text.
 
 Never place prompts, prompt labels, prompt metadata, or prompt text inside generated images.
 
@@ -304,8 +314,13 @@ Check:
 - every `hidden_no_fill_zone` remains hidden, neutral, or explicitly blocked rather than fabricated;
 - decomposition boards preserve verified part ownership and assembly hierarchy;
 - every delivered board has one matching `final_image_generation_prompt` in `本次图片生成提示词`;
-- the number of entries in `final_image_generation_prompts` equals the number of delivered QA-passing boards;
+- the number of entries in `final_image_generation_prompts` equals the number of entries in `本次图片生成提示词`, the number of delivered QA-passing boards, and the number of boards in `required_board_manifest`;
+- every prompt entry includes `accepted_result_ref` for the accepted generated board;
+- no package-level, all-board, master, shared, summary, overview, board-set, generic reusable, or multi-board prompt is accepted; prompt-to-board matching must be strictly one-to-one;
+- prompts are board-distinct; no two final prompts are identical or differ only by `board_id`, `board_name`, ordering, numbering, or generic wording;
+- every final prompt includes board-specific requirements and never only says to generate the full complex structure asset package;
 - every visible prompt corresponds to the final accepted `/image gen` result, not a rejected attempt or after-the-fact reconstruction;
+- `generation_prompt_sha256`, trace notes, audit logs, or summaries are not accepted as substitutes for `final_image_generation_prompt`;
 - prompts include the board type, verified source identity, verified structural constraints, relevant matrix or registry items, 16:9 4K neutral board requirements, and no-text-pollution constraints;
 - prompts do not include hidden reasoning, source-audit trace, unsupported inferred structure, or instructions to add labels, arrows, titles, legends, callouts, or non-product text;
 - no prompt text appears inside the generated image;
@@ -338,6 +353,7 @@ When the source gate fails, do not call `/image gen`. Output only a concise Chin
 - statement that no asset-board images, reusable image/video prompts, partial video-safe ranges, asset IDs, or downstream-use instructions were produced because doing so would require guessing complex structure.
 - statement that no image-generation prompts are output because no QA-passing deliverable exists.
 - statement that `final_image_generation_prompts` and `final_image_generation_prompt` are not output for `not_approved`.
+- statement that the minimum new reference set is only a product-reference capture list, such as missing angles, states, interfaces, mechanisms, nodes, or material closeups; it must not include composition, style, rendering, prompt, model-generation, or downstream-video language.
 
 When generated boards fail QA after a `full_approved` source gate and cannot be repaired in the current run, output a concise Chinese rejection report:
 
@@ -357,6 +373,7 @@ When generated boards fail QA after a `full_approved` source gate and cannot be 
 - asset registry instruction: do not register, reuse, or treat rejected generated images as a video-ready asset lock package.
 - statement that no image-generation prompts are output because rejected generated boards are not deliverables.
 - statement that `final_image_generation_prompts` and `final_image_generation_prompt` are not output for `not_approved`.
+- statement that `repair attempts made` and `minimum fix needed` may describe only structural failure points, QA failures, or additional product references needed; they must not include failed prompts, candidate prompts, repaired prompts, prompt deltas, style prompts, shot prompts, or downstream-use prompts.
 
 The missing-reference list must be concrete, for example:
 
@@ -386,12 +403,14 @@ If `full_approved`, include generated images or image results, then report only:
 - `asset_registry_status`: `register_video_ready_asset_package`;
 - `prompt_reuse_status`: `reusable_only_with_this_QA_passing_package`;
 - `prompt_output_status`: `delivered_as_chat_text_not_trace`;
+- `required_board_manifest`: list the delivered QA-passing `board_id` / `board_name` values used for count matching;
 - `final_image_generation_prompts`: same entries as `本次图片生成提示词`;
 - asset registry instruction: register or reuse only this QA-passing package as the video-ready complex-structure asset lock package;
 - generated boards;
 - fixed boards;
 - automatically required boards;
-- `本次图片生成提示词`: for each delivered board, output `board_id`, `board_name`, `prompt_role: public_final_image_generation_prompt`, `prompt_scope: accepted_QA_passing_board_only`, and `final_image_generation_prompt`;
+- `本次图片生成提示词`: for each delivered board, output `board_id`, `board_name`, `accepted_result_ref`, `prompt_role: public_final_image_generation_prompt`, `prompt_scope: accepted_QA_passing_board_only`, and `final_image_generation_prompt`;
+- prompt count rule: `final_image_generation_prompts` must be a per-board list only, never a package-level prompt block; the number of `本次图片生成提示词` entries must equal the number of delivered QA-passing boards and the number of boards in `required_board_manifest`, and each entry must map to exactly one delivered board and one accepted result;
 - verified key contents;
 - QA result.
 
