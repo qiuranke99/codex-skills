@@ -1,6 +1,6 @@
 interface:
   display_name: "Character Casting Lock Board"
-  short_description: "Lock one character in a text-free casting board."
-  default_prompt: "Use $character-casting-lock-board with my selected character references to generate the fixed portrait/front/back/side casting board and only source-backed risk extensions. Resolve identity ambiguity, disclose each exact prompt and SHA-256 before generation, and make every image call the final action of its turn."
+  short_description: "Per-board 16:9 casting locks with 4K handoffs."
+  default_prompt: "Use $character-casting-lock-board with my selected references to generate exact 16:9 casting boards, disclose each bound generation prompt, then inspect every generated board and deliver its own source-bound Nano Banana 4K prompt and handoff."
 policy:
   allow_implicit_invocation: true

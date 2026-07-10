@@ -1,4 +1,4 @@
 interface:
   display_name: "Packaging Product Identity + Label Lock Board"
-  short_description: "Packaging geometry plus evidence-gated exact copy."
-  default_prompt: "Use $packaging-product-identity-label-lock-board to create one source-bound packaging board and verify exact copy only from qualifying evidence."
+  short_description: "16:9 packaging lock plus evidence-gated 4K handoff."
+  default_prompt: "Use $packaging-product-identity-label-lock-board to generate one exact 16:9 packaging board, inspect it, deliver a source-bound Nano Banana 4K handoff, and keep exact-copy approval limited to qualifying evidence."

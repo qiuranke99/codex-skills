@@ -1,4 +1,4 @@
 interface:
   display_name: "Multi-Angle Product Identity Lock Board"
-  short_description: "Six-view identity lock for low-risk products."
-  default_prompt: "Use $multi-angle-product-identity-lock-board to create one evidence-gated six-view identity board from my product references."
+  short_description: "Six-view 16:9 product lock with verified 4K handoff."
+  default_prompt: "Use $multi-angle-product-identity-lock-board to generate one exact 16:9 six-view board from my product references, then inspect it and deliver a source-bound Nano Banana 4K enhancement prompt and handoff."

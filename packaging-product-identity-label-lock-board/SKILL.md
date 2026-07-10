@@ -1,6 +1,6 @@
 ---
 name: packaging-product-identity-label-lock-board
-description: Use when supplied bottle, box, pouch, can, tube, jar, carton, bag, or other label-heavy packaging references need one clean video-reference board that separates geometry and label-layout consistency from exact-copy verification. Generate a source-bound multi-angle board, but approve exact text, logos, QR codes, barcodes, specifications, or certifications only with source assets and deterministic composition or field-level OCR/decode evidence. Do not use for simple low-text products, material-first glass/liquid/reflective products, mechanisms, scenes, or posters.
+description: Use when supplied bottle, box, pouch, can, tube, jar, carton, bag, or other label-heavy packaging references need one clean 16:9 video-reference board that separates geometry and label-layout consistency from exact-copy verification. Disclose the exact generation prompt, then inspect the actual board and deliver a source-bound 4K enhancement prompt and handoff for Nano Banana Pro, Nano Banana 2, or a comparable model. Approve exact text, logos, QR codes, barcodes, specifications, or certifications only with source assets and deterministic composition or field-level OCR/decode evidence. Do not use for simple low-text products, material-first glass/liquid/reflective products, mechanisms, scenes, or posters.
 ---
 
 # Packaging Product Identity + Label Lock Board
@@ -117,7 +117,7 @@ Before generation, allocate a `panel_capacity_budget` for the one-board composit
 
 ## Clean-board contract
 
-Generate exactly one board image. Use a neutral white, light-gray, or neutral-gray studio presentation with even lighting, complete uncropped products, and no dramatic scene.
+Generate exactly one horizontal 16:9 board image. `target_aspect_ratio: 16:9` is fixed: request no alternate ratio and accept no automatic ratio fallback. If the built-in runtime returns another ratio despite the request, do not crop or stretch it or call it final; set `codex_board_role: intermediate_layout_reference` and use the external stage to rebuild the same source-faithful topology on the requested 16:9 provider profile. A matching returned board may be `final_candidate` after QA. Use a neutral white, light-gray, or neutral-gray studio presentation with even lighting, complete uncropped products, and no dramatic scene.
 
 The board may include:
 
@@ -137,7 +137,11 @@ Inspect the currently exposed tools and record only observed capabilities:
 runtime_capability_snapshot:
 - image_generation_callable: supported / unsupported / unknown
 - reference_images_attachable: supported / unsupported / unknown
+- explicit_aspect_ratio_argument: supported / unsupported / unknown
+- explicit_size_argument: supported / unsupported / unknown
+- requested_aspect_ratio: 16:9 / not_exposed
 - returned_file_inspectable: supported / unsupported / unknown
+- pixel_dimensions_inspectable: supported / unsupported / unknown
 - post_generation_text_allowed_same_turn: supported / unsupported / unknown
 - deterministic_compositor_available: supported / unsupported / unknown
 - ocr_available: supported / unsupported / unknown
@@ -159,11 +163,15 @@ Build one public `final_generation_prompt` from the source ledger, angle map, an
 6. set `assistant_qa_status: pending_post_generation_inspection`;
 7. set `production_approval_status: not_granted`.
 
+Before generation, an enhancement prompt may exist only as `draft_4k_enhancement_prompt`. Label it `4k_enhancement_prompt_status: draft_pre_generation`; do not call it final and do not publish a final-prompt hash. The actual board must be visually inspected before `final_4k_enhancement_prompt` is frozen.
+
 Then submit the exact prompt with all source references. The image-generation call is the terminal action of that assistant turn. Do not append a prompt, QA, or commentary after the call when the runtime forbids post-generation text.
 
 The tool/runtime call trace is the evidence for changing `terminal_generation_call` from `pending` to `executed`; never predeclare execution. Without a separate subsequent visual inspection, leave `assistant_qa_status: pending_post_generation_inspection` and `production_approval_status: not_granted`.
 
-The prompt must request one clean board, consistent package geometry, the planned views and details, source-bound label layout, no invented readable text, and no non-product-native text. It must not claim that generation alone will produce verified exact copy.
+When the trace proves `executed` and the board is available but not yet inspected, set `4k_enhancement_prompt_status: awaiting_post_generation_inspection`. Advance to `finalized_post_inspection` only after the actual board passes the post-generation inspection gate.
+
+The prompt must request one clean 16:9 board, consistent package geometry, the planned views and details, source-bound label layout, no invented readable text, and no non-product-native text. It must not offer another aspect ratio or claim that generation alone will produce verified exact copy.
 
 If the runtime allows inspection only in a later continuation, perform artifact QA, OCR/decode, or deterministic compositing there. Any repair generation follows the same sequence: disclose and hash the repair prompt, then use the image call as the turn's terminal action.
 
@@ -174,6 +182,7 @@ In a separate inspection step, assess:
 ```text
 geometry_layout_lock_status: passed / conditional / failed / unverified
 angle_source_status: passed / conditional / failed
+aspect_ratio_status: verified_16_9 / failed / unverified
 no_non_product_text_pollution: pass / fail
 material_source_consistent: pass / fail / unverified
 panel_legibility_status: pass / fail / unverified
@@ -198,6 +207,51 @@ Set `exact_copy_lock_status: approved` only when every required exact field pass
 
 Assistant QA does not grant production approval or admission to an Approved Packaging Asset Registry. Registry admission requires all required gates, retained evidence, and an explicit user or external-pipeline approval.
 
+## Post-inspection external 4K handoff
+
+After inspecting the actual Codex board, create a board-specific 4K handoff for Nano Banana Pro, Nano Banana 2, or a comparable image-to-image model. Use **both** the inspected Codex board and the original product references; include authoritative flat artwork, logo masters, exact-text tables, and expected barcode/QR payloads when the exact-copy layer requires them. A board-only enhancement is incomplete because low-resolution pixels cannot prove missing package detail.
+
+Freeze a public English `final_4k_enhancement_prompt` that names the observed panel-level defects and preserves:
+
+- the exact board topology, planned view assignments, complete package geometry, closure, label positions, color blocks, graphic zones, and neutral studio presentation;
+- source-supported edge separation, print boundaries, embossing/foil/material cues, and label-layout hierarchy without redesign or relabeling;
+- existing exact-copy regions as protected evidence regions, while explicitly leaving unreadable or unsupported copy unresolved rather than generating plausible characters, logos, certifications, barcodes, or QR codes;
+- one 16:9 result using the provider's actual 4K profile, with no crop, stretch, reframing, panel reorder, additional panel, advertising treatment, or non-product-native text.
+
+Hash the frozen prompt as `4k_enhancement_prompt_sha256`. Materialize these logical sidecars, as files when the runtime supports file delivery or as clearly named fenced records otherwise:
+
+- `<asset_id>_generation_prompt.md`: the exact `final_generation_prompt` single source of truth, never a rewritten duplicate;
+- `<asset_id>_4k_enhancement_prompt.md`: the inspected-board-specific `final_4k_enhancement_prompt` and its SHA-256;
+- `<asset_id>_4k_handoff.yaml`: model target, reference bundle, request, state, and verification evidence.
+
+The handoff must contain:
+
+```text
+4k_enhancement_prompt_status: finalized_post_inspection
+4k_enhancement_prompt_sha256: <sha256>
+third_party_model_target: nano_banana_pro / nano_banana_2 / model_agnostic
+codex_board_role: intermediate_layout_reference / final_candidate
+external_reference_bundle:
+- codex_asset_board: <inspected artifact id/path>
+- original_source_references: <all authoritative product references>
+- exact_copy_assets: <required authoritative assets or not_required>
+source_fidelity_status: pending / passed / failed / unverified / blocked_missing_original_sources
+external_runtime_request:
+- aspect_ratio: "16:9"
+- image_size: "4K"
+- alternate_aspect_ratios_allowed: false
+external_4k_status: not_ready / handoff_ready / blocked_runtime_controls / pending_external_generation / returned_unverified / verified / rejected
+external_4k_qa_status: pending / passed / failed
+```
+
+Use `handoff_ready` only when the final prompt is hashed and every required reference is resolvable; `pending_external_generation` only after submission; `returned_unverified` only when an original returned file exists; `verified` only after the QA below; otherwise use `rejected`.
+
+If the selected platform does not expose both the exact 16:9 aspect-ratio control and the 4K image-size control, set `external_4k_status: blocked_runtime_controls`; choose no fallback size or ratio.
+
+For every returned external artifact, record `provider`, `model`, `surface`, `model_profile`, requested settings, `observed_pixel_dimensions`, `provider_declared_aspect_ratio_profile`, `observed_file_aspect_ratio`, `aspect_ratio_evidence`, and `four_k_evidence`. Accept only a returned artifact whose request and provider metadata identify the 16:9 profile, whose original-file dimensions match that provider/model/surface's documented 4K 16:9 profile, and whose `source_fidelity_status` and `external_4k_qa_status` pass. Arbitrary landscape dimensions, filenames, screenshots, previews, local resize, or export enlargement are insufficient.
+
+External 4K QA must re-run geometry/layout QA and additionally pass `package_geometry_preserved`, `label_layout_preserved`, `no_generated_exact_copy_claim`, `external_reference_bundle_complete`, `external_16_9_verified`, and `external_4k_profile_verified`. Keep `exact_copy_lock_status` independent: a generative 4K result remains at most `conditional_unverified` for text, logos, certifications, barcodes, and QR codes. Only deterministic composition plus field-level OCR, reproducible region comparison, or payload decode evidence can approve those fields after enhancement.
+
 ## Repair rules
 
 Attempt at most two generative repairs. Repair one dominant issue at a time:
@@ -207,6 +261,7 @@ Attempt at most two generative repairs. Repair one dominant issue at a time:
 3. label position or hierarchy;
 4. non-product text pollution;
 5. material or panel legibility.
+6. 16:9 conformance.
 
 Do not repeatedly regenerate exact text, logos, or codes when deterministic compositing is the reliable path. A repair that improves text but breaks geometry, source identity, or clean-board rules still fails. Stop when missing source evidence or unavailable verification capability is the blocker.
 
@@ -222,6 +277,9 @@ exact_copy_lock_status: pending_verification / blocked_verification_capability /
 panel_capacity_budget: pass / constrained / blocked
 runtime_capability_snapshot: ...
 
+target_aspect_ratio: "16:9"
+alternate_aspect_ratios_allowed: false
+codex_board_role: pending_observation
 final_generation_prompt:
 <exact prompt that will be submitted>
 generation_prompt_sha256: <sha256 / unavailable>
@@ -229,9 +287,12 @@ prompt_disclosed_before_generation: true / false
 terminal_generation_call: pending
 assistant_qa_status: pending_post_generation_inspection
 production_approval_status: not_granted
+4k_enhancement_prompt_status: draft_pre_generation / awaiting_post_generation_inspection
+draft_4k_enhancement_prompt: <optional provisional prompt; never final>
+external_4k_status: not_ready
 ```
 
-In the later inspection step, report the two lock-layer statuses, field evidence rows, limitations, registry eligibility, and production-approval state. Keep all of this metadata outside the image.
+In the later inspection step, report the two lock-layer statuses, field evidence rows, 16:9 evidence, the frozen `final_4k_enhancement_prompt`, its SHA-256, all three sidecars, external runtime request, external state, limitations, registry eligibility, and production-approval state. After external return, append provider/surface/profile/dimension evidence and the external 4K QA result. Keep all of this metadata outside the image.
 
 ## End condition
 
@@ -239,4 +300,5 @@ End only when one of these is true:
 
 - one source-bound packaging-board candidate has been generated with a disclosed prompt and awaits inspection;
 - geometry/layout and exact-copy claims have been independently classified from retained evidence;
+- a finalized 16:9 external 4K handoff has been emitted after inspection and any returned artifact has been classified as `verified` or `rejected` without allowing generative enhancement to approve exact copy;
 - missing sources or runtime verification capability has been reported without substituting visual plausibility for exactness.

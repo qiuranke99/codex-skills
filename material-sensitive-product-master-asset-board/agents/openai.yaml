@@ -1,4 +1,4 @@
 interface:
   display_name: "Material-Sensitive Product Master Asset Board"
-  short_description: "One evidence-led board for material-sensitive products."
-  default_prompt: "Use $material-sensitive-product-master-asset-board to generate one source-bound material master board from these product references."
+  short_description: "16:9 material master board with verified 4K handoff."
+  default_prompt: "Use $material-sensitive-product-master-asset-board to generate one exact 16:9 material master board, then inspect it and deliver a source-bound Nano Banana 4K enhancement prompt and handoff with material-preservation QA."

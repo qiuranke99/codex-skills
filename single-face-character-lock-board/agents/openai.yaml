@@ -1,6 +1,6 @@
 interface:
   display_name: "Single-Face Character Lock Board"
-  short_description: "Lock one face with headless front and back views."
-  default_prompt: "Use $single-face-character-lock-board with my character references to generate exactly one bust portrait with the board's only visible face plus headless front and back full-body views. Resolve the target identity first, disclose the exact prompt and SHA-256 before generation, then make the image call the final action."
+  short_description: "One-face 16:9 lock with source-bound 4K handoff."
+  default_prompt: "Use $single-face-character-lock-board with my references to generate the exact 16:9 one-face topology, disclose its bound generation prompt, then inspect it and deliver a source-bound Nano Banana 4K enhancement prompt and handoff."
 policy:
   allow_implicit_invocation: true

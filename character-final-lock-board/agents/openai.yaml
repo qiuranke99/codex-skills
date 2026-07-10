@@ -1,6 +1,6 @@
 interface:
   display_name: "Character Final Lock Board"
-  short_description: "Lock one character, with optional high-angle evidence."
-  default_prompt: "Use $character-final-lock-board with my person and wardrobe references to generate one comprehensive final character lock board. Resolve identity conflicts, select high_angle_evidence, disclose the exact prompt and SHA-256 before generation, then make the image call the final action."
+  short_description: "16:9 character lock with verified 4K handoff."
+  default_prompt: "Use $character-final-lock-board with my references to generate one exact 16:9 character board, disclose its bound generation prompt, then inspect it and deliver a source-bound Nano Banana 4K enhancement prompt and handoff."
 policy:
   allow_implicit_invocation: true
