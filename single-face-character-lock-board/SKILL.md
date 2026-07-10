@@ -1,356 +1,184 @@
 ---
 name: single-face-character-lock-board
-description: Create a single-face character lock board from one or more character reference images. The board contains exactly one bust portrait with face, one headless front full-body view, and one headless back full-body view. Use Codex /image gen directly and output the image generation prompt after generation.
+description: "Use when the user provides character references and needs exactly one text-free single-face asset board: one bust portrait containing the board's only visible face, one headless front full-body outfit view, and one headless back full-body outfit view. Resolve a single target identity before generation; never fuse different people when multiple references are ambiguous. Freeze and disclose the exact prompt and SHA-256 before the terminal image-generation call. Do not use for ordinary turnarounds, expression sheets, casting contact boards, or prompt-only delivery."
 ---
 
 # Single-Face Character Lock Board
 
-## 中文名称
+中文名称：单脸角色资产锁定板
 
-单脸角色资产锁定板
+Generate exactly one board with exactly three visual components:
 
-## Skill Description
+1. one bust portrait containing the only complete visible face;
+2. one headless front full-body view from neck to feet;
+3. one headless back full-body view from neck to feet.
 
-Create one clean character asset lock board from one or more character reference images.
+This deliberately unusual topology separates identity evidence from front/back wardrobe evidence to reduce multi-face drift. Do not convert it into a standard turnaround, expression board, casting sheet, poster, or scene.
 
-The board contains exactly one bust portrait with face, one headless front full-body view, and one headless back full-body view.
+## 1. Identity Selection Gate
 
-Use Codex built-in `/image gen` directly, then output the image generation prompt used for the generated board.
+Require at least one usable character reference and resolve one `target_identity` before generation.
 
-The visible prompt is part of the final deliverable. Do not expose hidden reasoning, internal source maps, or unrelated implementation notes.
+For multiple references:
 
-## Purpose
+- Combine identity evidence only when the images clearly show the same person.
+- Respect explicit user assignments for face, hair, skin, outfit, shoes, and accessories.
+- An outfit reference may show another person, but it contributes wardrobe evidence only; never import that person's face, body identity, age, or skin.
+- If references show two or more plausible target people and the user has not selected one, return `selection_pending`. Ask the user to identify the target person or assign one attachment as `identity_source`.
+- Do not average, blend, or infer a preferred face from different people.
+- If a user explicitly requests a new composite identity, route outside this lock skill rather than disguising synthesis as identity preservation.
 
-This skill creates a specialized character asset lock board for AI video workflows.
+Input status must be exactly one of:
 
-This is not a standard character turnaround sheet.
-This is not a multi-face expression board.
-This is not a fashion poster, lookbook, magazine layout, or cinematic still.
+- `ready`
+- `selection_pending`
+- `hard_blocked_no_character_reference`
+- `policy_blocked`
 
-The output is one clean character asset board containing exactly three visual components:
+Only `ready` permits image generation.
 
-1. One bust portrait with the only visible face.
-2. One headless front full-body view.
-3. One headless back full-body view.
+## 2. Source Ledger
 
-The board is used to lock:
-- facial identity
-- hairstyle and hairline
-- skin texture
-- facial hair or no facial hair
-- clothing design
-- body proportions
-- footwear
-- accessories
-- front outfit structure
-- back outfit structure
+Privately map:
 
-## When to use this skill
+- `identity_source`
+- `hair_source`
+- `skin_source`
+- `body_source`
+- `outfit_source`
+- `shoe_source`
+- `accessory_source`
 
-Use this skill when the user asks for:
-- 单脸角色资产锁定板
-- single-face character lock board
-- one-face character reference board
-- character board with one face only
-- bust portrait + headless front/back outfit views
-- 角色资产锁定，但只需要一张脸
-- 用于视频模型避免多脸漂移的人物资产板
+Use `user_locked`, `source_supported`, `safe_inferred`, or `missing_or_conflicting` for each role. User assignments outrank inference. Never claim an inferred back garment, shoe detail, or body feature is verified.
 
-Also use this skill when the user provides one or more character reference images and asks to create a reference board similar to:
-- one bust portrait plus front/back outfit views
-- one clear face plus headless body views
-- a clean gray-background model asset board
+Do not expose the private source ledger unless the user asks for diagnostics. Never copy local paths, hidden reasoning, secrets, or private notes into the generation prompt.
 
-## Core Output
+## 3. Fixed Board Topology
 
-Generate exactly one image board using Codex built-in `/image gen`.
+Use a horizontal, clean, neutral-gray studio board with realistic photographic texture, soft even light, minimal shadow, and production-reference clarity.
 
-Direct /image gen only. The deliverable is exactly one generated image plus the image generation prompt used for that image, not a prompt-only answer, not a multi-image set, and not a generic character sheet.
+### Bust portrait
 
-The board must contain:
+- chest-up or upper-body, frontal or near-frontal;
+- neutral natural expression;
+- clear hairline, facial structure, skin texture, facial hair, marks, and visible identity-critical jewelry;
+- exactly one complete visible face and the only face anywhere on the board.
 
-### View 1: Bust portrait
+### Headless front full-body
 
-A chest-up or upper-body portrait showing the only complete face in the whole board.
+- neck or upper-neck downward to complete feet;
+- same target body's proportion and same outfit system;
+- clear front garment structure, sleeves, waist, hem, pockets, shoes, and accessories;
+- no head, face, partial face, printed face, or reflected face.
 
-This is the single visible face only. No mirror face, printed face, poster face, background face, partial side face, or second facial panel may appear anywhere else on the board.
+### Headless back full-body
 
-Requirements:
-- clear frontal or near-frontal face
-- neutral natural expression
-- visible hairstyle and hairline
-- visible eyebrows, eyes, nose, lips, ears if present
-- visible skin texture
-- visible facial hair if present in the reference
-- visible neck and collar area
-- preserve distinctive facial traits from the reference
-- preserve jewelry, nose strip, earrings, necklace, freckles, moles, scars, or facial marks if clearly present in the reference
+- neck or upper-neck downward to complete feet;
+- same proportion, outfit, shoes, and accessories as the front view;
+- clear back collar, seams, garment structure, pockets, hems, and shoe backs;
+- no head, turned head, profile, or partial face.
 
-### View 2: Headless front full-body
+Inside the image, forbid extra panels, expression tiles, side portraits, heads on body views, mirrors, people, printed faces, text, labels, arrows, numbers, measurements, watermarks, UI, poster styling, fashion editorial, cinematic scenes, illustration, anime, CGI, and decorative typography.
 
-A complete front-facing body view from neck or upper-neck downward to the feet.
+## 4. Freeze The Prompt Before Generation
 
-The body views must be face-free.
+Call the available built-in image-generation capability directly. Do not ask the user to copy a prompt elsewhere. Do not claim a generator model, seed, exact raster size, or native-resolution provenance unless the runtime exposes it.
 
-Requirements:
-- no head
-- no face
-- no partial face
-- no cropped second portrait
-- complete outfit from neck to shoes
-- clear shirt, jacket, pants, belt, shoes, accessories, sleeves, hem, pockets, fabric texture
-- natural standing pose
-- hands should not block important outfit structure unless the reference requires it
-- body proportions must match the portrait identity and reference images
+Before the image-generation call:
 
-### View 3: Headless back full-body
+1. Capture `runtime_capability_snapshot`: callable image tool, exposed model choice, exposed size controls, usable reference count, and known output/provenance limits. Leave unknown values `unknown`.
+2. Build the complete `final_generation_prompt` with attachment aliases, selected identity, source-role bindings, exact three-panel topology, style, and strict negatives.
+3. Normalize the exact prompt as UTF-8 with LF line endings.
+4. Compute `generation_prompt_sha256` from those exact bytes.
+5. When filesystem access exists, save `<asset_id>_generation_prompt.md` before generation and write the prompt record to `asset_record.yaml`.
+6. Present the exact prompt and hash to the user, then set `prompt_disclosed_before_generation: true`. State that the prompt depends on the same reference attachments.
+7. Set `terminal_generation_call: pending`, `assistant_qa_status: pending`, and `production_approval_status: not_granted`.
+8. Call image generation as the final action of the turn.
 
-A complete back-facing body view from neck or upper-neck downward to the feet.
-
-The body views must be face-free.
-
-Requirements:
-- no head
-- no face
-- no turning head
-- no partial side face
-- complete back outfit from neck to shoes
-- clear back shirt structure, collar, seams, pants back pockets, shoe backs, accessories
-- natural standing pose
-- same body proportions as the front view
-- same outfit as the front view
-
-## Input Rules
-
-The user may provide:
-- one reference image
-- multiple reference images
-- mixed references for face, hair, skin, outfit, shoes, accessories
-
-The user may explicitly assign reference roles, for example:
-- this image is the face
-- this image is the hair
-- this image is the skin texture
-- this image is the outfit
-- this image is the shoes
-- this image is the accessories
-
-When the user assigns reference roles, follow those assignments strictly.
-
-## Reference Role Recognition Rules
-
-When the user does not assign roles, infer roles internally:
-- clearest frontal face image controls facial identity
-- clearest hair image controls hairstyle
-- clearest skin image controls skin texture
-- clearest outfit image controls clothing
-- clearest footwear image controls shoes
-- clearest accessory image controls accessories
-
-Use an internal face/hair/skin/outfit/shoes/accessories source map to resolve reference responsibilities before generation. Do not output this source map unless the user explicitly asks for a diagnostic report.
-
-If there are conflicts, use this priority:
-1. user-stated reference role
-2. clearest face reference
-3. clearest hair reference
-4. clearest outfit reference
-5. clearest shoes/accessories reference
-6. secondary references only as supporting information
-
-## Reference fusion rule
-
-When multiple references are provided, merge them into one coherent character.
-
-The result must feel like one real person wearing one consistent outfit.
-
-Do not create collage logic.
-Do not create mismatched body parts.
-Do not change the person into a new character.
-Do not redesign the outfit unless the user explicitly requests a redesign.
-Do not invent extra clothing elements.
-Do not remove distinctive reference details unless they conflict with higher-priority references.
+Do not send text, call another tool, inspect the output, reconstruct the prompt, or claim visual success after the image-generation call in that turn. The returned image is the terminal result.
 
-## Output Board Structure
+If no image tool is callable or the prompt cannot be frozen exactly, return `hard_blocked_generation_runtime`. Do not present prompt-only output as success.
 
-Default layout:
-- horizontal board
-- clean gray background
-- three-part composition
-
-Preferred layouts:
-1. Left: bust portrait. Center: headless front full-body. Right: headless back full-body.
-2. Left: headless front full-body. Center: headless back full-body. Right: bust portrait.
-
-Do not use a chaotic collage layout.
-
-The board must remain clean, readable, and asset-oriented.
-
-## Visual style
-
-Use:
-- neutral gray or light gray background
-- soft even studio lighting
-- realistic photography
-- high clarity
-- accurate fabric texture
-- accurate body proportions
-- clean catalog-like asset board
-- minimal shadows
-- no dramatic mood
-- no cinematic scene lighting
-- no colorful atmosphere lighting
-- no location background
-- no props unless they are part of the character reference
-- no design annotations
+Use this disclosure shape before the terminal call:
 
-The board should look like a clean production asset reference, not a final advertisement image.
+```text
+Image generation prompt:
+<exact final_generation_prompt>
 
-## Hard prohibitions
+generation_prompt_sha256: <sha256>
+prompt_disclosed_before_generation: true
+terminal_generation_call: pending
+assistant_qa_status: pending
+production_approval_status: not_granted
+```
 
-Never generate:
-- more than one visible face
-- any second face from mirrors, printed graphics, posters, background people, side profiles, partial faces, or face-like decorative panels
-- multiple facial expressions
-- side-face panels
-- extra heads
-- full-body views with heads
-- front full-body with visible face
-- back view with turned head
-- ordinary multi-angle character sheet
-- 3x3 grid
-- comic sheet
-- anime sheet
-- fashion magazine page
-- editorial poster
-- cinematic still
-- environment scene
-- text labels
-- captions
-- numbers
-- arrows
-- measurements
-- watermarks
-- logo-like layout text
-- instruction text inside the image
-- UI elements
-- decorative typography
-
-## /image gen execution rule
-
-When this skill is invoked, directly use Codex built-in `/image gen` to generate the final image board.
-
-Do not ask the user to copy a prompt into another tool.
+## 5. Prompt Content
 
-Do not stop after planning.
+The frozen prompt must require:
 
-Do not only describe how the board should look.
+- exactly one horizontal board and exactly three panels;
+- exactly one visible face, only in the bust portrait;
+- headless front and back body views with complete feet;
+- one selected identity, body proportion, outfit, shoes, and accessories across all panels;
+- clean gray studio background, soft neutral light, realistic asset-board rendering;
+- no additional panels, faces, heads, text, scene, or editorial styling;
+- attachment aliases rather than local paths;
+- all prompt text outside the generated image.
 
-Do not stop after writing a prompt.
+## 6. Artifacts And Approval States
 
-Generate the board directly unless there is a hard blocker.
+When filesystem access exists, use:
 
-After the image is generated and passes the self-check, output the final image generation prompt visibly in the response under the heading `Image generation prompt`.
-
-If one corrective regeneration is needed, output only the final corrective prompt that produced the accepted image, not the failed draft prompt.
-
-The visible prompt must be the image prompt, not hidden reasoning, not the internal source map, and not a diagnostic explanation.
-
-## Hard blocker
-
-The only hard blocker is:
-
-The user has not provided any usable character reference image.
-
-If no usable character reference exists, ask the user to upload at least one clear character reference image.
-
-If at least one usable character reference exists, proceed.
-
-## Internal construction requirements
-
-Before calling `/image gen`, construct a final image generation prompt with these locked requirements:
-
-- one horizontal character asset board
-- exactly one bust portrait with face
-- one headless front full-body view
-- one headless back full-body view
-- same person identity
-- same outfit system
-- same body proportions
-- same shoes
-- same accessories
-- clean gray studio background
-- soft even light
-- no text
-- no labels
-- no extra panels
-- no extra faces
-- no scenic background
-- no poster styling
-
-Freeze the exact same prompt submitted to `/image gen` before generation. Do not reconstruct a cleaner or prettier prompt after generation and present it as the submitted prompt.
-
-Keep the prompt concise enough to be reusable, but explicit enough to preserve the single-face, headless-body, clean-board contract.
-
-## Image Constraints
-
-The generated board must use a horizontal composition, a neutral gray or light gray background, soft even studio lighting, high-definition realistic texture, and production asset-board clarity.
-
-The generated board must not use cinematic styling, poster styling, magazine styling, fashion editorial styling, dramatic scene lighting, location background, decorative typography, UI elements, labels, arrows, numbers, captions, measurements, or watermarks.
-
-## Self-Check And Repair Rules
-
-After generation, inspect the result.
-
-Check:
-
-1. Does the board contain exactly one complete visible face?
-2. Is the bust portrait clear enough to lock identity?
-3. Is the front full-body view headless?
-4. Is the back full-body view headless?
-5. Are the outfit, shoes, and accessories consistent?
-6. Does the back view match the front outfit?
-7. Is the body proportion consistent across views?
-8. Is the board free of labels, text, arrows, numbering, watermarks, or captions?
-9. Is the background clean and neutral?
-10. Does the image avoid cinematic, poster, magazine, or scene-like styling?
-11. Will the final response include the image generation prompt used for the accepted image?
-12. Is the visible prompt free of hidden reasoning, internal source maps, and unrelated implementation notes?
-
-If a structural failure occurs, automatically attempt one corrective regeneration using `/image gen`.
-
-Structural failures include:
-- QA reject if the result is more than exactly one generated image
-- more than one face
-- head present on full-body views
-- back view missing
-- outfit mismatch
-- text pollution
-- ordinary multi-angle sheet instead of the required single-face board
-- missing image generation prompt in the final response
-
-## Final response rule
-
-After successful generation, respond with:
-
-1. a brief statement that the Single-Face Character Lock Board has been generated
-2. `Image generation prompt:` followed by the final prompt used for the accepted `/image gen` result
-
-Do not include hidden reasoning, internal source maps, intermediate failed prompts, or unnecessary explanation.
-
-Do not make the prompt the only deliverable.
-
-## Acceptance Criteria
-
-The skill is valid only if:
-
-- The skill folder exists.
-- SKILL.md exists.
-- SKILL.md contains the English name `Single-Face Character Lock Board`.
-- SKILL.md contains the slug `single-face-character-lock-board`.
-- SKILL.md explicitly requires direct `/image gen` execution.
-- SKILL.md explicitly requires outputting the image generation prompt after generation.
-- SKILL.md explicitly forbids prompt-only delivery.
-- SKILL.md fixes the output to one bust portrait plus two headless full-body views.
-- SKILL.md explicitly forbids extra faces, text pollution, labels, arrows, numbers, watermarks, and ordinary character sheets.
-- SKILL.md supports single-image and multi-image reference input.
-- SKILL.md supports user-assigned reference roles for face, hair, skin, outfit, shoes, and accessories.
+`outputs/character-locks/<asset_id>/`
+
+Pre-generation artifacts:
+
+- `<asset_id>_generation_prompt.md`
+- `asset_record.yaml`
+
+Generation result:
+
+- `<asset_id>_single_face_lock_board.png` or the native image result.
+
+Recommended record fields:
+
+```yaml
+asset_id:
+asset_type: single_face_character_lock_board
+status: generation_pending
+runtime_capability_snapshot:
+identity_source:
+body_source:
+outfit_source:
+shoe_source:
+accessory_source:
+final_generation_prompt:
+generation_prompt_path:
+generation_prompt_sha256:
+prompt_disclosed_before_generation: true
+terminal_generation_call: pending
+assistant_qa_status: pending
+production_approval_status: not_granted
+```
+
+`terminal_generation_call` stays `pending` until a tool/runtime trace proves `executed` on a later turn. `assistant_qa_status` and `production_approval_status` are separate. Without an independent later visual review, assistant QA remains `pending`; production approval remains `not_granted` until the user or an authorized external pipeline explicitly sets `user_granted` or `external_pipeline_granted`.
+
+## 7. Later-Turn Visual Review And Repair
+
+On a later turn with the generated image available, inspect:
+
+- exactly one complete visible face exists, with no other complete or partial face;
+- the bust clearly preserves the selected identity;
+- front and back body views are headless and complete to the feet;
+- body, outfit, shoes, and accessories remain consistent;
+- no text, additional panels, scenic background, or editorial style appears.
+
+If all structural checks pass, set `assistant_qa_status: visual_pass`; otherwise use `visual_warn` or `visual_fail`. Keep `production_approval_status` unchanged.
+
+If one repair is justified, freeze and disclose a new complete prompt and new hash before a new terminal generation call. Never output a failed draft prompt as the prompt for an accepted image.
+
+## 8. Completion Contract
+
+A generation turn succeeds only when one target identity is resolved, the exact prompt and hash are disclosed before generation, and image generation is the terminal action. The generated image remains pending visual review and production approval.
+
+Unselected multiple identities, prompt-only delivery, a missing image call, extra board views, or post-hoc prompt reconstruction is failure.

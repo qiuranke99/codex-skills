@@ -1,0 +1,6 @@
+interface:
+  display_name: "Single-Face Character Lock Board"
+  short_description: "Lock one face with headless front and back views."
+  default_prompt: "Use $single-face-character-lock-board with my character references to generate exactly one bust portrait with the board's only visible face plus headless front and back full-body views. Resolve the target identity first, disclose the exact prompt and SHA-256 before generation, then make the image call the final action."
+policy:
+  allow_implicit_invocation: true

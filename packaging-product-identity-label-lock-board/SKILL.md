@@ -1,313 +1,242 @@
 ---
 name: packaging-product-identity-label-lock-board
-description: "Use when the user provides packaging, bottle, box, pouch, can, tube, jar, carton, bag, or other label-heavy product references and needs one clean generated Packaging Product Identity + Label Lock Board for downstream ad image or video generation. Directly call Codex built-in /image gen to lock 8 video-ready product angles, logo, label layout, exact key copy, specs, certifications, and material details, then output the final image-generation prompt as chat text; never replace the image with prompt-only output."
+description: Use when supplied bottle, box, pouch, can, tube, jar, carton, bag, or other label-heavy packaging references need one clean video-reference board that separates geometry and label-layout consistency from exact-copy verification. Generate a source-bound multi-angle board, but approve exact text, logos, QR codes, barcodes, specifications, or certifications only with source assets and deterministic composition or field-level OCR/decode evidence. Do not use for simple low-text products, material-first glass/liquid/reflective products, mechanisms, scenes, or posters.
 ---
 
 # Packaging Product Identity + Label Lock Board
 
 Chinese name: 包装产品身份与标签文案双锁定资产板
 
-Generate one clean composite image asset board for a packaging product whose geometry, surface information, and video perspective must stay stable. The deliverable is the generated image, the final image-generation prompt used for that image, and concise QA.
+Create one clean composite product-reference board for label-heavy packaging. Treat `geometry_layout_lock` and `exact_copy_lock` as separate claims. A generated board may stabilize product form and label hierarchy without proving that every character, logo, barcode, QR code, certification, or legal field is exact.
 
-The leading rule is **clean board**: the generated image may contain only the product body, product views, product detail crops, and text/logos/patterns that truly exist on the product packaging. The image-generation prompt, asset names, labels, status, view names, explanations, and registry text stay in the chat reply, not inside the image.
+Only product-native graphics may appear inside the image. Keep headings, view names, status, evidence, prompts, and registry IDs in chat text.
 
-## Scope
+## Boundary and risk-vector routing
 
-Use this skill for packaging or label-heavy products such as bottles, boxes, pouches, cans, tubes, jars, cartons, bags, and wrapped products when any of these are true:
+Require at least one usable target-product image. Before generation, classify:
 
-- the product surface includes logo, brand name, product name, title, subtitle, claims, ingredients, specs, certifications, barcode, QR code, back-label copy, or dense packaging text;
-- the user says labels, copy, logo, text, or packaging shape must not change;
-- the result will be used for orbit, side move, rotation, reveal, hand-turn, high-angle, low-angle, close product-shot, or other video generation;
-- both `geometry / identity` and `label / copy / logo / surface` must be locked before advertising image or video work.
+- `geometry_risk`: package silhouette, volume, proportions, closure, edges, top/bottom;
+- `label_risk`: copy density, logo, claims, specifications, certifications, codes;
+- `material_risk`: glass, transparency, liquid, chrome, foil, refraction, mixed shells;
+- `structure_risk`: mechanisms, joints, folding, complex open/close topology;
+- `state_risk`: multiple use, assembly, open/closed, deployed/stored states.
 
-Use a different workflow when:
+Use this skill when label risk is primary and packaging geometry is source-supported. Route instead when:
 
-- text is minimal and only shape needs locking: use `multi-angle-product-identity-lock-board`;
-- the hard problem is mechanical structure, supports, joints, connectors, or engineering parts: do not use this packaging skill; handle the task with main-agent/custom-agent workflow unless a dedicated active production skill exists;
-- the hard problem is folded/unfolded, open/closed, deployed/stored, or use-state variation: use a state-change lock workflow if available;
-- the user only wants an ad poster, mood image, or scene concept: explain that product asset locking should come first.
+- text is minimal and shape is the main risk: use `multi-angle-product-identity-lock-board`;
+- material behavior is primary: use `material-sensitive-product-master-asset-board`;
+- label and material are both high: use a main-agent compound workflow that coordinates both risk contracts; do not make either skill claim complete coverage alone;
+- mechanisms or state topology dominate: use a main-agent/custom-agent workflow unless a dedicated active skill exists;
+- the request is an ad poster, scene, redesign, campaign visual, or e-commerce layout: lock the product first or use a different workflow.
 
-Completion criterion: the task is accepted only when packaging surface information or video perspective stability is a core success factor.
+If no visual product source exists, stop and request it. Descriptive text alone cannot lock product identity.
 
-## Input Audit
+## Source ledger
 
-Audit inputs before generation. Treat a product visual reference as required for a real lock; descriptions alone are not enough to lock product identity.
+Build a source ledger before generation. Give each item a stable `field_id` and record:
 
-Check whether the user provided:
+```text
+field_id:
+field_type: geometry / label_layout / exact_text / logo / barcode / qr_code / certification / material
+required_for_run: yes / no
+expected_value_or_asset:
+source_file_or_reference:
+source_region:
+source_status: source_verified / source_inferred / needs_source / conflict
+planned_verification: visual_compare / ocr_field_match / code_decode_match / deterministic_composite / not_verifiable
+```
 
-- front, back, left, right, top, and bottom product views;
-- unfolded package, flat label artwork, high-resolution label closeups, or logo file;
-- brand name, product name, front title, subtitle, claims, capacity, size, variant, flavor, or specification;
-- back-label copy, ingredients, parameters, usage, warnings, barcode, QR code, or certification marks;
-- whether all text must be readable, only core text must be exact, or tiny text may remain texture-level;
-- whether the product will be used for high-angle, low-angle, orbit, rotation, reveal, hand-turn, side move, or close product-shot video.
+Acceptable exact-copy sources include:
 
-Mark every angle and surface text region as:
+- original flat label artwork or package dieline;
+- vector/raster logo master;
+- high-resolution orthographic label crop;
+- user-supplied exact text table;
+- expected barcode or QR payload plus symbology;
+- authoritative certification artwork or exact mark asset.
 
-- `approved`: supplied or visible with enough source quality to verify;
-- `inferred`: generated from visible packaging logic, not a true supplied source;
-- `needs_source`: required for precision but missing, blurred, hidden, cropped, too small, or not supplied.
+Do not treat a small, blurred, oblique, occluded, generated, or inferred surface as exact-copy source evidence. Do not merge conflicting variants. If required sources conflict and authority cannot be resolved, stop with `source_conflict`.
 
-If no product visual reference exists, ask for the target product image, packaging artwork, or label files. Do not invent a brand/product lock from imagination.
+## Two independent lock layers
 
-Completion criterion: the run has a source map for angles, text, logo, material, and video perspectives before `/image gen`.
+### Geometry and layout layer
 
-## Angle Gate
+`geometry_layout_lock` covers:
 
-Default to 8 core product angles for video-ready packaging lock:
+- package silhouette, volume, proportions, thickness, shoulder, cap, lid, pump, rim, base, seal, and closure;
+- label position, scale relationship, hierarchy, color blocks, graphic zones, and orientation;
+- consistency across video-relevant views.
+
+It may be assessed visually against supplied product references. A pass does not imply exact readable copy.
+
+### Exact-copy layer
+
+Classify fields:
+
+- `A_exact`: brand, logo, product name, hero title/claim, capacity/specification, and anything the user names as exact;
+- `B_targeted`: ingredients, parameters, usage, warnings, side/back copy, certification text;
+- `C_texture`: non-critical microcopy that may remain non-readable texture.
+
+If the user requires all text to be exact, promote A, B, and C to `A_exact`.
+
+An exact field can pass only when source evidence and final-artifact evidence both exist:
+
+- readable text: authoritative expected text plus field-level OCR/transcription comparison of the final artifact, with normalization rules and a zero-unresolved-difference result;
+- barcode or QR code: authoritative expected payload and symbology plus successful decode from the final artifact matching both;
+- logo or certification artwork: supplied master asset plus deterministic placement/compositing evidence, or another reproducible region comparison that proves the final artwork was not generatively rewritten;
+- flat label artwork: deterministic compositing of the supplied artwork onto the final board, with source/output asset hashes and transform record, may satisfy exactness without generative rerendering.
+
+Visual resemblance, prompt wording, an agent reading what it expects to see, OCR without an expected field value, or a code-like pattern that was not decoded cannot approve exact copy.
+
+Declare OCR normalization before comparison. It may normalize Unicode representation and ignorable spacing only when the source contract permits; it must not silently change letters, numbers, punctuation, units, order, language, capitalization, or legal meaning to manufacture a match.
+
+If the board is produced only by generative image synthesis, `exact_copy_lock_status` is at most `conditional_unverified`, even when text looks correct. If required exact evidence is missing or a field differs, use `not_approved` for that field. Never fabricate unseen copy, claims, certification marks, codes, or logos.
+
+## Angle and panel-capacity gate
+
+Default video-reference views:
 
 1. front;
 2. back;
-3. left side;
-4. right side;
+3. left;
+4. right;
 5. 3/4 front;
 6. 3/4 back;
-7. high-angle overhead perspective;
-8. low-angle upward perspective.
+7. high angle;
+8. low angle.
 
-Use fixed visual order instead of text labels. Preferred layout:
+Mark each view `source_verified`, `source_inferred`, or `needs_source`. High/low views do not prove unseen top/bottom text or structure. A forward-use inferred view may be useful, but the board is at most conditional for those faces.
 
-- one row: front, back, left, right, 3/4 front, 3/4 back, high-angle, low-angle;
-- or two rows when space requires it: front/back/left/right, then 3/4 front/3/4 back/high-angle/low-angle.
+Before generation, allocate a `panel_capacity_budget` for the one-board composition. Include only detail crops required by the source ledger. Every product view and exact-copy region must remain distinguishable at the intended downstream reference size. If eight views plus required detail regions cannot remain legible:
 
-Do not write `Front`, `Back`, `Left`, `Right`, `Top`, `Bottom`, `High Angle`, `Low Angle`, or any equivalent view label inside the image.
+- prioritize geometry views and A-exact regions;
+- remove decorative or redundant details;
+- do not shrink proof regions until text or code evidence becomes unreadable;
+- mark the excluded fields `needs_source_or_separate_deterministic_evidence`;
+- never claim one crowded generated board proves all microcopy.
 
-Apply confidence rules:
+## Clean-board contract
 
-- If front, back, left, and right references are supplied, generate a high-confidence 8-angle board.
-- If top and bottom references are supplied, high-angle and low-angle perspectives may be high confidence.
-- If top or bottom references are missing, still generate high-angle and low-angle views for video usefulness, but mark them as `inferred`.
-- If only a front view exists and video use is requested, generate a forward-use 8-angle exploration board and mark non-front angles as `inferred`.
-- A forward-use exploration board is not a fully approved lock board. If back, side, top, or bottom sources are missing, the result can be at most `conditional` unless the missing faces are irrelevant to the user's requested lock.
-- If exact back, side, top, or bottom label copy is required without matching source, state: `缺少该角度的真实参考，无法保证该面标签逐字准确。`
-- Treat high-angle and low-angle views as video perspective references. They do not verify top labels, bottom labels, seals, cap codes, bottom marks, barcodes, or unseen structure unless the matching source reference was supplied.
-- Never present inferred angles as approved source truth.
+Generate exactly one board image. Use a neutral white, light-gray, or neutral-gray studio presentation with even lighting, complete uncropped products, and no dramatic scene.
 
-Completion criterion: every output angle can be reported as `approved`, `inferred`, or `needs_source`.
+The board may include:
 
-## Copy Risk Classes
+- the eight product views;
+- source-required close crops for logo, A-exact fields, codes, label adhesion, print, embossing, foil, closure, or package construction;
+- real product-native text, logos, patterns, and marks only.
 
-Classify text before generation:
+Forbid board titles, section headings, view labels, asset IDs, dates, statuses, legends, arrows, callouts, tables, UI, prompt text, captions, watermarks, people, hands, props, lifestyle scenes, posters, and non-product-native typography.
 
-- `A_exact`: brand name, logo, product name, front main title, front hero claim, capacity/specification, user-named exact text, and large clear front text.
-- `B_targeted`: back-label key copy, parameters, ingredients, usage, warnings, side-panel information, secondary claims, certification text.
-- `C_texture`: tiny dense text that is unreadable at normal reference scale and not requested word-for-word.
+Preserve source-supported geometry, label placement, color, material, and graphic hierarchy. Do not redesign, premiumize, modernize, simplify, rebrand, relabel, recolor, advertise, or invent hidden surfaces.
 
-If the user asks for all text to be fully correct, treat A/B/C as `A_exact`.
+## Runtime capability snapshot
 
-Rules:
-
-- Do not fabricate unseen back-label copy, certification marks, barcode, QR code, legal text, logo, or product claim.
-- Do not use gibberish as if it were real copy.
-- If exact text is required but the source is inadequate, still generate a useful forward asset board when possible, but mark the missing text as `needs_source`.
-- Require high-resolution label art or exact source text when word-for-word fidelity is a hard requirement.
-- One clean board cannot prove all dense microcopy word-for-word unless the user supplied high-resolution label or text sources. Approve only core readable copy and explicitly supplied closeup crops; keep unsupported dense back-label text as `needs_source` or `C_texture`.
-- Do not approve the board into the asset registry when any `A_exact` item is wrong or unverifiable.
-
-Completion criterion: exact-copy claims never exceed the available source evidence.
-
-## Board Specification
-
-Generate one single clean image, not multiple images and not separate board files.
-
-The board must visually combine:
-
-- 8 core product views for geometry and perspective stability;
-- close product crops for logo, front title, front key claim, capacity/spec, supplied back-label key area, supplied ingredients/specs/certifications, barcode/QR/certification detail when relevant;
-- 1-3 material/detail crops for label adhesion, paper, plastic, glass, metal, matte, gloss, transparent or translucent material, liquid level, print, embossing, foil, lamination, reflection, texture, cap/lid, shoulder, edge, seal, tube opening, base thickness, or package corner construction.
-
-Allowed inside the image:
-
-- the real product;
-- real packaging text, logo, label, and graphic patterns that belong to the product;
-- detail crops of the same product;
-- clean whitespace;
-- very subtle non-text separators if useful.
-
-Forbidden inside the image:
-
-- board title, section title, view label, asset ID, date, approval status, source status, legend, footnote, instructional text, caption, table, UI frame, callout line, arrow, number, status color block, diagram label, or any non-product-native text;
-- `Front`, `Back`, `Left`, `Right`, `Top`, `Bottom`, `High Angle`, `Low Angle`, `Source of truth`, `Approved`, `Inferred`, `Needs source`, `@product_front`, or similar strings;
-- infographic, presentation slide, design spec sheet, annotated board, technical manual, PPT, e-commerce detail page, or poster composition.
-
-Asset registry IDs are text-only output after generation:
-
-- `@product_packaging_lock_board`
-- `@product_front`
-- `@product_back`
-- `@product_left`
-- `@product_right`
-- `@product_3q_front`
-- `@product_3q_back`
-- `@product_high_angle`
-- `@product_low_angle`
-- `@product_logo_detail`
-- `@product_copy_detail`
-- `@product_material_detail`
-
-Completion criterion: the generated image is a clean visual reference board with no non-product text pollution.
-
-## Image Generation
-
-Call the available Codex image-generation capability directly. Use Codex built-in `/image gen` when exposed by the interface. If no image-generation tool is callable, report a hard blocker; do not replace the deliverable with prompt-only output.
-
-Build a concrete `final_image_generation_prompt` from the input audit, source map, angle gate, copy classes, and board specification before generation. Use that prompt for `/image gen`. After generation, output that exact prompt in the chat as `本次图片生成提示词`.
-
-The prompt is a user-facing production handoff artifact. It is also non-product-native text, so it must stay outside the generated image. Do not output hidden reasoning, private deliberation, raw tool metadata, or model-call logs. If repair generations are used, output the final prompt used for the delivered image and state the revision count; include earlier repair prompts only when the user explicitly asks.
-
-Internal generation constraints:
-
-- use uploaded product references as the only product identity source;
-- preserve packaging outline, volume, proportions, thickness, curvature, edge logic, box depth, pouch inflation, bottle shoulder, cap, lid, pump, tube opening, can rim, jar body, seal, top, bottom, and closure structure;
-- preserve brand name, product name, logo, label position, label size relationship, layout hierarchy, color placement, material type, finish, and approved copy;
-- keep unverifiable dense microcopy as texture-level only; never invent readable fake copy;
-- generate a clean white, light gray, or neutral gray studio reference board with even product lighting, no strong depth of field, no motion blur, no dramatic shadows, no lifestyle setting, no props, no hands, and no people;
-- make the 8 views belong to the same product and make closeups consistent with the full product views;
-- do not redesign, premiumize, modernize, simplify, rebrand, relabel, recolor, resize, restyle, or advertise the product;
-- do not add any non-product-native words, labels, headings, asset names, numbers, arrows, callouts, UI panels, status marks, or explanatory graphics inside the image.
-
-Completion criterion: `/image gen` has been called for one clean composite image board and the final image-generation prompt is available for the chat reply, or missing image-generation capability has been reported as the only blocker.
-
-## QA Gate
-
-Inspect the generated image before final reply. Use visual inspection tools when available.
-
-Check geometry:
-
-- package shape, proportion, silhouette, volume, thickness, top, bottom, cap/lid/seal, edge/corner, tube opening, bottle shoulder, and base relationships are correct;
-- front, back, side, 3/4, high-angle, and low-angle views belong to the same product;
-- high-angle and low-angle perspectives are plausible for video use and do not replace the product with pure technical top/bottom views unless requested;
-- no deformation, invented structure, missing closure, wrong box depth, wrong pouch inflation, or wrong bottle/can/tube geometry appears.
-
-Check label/copy/logo:
-
-- brand name, logo, product name, front title, hero claim, capacity/spec, and other A-class text are correct where source allows;
-- label position, scale, hierarchy, color blocks, and local detail crops match the product views;
-- no gibberish, fake logo, invented claim, invented back-label text, missing hero text, or copy drift appears;
-- inferred surfaces are not treated as approved.
-
-Check material:
-
-- packaging material and finish match the source;
-- transparent, translucent, liquid, matte, gloss, metallic, glass, foil, holographic, embossed, laminated, printed, reflective, and label-adhesion relationships are plausible and stable.
-
-Check non-product text pollution:
-
-- no title, section heading, view label, asset name, date, approval status, source status, note, legend, table, UI frame, arrow, number, callout line, or explanatory graphic appears;
-- any non-product-native text inside the image is a failure.
-
-Check video usability:
-
-- board can support orbit, side move, rotation, reveal, hand-turn, close product-shot, high-angle, and low-angle references;
-- enough views and detail crops exist for downstream image/video models;
-- image reads as a clean asset reference board rather than an ad poster, infographic, spec sheet, or presentation slide.
-
-Check prompt trace:
-
-- final reply includes `本次图片生成提示词`;
-- the prompt corresponds to the final delivered image, not an abandoned draft;
-- the prompt is consistent with the source map, clean-board ban, 8-angle requirement, and repair state;
-- the prompt does not expose hidden reasoning, private deliberation, raw tool metadata, or model-call logs.
-
-Result levels:
-
-- `approved`: geometry, A-class text, logo, label placement, material, 8-angle perspective, no-text-pollution, video usability, source map, and prompt trace pass.
-- `conditional`: usable as a forward asset board, but some angles or copy are `inferred` or `needs_source`.
-- `not_approved`: geometry, logo, A-class text, material identity, perspective, or clean-board rule fails.
-
-Completion criterion: the final reply states one honest approval status and the blocking reason for any non-approved state.
-
-## Repair Loop
-
-If the generated result fails and image generation remains available, run up to two repair generations before final delivery.
-
-Repair one main issue at a time in this priority order:
-
-1. remove non-product text pollution;
-2. fix structure or angle identity;
-3. fix logo, label, or A-class copy;
-4. fix high-angle or low-angle perspective;
-5. fix material/detail behavior;
-6. fix layout cleanliness.
-
-Do not rewrite the whole board instruction when one issue dominates. After two repairs, stop and report which source material is needed:
-
-- higher-resolution front image;
-- back, left, right, top, or bottom image;
-- unfolded package or flat label artwork;
-- exact label text, back-label text, ingredients, specs, or certification files;
-- logo file;
-- material notes.
-
-After each repair, rerun the full QA gate. A repair that removes prompt/text pollution but breaks logo, A-class copy, geometry, material, or source-state honesty is still a failure.
-
-Completion criterion: no more than two repair generations are attempted, the final prompt corresponds to the delivered image, and any remaining blocker is tied to missing source evidence or generation failure.
-
-## Output Contract
-
-Default user-facing reply is concise and in Chinese:
-
-1. include the generated single clean asset-board image or image result;
-2. provide `本次图片生成提示词`, meaning the final image-generation prompt used for the delivered image;
-3. provide the lock checklist;
-4. provide QA acceptance;
-5. state whether it can enter `Approved Packaging Asset Registry`;
-6. list missing source materials when needed.
-
-Keep the image-generation prompt, lock checklist, asset names, confidence labels, and QA results in chat text only. Do not put them inside the image.
-
-Use this structure:
+Inspect the currently exposed tools and record only observed capabilities:
 
 ```text
-本次图片生成提示词：
-<输出最终用于本次 /image gen 的提示词。若经过修正，输出最终交付图对应的最终提示词。>
-
-锁定清单：
-- 品牌：
-- 产品名：
-- 已锁定角度：
-- 已锁定标签面：
-- 已锁定关键文字：
-- 已锁定材质：
-- 高置信度角度：
-- 推断角度：
-- 未确认信息：
-- 是否进入视频资产库：
-
-验收结果：
-- 几何身份：通过 / 需修正
-- 标签文案：通过 / 需修正
-- logo：通过 / 需修正
-- 材质：通过 / 需修正
-- 俯视/仰视透视：通过 / 需修正 / 推断
-- 非产品文字污染：无 / 有，需修正
-- 视频可用性：是 / 否
-- 是否进入 Approved Packaging Asset Registry：是 / 否
-
-资产登记：
-- @product_packaging_lock_board
-- @product_front
-- @product_back
-- @product_left
-- @product_right
-- @product_3q_front
-- @product_3q_back
-- @product_high_angle
-- @product_low_angle
-- @product_logo_detail
-- @product_copy_detail
-- @product_material_detail
+runtime_capability_snapshot:
+- image_generation_callable: supported / unsupported / unknown
+- reference_images_attachable: supported / unsupported / unknown
+- returned_file_inspectable: supported / unsupported / unknown
+- post_generation_text_allowed_same_turn: supported / unsupported / unknown
+- deterministic_compositor_available: supported / unsupported / unknown
+- ocr_available: supported / unsupported / unknown
+- barcode_qr_decoder_available: supported / unsupported / unknown
+- hashing_available: supported / unsupported / unknown
 ```
 
-If the user provides a concrete product name, replace `product` in registry IDs with a short safe product slug when useful.
+Do not infer a capability from desired prompt language. If generation or reference attachment is unavailable, report `blocked_capability`. If the user requires exact copy and no qualifying deterministic/OCR/decode path exists, generation may still create a geometry/layout candidate only with explicit `exact_copy_lock_status: blocked_verification_capability`; do not promise an exact lock.
 
-Do not default to:
+## Prompt record and terminal generation call
 
-- long theory;
-- model-call details;
-- prompt-only response;
-- multi-image output;
-- hidden reasoning or raw tool logs;
-- generated image containing the prompt, non-product labels, headings, view text, asset IDs, or QA text.
+Build one public `final_generation_prompt` from the source ledger, angle map, and panel budget. Before calling image generation:
 
-End condition: one clean packaging product identity and label-copy lock board has been generated, the final image-generation prompt has been output as chat text, QA is complete, and the user can tell which angles and text are `approved`, `inferred`, or `needs_source` without any of that metadata polluting the image itself.
+1. freeze the exact prompt bytes;
+2. show the complete `final_generation_prompt`;
+3. calculate `generation_prompt_sha256` when available;
+4. set `prompt_disclosed_before_generation: true` only when the shown bytes will be submitted unchanged;
+5. set `terminal_generation_call: pending`;
+6. set `assistant_qa_status: pending_post_generation_inspection`;
+7. set `production_approval_status: not_granted`.
+
+Then submit the exact prompt with all source references. The image-generation call is the terminal action of that assistant turn. Do not append a prompt, QA, or commentary after the call when the runtime forbids post-generation text.
+
+The tool/runtime call trace is the evidence for changing `terminal_generation_call` from `pending` to `executed`; never predeclare execution. Without a separate subsequent visual inspection, leave `assistant_qa_status: pending_post_generation_inspection` and `production_approval_status: not_granted`.
+
+The prompt must request one clean board, consistent package geometry, the planned views and details, source-bound label layout, no invented readable text, and no non-product-native text. It must not claim that generation alone will produce verified exact copy.
+
+If the runtime allows inspection only in a later continuation, perform artifact QA, OCR/decode, or deterministic compositing there. Any repair generation follows the same sequence: disclose and hash the repair prompt, then use the image call as the turn's terminal action.
+
+## Artifact QA and exact-copy verification
+
+In a separate inspection step, assess:
+
+```text
+geometry_layout_lock_status: passed / conditional / failed / unverified
+angle_source_status: passed / conditional / failed
+no_non_product_text_pollution: pass / fail
+material_source_consistent: pass / fail / unverified
+panel_legibility_status: pass / fail / unverified
+prompt_bound: pass / fail
+exact_copy_lock_status: approved / conditional_unverified / not_approved / not_required
+assistant_qa_status: passed / conditional / failed / pending_post_generation_inspection
+production_approval_status: not_granted / user_granted / external_pipeline_granted
+```
+
+For every required exact field, append an evidence row:
+
+```text
+field_id:
+expected_value_or_asset:
+final_observation:
+verification_method:
+verification_evidence:
+field_result: pass / fail / unverified
+```
+
+Set `exact_copy_lock_status: approved` only when every required exact field passes its qualifying evidence method. A geometry/layout pass and an exact-copy pass remain independently visible.
+
+Assistant QA does not grant production approval or admission to an Approved Packaging Asset Registry. Registry admission requires all required gates, retained evidence, and an explicit user or external-pipeline approval.
+
+## Repair rules
+
+Attempt at most two generative repairs. Repair one dominant issue at a time:
+
+1. geometry or cross-view identity;
+2. missing/cropped/repeated views;
+3. label position or hierarchy;
+4. non-product text pollution;
+5. material or panel legibility.
+
+Do not repeatedly regenerate exact text, logos, or codes when deterministic compositing is the reliable path. A repair that improves text but breaks geometry, source identity, or clean-board rules still fails. Stop when missing source evidence or unavailable verification capability is the blocker.
+
+## Output contract
+
+Before the terminal generation call, provide concise Chinese text:
+
+```text
+风险向量：geometry / label / material / structure / state
+来源账本：<compact field summary>
+geometry_layout_lock_status: pending_generation
+exact_copy_lock_status: pending_verification / blocked_verification_capability / not_required
+panel_capacity_budget: pass / constrained / blocked
+runtime_capability_snapshot: ...
+
+final_generation_prompt:
+<exact prompt that will be submitted>
+generation_prompt_sha256: <sha256 / unavailable>
+prompt_disclosed_before_generation: true / false
+terminal_generation_call: pending
+assistant_qa_status: pending_post_generation_inspection
+production_approval_status: not_granted
+```
+
+In the later inspection step, report the two lock-layer statuses, field evidence rows, limitations, registry eligibility, and production-approval state. Keep all of this metadata outside the image.
+
+## End condition
+
+End only when one of these is true:
+
+- one source-bound packaging-board candidate has been generated with a disclosed prompt and awaits inspection;
+- geometry/layout and exact-copy claims have been independently classified from retained evidence;
+- missing sources or runtime verification capability has been reported without substituting visual plausibility for exactness.

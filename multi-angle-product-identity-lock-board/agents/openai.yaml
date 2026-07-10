@@ -1,0 +1,4 @@
+interface:
+  display_name: "Multi-Angle Product Identity Lock Board"
+  short_description: "Six-view identity lock for low-risk products."
+  default_prompt: "Use $multi-angle-product-identity-lock-board to create one evidence-gated six-view identity board from my product references."

@@ -1,6 +1,6 @@
 interface:
   display_name: "Character Final Lock Board"
-  short_description: "Generate character boards plus prompts."
-  default_prompt: "Use $character-final-lock-board with my model reference and wardrobe reference to generate one final character lock board image, output the exact image generation prompt, and run QA."
+  short_description: "Lock one character, with optional high-angle evidence."
+  default_prompt: "Use $character-final-lock-board with my person and wardrobe references to generate one comprehensive final character lock board. Resolve identity conflicts, select high_angle_evidence, disclose the exact prompt and SHA-256 before generation, then make the image call the final action."
 policy:
   allow_implicit_invocation: true

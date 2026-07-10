@@ -1,4 +1,4 @@
 interface:
   display_name: "Material-Sensitive Product Master Asset Board"
-  short_description: "Single board for glass, liquid, reflective products."
-  default_prompt: "Use $material-sensitive-product-master-asset-board to generate one video-ready master asset board from these product references."
+  short_description: "One evidence-led board for material-sensitive products."
+  default_prompt: "Use $material-sensitive-product-master-asset-board to generate one source-bound material master board from these product references."

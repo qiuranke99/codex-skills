@@ -1,159 +1,192 @@
 ---
 name: character-final-lock-board
-description: "Use when the user provides person or model reference images, optional wardrobe/shoe/accessory references, and optional character notes, and wants a final locked character asset board for AI video or image continuity. Directly generate one Character Final Lock Board image with GPT Image 2 or the available image generation tool, and output the exact image generation prompt used for the delivered image. Do not produce a candidate sheet or prompt-only result."
+description: "Use when the user provides one or more person/model references, optional wardrobe, shoe, accessory, or prop references, and wants one final comprehensive character lock board for AI image or video continuity. Generate one text-free board with portrait, complete multi-angle body views, expressions, details, and silhouettes; support high-angle evidence as required, optional, or off. Freeze and disclose the exact generation prompt and SHA-256 before the terminal image-generation call. Do not use for candidate comparison, the exactly-one-face headless-body topology, or prompt-only delivery."
 ---
 
 # Character Final Lock Board
 
-Generate one final locked character asset board, not exploratory candidates. The deliverable is an actual image file plus the exact image generation prompt used for that delivered image. `asset_record.yaml` and `qa_report.md` are recommended companion artifacts.
+Generate one comprehensive final character lock board. Keep one selected identity and one coherent wardrobe system across every panel. This is not a candidate sheet, fashion layout, scene image, or prompt-only workflow.
 
-## Input Contract
+## 1. Resolve Inputs
 
-Classify the user's inputs before generation.
+Require at least one usable person/model reference. Accept optional wardrobe, shoe, accessory, prop, role, direction, and asset-ID inputs.
 
-- Require at least one person/model reference image. If none exists, hard-block and explain that a person/model reference is required.
-- Accept optional wardrobe, shoe, accessory, and prop references. If the user labels references, respect the labels.
-- If no wardrobe reference is provided, inherit visible clothing from the person/model reference.
-- If only wardrobe, shoe, or accessory references exist and no person/model reference exists, hard-block. Do not invent an identity.
-- Accept optional role notes, asset IDs such as `@hero`, and direction such as more daily, more premium, more advertising-realistic.
-- Treat age-shift requests as styling pressure only. Do not biologically change age, body type, identity, or face structure unless the user explicitly asks for a different character rather than a lock.
-- If a request conflicts with image-generation safety policy, stop on that policy boundary and offer a non-identifiable character alternative.
+Resolve the target identity before building a prompt:
 
-Completion criterion: the input state is one of `ready`, `hard_blocked_no_person_reference`, or `policy_blocked`.
+- Combine multiple references only when they clearly depict the same target identity.
+- If references depict different people and the user selected one identity, use only that person as identity evidence. Other people may be used solely for explicitly assigned non-identity roles such as wardrobe.
+- If two or more identities remain plausible and the target is not selected, return `identity_conflict` and ask for one target. Do not blend, average, or infer a preferred face.
+- If only wardrobe or accessory references exist, return `hard_blocked_no_person_reference`.
+- Treat age-direction words as styling pressure unless the user explicitly requests a new character rather than an identity lock.
+- Stop at `policy_blocked` when generation policy prevents the request.
 
-## Lock Sources
+Input status must be exactly one of:
 
-Before generation, write a private lock summary for yourself:
+- `ready`
+- `identity_conflict`
+- `hard_blocked_no_person_reference`
+- `policy_blocked`
 
-- `identity_source`: person/model reference file names or attachment names.
-- `body_source`: person/model reference unless the user clearly specifies otherwise.
-- `wardrobe_source`: wardrobe reference, or inherited visible wardrobe from the person/model reference.
-- `shoe_source` and `accessory_source`: explicit references first, then inherited visible items.
-- `asset_id`: user-provided ID, otherwise a short timestamped ID such as `character_20260701_1530`.
-- `direction_notes`: only notes that do not break identity or wardrobe lock.
+Do not call image generation unless status is `ready`.
 
-Use the lock summary to build the generation prompt. Do not print the lock summary unless it is saved to `asset_record.yaml` or needed to explain a blocker.
+## 2. Build The Source Ledger
 
-## Image Generation
+Privately record attachment aliases and evidence status for:
 
-Call the available Codex image-generation capability directly. Select GPT Image 2 or `/image gen2` when the interface exposes a model choice. If no image generation tool is callable, report a hard blocker; do not replace the image with a prompt-only deliverable.
+- `identity_source`
+- `body_source`
+- `wardrobe_source`
+- `shoe_source`
+- `accessory_source`
+- `prop_source`
 
-Use all supplied reference images in the generation call when the tool supports reference attachments. The generation must create one final board from the locked identity and wardrobe, not multiple alternate identities.
+Use source statuses:
 
-Build `final_generation_prompt` before the image-generation call. It must be the complete natural-language prompt actually sent to the image-generation tool, including board layout, identity lock, wardrobe lock, reference binding notes, and strict negatives. If you change the prompt to satisfy tool syntax, update `final_generation_prompt` before generation so the saved prompt and generated image stay traceable.
+- `user_locked`: explicitly assigned by the user;
+- `source_supported`: visibly supported by a supplied reference;
+- `safe_inferred`: necessary low-risk inference from incomplete evidence;
+- `missing_or_conflicting`: absent or contradictory.
 
-Keep `final_generation_prompt` safe to return:
+Never present `safe_inferred` details as verified. Do not put private paths, hidden reasoning, or confidential notes in the generation prompt.
 
-- Refer to input images by attachment aliases such as `person_reference_1` and `wardrobe_reference_1`, not by local absolute paths.
-- Do not include private lock summaries, hidden reasoning, secrets, client-private notes, or unsupported identity claims.
-- State that the prompt depends on the same reference images used in the run and is not a standalone guarantee of identity reproduction.
-- Keep all prompt text outside the image. The generated board itself must still contain no text, labels, arrows, UI, watermarks, or gibberish.
+## 3. Select High-Angle Evidence
 
-Prompt base:
+Set `high_angle_evidence` to exactly one of:
+
+- `required`: the user asks for a high-angle, top-down, crown-hair, or elevated-camera continuity view. The board must contain a readable high-angle view and visual QA must later verify it.
+- `optional`: the user did not require it, but crown hair, hairline, shoulder-neck proportion, collar, neckline, or elevated-camera continuity is materially fragile. Add it only when the board can remain readable without weakening core views.
+- `off`: high-angle evidence is neither requested nor risk-justified. Do not spend panel capacity on it.
+
+Use a high-angle 3/4 full-body, upper-body, or slight top-down view. Do not use an extreme 90-degree overhead view unless explicitly requested.
+
+## 4. Compose The Board
+
+Always require:
+
+- one large frontal or near-frontal facial portrait;
+- front, back, side, and 3/4 complete full-body views with heads present;
+- one or two restrained natural pose variants;
+- four to six expression head tiles;
+- three to five useful detail crops for identity, hair, garment, shoe, accessory, or prop continuity;
+- two or three simple silhouettes.
+
+Use a wide 16:9-or-wider composition, clean white or light-gray studio background, neutral catalog light, realistic photographic rendering, and asset-board clarity. Keep every body view head-to-toe and prevent props from hiding a neutral front view.
+
+If `high_angle_evidence` is `required`, add at least one high-angle panel. If `optional`, add one only after all mandatory views remain legible. If `off`, omit it.
+
+Inside the image, forbid text, titles, labels, arrows, measurements, logos, watermarks, UI, gibberish, scene environments, dramatic cinematic light, fashion-editorial treatment, illustration, anime, CGI, and unrelated people.
+
+## 5. Freeze The Runtime Contract
+
+Call the available built-in image-generation capability directly. Prefer GPT Image 2 only when the interface exposes that choice. Do not claim a model, raster size, seed, or native 4K provenance that the runtime does not expose.
+
+Before the image-generation call:
+
+1. Capture `runtime_capability_snapshot`: callable image tool, exposed model choice, exposed size controls, usable reference count, and any known output/provenance limits. Unknown values remain `unknown`; never infer them.
+2. Build the complete `final_generation_prompt`, including reference aliases, board topology, identity and wardrobe locks, `high_angle_evidence`, and strict negatives.
+3. Normalize the exact prompt as UTF-8 text with LF line endings.
+4. Compute `generation_prompt_sha256` from those exact bytes.
+5. When filesystem access exists, save the prompt before generation as `<asset_id>_generation_prompt.md` and record the prompt record in `asset_record.yaml`.
+6. Present the exact prompt and hash to the user before generation, then set `prompt_disclosed_before_generation: true`. State that it depends on the same attached references and is not a standalone identity guarantee.
+7. Set `terminal_generation_call: pending`, `assistant_qa_status: pending`, and `production_approval_status: not_granted`.
+8. Call image generation as the final action of the turn.
+
+Do not send text, call another tool, reconstruct the prompt, inspect the image, or claim visual success after the generation call in the same turn. The generation result itself completes that turn. If the tool contract later permits post-call actions, preserve this ordering unless exact prompt traceability remains equally strong.
+
+If the prompt cannot be frozen or the image tool is unavailable, return `hard_blocked_generation_runtime` without presenting a substitute run as successful.
+
+Use this pre-generation disclosure shape:
 
 ```text
-Create one wide 16:9 or wider Character Final Lock Board for AI video continuity.
-Use the provided person/model reference as the locked identity and body source.
-Use the provided wardrobe, shoe, and accessory references as the locked clothing source; if absent, preserve the visible outfit from the person reference.
+Image generation prompt:
+<exact final_generation_prompt>
 
-Board style: clean white or light gray seamless studio background, neutral catalog/studio lighting, soft even shadows, realistic high-resolution photography, engineered asset-board clarity, no scene environment, no editorial fashion styling, no poster design.
-
-Composition: one large clear front facial portrait on the left; front full-body, back full-body, side full-body, and 3/4 full-body views across the center/right; one or two natural pose variants; four to six expression head tiles; three to five detail crops for hair/face/collar/sleeve/fabric/shoes/accessories; two or three simple black silhouettes. Keep one consistent person and one consistent outfit across every view.
-
-Identity lock: preserve face shape, feature spacing, eyes, nose, mouth, hairstyle, hair volume, skin tone, age impression, body type, height impression, posture, and character presence.
-
-Wardrobe lock: preserve top, bottom, shoes, accessories, fabric type, core colors, garment cut, silhouette, and wearing method.
-
-Strict negatives: no headless model, no missing head, no face swap, no age change, no body type change, no identity change, no wardrobe redesign, no new unrelated clothing layer, no shoe-type change, no extra people, no indoor or outdoor scene, no cinematic lighting, no dramatic shadows, no poster, no fashion editorial, no illustration, no anime, no CGI, no 3D render, no concept art, no text, no title, no arrows, no labels, no logo, no watermark, no UI, no gibberish.
+generation_prompt_sha256: <sha256>
+prompt_disclosed_before_generation: true
+terminal_generation_call: pending
+assistant_qa_status: pending
+production_approval_status: not_granted
 ```
 
-Save and return the exact `final_generation_prompt` used for the delivered image. The prompt is a required companion deliverable, but the image remains required; do not finish with prompt text alone.
+## 6. Prompt Requirements
 
-When generation is hard-blocked because no image-generation tool is callable, do not output a reusable generation prompt as if the run succeeded. Report the blocker and the missing capability.
+The frozen prompt must state:
 
-## Output Contract
+- which attachment aliases control identity, body, wardrobe, shoes, accessories, and props;
+- that one selected identity and one wardrobe system must persist across all panels;
+- the mandatory board views and panel counts;
+- the selected `high_angle_evidence` behavior;
+- background, lighting, photographic style, and complete-body requirements;
+- strict negatives;
+- that all prompt text stays outside the generated image.
 
-Save outputs in a run folder when filesystem access is available:
+Use aliases such as `person_reference_1` and `wardrobe_reference_1`, never local absolute paths. Exclude source maps, hidden reasoning, secrets, and unsupported identity claims.
+
+## 7. Artifacts And Status
+
+When filesystem access exists, use:
 
 `outputs/character-locks/<asset_id>/`
 
-Required:
+Pre-generation artifacts:
 
-- `<asset_id>_final_lock_board.png` or the native image filename returned by the generator.
-- `<asset_id>_generation_prompt.md` containing the exact prompt used for the delivered image.
-
-Recommended:
-
+- `<asset_id>_generation_prompt.md`
 - `asset_record.yaml`
-- `qa_report.md`
 
-`asset_record.yaml` should contain:
+Generation result:
+
+- `<asset_id>_final_lock_board.png` or the native result returned by the generator.
+
+Recommended `asset_record.yaml` fields:
 
 ```yaml
 asset_id:
 asset_type: character_final_lock_board
-status: final_lock_candidate
-created_at:
+status: generation_pending
+runtime_capability_snapshot:
 identity_source:
 body_source:
 wardrobe_source:
 shoe_source:
 accessory_source:
-direction_notes:
-image_path:
+prop_source:
+high_angle_evidence: required | optional | off
+final_generation_prompt:
 generation_prompt_path:
 generation_prompt_sha256:
-generator_model:
-prompt_contract_version:
-final_generation_attempt:
-qa_report_path:
-revision_count:
+generator_model_claim: runtime_exposed_only
+prompt_disclosed_before_generation: true
+terminal_generation_call: pending
+assistant_qa_status: pending
+production_approval_status: not_granted
 ```
 
-`qa_report.md` should contain the QA checklist, result, whether regeneration was used, and whether the delivered image is traceable to the returned prompt.
+`terminal_generation_call` is a state machine: keep it `pending` before the call and change it to `executed` only from the tool/runtime trace on a later turn. `assistant_qa_status` and `production_approval_status` are independent. Without an independent later visual review, assistant QA remains `pending`; production approval remains `not_granted` until the user or an authorized external pipeline explicitly changes it to `user_granted` or `external_pipeline_granted`.
 
-If the image tool cannot save files but can return an image result, return the full prompt text in the user-facing reply and mark `prompt_saved: false` in the QA result. If filesystem access exists, prefer saving the prompt file and also include the full prompt text in the reply when it is not excessively long.
+## 8. Later-Turn Visual Review
 
-## QA Gate
+Only on a later turn with the generated image available, inspect it and check:
 
-Inspect the generated image visually. Use an image viewing tool when available.
+- one identity and one wardrobe system remain consistent;
+- all mandatory views and full heads/feet are present;
+- expressions, details, and silhouettes meet their counts;
+- the required high-angle panel exists when mode is `required`;
+- optional high-angle evidence did not displace a core view;
+- no extra people, text pollution, scene background, or style drift appears;
+- the image corresponds to the frozen prompt and reference set.
 
-Check:
+Set `assistant_qa_status` to `visual_pass`, `visual_warn`, or `visual_fail`. Keep `production_approval_status` unchanged.
 
-- head is present in every human body view;
-- one consistent face and identity across the board;
-- wardrobe, shoes, and accessories stay consistent with the chosen sources;
-- front full-body view exists;
-- back full-body view exists;
-- side full-body view exists;
-- 3/4 full-body view exists;
-- expression group exists with four to six head tiles;
-- detail crops exist with three to five useful closeups;
-- silhouettes exist with two or three clean shapes;
-- background is white or light gray studio only;
-- no extra people appear;
-- no text, title, arrows, labels, logo, watermark, UI, or gibberish appears inside the image;
-- the prompt artifact or returned prompt is the exact prompt used for the delivered image;
-- if regeneration occurred, the final prompt corresponds to the delivered regenerated image, not the rejected first attempt.
-- the prompt record does not contain local absolute paths, hidden reasoning, secrets, private lock summaries, or unsupported identity claims;
-- the prompt record states that it depends on the same reference images used in the run.
+If one repair is justified, build a new complete prompt, freeze and disclose its new hash before calling image generation. The repair call is again the final action of its turn. Never claim that a rejected attempt and a repaired image share the same prompt hash.
 
-Result levels:
+## 9. Completion Contract
 
-- `pass`: all core lock requirements pass; minor crop imbalance is acceptable.
-- `warn`: the image is usable but has a minor missing secondary element.
-- `fail`: identity/wardrobe drift, missing head, extra person, scene background, text pollution, or missing required full-body angles.
+A generation turn succeeds only when:
 
-If the first generation is an obvious `fail`, regenerate exactly once. Save the rejected attempt prompt as `<asset_id>_generation_prompt_attempt_1.md` when filesystem access is available. The second attempt must emphasize identity consistency, wardrobe consistency, no text, no background, complete head-to-toe body views, and all required angles. Save the second prompt as the final `<asset_id>_generation_prompt.md` if that image is delivered. After the second attempt, stop and deliver the best image with an honest QA result; do not loop.
+- input status was `ready`;
+- `high_angle_evidence` was resolved;
+- the exact prompt and hash were disclosed before generation;
+- image generation was called as the terminal action;
+- the result is described as pending visual review and production approval, not as an approved lock.
 
-## User-Facing Reply
-
-Return only:
-
-- image path or generated image result;
-- `generation_prompt.md` path and the exact prompt text, or the exact prompt text with `prompt_saved: false` if no file could be written;
-- `asset_record.yaml` path if created;
-- `qa_report.md` path if created;
-- short QA result and whether one regeneration was used.
-
-Do not make prompt text a substitute for image generation, and do not produce a candidate sheet.
+Prompt-only output, an unresolved identity conflict, a missing image call, or a post-hoc reconstructed prompt is not success.

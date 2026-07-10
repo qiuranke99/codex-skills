@@ -1,4 +1,6 @@
 interface:
   display_name: "Character Casting Lock Board"
-  short_description: "Text-free casting board plus prompt."
-  default_prompt: "Use $character-casting-lock-board to generate a text-free film casting lock board from my character reference images, and output the image generation prompt used for each delivered board."
+  short_description: "Lock one character in a text-free casting board."
+  default_prompt: "Use $character-casting-lock-board with my selected character references to generate the fixed portrait/front/back/side casting board and only source-backed risk extensions. Resolve identity ambiguity, disclose each exact prompt and SHA-256 before generation, and make every image call the final action of its turn."
+policy:
+  allow_implicit_invocation: true
