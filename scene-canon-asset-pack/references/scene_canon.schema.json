@@ -1,0 +1,231 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "scene_canon.schema.json",
+  "title": "Scene Canon",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "scene_id",
+    "project_name",
+    "scene_name",
+    "scene_type",
+    "secondary_scene_types",
+    "source_reference_list",
+    "primary_reference",
+    "source_locked_elements",
+    "source_corroborated_elements",
+    "canonical_completion_elements",
+    "conflicts",
+    "out_of_scope_unknowns",
+    "minimum_complete_scene_boundary",
+    "fixed_architecture",
+    "fixed_natural_structures",
+    "fixed_set_dressing",
+    "conditional_scene_elements",
+    "temporary_or_unwanted_objects",
+    "prohibited_elements",
+    "fixed_content_exclusion_map",
+    "landmark_list",
+    "material_identity",
+    "observed_rendered_colors",
+    "intrinsic_base_colors",
+    "estimated_intrinsic_colors",
+    "appearance_confidence",
+    "source_color_cast",
+    "source_exposure_characteristics",
+    "source_lighting_characteristics",
+    "removable_lighting_components",
+    "removable_camera_effects",
+    "removable_postprocess_components",
+    "intrinsic_emissive_structures",
+    "neutral_appearance_rules",
+    "scale_relationships",
+    "topology_relationships",
+    "entrances_and_exits",
+    "orientation_system",
+    "horizon_or_vertical_reference",
+    "intrinsic_scene_state",
+    "camera_coverage_plan",
+    "inferred_regions",
+    "confidence_level",
+    "unresolved_hard_blockers",
+    "canon_revision",
+    "canon_freeze_status",
+    "source_asset_dimensions",
+    "target_4k_dimensions",
+    "generated_asset_index",
+    "four_k_prompt_index",
+    "QA_status"
+  ],
+  "properties": {
+    "schema_version": {"const": "scene-canon.v1"},
+    "scene_id": {"type": "string", "minLength": 1},
+    "project_name": {"type": "string"},
+    "scene_name": {"type": "string", "minLength": 1},
+    "scene_type": {"$ref": "#/$defs/sceneType"},
+    "secondary_scene_types": {"type": "array", "uniqueItems": true, "items": {"$ref": "#/$defs/sceneType"}},
+    "source_reference_list": {"type": "array", "minItems": 1, "items": {"$ref": "#/$defs/sourceReference"}},
+    "primary_reference": {"type": "string", "minLength": 1},
+    "source_locked_elements": {"type": "array", "items": {"$ref": "#/$defs/evidenceElement"}},
+    "source_corroborated_elements": {"type": "array", "items": {"$ref": "#/$defs/evidenceElement"}},
+    "canonical_completion_elements": {"type": "array", "items": {"$ref": "#/$defs/completionElement"}},
+    "conflicts": {"type": "array", "items": {"$ref": "#/$defs/conflict"}},
+    "out_of_scope_unknowns": {"type": "array", "items": {"type": "string"}},
+    "minimum_complete_scene_boundary": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["included_regions", "excluded_regions", "coverage_rationale"],
+      "properties": {
+        "included_regions": {"type": "array", "minItems": 1, "items": {"type": "string"}},
+        "excluded_regions": {"type": "array", "items": {"type": "string"}},
+        "coverage_rationale": {"type": "string", "minLength": 1}
+      }
+    },
+    "fixed_architecture": {"type": "array", "items": {"type": "string"}},
+    "fixed_natural_structures": {"type": "array", "items": {"type": "string"}},
+    "fixed_set_dressing": {"type": "array", "items": {"type": "string"}},
+    "conditional_scene_elements": {"type": "array", "items": {"type": "string"}},
+    "temporary_or_unwanted_objects": {"type": "array", "items": {"type": "string"}},
+    "prohibited_elements": {"type": "array", "items": {"type": "string"}},
+    "fixed_content_exclusion_map": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["fixed_architecture_or_natural", "fixed_set_dressing", "conditional_scene_elements", "temporary_objects", "prohibited_additions", "prohibited_look_components"],
+      "properties": {
+        "fixed_architecture_or_natural": {"type": "array", "items": {"type": "string"}},
+        "fixed_set_dressing": {"type": "array", "items": {"type": "string"}},
+        "conditional_scene_elements": {"type": "array", "items": {"type": "string"}},
+        "temporary_objects": {"type": "array", "items": {"type": "string"}},
+        "prohibited_additions": {"type": "array", "items": {"type": "string"}},
+        "prohibited_look_components": {"type": "array", "items": {"type": "string"}}
+      }
+    },
+    "landmark_list": {"type": "array", "items": {"$ref": "#/$defs/landmark"}},
+    "material_identity": {"type": "array", "items": {"$ref": "#/$defs/material"}},
+    "observed_rendered_colors": {"type": "array", "items": {"$ref": "#/$defs/colorRecord"}},
+    "intrinsic_base_colors": {"type": "array", "items": {"$ref": "#/$defs/colorRecord"}},
+    "estimated_intrinsic_colors": {"type": "array", "items": {"$ref": "#/$defs/colorRecord"}},
+    "appearance_confidence": {"enum": ["high", "medium", "low", "mixed"]},
+    "source_color_cast": {"type": "array", "items": {"type": "string"}},
+    "source_exposure_characteristics": {"type": "array", "items": {"type": "string"}},
+    "source_lighting_characteristics": {"type": "array", "items": {"type": "string"}},
+    "removable_lighting_components": {"type": "array", "items": {"type": "string"}},
+    "removable_camera_effects": {"type": "array", "items": {"type": "string"}},
+    "removable_postprocess_components": {"type": "array", "items": {"type": "string"}},
+    "intrinsic_emissive_structures": {"type": "array", "items": {"type": "string"}},
+    "neutral_appearance_rules": {"type": "array", "minItems": 1, "items": {"type": "string"}},
+    "scale_relationships": {"type": "array", "items": {"type": "string"}},
+    "topology_relationships": {"type": "array", "items": {"type": "string"}},
+    "entrances_and_exits": {"type": "array", "items": {"type": "string"}},
+    "orientation_system": {"type": "string", "minLength": 1},
+    "horizon_or_vertical_reference": {"type": "string", "minLength": 1},
+    "intrinsic_scene_state": {"type": "array", "items": {"$ref": "#/$defs/stateElement"}},
+    "camera_coverage_plan": {"type": "array", "minItems": 2, "items": {"$ref": "#/$defs/coverageItem"}},
+    "inferred_regions": {"type": "array", "items": {"$ref": "#/$defs/completionElement"}},
+    "confidence_level": {"enum": ["high", "medium", "low", "mixed"]},
+    "unresolved_hard_blockers": {"type": "array", "items": {"type": "string"}},
+    "canon_revision": {"type": "string", "minLength": 1},
+    "canon_freeze_status": {"enum": ["draft", "candidate", "frozen", "reopened_for_repair"]},
+    "source_asset_dimensions": {"type": "object", "additionalProperties": {"$ref": "#/$defs/dimensions"}},
+    "target_4k_dimensions": {"$ref": "#/$defs/dimensions"},
+    "generated_asset_index": {"type": "array", "uniqueItems": true, "items": {"type": "string"}},
+    "four_k_prompt_index": {"type": "array", "uniqueItems": true, "items": {"type": "string"}},
+    "QA_status": {"enum": ["not_started", "in_progress", "failed", "approved", "blocked"]}
+  },
+  "$defs": {
+    "sceneType": {"enum": ["bounded_rigid_space", "architectural_exterior", "open_terrain_landscape", "fluid_open_medium", "volumetric_dynamic", "astronomical_cosmic", "surreal_non_euclidean"]},
+    "dimensions": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["width", "height"],
+      "properties": {"width": {"type": "integer", "minimum": 1}, "height": {"type": "integer", "minimum": 1}}
+    },
+    "sourceReference": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["reference_id", "source_locator", "role"],
+      "properties": {
+        "reference_id": {"type": "string", "minLength": 1},
+        "source_locator": {"type": "string", "minLength": 1},
+        "role": {"enum": ["primary_scene_evidence", "corroborating_scene_evidence", "material_detail", "state_reference", "style_only_excluded", "conflicting_candidate"]},
+        "dimensions": {"$ref": "#/$defs/dimensions"}
+      }
+    },
+    "evidenceElement": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["element_id", "description", "source_reference_ids", "confidence"],
+      "properties": {
+        "element_id": {"type": "string"},
+        "description": {"type": "string"},
+        "source_reference_ids": {"type": "array", "minItems": 1, "uniqueItems": true, "items": {"type": "string"}},
+        "confidence": {"enum": ["high", "medium", "low"]}
+      }
+    },
+    "completionElement": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["element_id", "description", "rationale", "constraints", "status"],
+      "properties": {
+        "element_id": {"type": "string"},
+        "description": {"type": "string"},
+        "rationale": {"type": "string"},
+        "constraints": {"type": "array", "minItems": 1, "items": {"type": "string"}},
+        "status": {"enum": ["candidate", "approved", "rejected", "reopened_for_repair"]}
+      }
+    },
+    "conflict": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["conflict_id", "description", "source_reference_ids", "resolution_status"],
+      "properties": {
+        "conflict_id": {"type": "string"},
+        "description": {"type": "string"},
+        "source_reference_ids": {"type": "array", "minItems": 2, "items": {"type": "string"}},
+        "resolution_status": {"enum": ["unresolved", "resolved_source_priority", "resolved_state_split", "resolved_excluded_reference", "hard_blocker"]},
+        "resolution": {"type": "string"}
+      }
+    },
+    "landmark": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["landmark_id", "description", "orientation", "source_state"],
+      "properties": {
+        "landmark_id": {"type": "string"},
+        "description": {"type": "string"},
+        "orientation": {"type": "string"},
+        "source_state": {"enum": ["source_locked", "source_corroborated", "canonical_completion"]}
+      }
+    },
+    "material": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["surface_id", "material_class", "base_color_status", "confidence"],
+      "properties": {
+        "surface_id": {"type": "string"},
+        "material_class": {"type": "string"},
+        "base_color_status": {"enum": ["intrinsic_confirmed", "intrinsic_estimated", "rendered_only_unknown"]},
+        "confidence": {"enum": ["high", "medium", "low"]}
+      }
+    },
+    "colorRecord": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["surface_id", "description", "confidence"],
+      "properties": {"surface_id": {"type": "string"}, "description": {"type": "string"}, "confidence": {"enum": ["high", "medium", "low"]}}
+    },
+    "stateElement": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["state_id", "description", "identity_defining", "preservation_rule"],
+      "properties": {"state_id": {"type": "string"}, "description": {"type": "string"}, "identity_defining": {"type": "boolean"}, "preservation_rule": {"type": "string"}}
+    },
+    "coverageItem": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["asset_id", "view_role", "camera_height", "direction", "information_gain"],
+      "properties": {"asset_id": {"type": "string"}, "view_role": {"type": "string"}, "camera_height": {"enum": ["low", "eye", "elevated", "overhead", "system_not_camera_based"]}, "direction": {"type": "string"}, "information_gain": {"type": "string"}}
+    }
+  }
+}

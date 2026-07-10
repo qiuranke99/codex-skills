@@ -17,13 +17,14 @@ Codex discovery root: `C:\Users\Administrator\.codex\skills`
 | `single-face-character-lock-board` | `D:\AI\skill\single-face-character-lock-board` | Request a horizontal 16:9 one-face topology board with nonblocking built-in dimensions, then publish the complete generation and topology-preserving 4K prompts with both hashes together in the later final main result. | `D:\AI视觉工作室\.agents\skills\single-face-character-lock-board` | Active |
 | `cinematic_shot_image_explorer` | `D:\AI\skill\cinematic_shot_image_explorer` | Turn ideas, rough prompts, reference images, products, characters, scenes, or visual directions into exactly 10 cinematic film-still image prompts and 10 generated images. | `D:\AI视觉工作室\.agents\skills\cinematic_shot_image_explorer` | Active |
 | `cinematic_world_builder` | `D:\AI\skill\cinematic_world_builder` | Turn ideas, settings, atmospheres, cultures, places, names, genres, image descriptions, or reference images into a coherent cinematic world and exactly 9 film-still visual prompts. | `D:\AI视觉工作室\.agents\skills\cinematic_world_builder` | Active |
+| `scene-canon-asset-pack` | `D:\AI\skill\scene-canon-asset-pack` | Turn one or more scene references into a neutral, minimum-complete, internally consistent Scene Canon asset package with independent machine plates, later-turn QA, actual-dimension evidence, and one finalized 4K regeneration prompt per approved asset. | `D:\AI视觉工作室\.agents\skills\scene-canon-asset-pack` | Active |
 | `multi-angle-product-identity-lock-board` | `D:\AI\skill\multi-angle-product-identity-lock-board` | Request a horizontal 16:9 six-view board with nonblocking built-in dimensions, keep optional native-resolution evidence separate, and publish the complete generation and source-bound 4K prompts with both hashes together in the later final main result. | `D:\AI视觉工作室\.agents\skills\multi-angle-product-identity-lock-board` | Active |
 | `packaging-product-identity-label-lock-board` | `D:\AI\skill\packaging-product-identity-label-lock-board` | Request a horizontal 16:9 packaging geometry/layout board with nonblocking built-in dimensions, then publish both complete prompts and hashes together; exact copy still requires deterministic composition or OCR/field/QR/barcode evidence. | `D:\AI视觉工作室\.agents\skills\packaging-product-identity-label-lock-board` | Active |
 | `material-sensitive-product-master-asset-board` | `D:\AI\skill\material-sensitive-product-master-asset-board` | Request one horizontal 16:9 material master board with nonblocking built-in dimensions, then publish the complete generation and material-preserving 4K prompts with both hashes together in the later final main result. | `D:\AI视觉工作室\.agents\skills\material-sensitive-product-master-asset-board` | Active |
 
 ## Codex Discovery Entries
 
-As of 2026-07-04, this workspace exposes the following user-maintained Codex discovery entries.
+As of 2026-07-10, this workspace exposes the following user-maintained Codex discovery entries.
 
 | Codex entry | Junction target |
 | --- | --- |
@@ -32,6 +33,7 @@ As of 2026-07-04, this workspace exposes the following user-maintained Codex dis
 | `C:\Users\Administrator\.codex\skills\single-face-character-lock-board` | `D:\AI\skill\single-face-character-lock-board` |
 | `C:\Users\Administrator\.codex\skills\cinematic_shot_image_explorer` | `D:\AI\skill\cinematic_shot_image_explorer` |
 | `C:\Users\Administrator\.codex\skills\cinematic_world_builder` | `D:\AI\skill\cinematic_world_builder` |
+| `C:\Users\Administrator\.codex\skills\scene-canon-asset-pack` | `D:\AI\skill\scene-canon-asset-pack` |
 | `C:\Users\Administrator\.codex\skills\multi-angle-product-identity-lock-board` | `D:\AI\skill\multi-angle-product-identity-lock-board` |
 | `C:\Users\Administrator\.codex\skills\packaging-product-identity-label-lock-board` | `D:\AI\skill\packaging-product-identity-label-lock-board` |
 | `C:\Users\Administrator\.codex\skills\material-sensitive-product-master-asset-board` | `D:\AI\skill\material-sensitive-product-master-asset-board` |
