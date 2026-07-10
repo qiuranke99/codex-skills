@@ -1,13 +1,15 @@
 ---
 name: packaging-product-identity-label-lock-board
-description: Use when supplied bottle, box, pouch, can, tube, jar, carton, bag, or other label-heavy packaging references need one clean 16:9 video-reference board that separates geometry and label-layout consistency from exact-copy verification. Disclose the exact generation prompt, then inspect the actual board and deliver a source-bound 4K enhancement prompt and handoff for Nano Banana Pro, Nano Banana 2, or a comparable model. Approve exact text, logos, QR codes, barcodes, specifications, or certifications only with source assets and deterministic composition or field-level OCR/decode evidence. Do not use for simple low-text products, material-first glass/liquid/reflective products, mechanisms, scenes, or posters.
+description: Use when supplied bottle, box, pouch, can, tube, jar, carton, bag, or other label-heavy packaging references need one board that requests horizontal 16:9 and separates geometry/label layout from exact-copy verification. After inspecting the actual board, publish one final main result containing the complete exact generation prompt and image-specific 4K enhancement prompt with both SHA-256 values. Approve exact text, logos, QR codes, barcodes, specifications, or certifications only with source assets and deterministic composition or field-level OCR/decode evidence. Do not use for simple low-text products, material-first glass/liquid/reflective products, mechanisms, scenes, or posters.
 ---
 
 # Packaging Product Identity + Label Lock Board
 
+Contract version: `asset_board_contract_version: built_in_nonblocking_prompt_pair_v2`.
+
 Chinese name: 包装产品身份与标签文案双锁定资产板
 
-Create one clean composite product-reference board for label-heavy packaging. Treat `geometry_layout_lock` and `exact_copy_lock` as separate claims. A generated board may stabilize product form and label hierarchy without proving that every character, logo, barcode, QR code, certification, or legal field is exact.
+Create one clean composite product-reference board for label-heavy packaging. Treat `geometry_layout_lock` and `exact_copy_lock` as separate claims. A generated board may stabilize product form and label hierarchy without proving that every character, logo, barcode, QR code, certification, or legal field is exact. Completion also requires one final-channel main result that visibly contains both complete prompts and both hashes.
 
 Only product-native graphics may appear inside the image. Keep headings, view names, status, evidence, prompts, and registry IDs in chat text.
 
@@ -117,7 +119,7 @@ Before generation, allocate a `panel_capacity_budget` for the one-board composit
 
 ## Clean-board contract
 
-Generate exactly one horizontal 16:9 board image. `target_aspect_ratio: 16:9` is fixed: request no alternate ratio and accept no automatic ratio fallback. If the built-in runtime returns another ratio despite the request, do not crop or stretch it or call it final; set `codex_board_role: intermediate_layout_reference` and use the external stage to rebuild the same source-faithful topology on the requested 16:9 provider profile. A matching returned board may be `final_candidate` after QA. Use a neutral white, light-gray, or neutral-gray studio presentation with even lighting, complete uncropped products, and no dramatic scene.
+Generate exactly one board image and put `horizontal 16:9` in the built-in prompt as the sole creative ratio request. The built-in tool exposes no ratio or size argument, so record the original returned file's dimensions and observed ratio without turning them into a pass/fail condition. A `1672x941`, `1536x1024`, or other returned size remains `codex_board_role: content_qa_reference` when the packaging content contract passes. Do not crop or stretch it; the external stage must rebuild from that board plus the original references using its own exact 16:9 and 4K controls. Use a neutral white, light-gray, or neutral-gray studio presentation with even lighting, complete uncropped products, and no dramatic scene.
 
 The board may include:
 
@@ -139,7 +141,8 @@ runtime_capability_snapshot:
 - reference_images_attachable: supported / unsupported / unknown
 - explicit_aspect_ratio_argument: supported / unsupported / unknown
 - explicit_size_argument: supported / unsupported / unknown
-- requested_aspect_ratio: 16:9 / not_exposed
+- built_in_prompt_aspect_ratio_request: horizontal 16:9
+- built_in_prompt_alternate_aspect_ratios_allowed: false
 - returned_file_inspectable: supported / unsupported / unknown
 - pixel_dimensions_inspectable: supported / unsupported / unknown
 - post_generation_text_allowed_same_turn: supported / unsupported / unknown
@@ -149,25 +152,24 @@ runtime_capability_snapshot:
 - hashing_available: supported / unsupported / unknown
 ```
 
-Do not infer a capability from desired prompt language. If generation or reference attachment is unavailable, report `blocked_capability`. If the user requires exact copy and no qualifying deterministic/OCR/decode path exists, generation may still create a geometry/layout candidate only with explicit `exact_copy_lock_status: blocked_verification_capability`; do not promise an exact lock.
+Do not infer a capability from desired prompt language. If generation or reference attachment is unavailable, report `blocked_capability`. Set `built_in_dimensions_policy: evidence_only_nonblocking`: built-in dimensions and ratio are observations, never geometry/layout QA, exact-copy QA, repair, role-demotion, finalization, or external-handoff gates. If the user requires exact copy and no qualifying deterministic/OCR/decode path exists, generation may still create a geometry/layout candidate only with explicit `exact_copy_lock_status: blocked_verification_capability`; do not promise an exact lock.
 
 ## Prompt record and terminal generation call
 
 Build one public `final_generation_prompt` from the source ledger, angle map, and panel budget. Before calling image generation:
 
 1. freeze the exact prompt bytes;
-2. show the complete `final_generation_prompt`;
-3. calculate `generation_prompt_sha256` when available;
-4. set `prompt_disclosed_before_generation: true` only when the shown bytes will be submitted unchanged;
-5. set `terminal_generation_call: pending`;
-6. set `assistant_qa_status: pending_post_generation_inspection`;
-7. set `production_approval_status: not_granted`.
+2. write those exact bytes to `<asset_id>_generation_prompt.md`, re-read the file as bytes, and calculate `generation_prompt_sha256` from the re-read bytes;
+3. stop with `blocked_generation_prompt_persistence` if write, re-read, or hash verification fails; never reconstruct the prompt later;
+4. show the complete `final_generation_prompt`;
+5. set `prompt_disclosed_before_generation: true` only when the shown, persisted, hashed, and submitted bytes are identical;
+6. set `terminal_generation_call: pending`, `assistant_qa_status: pending_post_generation_inspection`, and `production_approval_status: not_granted`.
 
 Before generation, an enhancement prompt may exist only as `draft_4k_enhancement_prompt`. Label it `4k_enhancement_prompt_status: draft_pre_generation`; do not call it final and do not publish a final-prompt hash. The actual board must be visually inspected before `final_4k_enhancement_prompt` is frozen.
 
 Then submit the exact prompt with all source references. The image-generation call is the terminal action of that assistant turn. Do not append a prompt, QA, or commentary after the call when the runtime forbids post-generation text.
 
-The tool/runtime call trace is the evidence for changing `terminal_generation_call` from `pending` to `executed`; never predeclare execution. Without a separate subsequent visual inspection, leave `assistant_qa_status: pending_post_generation_inspection` and `production_approval_status: not_granted`.
+Before the terminal call, set `task_finalization_status: generation_terminal_pending`. The tool/runtime call trace is the evidence for changing `terminal_generation_call` from `pending` to `executed`; never predeclare execution. Only an executed trace promotes the task to `awaiting_post_generation_continuation`. The generation turn is then only `stage_complete`, never task-complete. If the host does not automatically continue, leave that derived awaiting state with `main_result_prompt_pair_status: pending`. The next continuation must inspect the actual board and finish prompt-pair finalization. A failed or missing call never enters the awaiting state.
 
 When the trace proves `executed` and the board is available but not yet inspected, set `4k_enhancement_prompt_status: awaiting_post_generation_inspection`. Advance to `finalized_post_inspection` only after the actual board passes the post-generation inspection gate.
 
@@ -182,7 +184,9 @@ In a separate inspection step, assess:
 ```text
 geometry_layout_lock_status: passed / conditional / failed / unverified
 angle_source_status: passed / conditional / failed
-aspect_ratio_status: verified_16_9 / failed / unverified
+built_in_dimensions_policy: evidence_only_nonblocking
+built_in_observed_pixel_dimensions: width x height / unavailable
+built_in_observed_aspect_ratio: value / unavailable
 no_non_product_text_pollution: pass / fail
 material_source_consistent: pass / fail / unverified
 panel_legibility_status: pass / fail / unverified
@@ -218,9 +222,9 @@ Freeze a public English `final_4k_enhancement_prompt` that names the observed pa
 - existing exact-copy regions as protected evidence regions, while explicitly leaving unreadable or unsupported copy unresolved rather than generating plausible characters, logos, certifications, barcodes, or QR codes;
 - one 16:9 result using the provider's actual 4K profile, with no crop, stretch, reframing, panel reorder, additional panel, advertising treatment, or non-product-native text.
 
-Hash the frozen prompt as `4k_enhancement_prompt_sha256`. Materialize these logical sidecars, as files when the runtime supports file delivery or as clearly named fenced records otherwise:
+Hash the frozen prompt as `4k_enhancement_prompt_sha256`. Persist these required sidecar files in run-scoped writable storage. If any file cannot be written and re-read, set `blocked_prompt_pair_persistence`; a fenced record or chat copy cannot substitute:
 
-- `<asset_id>_generation_prompt.md`: the exact `final_generation_prompt` single source of truth, never a rewritten duplicate;
+- `<asset_id>_generation_prompt.md`: the pre-generation frozen `final_generation_prompt` single source of truth, re-read rather than rewritten;
 - `<asset_id>_4k_enhancement_prompt.md`: the inspected-board-specific `final_4k_enhancement_prompt` and its SHA-256;
 - `<asset_id>_4k_handoff.yaml`: model target, reference bundle, request, state, and verification evidence.
 
@@ -230,7 +234,7 @@ The handoff must contain:
 4k_enhancement_prompt_status: finalized_post_inspection
 4k_enhancement_prompt_sha256: <sha256>
 third_party_model_target: nano_banana_pro / nano_banana_2 / model_agnostic
-codex_board_role: intermediate_layout_reference / final_candidate
+codex_board_role: content_qa_reference
 external_reference_bundle:
 - codex_asset_board: <inspected artifact id/path>
 - original_source_references: <all authoritative product references>
@@ -252,6 +256,38 @@ For every returned external artifact, record `provider`, `model`, `surface`, `mo
 
 External 4K QA must re-run geometry/layout QA and additionally pass `package_geometry_preserved`, `label_layout_preserved`, `no_generated_exact_copy_claim`, `external_reference_bundle_complete`, `external_16_9_verified`, and `external_4k_profile_verified`. Keep `exact_copy_lock_status` independent: a generative 4K result remains at most `conditional_unverified` for text, logos, certifications, barcodes, and QR codes. Only deterministic composition plus field-level OCR, reproducible region comparison, or payload decode evidence can approve those fields after enhancement.
 
+## Final main-result prompt pair
+
+Use only these finalization vocabularies:
+
+```text
+task_finalization_status: generation_terminal_pending | awaiting_post_generation_continuation | prompt_pair_ready | final_main_result_published
+main_result_prompt_pair_status: pending | published
+```
+
+In the post-generation continuation, inspect the actual board, finalize the image-specific `final_4k_enhancement_prompt`, write it to `<asset_id>_4k_enhancement_prompt.md`, re-read the exact bytes, and calculate `4k_enhancement_prompt_sha256`. Then re-read `<asset_id>_generation_prompt.md` and verify its bytes against the recorded `generation_prompt_sha256`. A missing file, byte mismatch, or hash mismatch is `blocked_prompt_pair_integrity`; do not reconstruct either prompt.
+
+Set `task_finalization_status: prompt_pair_ready` only when both re-read hashes pass. Then publish one **final-channel main result**, not commentary, containing the complete unabridged text of both prompts and both hashes in the fixed fields below. A sidecar, path, summary, excerpt, earlier commentary, or earlier turn never substitutes for either complete prompt.
+
+`prompt_pair_ready` proves prompt integrity only. It does not imply `external_4k_status: handoff_ready`; the external reference bundle, exact-copy assets, and exact 16:9/4K runtime controls must independently pass their existing gates.
+
+If the final response cannot contain both complete prompts because of a real output-capacity limit, set `blocked_final_output_capacity`; do not truncate, abbreviate, split across responses, or claim either published state.
+
+```text
+final_generation_prompt:
+<complete exact bytes re-read from the frozen generation sidecar>
+generation_prompt_sha256: <verified sha256>
+
+final_4k_enhancement_prompt:
+<complete exact bytes re-read from the finalized enhancement sidecar>
+4k_enhancement_prompt_sha256: <verified sha256>
+
+main_result_prompt_pair_status: published
+task_finalization_status: final_main_result_published
+```
+
+Include both published statuses in that final block. Successful emission of the complete block is the transition evidence; require no write or status mutation after the terminal final response. Until emission succeeds, the task remains incomplete even when the board, sidecars, exact-copy evidence, or handoff already exist.
+
 ## Repair rules
 
 Attempt at most two generative repairs. Repair one dominant issue at a time:
@@ -261,7 +297,6 @@ Attempt at most two generative repairs. Repair one dominant issue at a time:
 3. label position or hierarchy;
 4. non-product text pollution;
 5. material or panel legibility.
-6. 16:9 conformance.
 
 Do not repeatedly regenerate exact text, logos, or codes when deterministic compositing is the reliable path. A repair that improves text but breaks geometry, source identity, or clean-board rules still fails. Stop when missing source evidence or unavailable verification capability is the blocker.
 
@@ -277,12 +312,13 @@ exact_copy_lock_status: pending_verification / blocked_verification_capability /
 panel_capacity_budget: pass / constrained / blocked
 runtime_capability_snapshot: ...
 
-target_aspect_ratio: "16:9"
-alternate_aspect_ratios_allowed: false
-codex_board_role: pending_observation
+built_in_prompt_aspect_ratio_request: "horizontal 16:9"
+built_in_prompt_alternate_aspect_ratios_allowed: false
+built_in_dimensions_policy: evidence_only_nonblocking
+codex_board_role: pending_content_qa
 final_generation_prompt:
 <exact prompt that will be submitted>
-generation_prompt_sha256: <sha256 / unavailable>
+generation_prompt_sha256: <verified sha256>
 prompt_disclosed_before_generation: true / false
 terminal_generation_call: pending
 assistant_qa_status: pending_post_generation_inspection
@@ -290,15 +326,12 @@ production_approval_status: not_granted
 4k_enhancement_prompt_status: draft_pre_generation / awaiting_post_generation_inspection
 draft_4k_enhancement_prompt: <optional provisional prompt; never final>
 external_4k_status: not_ready
+task_finalization_status: generation_terminal_pending
+main_result_prompt_pair_status: pending
 ```
 
-In the later inspection step, report the two lock-layer statuses, field evidence rows, 16:9 evidence, the frozen `final_4k_enhancement_prompt`, its SHA-256, all three sidecars, external runtime request, external state, limitations, registry eligibility, and production-approval state. After external return, append provider/surface/profile/dimension evidence and the external 4K QA result. Keep all of this metadata outside the image.
+In the later inspection continuation, report both lock-layer statuses, field evidence rows, nonblocking built-in dimension observations, external runtime state, limitations, registry eligibility, and production approval, then publish the complete prompt pair in the final-channel main result exactly as required above. After external return, append provider/surface/profile/dimension evidence and external 4K QA. Keep all metadata outside the image.
 
 ## End condition
 
-End only when one of these is true:
-
-- one source-bound packaging-board candidate has been generated with a disclosed prompt and awaits inspection;
-- geometry/layout and exact-copy claims have been independently classified from retained evidence;
-- a finalized 16:9 external 4K handoff has been emitted after inspection and any returned artifact has been classified as `verified` or `rejected` without allowing generative enhancement to approve exact copy;
-- missing sources or runtime verification capability has been reported without substituting visual plausibility for exactness.
+The image-generation turn may end only as `stage_complete` with `task_finalization_status: awaiting_post_generation_continuation`. The task completes only when geometry/layout and exact-copy claims are independently classified, the source-bound exact-16:9/4K handoff is ready or honestly runtime-blocked, and `task_finalization_status: final_main_result_published` proves the final channel displayed both complete prompts and both verified hashes. Missing sources, capability, persistence, or prompt-integrity failures may end the run without a completion claim.

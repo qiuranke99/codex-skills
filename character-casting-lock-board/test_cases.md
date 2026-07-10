@@ -22,8 +22,8 @@
 18. **Repair**: freeze and disclose a new exact prompt and hash before a corrective terminal call; never attach a rejected prompt hash to a repaired image.
 19. **Prompt-only false success**: a prompt without the image call does not complete the Skill.
 20. **Unavailable runtime**: return `hard_blocked_generation_runtime`; do not claim an image or approval.
-21. **Only 16:9**: every main or extension board requests `target_aspect_ratio: "16:9"` with `alternate_aspect_ratios_allowed: false`; no alternate ratio or silent fallback is offered.
-22. **Non-16:9 Codex return**: retain a source-faithful result only as `codex_board_role: intermediate_layout_reference`; never call it the final 16:9 asset.
+21. **Built-in request**: every main or extension `final_generation_prompt` requests one horizontal 16:9 board and offers no alternate ratio.
+22. **Non-blocking dimensions**: a source-faithful 1672x941 built-in result records dimensions under `built_in_dimensions_policy: evidence_only_nonblocking`; it does not fail content QA, trigger repair, demote the board, or block per-board/package 4K handoff.
 23. **Draft is not final**: before a board exists, keep `4k_enhancement_prompt_status: draft_pre_generation`; do not emit `final_4k_enhancement_prompt` or its hash.
 24. **Per-board 4K traceability**: every generated A, B, C, or D board receives its own inspected-board-specific `final_4k_enhancement_prompt`, SHA-256, and handoff sidecar; omitted boards receive none.
 25. **Complete reference bundle**: require the inspected Codex board plus all original identity and board-relevant references; a board-only enhancement is blocked for source fidelity.
@@ -32,7 +32,15 @@
 28. **Identity-safe microtexture**: recover only source-supported facial, skin, and hair detail; reject beauty retouching, face reshaping, age drift, or invented pores and marks.
 29. **Topology preservation**: 4K enhancement preserves A's portrait/front/back/side topology and each extension's approved evidence job without adding panels, faces, people, or styling systems.
 30. **External status separation**: `handoff_ready`, `pending_external_generation`, `returned_unverified`, `verified`, and `rejected` remain distinct from assistant QA and production approval.
-31. **Count invariant**: `generated_board_count == finalized_4k_prompt_count == 4k_prompt_hash_count == 4k_handoff_sidecar_count`.
+31. **Accepted-board count invariant**: `generation_attempt_count` includes every original or repair call; `generated_board_count` counts unique accepted/current board IDs only and equals `finalized_4k_prompt_count == 4k_prompt_hash_count == 4k_handoff_sidecar_count`.
+32. **Continuation state**: every terminal generation turn is only stage-complete with `task_finalization_status: awaiting_post_generation_continuation`; the next continuation resumes inspection and prompt-pair finalization.
+33. **Sidecar integrity**: before publication, reread each board's two prompt sidecars as original UTF-8/LF bytes and recompute both hashes; a missing sidecar or mismatch yields `blocked_prompt_pair_integrity` with no reconstruction.
+34. **Final main result**: one later `final`-channel result includes, for every generated board, the complete inline `final_generation_prompt`, `generation_prompt_sha256`, `final_4k_enhancement_prompt`, and `4k_enhancement_prompt_sha256`; commentary, paths, sidecars, excerpts, summaries, or hashes alone fail.
+35. **Published identity and count**: the final response itself declares published states only when `published_board_ids == accepted_board_ids` and `published_prompt_pair_count == generated_board_count`.
+36. **Mandatory persistence**: no board generation starts unless its exact generation-prompt sidecar is persisted and readable; failure yields `blocked_generation_prompt_persistence`.
+37. **External-state independence**: a verified prompt pair may become task-ready while external status remains `not_ready`; set per-board `handoff_ready` only after provider controls, original references, Codex board, and handoff sidecar are all ready.
+38. **Accepted repair binding**: a failed A attempt followed by accepted A repair yields `generation_attempt_count: 2`, `generated_board_count: 1`, and publishes only the accepted repair prompt/hash with its `accepted_attempt_id`.
+39. **Output capacity**: if one final response cannot contain every accepted board's complete pair, return `blocked_final_output_capacity`; never truncate, summarize, or split while claiming `published`.
 
 ## Quick Validation Checklist
 
@@ -44,8 +52,12 @@
 - Prompt disclosure precedes the terminal image-generation call.
 - No post-generation prompt or QA response is required in the same turn.
 - `assistant_qa_status` and `production_approval_status` are independent.
-- `target_aspect_ratio: "16:9"` and `alternate_aspect_ratios_allowed: false` are present.
+- `built_in_prompt_aspect_ratio_request: "horizontal 16:9"` and `built_in_dimensions_policy: evidence_only_nonblocking` are present.
 - `final_4k_enhancement_prompt`, `4k_enhancement_prompt_sha256`, and `finalized_post_inspection` are present.
 - The external bundle requires `codex_asset_board` and `original_source_references`.
 - External runtime fields request `aspect_ratio: "16:9"` and `image_size: "4K"`.
-- Per-board 4K prompt/hash/sidecar count equals the generated board count.
+- Per-board 4K prompt/hash/sidecar count equals the accepted/current board count, not generation attempts.
+- Final main result requires every complete prompt pair inline in the `final` channel.
+- `published_prompt_pair_count == generated_board_count` before package finalization.
+- `published_board_ids == accepted_board_ids`; no rejected or superseded attempt prompt is published.
+- Built-in ratio mismatch never fails content QA or blocks handoff; external exact 16:9 and 4K controls remain mandatory.

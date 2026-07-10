@@ -1,4 +1,4 @@
 interface:
   display_name: "Packaging Product Identity + Label Lock Board"
-  short_description: "16:9 packaging lock plus evidence-gated 4K handoff."
-  default_prompt: "Use $packaging-product-identity-label-lock-board to generate one exact 16:9 packaging board, inspect it, deliver a source-bound Nano Banana 4K handoff, and keep exact-copy approval limited to qualifying evidence."
+  short_description: "Packaging lock with exact-copy gates and prompt pair."
+  default_prompt: "Use $packaging-product-identity-label-lock-board to request one horizontal 16:9 packaging board, then in the later continuation inspect it and publish one final main result that visibly contains the complete exact final_generation_prompt plus generation_prompt_sha256 and the complete image-specific final_4k_enhancement_prompt plus 4k_enhancement_prompt_sha256, while keeping exact-copy approval evidence-gated."

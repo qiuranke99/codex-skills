@@ -1,13 +1,15 @@
 ---
 name: multi-angle-product-identity-lock-board
-description: Generate one clean 16:9 six-view identity board for a low-risk, mostly opaque product from supplied references, disclose its exact generation prompt, then inspect the actual board and deliver a source-bound 4K enhancement prompt and handoff for Nano Banana Pro, Nano Banana 2, or a comparable model. Use when silhouette, proportions, color, simple material, and non-text construction must stay consistent across common views; do not use for label-copy-first packaging, material-sensitive glass/liquid/reflective products, complex mechanisms, state changes, or advertising scenes. Treat native and external 4K as separate evidence-gated claims.
+description: Generate one six-view identity board for a low-risk, mostly opaque product from supplied references while requesting horizontal 16:9, then inspect it and publish one final main result containing the complete exact generation prompt and image-specific 4K enhancement prompt with both SHA-256 values. Use when silhouette, proportions, color, simple material, and non-text construction must stay consistent across common views; do not use for label-copy-first packaging, material-sensitive glass/liquid/reflective products, complex mechanisms, state changes, or advertising scenes. Treat external 4K as evidence-gated and Codex-native 4K as an explicit opt-in branch only.
 ---
 
 # Multi-Angle Product Identity Lock Board
 
+Contract version: `asset_board_contract_version: built_in_nonblocking_prompt_pair_v2`.
+
 Chinese name: 多角度产品身份锁定板
 
-Generate exactly one six-view reference board for a low-risk product. Preserve identity rather than redesigning it. The deliverable is a generated board plus a traceable public prompt and an evidence-based QA record. A prompt-only request routes outside this Skill and is not a successful run.
+Generate exactly one six-view reference board for a low-risk product. Preserve identity rather than redesigning it. The deliverable is a generated board, a traceable prompt record, an image-specific external 4K handoff, and one final-channel main result that visibly contains both complete prompts and both hashes. A prompt-only request routes outside this Skill and is not a successful run.
 
 ## Boundary and route gate
 
@@ -64,7 +66,8 @@ runtime_capability_snapshot:
 - reference_images_attachable: supported / unsupported / unknown
 - explicit_aspect_ratio_argument: supported / unsupported / unknown
 - explicit_size_argument: supported / unsupported / unknown
-- requested_aspect_ratio: 16:9 / not_exposed
+- built_in_prompt_aspect_ratio_request: horizontal 16:9
+- built_in_prompt_alternate_aspect_ratios_allowed: false
 - requested_native_size: value / not_exposed
 - returned_file_inspectable: supported / unsupported / unknown
 - pixel_dimensions_inspectable: supported / unsupported / unknown
@@ -74,11 +77,11 @@ runtime_capability_snapshot:
 
 Do not infer a capability from prompt wording. `Target 3840x2160` inside a prompt is a creative target, not proof that a native-size control exists.
 
-If image generation or reference attachment is unavailable, report `blocked_capability` and do not substitute a prompt-only result. If the user specifically requires **Codex-native** 4K and either native-size control or provenance inspection is unsupported, report `blocked_native_4k_contract` before generation. A final 4K requirement may instead use the post-inspection external 4K handoff below; in that branch the Codex board remains an intermediate layout-and-identity reference until the returned external artifact is verified.
+If image generation or reference attachment is unavailable, report `blocked_capability` and do not substitute a prompt-only result. Set `built_in_dimensions_policy: evidence_only_nonblocking`: built-in dimensions and ratio are observations, never content-QA, repair, role-demotion, finalization, or external-handoff gates. Activate `native_4k_branch` only when the user explicitly requires Codex-native 4K; keep it `off` in every default run.
 
 ## Board contract
 
-Generate one clean horizontal 16:9 board with exactly six distinct full-product views. `target_aspect_ratio: 16:9` is fixed: request no alternate ratio and accept no automatic ratio fallback. If the built-in runtime returns another ratio despite the request, do not crop or stretch it or call it final; set `codex_board_role: intermediate_layout_reference` and use the external stage to rebuild the same source-faithful topology on the requested 16:9 provider profile. A matching returned board may be `final_candidate` after QA.
+Generate one clean board with exactly six distinct full-product views. Put `horizontal 16:9` in the built-in generation prompt as the sole creative ratio request. The built-in tool exposes no ratio or size argument, so record the original returned file's dimensions and observed ratio without turning them into a pass/fail condition. A `1672x941`, `1536x1024`, or other returned size remains `codex_board_role: content_qa_reference` when the six-view content contract passes. Do not crop or stretch it; the external stage must rebuild from that board plus the original references using its own exact 16:9 and 4K controls.
 
 1. front or primary view;
 2. rear;
@@ -98,17 +101,17 @@ Keep all non-product-native text outside the image. Forbid titles, view labels, 
 Build one public English `final_generation_prompt` from the source map and selected views. Before calling image generation:
 
 1. freeze the exact prompt bytes;
-2. show the exact prompt in a `prompt_record`, with `final_generation_prompt` as the single source of truth and `english_prompt_used` as a compatibility alias pointing to the same bytes;
-3. calculate and show `generation_prompt_sha256` when hashing is available;
-4. set `prompt_disclosed_before_generation: true` only when the displayed bytes are the bytes that will be submitted;
-5. set `terminal_generation_call: pending`;
-6. set `assistant_qa_status: pending_post_generation_inspection` and `production_approval_status: not_granted`.
+2. write those exact bytes to `<asset_id>_generation_prompt.md`, re-read the file as bytes, and calculate `generation_prompt_sha256` from the re-read bytes;
+3. stop with `blocked_generation_prompt_persistence` if write, re-read, or hash verification fails; never reconstruct the prompt later;
+4. show the exact prompt in a `prompt_record`, with `final_generation_prompt` as the single source of truth and `english_prompt_used` as a compatibility alias pointing to the same bytes;
+5. set `prompt_disclosed_before_generation: true` only when the displayed, persisted, hashed, and submitted bytes are identical;
+6. set `terminal_generation_call: pending`, `assistant_qa_status: pending_post_generation_inspection`, and `production_approval_status: not_granted`.
 
 Before generation, an enhancement prompt may exist only as `draft_4k_enhancement_prompt`. Label it `4k_enhancement_prompt_status: draft_pre_generation`; do not call it final and do not publish a final-prompt hash. The actual board must be visually inspected before `final_4k_enhancement_prompt` is frozen.
 
 Then submit that exact prompt with the target reference images. Treat the image-generation call as the terminal action of that assistant turn. Do not append reconstructed prompts, QA, or commentary after the call when the runtime forbids post-generation text.
 
-The tool/runtime call trace is the evidence for changing `terminal_generation_call` from `pending` to `executed`; never predeclare execution. Without a separate subsequent visual inspection, leave `assistant_qa_status: pending_post_generation_inspection` and `production_approval_status: not_granted`.
+Before the terminal call, set `task_finalization_status: generation_terminal_pending`. The tool/runtime call trace is the evidence for changing `terminal_generation_call` from `pending` to `executed`; never predeclare execution. Only an executed trace promotes the task to `awaiting_post_generation_continuation`. The generation turn is then only `stage_complete`, never task-complete. If the host does not automatically continue, leave that derived awaiting state with `main_result_prompt_pair_status: pending`. The next continuation must inspect the actual board and finish prompt-pair finalization. A failed or missing call never enters the awaiting state.
 
 When the trace proves `executed` and the board is available but not yet inspected, set `4k_enhancement_prompt_status: awaiting_post_generation_inspection`. Advance to `finalized_post_inspection` only after the actual board passes the post-generation inspection gate.
 
@@ -118,15 +121,17 @@ The prompt must request:
 
 - the exact same product as the supplied target reference;
 - exactly six complete, non-redundant views in a clean 2x3 board;
-- a horizontal 16:9 result, with 3840x2160 as the preferred native target when supported;
+- a horizontal 16:9 result as a creative request, without implying runtime size control;
 - identity preservation and no invented hidden structure;
 - neutral studio presentation and no non-product text or advertising scene.
 
 Never reconstruct a cleaner prompt after generation and claim it was submitted.
 
-## Native-resolution evidence gate
+## Optional Codex-native 4K branch
 
-Keep target, observation, and approval separate:
+Keep `native_4k_branch: off` unless the user explicitly requests Codex-native 4K. When off, omit native-resolution status from default assistant QA, repairs, handoff readiness, and task completion.
+
+When explicitly activated, keep target, observation, and approval separate:
 
 - `target_native_resolution`: requested creative/runtime target;
 - `observed_pixel_dimensions`: dimensions read from the original returned artifact;
@@ -140,7 +145,7 @@ Classify:
 
 Set `native_4k_claim: true` only for `resolution_approved`. Prompt wording, file naming, metadata copied from a request, or a delivered 4K-sized post-processed file is not native provenance.
 
-When Codex-native 4K is preferred but unverified, the board may be a useful `conditional` candidate; it is not an approved native-4K asset. When Codex-native 4K is specifically mandatory, any status other than `resolution_approved` is `blocked_native_4k_contract`. A final external 4K requirement follows the separate handoff state instead.
+Report this optional branch independently. If the user made Codex-native 4K mandatory, any status other than `resolution_approved` fails that explicit branch; it does not retroactively change the default content QA or external prompt-pair contract.
 
 This native gate applies only to claims about the original Codex-generated artifact. A later third-party 4K artifact is never `native_4k_claim: true`; track it under the external 4K contract.
 
@@ -155,9 +160,9 @@ Freeze a public English `final_4k_enhancement_prompt` that names the observed pa
 - only source-supported edge separation and surface micro-detail; leave unsupported details unresolved instead of inventing geometry, interfaces, copy, or marks;
 - one 16:9 result using the provider's actual 4K profile, with no crop, stretch, reframing, panel reorder, extra view, advertising treatment, or non-product-native text.
 
-Hash the frozen prompt as `4k_enhancement_prompt_sha256`. Materialize these logical sidecars, as files when the runtime supports file delivery or as clearly named fenced records otherwise:
+Hash the frozen prompt as `4k_enhancement_prompt_sha256`. Persist these required sidecar files in run-scoped writable storage. If any file cannot be written and re-read, set `blocked_prompt_pair_persistence`; a fenced record or chat copy cannot substitute:
 
-- `<asset_id>_generation_prompt.md`: the exact `final_generation_prompt` single source of truth, never a rewritten duplicate;
+- `<asset_id>_generation_prompt.md`: the pre-generation frozen `final_generation_prompt` single source of truth, re-read rather than rewritten;
 - `<asset_id>_4k_enhancement_prompt.md`: the inspected-board-specific `final_4k_enhancement_prompt` and its SHA-256;
 - `<asset_id>_4k_handoff.yaml`: model target, reference bundle, request, state, and verification evidence.
 
@@ -167,7 +172,7 @@ The handoff must contain:
 4k_enhancement_prompt_status: finalized_post_inspection
 4k_enhancement_prompt_sha256: <sha256>
 third_party_model_target: nano_banana_pro / nano_banana_2 / model_agnostic
-codex_board_role: intermediate_layout_reference / final_candidate
+codex_board_role: content_qa_reference
 external_reference_bundle:
 - codex_asset_board: <inspected artifact id/path>
 - original_source_references: <all authoritative product references>
@@ -188,6 +193,38 @@ For every returned external artifact, record `provider`, `model`, `surface`, `mo
 
 External 4K QA must re-run all board QA and additionally pass `six_view_geometry_preserved`, `interfaces_and_seams_preserved`, `no_new_product_detail`, `external_reference_bundle_complete`, `external_16_9_verified`, and `external_4k_profile_verified`. A post-processed 4K file may be production-usable after these gates, but it remains an externally generated/enhanced artifact and never becomes evidence of Codex-native 4K.
 
+## Final main-result prompt pair
+
+Use only these finalization vocabularies:
+
+```text
+task_finalization_status: generation_terminal_pending | awaiting_post_generation_continuation | prompt_pair_ready | final_main_result_published
+main_result_prompt_pair_status: pending | published
+```
+
+In the post-generation continuation, inspect the actual board, finalize the image-specific `final_4k_enhancement_prompt`, write it to `<asset_id>_4k_enhancement_prompt.md`, re-read the exact bytes, and calculate `4k_enhancement_prompt_sha256`. Then re-read `<asset_id>_generation_prompt.md` and verify its bytes against the recorded `generation_prompt_sha256`. A missing file, byte mismatch, or hash mismatch is `blocked_prompt_pair_integrity`; do not reconstruct either prompt.
+
+Set `task_finalization_status: prompt_pair_ready` only when both re-read hashes pass. Then publish one **final-channel main result**, not commentary, containing the complete unabridged text of both prompts and both hashes in the fixed fields below. A sidecar, path, summary, excerpt, earlier commentary, or earlier turn never substitutes for either complete prompt.
+
+`prompt_pair_ready` proves prompt integrity only. It does not imply `external_4k_status: handoff_ready`; the external reference bundle and exact 16:9/4K runtime controls must independently pass their existing gates.
+
+If the final response cannot contain both complete prompts because of a real output-capacity limit, set `blocked_final_output_capacity`; do not truncate, abbreviate, split across responses, or claim either published state.
+
+```text
+final_generation_prompt:
+<complete exact bytes re-read from the frozen generation sidecar>
+generation_prompt_sha256: <verified sha256>
+
+final_4k_enhancement_prompt:
+<complete exact bytes re-read from the finalized enhancement sidecar>
+4k_enhancement_prompt_sha256: <verified sha256>
+
+main_result_prompt_pair_status: published
+task_finalization_status: final_main_result_published
+```
+
+Include both published statuses in that final block. Successful emission of the complete block is the transition evidence; require no write or status mutation after the terminal final response. Until emission succeeds, the task remains incomplete even when the board, sidecars, or handoff already exist.
+
 ## Artifact QA and approval separation
 
 In a post-generation inspection turn, inspect the actual artifact and report:
@@ -200,14 +237,16 @@ In a post-generation inspection turn, inspect the actual artifact and report:
 - `color_material_source_consistent`: pass / fail / unverified;
 - `no_invented_structure`: pass / fail / unverified;
 - `no_non_product_text_pollution`: pass / fail;
-- `aspect_ratio_status`: verified_16_9 / failed / unverified;
+- `built_in_dimensions_policy`: evidence_only_nonblocking;
+- `built_in_observed_pixel_dimensions`: width x height / unavailable;
+- `built_in_observed_aspect_ratio`: value / unavailable;
 - `prompt_bound`: pass / fail;
-- `resolution_status`: resolution_approved / resolution_not_approved / resolution_unverified.
+- `native_4k_branch_status`: off / resolution_approved / resolution_not_approved / resolution_unverified; report a resolution value only when the user explicitly activated that branch.
 
 Use these distinct decisions:
 
 - `assistant_qa_status: passed`: the observable board contract passes;
-- `assistant_qa_status: conditional`: useful but limited by inference, missing source, or unverified resolution;
+- `assistant_qa_status: conditional`: useful but limited by inference or missing source evidence, never by built-in dimensions;
 - `assistant_qa_status: failed`: a critical observable gate fails;
 - `production_approval_status: not_granted / user_granted / external_pipeline_granted`.
 
@@ -222,8 +261,7 @@ Attempt at most two repair generations. Repair one dominant failure at a time in
 3. invented structure or fake text;
 4. color/material mismatch;
 5. text pollution or layout;
-6. 16:9 conformance;
-7. native resolution, only when an actual native high-resolution path exists.
+6. optional native resolution, only when `native_4k_branch` was explicitly activated and an actual native high-resolution path exists.
 
 Do not upscale a failed artifact and present it as native 4K. Stop when missing references or unsupported runtime capability cannot be repaired by another generation.
 
@@ -238,12 +276,13 @@ Before the terminal generation call, provide concise Chinese text with:
 runtime_capability_snapshot: ...
 
 prompt_record:
-target_aspect_ratio: "16:9"
-alternate_aspect_ratios_allowed: false
-codex_board_role: pending_observation
+built_in_prompt_aspect_ratio_request: "horizontal 16:9"
+built_in_prompt_alternate_aspect_ratios_allowed: false
+built_in_dimensions_policy: evidence_only_nonblocking
+codex_board_role: pending_content_qa
 final_generation_prompt: <exact prompt that will be submitted>
 english_prompt_used: <same exact bytes as final_generation_prompt>
-generation_prompt_sha256: <sha256 / unavailable>
+generation_prompt_sha256: <verified sha256>
 prompt_disclosed_before_generation: true / false
 terminal_generation_call: pending
 assistant_qa_status: pending_post_generation_inspection
@@ -251,15 +290,12 @@ production_approval_status: not_granted
 4k_enhancement_prompt_status: draft_pre_generation / awaiting_post_generation_inspection
 draft_4k_enhancement_prompt: <optional provisional prompt; never final>
 external_4k_status: not_ready
+task_finalization_status: generation_terminal_pending
+main_result_prompt_pair_status: pending
 ```
 
-In the later inspection turn, report the artifact QA fields, aspect-ratio and native-resolution evidence, the frozen `final_4k_enhancement_prompt`, its SHA-256, all three sidecars, external runtime request, external state, limitations, and production-approval state. After external return, append provider/surface/profile/dimension evidence and the external 4K QA result. Do not repeat long theory or expose hidden reasoning.
+In the later inspection continuation, report content QA, nonblocking built-in dimension observations, external runtime state, limitations, and production approval, then publish the complete prompt pair in the final-channel main result exactly as required above. After an external return, append provider/surface/profile/dimension evidence and external 4K QA. Do not repeat long theory or expose hidden reasoning.
 
 ## End condition
 
-End only when the run is honestly routed and either:
-
-- one six-view candidate has been generated from source references with a pre-bound prompt and awaits or receives artifact QA;
-- artifact QA has classified it without overstating source fidelity, native 4K, or production approval;
-- a finalized 16:9 external 4K handoff has been emitted after inspection and any returned artifact has been classified as `verified` or `rejected` without relabeling it as native;
-- a real source or runtime capability blocker has been reported before generation.
+The image-generation turn may end only as `stage_complete` with `task_finalization_status: awaiting_post_generation_continuation`. The task completes only when board content QA is classified, the source-bound exact-16:9/4K handoff is ready or honestly runtime-blocked, and `task_finalization_status: final_main_result_published` proves the final channel displayed both complete prompts and both verified hashes. A real source, capability, persistence, or prompt-integrity blocker may end the run without a completion claim.

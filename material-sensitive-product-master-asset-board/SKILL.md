@@ -1,13 +1,15 @@
 ---
 name: material-sensitive-product-master-asset-board
-description: "Use when supplied references show one transparent, glass, acrylic, translucent, liquid, cream, crystal-cut, mirror-metal, high-reflective, frosted, or multi-layer product whose video consistency depends on material behavior. Generate exactly one 16:9 master board with a dominant hero, complementary angles, source-supported material/structure evidence, optional label micro-reference, and at most one source-supported state window. Disclose the exact generation prompt, then inspect the actual board and deliver a source-bound 4K enhancement prompt and handoff for Nano Banana Pro, Nano Banana 2, or a comparable model. Do not use for low-risk six-view products, label-copy-first packaging, mechanisms, scenes, characters, posters, or prompt-only output."
+description: "Use when supplied references show one transparent, glass, acrylic, translucent, liquid, cream, crystal-cut, mirror-metal, high-reflective, frosted, or multi-layer product whose video consistency depends on material behavior. Generate one master board while requesting horizontal 16:9, then inspect it and publish one final main result containing the complete exact generation prompt and image-specific 4K enhancement prompt with both SHA-256 values. Preserve material/structure evidence, optional label micro-reference, and at most one source-supported state window. Do not use for low-risk six-view products, label-copy-first packaging, mechanisms, scenes, characters, posters, or prompt-only output."
 ---
 
 # Material-Sensitive Product Master Asset Board
 
+Contract version: `asset_board_contract_version: built_in_nonblocking_prompt_pair_v2`.
+
 Chinese name: 特殊材质产品总资产板
 
-Create one high-density, low-redundancy master asset-board image for a product whose video-generation stability depends on material behavior as much as shape. The leading rule is **one master board**: solve product identity, spatial understanding, material response, critical structure, and only necessary label/state evidence in a single 16:9 generated image.
+Create one high-density, low-redundancy master asset-board image for a product whose video-generation stability depends on material behavior as much as shape. The leading rule is **one master board**: solve product identity, spatial understanding, material response, critical structure, and only necessary label/state evidence in one generated image while requesting horizontal 16:9. Completion also requires one final-channel main result that visibly contains both complete prompts and both hashes.
 
 This skill is not a multi-board package, ordinary multi-angle product sheet, poster generator, marketing layout, beauty collage, or prompt-only workflow. Product correctness outranks visual showmanship.
 
@@ -55,7 +57,7 @@ Completion criterion: the board plan knows which identity, material, structure, 
 
 ## Board Specification
 
-Generate exactly one single master asset-board image. `target_aspect_ratio: 16:9` is fixed and is the sole allowed ratio: request no alternate ratio and accept no automatic ratio fallback. If the built-in runtime returns another ratio despite the request, do not crop or stretch it or call it final; set `codex_board_role: intermediate_layout_reference` and use the external stage to rebuild the same source-faithful topology on the requested 16:9 provider profile. A matching returned board may be `final_candidate` after QA. Use a clean neutral studio product-reference presentation on white or light gray, with soft shadows, crisp edges, and no decorative scene.
+Generate exactly one single master asset-board image and put `horizontal 16:9` in the built-in prompt as the sole creative ratio request. The built-in tool exposes no ratio or size argument, so record the original returned file's dimensions and observed ratio without turning them into a pass/fail condition. A `1672x941`, `1536x1024`, or other returned size remains `codex_board_role: content_qa_reference` when the material/content contract passes. Do not crop or stretch it; the external stage must rebuild from that board plus the original references using its own exact 16:9 and 4K controls. Use a clean neutral studio product-reference presentation on white or light gray, with soft shadows, crisp edges, and no decorative scene.
 
 The board must be a single image with functional zones, not separate boards and not many repeated collages. Recommended total panel count is 7-10, including the hero, supporting views, closeups, label zone, and state window. Before generation, record a `panel_capacity_budget` and assign one evidence job to every panel. Reduce panel count when any planned material boundary, structure detail, or product-native label becomes indistinguishable at the intended downstream reference size. Never shrink proof regions merely to fit more panels. `panel_legibility_status` must remain `unverified` until the returned artifact is inspected.
 
@@ -145,30 +147,30 @@ runtime_capability_snapshot:
 - reference_images_attachable: supported / unsupported / unknown
 - explicit_aspect_ratio_argument: supported / unsupported / unknown
 - explicit_size_argument: supported / unsupported / unknown
-- requested_aspect_ratio: 16:9 / not_exposed
+- built_in_prompt_aspect_ratio_request: horizontal 16:9
+- built_in_prompt_alternate_aspect_ratios_allowed: false
 - returned_file_inspectable: supported / unsupported / unknown
 - post_generation_text_allowed_same_turn: supported / unsupported / unknown
 - pixel_dimensions_inspectable: supported / unsupported / unknown
 - hashing_available: supported / unsupported / unknown
 ```
 
-Do not infer capability from prompt wording. If image generation or reference attachment is unavailable, report `blocked_capability`; do not replace the deliverable with prompt-only output.
+Do not infer capability from prompt wording. If image generation or reference attachment is unavailable, report `blocked_capability`; do not replace the deliverable with prompt-only output. Set `built_in_dimensions_policy: evidence_only_nonblocking`: built-in dimensions and ratio are observations, never material/content QA, repair, role-demotion, finalization, or external-handoff gates.
 
 Build one public `final_generation_prompt`. Before generation:
 
 1. freeze the exact prompt bytes;
-2. show the complete prompt in chat;
-3. calculate `generation_prompt_sha256` when hashing is available;
-4. set `prompt_disclosed_before_generation: true` only when the shown bytes will be submitted unchanged;
-5. set `terminal_generation_call: pending`;
-6. set `assistant_qa_status: pending_post_generation_inspection`;
-7. set `production_approval_status: not_granted`.
+2. write those exact bytes to `<asset_id>_generation_prompt.md`, re-read the file as bytes, and calculate `generation_prompt_sha256` from the re-read bytes;
+3. stop with `blocked_generation_prompt_persistence` if write, re-read, or hash verification fails; never reconstruct the prompt later;
+4. show the complete prompt in chat;
+5. set `prompt_disclosed_before_generation: true` only when the shown, persisted, hashed, and submitted bytes are identical;
+6. set `terminal_generation_call: pending`, `assistant_qa_status: pending_post_generation_inspection`, and `production_approval_status: not_granted`.
 
 Before generation, an enhancement prompt may exist only as `draft_4k_enhancement_prompt`. Label it `4k_enhancement_prompt_status: draft_pre_generation`; do not call it final and do not publish a final-prompt hash. The actual board must be visually inspected before `final_4k_enhancement_prompt` is frozen.
 
 Then submit that exact prompt and the product references. Treat the image-generation call as the terminal action of that assistant turn. Do not append reconstructed prompt text, QA, or commentary after the call when the runtime forbids post-generation text. If artifact inspection is available only in a later continuation, inspect and report QA there. A repair uses the same disclose/hash/terminal-call sequence.
 
-The tool/runtime call trace is the evidence for changing `terminal_generation_call` from `pending` to `executed`; never predeclare execution. Without a separate subsequent visual inspection, leave `assistant_qa_status: pending_post_generation_inspection` and `production_approval_status: not_granted`.
+Before the terminal call, set `task_finalization_status: generation_terminal_pending`. The tool/runtime call trace is the evidence for changing `terminal_generation_call` from `pending` to `executed`; never predeclare execution. Only an executed trace promotes the task to `awaiting_post_generation_continuation`. The generation turn is then only `stage_complete`, never task-complete. If the host does not automatically continue, leave that derived awaiting state with `main_result_prompt_pair_status: pending`. The next continuation must inspect the actual board and finish prompt-pair finalization. A failed or missing call never enters the awaiting state.
 
 When the trace proves `executed` and the board is available but not yet inspected, set `4k_enhancement_prompt_status: awaiting_post_generation_inspection`. Advance to `finalized_post_inspection` only after the actual board passes the post-generation inspection gate.
 
@@ -190,7 +192,7 @@ The prompt must instruct the image model to create:
 
 The prompt must preserve uploaded product references as the only source of truth for product identity, proportions, colors, visible material evidence, structure, label/logo position, and any optional state. Do not turn a prompt target into an observed claim. Do not redesign, premiumize, simplify, beautify, relabel, recolor, rebrand, invent hidden structure or state, invent readable text, or add props, hands, people, lifestyle background, or a marketing scene.
 
-Completion criterion: one generated image has been requested with a frozen final prompt, or missing image-generation capability is the only blocker.
+Generation-stage criterion: one generated image has been requested with a frozen persisted prompt, or missing image-generation capability is the only blocker. This leaves the task awaiting post-generation continuation; it is not the task-completion criterion.
 
 ## Artifact QA and approval separation
 
@@ -210,7 +212,8 @@ Set `assistant_qa_status: passed` only when all observable gates pass:
 - `video_reference_ready`: the board is clear enough to feed into downstream video models as a product reference.
 - `state_window_source_supported`: pass / fail / not_used.
 - `prompt_bound`: the disclosed `final_generation_prompt` matches the prompt submitted for the inspected image.
-- `aspect_ratio_status`: verified_16_9 / failed / unverified.
+
+Record `built_in_dimensions_policy: evidence_only_nonblocking`, `built_in_observed_pixel_dimensions`, and `built_in_observed_aspect_ratio` outside this pass/fail list. Those observations cannot make content QA passed, conditional, or failed.
 
 Fail the board if the hero anchor is too small, material closeups are abstract, high-gloss/refraction directions contradict each other, transparent thickness is wrong, small marks drift, seams or caps move across panels, text becomes fake marketing copy, or the output behaves like an ad poster.
 
@@ -238,9 +241,9 @@ Freeze a public English `final_4k_enhancement_prompt` that names the observed pa
 - source-supported micro-detail only, leaving unresolved structure unresolved instead of inventing highlights, internal parts, liquid states, facets, labels, or mechanisms;
 - one 16:9 result using the provider's actual 4K profile, with no crop, stretch, reframing, panel reorder, extra panel, beauty-ad styling, or non-product-native text.
 
-Hash the frozen prompt as `4k_enhancement_prompt_sha256`. Materialize these logical sidecars, as files when the runtime supports file delivery or as clearly named fenced records otherwise:
+Hash the frozen prompt as `4k_enhancement_prompt_sha256`. Persist these required sidecar files in run-scoped writable storage. If any file cannot be written and re-read, set `blocked_prompt_pair_persistence`; a fenced record or chat copy cannot substitute:
 
-- `<asset_id>_generation_prompt.md`: the exact `final_generation_prompt` single source of truth, never a rewritten duplicate;
+- `<asset_id>_generation_prompt.md`: the pre-generation frozen `final_generation_prompt` single source of truth, re-read rather than rewritten;
 - `<asset_id>_4k_enhancement_prompt.md`: the inspected-board-specific `final_4k_enhancement_prompt` and its SHA-256;
 - `<asset_id>_4k_handoff.yaml`: model target, reference bundle, request, state, and verification evidence.
 
@@ -250,7 +253,7 @@ The handoff must contain:
 4k_enhancement_prompt_status: finalized_post_inspection
 4k_enhancement_prompt_sha256: <sha256>
 third_party_model_target: nano_banana_pro / nano_banana_2 / model_agnostic
-codex_board_role: intermediate_layout_reference / final_candidate
+codex_board_role: content_qa_reference
 external_reference_bundle:
 - codex_asset_board: <inspected artifact id/path>
 - original_source_references: <all authoritative product and material references>
@@ -271,6 +274,38 @@ For every returned external artifact, record `provider`, `model`, `surface`, `mo
 
 External 4K QA must re-run all board QA and additionally pass `material_boundaries_preserved`, `transparent_layers_and_thickness_preserved`, `fill_level_and_content_state_preserved`, `reflection_refraction_highlights_source_consistent`, `no_over_denoising`, `no_invented_structure_or_material`, `external_reference_bundle_complete`, `external_16_9_verified`, and `external_4k_profile_verified`. A passing result is an externally generated/enhanced 4K artifact; never relabel it as Codex-native 4K.
 
+## Final main-result prompt pair
+
+Use only these finalization vocabularies:
+
+```text
+task_finalization_status: generation_terminal_pending | awaiting_post_generation_continuation | prompt_pair_ready | final_main_result_published
+main_result_prompt_pair_status: pending | published
+```
+
+In the post-generation continuation, inspect the actual board, finalize the image-specific `final_4k_enhancement_prompt`, write it to `<asset_id>_4k_enhancement_prompt.md`, re-read the exact bytes, and calculate `4k_enhancement_prompt_sha256`. Then re-read `<asset_id>_generation_prompt.md` and verify its bytes against the recorded `generation_prompt_sha256`. A missing file, byte mismatch, or hash mismatch is `blocked_prompt_pair_integrity`; do not reconstruct either prompt.
+
+Set `task_finalization_status: prompt_pair_ready` only when both re-read hashes pass. Then publish one **final-channel main result**, not commentary, containing the complete unabridged text of both prompts and both hashes in the fixed fields below. A sidecar, path, summary, excerpt, earlier commentary, or earlier turn never substitutes for either complete prompt.
+
+`prompt_pair_ready` proves prompt integrity only. It does not imply `external_4k_status: handoff_ready`; the external reference bundle and exact 16:9/4K runtime controls must independently pass their existing gates.
+
+If the final response cannot contain both complete prompts because of a real output-capacity limit, set `blocked_final_output_capacity`; do not truncate, abbreviate, split across responses, or claim either published state.
+
+```text
+final_generation_prompt:
+<complete exact bytes re-read from the frozen generation sidecar>
+generation_prompt_sha256: <verified sha256>
+
+final_4k_enhancement_prompt:
+<complete exact bytes re-read from the finalized enhancement sidecar>
+4k_enhancement_prompt_sha256: <verified sha256>
+
+main_result_prompt_pair_status: published
+task_finalization_status: final_main_result_published
+```
+
+Include both published statuses in that final block. Successful emission of the complete block is the transition evidence; require no write or status mutation after the terminal final response. Until emission succeeds, the task remains incomplete even when the board, sidecars, material QA, or handoff already exist.
+
 ## Repair
 
 If the generated image fails and image generation remains available, run up to two repair generations. Repair one dominant issue at a time in this order:
@@ -281,7 +316,6 @@ If the generated image fails and image generation remains available, run up to t
 4. fix material response, reflection, refraction, thickness, liquid/cream texture, or layered-shell consistency;
 5. fix critical structure such as seam, cap, base, latch, mark, pump, hinge, inner tube, or bottom refraction;
 6. fix logo/text micro-reference only when it is source-supported and not a label-copy workflow.
-7. fix 16:9 conformance.
 
 Before each repair call, disclose and hash the exact repair `final_generation_prompt`; then make the repair image call the terminal action of that turn. If two repairs fail, stop and request the exact missing references, such as higher-resolution front, side, back, top, bottom, material macro, logo/label crop, source-supported state, or content closeup.
 
@@ -304,12 +338,13 @@ Before the terminal image-generation call, provide concise Chinese text:
 - panel_capacity_budget：pass / constrained / blocked
 - runtime_capability_snapshot：...
 
-target_aspect_ratio: "16:9"
-alternate_aspect_ratios_allowed: false
-codex_board_role: pending_observation
+built_in_prompt_aspect_ratio_request: "horizontal 16:9"
+built_in_prompt_alternate_aspect_ratios_allowed: false
+built_in_dimensions_policy: evidence_only_nonblocking
+codex_board_role: pending_content_qa
 final_generation_prompt:
 <exact prompt that will be submitted>
-generation_prompt_sha256: <sha256 / unavailable>
+generation_prompt_sha256: <verified sha256>
 prompt_disclosed_before_generation: true / false
 terminal_generation_call: pending
 assistant_qa_status: pending_post_generation_inspection
@@ -317,6 +352,8 @@ production_approval_status: not_granted
 4k_enhancement_prompt_status: draft_pre_generation / awaiting_post_generation_inspection
 draft_4k_enhancement_prompt: <optional provisional prompt; never final>
 external_4k_status: not_ready
+task_finalization_status: generation_terminal_pending
+main_result_prompt_pair_status: pending
 ```
 
 In the later inspection step, report:
@@ -338,13 +375,15 @@ In the later inspection step, report:
 - video_reference_ready: yes / no
 - state_window_source_supported: pass / fail / not_used
 - prompt_bound: pass / fail
-- aspect_ratio_status: verified_16_9 / failed / unverified
+- built_in_dimensions_policy: evidence_only_nonblocking
+- built_in_observed_pixel_dimensions: width x height / unavailable
+- built_in_observed_aspect_ratio: value / unavailable
 - external_4k_status: not_ready / handoff_ready / blocked_runtime_controls / pending_external_generation / returned_unverified / verified / rejected
 
 缺失或限制：
 - <only list real missing evidence or caveats>
 ```
 
-Keep the handoff concise: one frozen generation-prompt record, one inspected-board-specific 4K prompt and hash, one board, one 4K handoff sidecar, and evidence-bounded status. After external return, append provider/surface/profile/dimension evidence and the external 4K QA result. A prompt-only request routes outside this Skill and is not a successful run.
+Keep the handoff concise, then publish the complete prompt pair in the final-channel main result exactly as required above. After external return, append provider/surface/profile/dimension evidence and external 4K QA. A prompt-only request routes outside this Skill and is not a successful run.
 
-End condition: exactly one 16:9 material-sensitive product master asset board has been generated or honestly blocked, its exact prompt was disclosed before the terminal call, a final 4K prompt and handoff are emitted only after board inspection, and QA/production states remain pending until independently supported by artifact evidence. Any returned external artifact is classified as `verified` or `rejected` without being relabeled as native.
+The image-generation turn may end only as `stage_complete` with `task_finalization_status: awaiting_post_generation_continuation`. The task completes only when material/content QA is classified, the source-bound exact-16:9/4K handoff is ready or honestly runtime-blocked, and `task_finalization_status: final_main_result_published` proves the final channel displayed both complete prompts and both verified hashes. Source, capability, persistence, or prompt-integrity failures may end the run without a completion claim. Any returned external artifact remains externally generated and is classified without being relabeled as native.

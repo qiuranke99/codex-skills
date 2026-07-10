@@ -1,9 +1,11 @@
 ---
 name: character-casting-lock-board
-description: "Use when the user provides character references and needs a text-free 16:9 film casting contact-board asset for one selected character: one large frontal portrait plus complete front, back, and side full-body views, with narrowly justified hair, upper-body, shoe, bag, or accessory extension boards when source-backed continuity risk requires them. Resolve identity ambiguity before generation; freeze each generation prompt before its terminal image call, then later inspect every generated board and deliver one source-bound 4K enhancement prompt and handoff per board. Do not use for candidate comparison, general character sheets, poster or lookbook layouts, or prompt-only delivery."
+description: "Use when the user provides character references and needs text-free horizontal 16:9-requested casting-board assets for one selected character: one large frontal portrait plus complete front, back, and side full-body views, with narrowly justified extension boards when source-backed continuity risk requires them. Resolve identity ambiguity before generation; freeze each generation prompt before its terminal image call, then inspect every board and publish every complete generation and image-specific 4K prompt pair in one later final main result. Do not use for candidate comparison, general character sheets, poster or lookbook layouts, or prompt-only delivery."
 ---
 
 # Character Casting Lock Board
+
+Contract version: `asset_board_contract_version: built_in_nonblocking_prompt_pair_v2`.
 
 中文名称：角色选角锁定板
 
@@ -68,7 +70,7 @@ Always plan **A. Character Casting Lock Board** with exactly these core views:
 
 All views must preserve one identity, facial logic, skin, hairstyle, body proportion, outfit, shoes, bag, accessories, and height impression. Keep full-body views head-to-toe, neutrally posed, and unobstructed.
 
-Use one exact 16:9 composition, white-to-neutral-gray background, even neutral light, realistic photographic rendering, minimal shadow, and casting-documentation clarity. Author and request only 16:9; never offer, request, or silently fall back to another aspect ratio. If the runtime returns a different ratio despite the prompt, record it as a non-final intermediate layout reference and require the external 4K stage to rebuild the same content on an exact 16:9 canvas. Treat 4K as an external handoff request; claim exact raster size or native provenance only when runtime evidence exposes it.
+Request one horizontal 16:9 composition with a white-to-neutral-gray background, even neutral light, realistic photographic rendering, minimal shadow, and casting-documentation clarity. The built-in prompt must request horizontal 16:9 and no alternate ratio, but returned pixel dimensions are observational evidence only. Record each original file's dimensions and ratio without downgrading a source-faithful board, failing content QA, triggering repair, or blocking its 4K handoff when the built-in runtime returns a nearby or different ratio. Treat 4K as an external handoff request; claim exact raster size or native provenance only when runtime evidence exposes it.
 
 Inside the image, forbid names, role labels, text, numbers, measurements, arrows, captions, tables, film edge codes, watermarks, UI, gibberish, extra people, comparison faces, posters, fashion-editorial treatment, cinematic scenes, beauty ads, illustration, anime, CGI, or concept art.
 
@@ -102,14 +104,14 @@ For each board, before its image-generation call:
 3. Keep that board's `final_4k_enhancement_prompt` unset. An optional private `draft_4k_enhancement_prompt` may capture invariant 16:9, identity, topology, source-reference, and skin-fidelity requirements, but it is not a deliverable, has no final hash, and cannot claim to diagnose a board that does not yet exist. Set `4k_enhancement_prompt_status: draft_pre_generation`.
 4. Normalize the exact generation prompt as UTF-8 with LF line endings.
 5. Compute `generation_prompt_sha256` from those exact bytes.
-6. When filesystem access exists, save `<asset_id>_<board_id>_generation_prompt.md` and update the prompt state in `asset_record.yaml` before generation.
+6. Assign a monotonically increasing `attempt_id`, persist `<asset_id>_<board_id>_attempt_<attempt_id>_generation_prompt.md`, and update the attempt state in `asset_record.yaml` before generation. The sidecar bytes must be exactly the normalized prompt text with no BOM, heading, fence, frontmatter, or metadata wrapper. This sidecar is mandatory because later publication must reread the accepted attempt's original bytes. If persistence or readback is unavailable, return `blocked_generation_prompt_persistence` before image generation.
 7. Present the exact generation prompt, board ID, and hash. Set `prompt_disclosed_before_generation: true`; state that the inspected-board-specific 4K prompt will be delivered only after later visual inspection with the original references available.
-8. Set `terminal_generation_call: pending`, `assistant_qa_status: pending_post_generation_inspection`, `external_4k_status: not_ready`, and `production_approval_status: not_granted` for this board.
+8. Set `terminal_generation_call: pending`, `assistant_qa_status: pending_post_generation_inspection`, `built_in_dimensions_policy: evidence_only_nonblocking`, `task_finalization_status: generation_terminal_pending`, `main_result_prompt_pair_status: pending`, `external_4k_status: not_ready`, and `production_approval_status: not_granted` for this board/package.
 9. Call image generation as the final action of the turn.
 
 Do not send text, call another tool, inspect the result, reconstruct a prompt, or claim visual success after generation in that turn. The returned image is the terminal result.
 
-On the next continuation for that board, when the tool trace proves `terminal_generation_call: executed` and the board is available but not yet inspected, set its `4k_enhancement_prompt_status: awaiting_post_generation_inspection`. Advance to `finalized_post_inspection` only after that actual board passes later-turn inspection.
+On the next continuation for that board, when the tool trace proves `terminal_generation_call: executed` and the board is available but not yet inspected, promote `task_finalization_status` from `generation_terminal_pending` to `awaiting_post_generation_continuation`, increment `generation_attempt_count` exactly once, and set its `4k_enhancement_prompt_status: awaiting_post_generation_inspection`. Count every executed original or repair call as an attempt; do not increment `generated_board_count` yet. Advance to `finalized_post_inspection` only after that actual board passes later-turn inspection. If the host does not automatically continue, the executed tool trace leaves the package at `awaiting_post_generation_continuation`; the next continuation must resume that board's inspection and prompt-pair finalization. Each generation turn is stage-complete, never package-complete. A failed or missing call never enters the awaiting state or increments the attempt count.
 
 Because each generation call is terminal, a multi-board package advances one board per turn. On a later continuation, inspect the preceding board first; repair it if necessary, otherwise freeze the next extension prompt and generate it as that turn's final action. Do not claim the package complete until every planned board has later-turn visual QA.
 
@@ -128,6 +130,9 @@ prompt_disclosed_before_generation: true
 terminal_generation_call: pending
 assistant_qa_status: pending_post_generation_inspection
 4k_enhancement_prompt_status: draft_pre_generation
+built_in_dimensions_policy: evidence_only_nonblocking
+task_finalization_status: generation_terminal_pending
+main_result_prompt_pair_status: pending
 external_4k_status: not_ready
 production_approval_status: not_granted
 ```
@@ -136,9 +141,11 @@ Use attachment aliases such as `selected_identity_reference`, `outfit_reference_
 
 ## 6. Artifacts And State
 
-When filesystem access exists, use:
+Use this mandatory output directory:
 
 `outputs/character-locks/<asset_id>/`
+
+Treat it as the writable run-scoped location for prompt truth and handoff state. If it cannot be created, written, and reread, stop before generation with `blocked_generation_prompt_persistence`.
 
 Maintain:
 
@@ -157,8 +164,19 @@ asset_id:
 asset_type: character_casting_lock_board
 selected_identity:
 runtime_capability_snapshot:
-target_aspect_ratio: "16:9"
-alternate_aspect_ratios_allowed: false
+built_in_prompt_aspect_ratio_request: "horizontal 16:9"
+built_in_prompt_alternate_aspect_ratios_allowed: false
+built_in_dimensions_policy: evidence_only_nonblocking
+task_finalization_status: generation_terminal_pending | awaiting_post_generation_continuation | prompt_pair_ready | final_main_result_published
+main_result_prompt_pair_status: pending | published
+generated_board_count: 0
+generation_attempt_count: 0
+accepted_board_ids: []
+finalized_4k_prompt_count: 0
+4k_prompt_hash_count: 0
+4k_handoff_sidecar_count: 0
+published_prompt_pair_count: 0
+published_board_ids: []
 board_set:
   A: required
   B: omitted | planned | generated
@@ -167,6 +185,8 @@ board_set:
 package_external_4k_status: not_ready | handoff_ready | blocked_runtime_controls | pending_external_generation | returned_unverified | verified | rejected
 boards:
   A:
+    accepted_attempt_id:
+    accepted_generation_prompt_path:
     final_generation_prompt:
     generation_prompt_path:
     generation_prompt_sha256:
@@ -175,7 +195,13 @@ boards:
     4k_enhancement_prompt_path:
     4k_enhancement_prompt_sha256:
     4k_enhancement_prompt_status: draft_pre_generation | awaiting_post_generation_inspection | finalized_post_inspection
-    codex_board_role: intermediate_layout_reference | final_candidate
+    codex_board_role: continuity_reference
+    built_in_dimensions_observation:
+      source_file:
+      width_px: unknown
+      height_px: unknown
+      observed_aspect_ratio: unknown
+      exact_16_9: unknown
     external_reference_bundle:
       codex_asset_board: required
       original_source_references: required
@@ -219,7 +245,11 @@ Inspect each returned board only on a later turn. For the main board, verify:
 
 For an extension, verify that it closes its named risk and does not introduce a competing identity or styling system.
 
+For every generated board, read the original built-in result file header and record its width, height, observed ratio, and exact-16:9 boolean. This is provenance evidence under `built_in_dimensions_policy: evidence_only_nonblocking`; it never changes content QA, board role, repair eligibility, prompt-pair finalization, per-board handoff readiness, or package readiness.
+
 Use `passed`, `conditional`, or `failed`. Keep production approval unchanged. If one targeted repair is justified, freeze and disclose a new complete prompt and hash before a new terminal call.
+
+When a board becomes the current accepted A, B, C, or D result, bind its `accepted_attempt_id`, `accepted_generation_prompt_path`, `final_generation_prompt`, and `generation_prompt_sha256` to that exact attempt. Add its unique `board_id` to `accepted_board_ids` once and set `generated_board_count` to the size of that set. Rejected attempts increase only `generation_attempt_count`; a repair that replaces a prior accepted attempt updates the binding without increasing `generated_board_count`. Final publication may use only the current accepted attempt, never a rejected or superseded prompt.
 
 Do not finalize a 4K handoff for identity drift, a missing or wrong core view, incomplete head-to-toe framing, a decorative extension, a new styling system, or invented content. Repair or reject that Codex board first. A source-faithful board with only resolution, noise, edge, or microtexture limitations may proceed to its own 4K handoff.
 
@@ -241,7 +271,9 @@ The final enhancement prompt for every board must:
 
 For A, preserve exactly one large frontal portrait plus complete front, back, and side full-body views. For B, preserve only its approved upper-body evidence. For C, preserve only its approved hairstyle evidence, including source-supported hairline, side, back, nape, parting, braid, bun, curl, or crown structure. For D, preserve only its approved shoe, bag, handheld, or accessory evidence. An enhancement prompt for one board may not add, repair by borrowing from, or stand in for another board.
 
-For each board, normalize the final prompt as UTF-8 with LF line endings, compute a distinct `4k_enhancement_prompt_sha256`, save `<asset_id>_<board_id>_4k_enhancement_prompt.md`, disclose the exact prompt and hash, and set `4k_enhancement_prompt_status: finalized_post_inspection` and `external_4k_status: handoff_ready`. Do not publish a draft hash or reuse another board's hash.
+For each board, normalize the final prompt as UTF-8 with LF line endings, compute a distinct `4k_enhancement_prompt_sha256`, and save exactly those bytes as `<asset_id>_<board_id>_4k_enhancement_prompt.md` with no BOM, heading, fence, frontmatter, or metadata wrapper. Do not publish a draft hash or reuse another board's hash.
+
+Before marking that board's pair ready, reopen its `accepted_generation_prompt_path` and `<asset_id>_<board_id>_4k_enhancement_prompt.md` as their original UTF-8/LF bytes, recompute both SHA-256 values, and require exact equality with the accepted frozen records. Never reconstruct either prompt from memory, chat, a summary, or `asset_record.yaml`. A missing sidecar or hash mismatch is `blocked_prompt_pair_integrity`; keep the package `main_result_prompt_pair_status: pending`. After both checks pass, set only the board's `4k_enhancement_prompt_status: finalized_post_inspection`; external readiness remains independent.
 
 Write `<asset_id>_<board_id>_4k_handoff.yaml` with exact reference aliases and this only allowed request profile:
 
@@ -253,17 +285,53 @@ external_runtime_request:
   image_size: "4K"
 ```
 
-Record the same selection as `third_party_model_target` for that board; the runtime-observed model remains separate evidence.
+Record the same selection as `third_party_model_target` for that board; the runtime-observed model remains separate evidence. Increment `finalized_4k_prompt_count`, `4k_prompt_hash_count`, and `4k_handoff_sidecar_count` exactly once when that board's verified artifacts exist. Set that board's `external_4k_status: handoff_ready` only when its Codex board plus original-reference bundle, handoff sidecar, selected provider, and exposed exact 16:9 and 4K controls are all ready; otherwise retain `not_ready` or use `blocked_runtime_controls` as applicable.
 
 Do not encode another size or aspect-ratio option. If the selected platform cannot expose both controls, set that board's `external_4k_status: blocked_runtime_controls` and select no fallback size or ratio. Set `pending_external_generation` only when the complete handoff has actually been submitted.
 
+If more boards remain planned, persist the verified pair and continue the one-terminal-call-per-turn sequence. After every accepted board has a verified pair, require `generated_board_count == finalized_4k_prompt_count == 4k_prompt_hash_count == 4k_handoff_sidecar_count` and coverage of every `accepted_board_id`, then set `task_finalization_status: prompt_pair_ready`. `prompt_pair_ready` proves prompt integrity only and does not imply any board or package `external_4k_status: handoff_ready`; the external reference and runtime-control gates remain independent.
+
+Preflight whether one final response can contain every accepted board's complete pair and hashes. If a real output ceiling prevents that, return `blocked_final_output_capacity`, keep `main_result_prompt_pair_status: pending`, and never truncate, summarize, link-only, or split the package while claiming publication.
+
+Publish one block per accepted board in the task's final main result using the `final` channel. Each block must include both complete prompt texts inline; commentary, sidecars, paths, hashes alone, excerpts, or summaries cannot replace them.
+
+```text
+board_id: <A | B | C | D>
+accepted_attempt_id: <current accepted attempt>
+
+final_generation_prompt:
+<complete exact text reread from this board's frozen generation sidecar>
+
+generation_prompt_sha256: <verified sha256>
+
+final_4k_enhancement_prompt:
+<complete exact image-specific text reread from this board's frozen 4K sidecar>
+
+4k_enhancement_prompt_sha256: <verified sha256>
+```
+
+End the same final result with this package record:
+
+```text
+accepted_board_ids: [<every accepted board_id>]
+published_board_ids: [<every board_id whose complete block appears above>]
+generated_board_count: <accepted-board count>
+published_prompt_pair_count: <complete-block count>
+main_result_prompt_pair_status: published
+task_finalization_status: final_main_result_published
+```
+
+Publication requires set equality `published_board_ids == accepted_board_ids` and count equality `published_prompt_pair_count == generated_board_count`. The complete final response is itself the transition evidence. Because a `final` response is terminal, require no status write or tool call after emission.
+
 When an external result returns, set that board's `external_4k_status: returned_unverified`; record provider, model, surface, model profile, requested settings, `observed_pixel_dimensions`, provider-declared aspect-ratio profile, `observed_file_aspect_ratio`, `aspect_ratio_evidence`, and `four_k_evidence`. Inspect it against the corresponding Codex board and original references. Set `verified` only when runtime evidence proves the requested 16:9 provider profile and 4K tier, the board-specific topology remains source-faithful, `source_fidelity_status: passed`, and `external_4k_qa_status: passed`. Otherwise set `rejected` and record the failing gate. Provider or model claims without runtime evidence remain `unknown`.
 
-The number of finalized enhancement prompts, SHA-256 hashes, and handoff sidecars must equal the number of generated boards. Omitted B, C, or D boards require none; every generated board requires all three.
+The number of finalized enhancement prompts, SHA-256 hashes, handoff sidecars, and published complete prompt pairs must equal the number of accepted/current boards. Omitted and rejected A, B, C, or D attempts require no published pair; every accepted board requires all four.
 
 ## 9. Completion Contract
 
-A generation turn succeeds only when one target identity is resolved, the exact prompt and hash are disclosed before generation, and the image call is terminal. Set `package_external_4k_status: handoff_ready` only after later-turn visual QA and distinct final 4K prompt/hash/sidecar coverage for the main board and every generated extension. Set package status to `blocked_runtime_controls` if any required board lacks the exact external controls, and to `verified` only when every generated board has `external_4k_status: verified`; production approval remains a separate explicit grant.
+A generation turn is stage-complete only when one target identity is resolved, the exact prompt and hash are disclosed before generation, the image call is terminal, and `task_finalization_status: awaiting_post_generation_continuation`. `generation_attempt_count` counts every executed call; `generated_board_count` counts unique accepted/current board IDs only. The Skill task completes only after its later final main result contains every accepted board's complete verified prompt pair, `published_board_ids == accepted_board_ids`, `published_prompt_pair_count == generated_board_count`, and `main_result_prompt_pair_status: published`. Built-in pixel dimensions remain non-blocking evidence; a ratio mismatch cannot cause content failure, repair, demotion, or handoff blocking.
+
+Set `package_external_4k_status: handoff_ready` only after later-turn visual QA and distinct source-bound 4K prompt/hash/sidecar coverage for the main board and every generated extension, with original references plus each Codex board. Set package status to `blocked_runtime_controls` if any required external board lacks exact 16:9 and 4K controls, and to `verified` only when every generated board has `external_4k_status: verified`; production approval remains a separate explicit grant.
 
 Never treat declarative prompt compliance, a preflight check, or assistant visual QA as production approval. Never substitute prompt text for a generated board.
 
