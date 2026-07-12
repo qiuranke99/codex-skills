@@ -1,0 +1,271 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="2200" height="1660" viewBox="0 0 2200 1660" role="img" aria-labelledby="title desc">
+  <title id="title">High-Control AI TVC Production System — complete SOP</title>
+  <desc id="desc">A complete high-control Omni-reference AI TVC workflow from rough script and source evidence through professional shot contract, Canon assets, global look, modular storyboard, timing animatic, keyframes, provider preflight, boundary anchors, control previs, final prompt package, third-party generation, user review, and owner-routed revision.</desc>
+  <defs>
+    <style>
+      .bg { fill: #090c12; }
+      .band { fill: #0f141d; stroke: #263142; stroke-width: 1.5; }
+      .card { fill: #141a24; stroke: #344258; stroke-width: 1.5; }
+      .card-core { fill: #151b25; stroke: #d5b56e; stroke-width: 2; }
+      .card-external { fill: #111c1d; stroke: #5fb9aa; stroke-width: 2; stroke-dasharray: 8 6; }
+      .card-review { fill: #181723; stroke: #9b8bd1; stroke-width: 2; }
+      .card-alert { fill: #21171a; stroke: #ce7685; stroke-width: 2; }
+      .stage { fill: #d5b56e; font: 600 15px Inter, "Noto Sans SC", "Microsoft YaHei", sans-serif; letter-spacing: 1.2px; }
+      .title { fill: #f4f6f8; font: 600 23px Inter, "Noto Sans SC", "Microsoft YaHei", sans-serif; }
+      .skill { fill: #9fb4cf; font: 500 13px ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; }
+      .body { fill: #cdd5df; font: 400 15px Inter, "Noto Sans SC", "Microsoft YaHei", sans-serif; }
+      .muted { fill: #8e9aaa; font: 400 13px Inter, "Noto Sans SC", "Microsoft YaHei", sans-serif; }
+      .label { fill: #d5b56e; font: 600 13px Inter, "Noto Sans SC", "Microsoft YaHei", sans-serif; }
+      .header { fill: #f4f6f8; font: 600 36px Inter, "Noto Sans SC", "Microsoft YaHei", sans-serif; }
+      .subhead { fill: #a7b2c1; font: 400 17px Inter, "Noto Sans SC", "Microsoft YaHei", sans-serif; }
+      .lane { fill: #d5b56e; font: 600 14px Inter, "Noto Sans SC", "Microsoft YaHei", sans-serif; letter-spacing: 1px; }
+      .arrow { fill: none; stroke: #71839a; stroke-width: 2.5; marker-end: url(#arrow); }
+      .arrow-gold { fill: none; stroke: #d5b56e; stroke-width: 3; marker-end: url(#arrow-gold); }
+      .arrow-return { fill: none; stroke: #ce7685; stroke-width: 2.5; stroke-dasharray: 9 7; marker-end: url(#arrow-return); }
+      .arrow-external { fill: none; stroke: #5fb9aa; stroke-width: 2.5; stroke-dasharray: 8 6; marker-end: url(#arrow-external); }
+      .dot { fill: #d5b56e; }
+    </style>
+    <marker id="arrow" markerWidth="10" markerHeight="10" refX="9" refY="3" orient="auto" markerUnits="strokeWidth"><path d="M0,0 L0,6 L9,3 z" fill="#71839a"/></marker>
+    <marker id="arrow-gold" markerWidth="10" markerHeight="10" refX="9" refY="3" orient="auto" markerUnits="strokeWidth"><path d="M0,0 L0,6 L9,3 z" fill="#d5b56e"/></marker>
+    <marker id="arrow-return" markerWidth="10" markerHeight="10" refX="9" refY="3" orient="auto" markerUnits="strokeWidth"><path d="M0,0 L0,6 L9,3 z" fill="#ce7685"/></marker>
+    <marker id="arrow-external" markerWidth="10" markerHeight="10" refX="9" refY="3" orient="auto" markerUnits="strokeWidth"><path d="M0,0 L0,6 L9,3 z" fill="#5fb9aa"/></marker>
+  </defs>
+
+  <rect class="bg" width="2200" height="1660"/>
+
+  <text x="60" y="62" class="header">高控制 AI TVC 全能参考生产系统</text>
+  <text x="60" y="94" class="subhead">粗脚本 → 可验证的导演资产与动态控制 → P2 Provider-ready Package → 第三方 Omni 生成 → 精确返工</text>
+  <text x="2140" y="62" text-anchor="end" class="stage">HIGH-CONTROL · OMNI R2V · P2</text>
+
+  <rect x="60" y="125" width="2080" height="118" rx="18" class="band"/>
+  <text x="82" y="153" class="lane">PROJECT INPUTS · 项目输入</text>
+  <g>
+    <rect x="82" y="170" width="475" height="52" rx="10" class="card"/>
+    <text x="102" y="192" class="label">创意与节奏</text><text x="102" y="212" class="body">粗脚本 / 文案 / 时长 / 画幅 / 广告意图</text>
+    <rect x="577" y="170" width="475" height="52" rx="10" class="card"/>
+    <text x="597" y="192" class="label">商业真值</text><text x="597" y="212" class="body">产品事实 / 标签 / Claim 证据 / 品牌禁区</text>
+    <rect x="1072" y="170" width="475" height="52" rx="10" class="card"/>
+    <text x="1092" y="192" class="label">视觉证据</text><text x="1092" y="212" class="body">人物 / 产品 / 包装 / 场景 / 可选影调参考</text>
+    <rect x="1567" y="170" width="551" height="52" rx="10" class="card"/>
+    <text x="1587" y="192" class="label">生成表面</text><text x="1587" y="212" class="body">Seedance / Kling 第三方入口与可验证能力</text>
+  </g>
+
+  <text x="60" y="284" class="lane">A · NORMATIVE &amp; STATIC AUTHORITIES</text>
+
+  <g transform="translate(60 305)">
+    <rect width="350" height="225" rx="18" class="card-core"/>
+    <text x="22" y="31" class="stage">00 · INTAKE</text>
+    <text x="22" y="64" class="title">素材摄取与证据封存</text>
+    <text x="22" y="89" class="skill">ai-video-shot-script-director</text>
+    <text x="22" y="120" class="label">输入</text><text x="70" y="120" class="body">粗脚本、参考、事实与限制</text>
+    <text x="22" y="149" class="label">动作</text><text x="70" y="149" class="body">抽取、哈希、保留原始顺序</text>
+    <text x="22" y="178" class="label">输出</text><text x="70" y="178" class="body">Source Evidence / Extraction Report</text>
+    <text x="22" y="207" class="muted">普通导演缺口由 Skill 推断；精确事实不臆造</text>
+  </g>
+
+  <g transform="translate(470 305)">
+    <rect width="350" height="225" rx="18" class="card-core"/>
+    <text x="22" y="31" class="stage">01 · DIRECTOR AUTHORITY</text>
+    <text x="22" y="64" class="title">专业镜头合同</text>
+    <text x="22" y="89" class="skill">ai-video-shot-script-director</text>
+    <text x="22" y="120" class="label">输入</text><text x="70" y="120" class="body">摄取证据与创意意图</text>
+    <text x="22" y="149" class="label">输出</text><text x="70" y="149" class="body">Shot UIDs / timing / action / camera</text>
+    <text x="22" y="178" class="body">GLOBAL_DIRECTING_GRAMMAR + Canon</text>
+    <text x="22" y="207" class="muted">门：时长闭合、镜头可观察、Claim 有来源</text>
+  </g>
+
+  <g transform="translate(880 305)">
+    <rect width="350" height="225" rx="18" class="card"/>
+    <text x="22" y="31" class="stage">02 · CANON ASSETS</text>
+    <text x="22" y="64" class="title">人物 / 产品 / 场景锁定</text>
+    <text x="22" y="89" class="skill">7 fixed-owner asset Skills</text>
+    <text x="22" y="120" class="label">输入</text><text x="70" y="120" class="body">参考图与 Shot Contract 需求</text>
+    <text x="22" y="149" class="label">工具</text><text x="70" y="149" class="body">Codex Image Generation + Pillow</text>
+    <text x="22" y="178" class="label">输出</text><text x="70" y="178" class="body">批准资产板 + Canon Export</text>
+    <text x="22" y="207" class="muted">几何、身份、材质、标签、空间各归唯一 owner</text>
+  </g>
+
+  <g transform="translate(1290 305)">
+    <rect width="350" height="225" rx="18" class="card"/>
+    <text x="22" y="31" class="stage">03 · GLOBAL LOOK</text>
+    <text x="22" y="64" class="title">全局影调锁定</text>
+    <text x="22" y="89" class="skill">ai-video-global-look-lock</text>
+    <text x="22" y="120" class="label">输入</text><text x="70" y="120" class="body">镜头合同 + Canon + 可选参考</text>
+    <text x="22" y="149" class="label">输出</text><text x="70" y="149" class="body">Look Core / States / Shot Deltas</text>
+    <text x="22" y="178" class="body">独立可检查的 Look References</text>
+    <text x="22" y="207" class="muted">Core 逐镜继承，不只作用于关键帧</text>
+  </g>
+
+  <g transform="translate(1700 305)">
+    <rect width="350" height="225" rx="18" class="card-core"/>
+    <text x="22" y="31" class="stage">04A/04B · MODULAR STORYBOARD</text>
+    <text x="22" y="64" class="title">N 镜头 = N 独立画格</text>
+    <text x="22" y="89" class="skill">ai-video-modular-storyboard</text>
+    <text x="22" y="116" class="label">4A 入</text><text x="76" y="116" class="body">Shot + required Canon + 临时 Look</text>
+    <text x="22" y="141" class="label">4A 出</text><text x="76" y="141" class="body">N structure drafts → 审批</text>
+    <text x="22" y="166" class="label">4B 入</text><text x="76" y="166" class="body">已批结构 + Final Canon/Look</text>
+    <text x="22" y="191" class="label">4B 出</text><text x="76" y="191" class="body">N final frames + 确定性审阅板</text>
+    <text x="22" y="214" class="muted">门：N=N；按 Shot UID 原子替换单格</text>
+  </g>
+
+  <path d="M410 417 H470" class="arrow-gold"/>
+  <path d="M820 417 H880" class="arrow"/>
+  <path d="M820 417 C845 417 845 275 1465 275 V305" class="arrow"/>
+  <path d="M1230 417 H1290" class="arrow"/>
+  <path d="M645 305 V258 H1875 V305" class="arrow"/>
+  <path d="M1230 417 H1260 C1275 417 1275 565 1660 565 C1680 565 1680 500 1700 500" class="arrow"/>
+  <path d="M1640 417 H1700" class="arrow"/>
+
+  <text x="60" y="604" class="lane">B · TIME, CONTINUITY &amp; PROVIDER-BOUND CONTROL</text>
+
+  <g transform="translate(60 625)">
+    <rect width="350" height="225" rx="18" class="card-core"/>
+    <text x="22" y="31" class="stage">05 · V1 TIMING ANIMATIC</text>
+    <text x="22" y="64" class="title">整片节奏动画预演</text>
+    <text x="22" y="89" class="skill">ai-video-timed-animatic-previs-director</text>
+    <text x="22" y="120" class="label">输入</text><text x="70" y="120" class="body">逐镜画格 + 权威时长</text>
+    <text x="22" y="149" class="label">工具</text><text x="70" y="149" class="body">FFmpeg / ffprobe</text>
+    <text x="22" y="178" class="label">输出</text><text x="70" y="178" class="body">V1 + cut/timing/blocking map</text>
+    <text x="22" y="207" class="muted">非固定 3 秒；先验证整片节奏，再做关键帧</text>
+  </g>
+
+  <g transform="translate(470 625)">
+    <rect width="350" height="225" rx="18" class="card-core"/>
+    <text x="22" y="31" class="stage">06 · K1 CORE KEYFRAMES</text>
+    <text x="22" y="64" class="title">逐镜生成级静态锚点</text>
+    <text x="22" y="89" class="skill">ai-video-keyframe-continuity-pack</text>
+    <text x="22" y="120" class="label">输入</text><text x="70" y="120" class="body">V1 + 全部静态权威</text>
+    <text x="22" y="149" class="label">输出</text><text x="70" y="149" class="body">每镜 ≥1 Anchor + Continuity Ledger</text>
+    <text x="22" y="178" class="label">工具</text><text x="70" y="178" class="body">Codex Image Generation</text>
+    <text x="22" y="207" class="muted">Omni 普通参考；不是首帧/尾帧控制</text>
+  </g>
+
+  <g transform="translate(880 625)">
+    <rect width="350" height="225" rx="18" class="card-core"/>
+    <text x="22" y="31" class="stage">07 · P1 PREFLIGHT</text>
+    <text x="22" y="64" class="title">Generation Unit 规划</text>
+    <text x="22" y="89" class="skill">ai-video-omni-reference-prompt-director</text>
+    <text x="22" y="120" class="label">输入</text><text x="70" y="120" class="body">Canon snapshot + V1/K1 + Provider</text>
+    <text x="22" y="149" class="label">输出</text><text x="70" y="149" class="body">Unit Map / bindings / budgets</text>
+    <text x="22" y="178" class="body">能力交集 + Atlas Dry-build</text>
+    <text x="22" y="207" class="muted">未知限制即阻塞；不得静默删参考或降级</text>
+  </g>
+
+  <g transform="translate(1290 625)">
+    <rect width="350" height="225" rx="18" class="card-core"/>
+    <text x="22" y="31" class="stage">08 · K2 BOUNDARY</text>
+    <text x="22" y="64" class="title">跨单元连续性补充</text>
+    <text x="22" y="89" class="skill">ai-video-keyframe-continuity-pack</text>
+    <text x="22" y="120" class="label">输入</text><text x="70" y="120" class="body">冻结 P1 Unit Map + K1</text>
+    <text x="22" y="149" class="label">输出</text><text x="70" y="149" class="body">Boundary Supplement</text>
+    <text x="22" y="178" class="body">跨生成段 handoff anchors</text>
+    <text x="22" y="207" class="muted">不改变 K1；不得在一个 Shot UID 内切段</text>
+  </g>
+
+  <g transform="translate(1700 625)">
+    <rect width="350" height="225" rx="18" class="card-core"/>
+    <text x="22" y="31" class="stage">09 · V2 CONTROL PREVIS</text>
+    <text x="22" y="64" class="title">单元级动态控制视频</text>
+    <text x="22" y="89" class="skill">ai-video-timed-animatic-previs-director</text>
+    <text x="22" y="120" class="label">输入</text><text x="70" y="120" class="body">V1/K1/P1/K2 + provider</text>
+    <text x="22" y="149" class="label">工具</text><text x="70" y="149" class="body">2D/3D Previs / Prevzi / Blender</text>
+    <text x="22" y="178" class="label">输出</text><text x="70" y="178" class="body">每 Unit 静音 V2 + motion tracks</text>
+    <text x="22" y="207" class="muted">镜运、blocking、液体/布料/头发/物体轨迹</text>
+  </g>
+
+  <path d="M1875 530 V575 H235 V625" class="arrow-gold"/>
+  <path d="M410 737 H470" class="arrow-gold"/>
+  <path d="M820 737 H880" class="arrow-gold"/>
+  <path d="M1230 737 H1290" class="arrow-gold"/>
+  <path d="M1640 737 H1700" class="arrow-gold"/>
+
+  <g transform="translate(60 900)">
+    <rect width="1990" height="86" rx="16" class="band"/>
+    <text x="22" y="30" class="lane">PROVIDER CAPABILITY EVIDENCE · 执行限制不是模型名，而是“官方文档 ∩ 当前第三方表面”的严格交集</text>
+    <text x="22" y="61" class="body">模型/endpoint · Omni 模态 · 图片/视频/音频计数 · MIME/codec/container · bytes/duration/dimensions/FPS · retrieval time · schema hash</text>
+    <text x="1965" y="61" text-anchor="end" class="muted">P1 / V2 / P2 共同锁定</text>
+  </g>
+  <path d="M1055 900 V850" class="arrow-external"/>
+  <path d="M1875 900 V850" class="arrow-external"/>
+
+  <text x="60" y="1044" class="lane">C · COMPILE, EXTERNAL GENERATION &amp; SELECTIVE REVISION</text>
+
+  <g transform="translate(1700 1065)">
+    <rect width="350" height="205" rx="18" class="card-core"/>
+    <text x="22" y="31" class="stage">10 · P2 FINAL COMPILE</text>
+    <text x="22" y="64" class="title">全能参考提示词包</text>
+    <text x="22" y="89" class="skill">ai-video-omni-reference-prompt-director</text>
+    <text x="22" y="120" class="label">输入</text><text x="70" y="120" class="body">完整 Canon + P1/K2/V2</text>
+    <text x="22" y="149" class="label">输出</text><text x="70" y="149" class="body">IR / bindings / payload / locks</text>
+    <text x="22" y="178" class="muted">2.5-first / 2.0-aware · Directing + 全局影调</text>
+  </g>
+
+  <g transform="translate(1290 1065)">
+    <rect width="350" height="205" rx="18" class="card-external"/>
+    <text x="22" y="31" class="stage">EXTERNAL · VIDEO MODEL</text>
+    <text x="22" y="64" class="title">第三方 Omni 生成</text>
+    <text x="22" y="89" class="skill">Seedance / Kling provider surface</text>
+    <text x="22" y="120" class="label">输入</text><text x="70" y="120" class="body">P2 payload + 全部绑定参考</text>
+    <text x="22" y="149" class="label">输出</text><text x="70" y="149" class="body">生成视频候选</text>
+    <text x="22" y="178" class="muted">本仓库不提交付费任务；人工或外部 API 执行</text>
+  </g>
+
+  <g transform="translate(880 1065)">
+    <rect width="350" height="205" rx="18" class="card-review"/>
+    <text x="22" y="31" class="stage">11 · USER REVIEW</text>
+    <text x="22" y="64" class="title">用户审片与归因</text>
+    <text x="22" y="89" class="skill">human creative authority</text>
+    <text x="22" y="120" class="label">输入</text><text x="70" y="120" class="body">候选视频 + 冻结请求包</text>
+    <text x="22" y="149" class="label">输出</text><text x="70" y="149" class="body">接受 / 精确 defect owner</text>
+    <text x="22" y="178" class="muted">不另设独立 QC；发现问题即返回唯一 owner</text>
+  </g>
+
+  <g transform="translate(470 1065)">
+    <rect width="350" height="205" rx="18" class="card"/>
+    <text x="22" y="31" class="stage">ACCEPTED · SYSTEM EXIT</text>
+    <text x="22" y="64" class="title">用户接受画面</text>
+    <text x="22" y="89" class="skill">outside this repository</text>
+    <text x="22" y="120" class="body">冻结接受结果与对应请求包</text>
+    <text x="22" y="149" class="body">后续制作属于仓库外部范围</text>
+    <text x="22" y="178" class="muted">生产系统终点：可接受画面与可追溯请求包</text>
+  </g>
+
+  <g transform="translate(60 1065)">
+    <rect width="350" height="205" rx="18" class="card-alert"/>
+    <text x="22" y="31" class="stage">REVISION ROUTER</text>
+    <text x="22" y="64" class="title">唯一 Owner 精确返工</text>
+    <text x="22" y="95" class="body">Shot · Asset · Look · Storyboard</text>
+    <text x="22" y="124" class="body">Keyframe · Previs · Prompt/Binding</text>
+    <text x="22" y="153" class="label">原则</text><text x="70" y="153" class="body">只重建 owned artifact</text>
+    <text x="22" y="180" class="muted">再失效其准确下游；Unit 变化返回 P1</text>
+  </g>
+
+  <path d="M1875 850 V1065" class="arrow-gold"/>
+  <path d="M1700 1167 H1640" class="arrow-external"/>
+  <path d="M1290 1167 H1230" class="arrow-external"/>
+  <path d="M880 1145 H820" class="arrow-gold"/>
+  <text x="850" y="1134" text-anchor="middle" class="muted">接受</text>
+  <path d="M1055 1270 V1302 H235 V1270" class="arrow-return"/>
+  <text x="650" y="1295" class="muted">不接受：与冻结请求包比较后归因</text>
+
+  <rect x="60" y="1330" width="1990" height="125" rx="18" class="band"/>
+  <text x="82" y="1361" class="lane">SELECTIVE INVALIDATION LOOP · 选择性失效循环</text>
+  <text x="82" y="1392" class="body">脚本意图 → Shot Director　|　身份/产品/材质/场景 → Canon Owner　|　全局影调 → Look Lock　|　构图 → Storyboard</text>
+  <text x="82" y="1422" class="body">静态状态/连续性 → Keyframe　|　镜运/动作/物理/节奏 → Previs　|　语义/绑定/预算/序列化 → Prompt Director</text>
+  <path d="M235 1330 C235 1310 35 1310 35 417 C35 380 45 370 60 370" class="arrow-return"/>
+  <path d="M650 1330 C650 1312 650 1295 650 1270" class="arrow-return"/>
+  <path d="M1055 1330 C1055 1310 1055 1290 1055 1270" class="arrow-return"/>
+  <path d="M1465 1330 C1465 1310 1875 1310 1875 1270" class="arrow-return"/>
+
+  <rect x="60" y="1490" width="2080" height="118" rx="18" class="band"/>
+  <text x="82" y="1520" class="lane">TOOL RAIL · 使用工具与边界</text>
+  <circle cx="100" cy="1562" r="6" class="dot"/><text x="118" y="1568" class="body">Codex + 15 Skills</text>
+  <circle cx="410" cy="1562" r="6" class="dot"/><text x="428" y="1568" class="body">Image Generation</text>
+  <circle cx="720" cy="1562" r="6" class="dot"/><text x="738" y="1568" class="body">Python 3.11/3.12 + Pillow 11.3</text>
+  <circle cx="1160" cy="1562" r="6" class="dot"/><text x="1178" y="1568" class="body">FFmpeg / ffprobe / libx264</text>
+  <circle cx="1545" cy="1562" r="6" class="dot"/><text x="1563" y="1568" class="body">Prevzi / Blender / 2D-3D Previs</text>
+  <circle cx="1950" cy="1562" r="6" class="dot"/><text x="1968" y="1568" class="body">第三方 Omni 平台</text>
+  <text x="82" y="1594" class="muted">禁止替代路线：T2V · 单图 I2V · 首尾帧 · endpoint-frame interpolation　｜　仓库终点：P2；外部运行闭环：用户接受画面；不含音乐、剪辑、调色、独立 QC</text>
+
+  <text x="60" y="1640" class="muted">Repository: qiuranke99/codex-skills · Source contracts are hash-bound and stage-owned.</text>
+</svg>

@@ -1,0 +1,51 @@
+{
+  "schema_version": "1.0.0",
+  "expected_distribution": {
+    "skill_count": 15,
+    "core_skill_count": 13,
+    "optional_skill_count": 2
+  },
+  "python": {
+    "tested_major_minor": [
+      "3.11",
+      "3.12"
+    ],
+    "packages": {
+      "Pillow": "11.3.0"
+    }
+  },
+  "executables": [
+    {
+      "name": "ffmpeg",
+      "required": true
+    },
+    {
+      "name": "ffprobe",
+      "required": true
+    }
+  ],
+  "ffmpeg_required_encoders": [
+    "libx264"
+  ],
+  "portable_source_extensions": [
+    ".docx",
+    ".txt",
+    ".md",
+    ".csv",
+    ".tsv"
+  ],
+  "manual_gates": [
+    {
+      "id": "codex_image_generation",
+      "description": "Codex 中可以调用图像生成，并能读取项目的本地参考图片。"
+    },
+    {
+      "id": "control_previs_path",
+      "description": "已确定 V2 Control Previs 的制作路径，例如 Prevzi、Blender 或等价的控制视频工具。"
+    },
+    {
+      "id": "provider_platform_access",
+      "description": "可以访问目标第三方视频平台，并能取得当次运行所需的真实能力信息。"
+    }
+  ]
+}

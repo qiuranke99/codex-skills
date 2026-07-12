@@ -4,6 +4,7 @@
 from __future__ import annotations
 
 import argparse
+import hashlib
 import json
 import os
 import re
@@ -33,6 +34,23 @@ OWNER_SKILLS = (
 )
 
 PUBLISH_SURFACE = SKILLS + OWNER_SKILLS
+DISCOVERY_COPY_MARKER = ".high-control-ai-tvc-owner.json"
+
+
+def _skill_tree_digest(root: Path) -> str:
+    digest = hashlib.sha256()
+    for path in sorted(root.rglob("*"), key=lambda value: value.relative_to(root).as_posix()):
+        relative = path.relative_to(root).as_posix()
+        if relative == DISCOVERY_COPY_MARKER:
+            continue
+        if path.is_symlink():
+            digest.update(b"L\0" + relative.encode("utf-8") + b"\0" + os.readlink(path).encode("utf-8"))
+        elif path.is_file():
+            digest.update(b"F\0" + relative.encode("utf-8") + b"\0")
+            with path.open("rb") as handle:
+                for chunk in iter(lambda: handle.read(1024 * 1024), b""):
+                    digest.update(chunk)
+    return digest.hexdigest()
 
 OWNER_EXPORT_CONTRACTS = {
     "character-casting-lock-board": {
@@ -303,7 +321,12 @@ def _validate_owner_export_surface(root: Path, skill: str, errors: list[str]) ->
             errors.append(f"{skill}: fixed export profile marker missing: {marker}")
 
 
-def validate_suite(root: Path, run_tests: bool = True, require_discovery: bool = False) -> list[str]:
+def validate_suite(
+    root: Path,
+    run_tests: bool = True,
+    require_discovery: bool = False,
+    discovery_root: Path | None = None,
+) -> list[str]:
     root = root.resolve()
     errors: list[str] = []
     for skill in PUBLISH_SURFACE:
@@ -418,14 +441,26 @@ def validate_suite(root: Path, run_tests: bool = True, require_discovery: bool =
                 errors.append(f"{label} self-test failed (exit {code}): {output[-1500:].strip()}")
 
     if require_discovery:
-        discovery_root = Path.home() / ".codex" / "skills"
+        discovery_root = (discovery_root or (Path.home() / ".agents" / "skills")).expanduser().absolute()
         for skill in PUBLISH_SURFACE:
             link = discovery_root / skill
             expected = (root / skill).resolve()
-            if not link.is_symlink():
-                errors.append(f"{skill}: discovery symlink missing")
-            elif link.resolve() != expected:
-                errors.append(f"{skill}: discovery symlink targets {link.resolve()}, expected {expected}")
+            if not os.path.lexists(str(link)):
+                errors.append(f"{skill}: discovery entry missing under {discovery_root}")
+            elif link.resolve() == expected:
+                continue  # POSIX symlink or Windows junction to this checkout.
+            elif link.is_dir():
+                marker_path = link / DISCOVERY_COPY_MARKER
+                try:
+                    marker = json.loads(marker_path.read_text(encoding="utf-8"))
+                except (OSError, UnicodeDecodeError, json.JSONDecodeError):
+                    marker = None
+                if not isinstance(marker, dict) or marker.get("skill_name") != skill:
+                    errors.append(f"{skill}: discovery copy lacks the suite ownership marker")
+                elif _skill_tree_digest(link) != _skill_tree_digest(expected):
+                    errors.append(f"{skill}: managed discovery copy differs from {expected}")
+            else:
+                errors.append(f"{skill}: unsupported discovery entry at {link}")
 
     return errors
 
@@ -436,9 +471,19 @@ def main() -> int:
     parser.add_argument("--suite-root", type=Path, default=default_root)
     parser.add_argument("--skip-tests", action="store_true")
     parser.add_argument("--require-discovery", action="store_true")
+    parser.add_argument(
+        "--discovery-root",
+        type=Path,
+        help="discovery root to verify; defaults to ~/.agents/skills when --require-discovery is set",
+    )
     args = parser.parse_args()
     try:
-        errors = validate_suite(args.suite_root, not args.skip_tests, args.require_discovery)
+        errors = validate_suite(
+            args.suite_root,
+            not args.skip_tests,
+            args.require_discovery,
+            args.discovery_root,
+        )
     except Exception as exc:  # total-function CLI guard for damaged repositories
         print(f"ERROR: suite validation could not complete safely: {type(exc).__name__}: {exc}")
         return 2

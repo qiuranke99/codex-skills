@@ -1,0 +1,138 @@
+name: Validate distribution
+
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  cross-platform:
+    name: ${{ matrix.os }} / Python ${{ matrix.python }}
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 30
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest, windows-latest]
+        python: ["3.11", "3.12"]
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python }}
+          cache: pip
+          cache-dependency-path: |
+            ai-video-shot-script-director/requirements.txt
+            ai-video-omni-reference-prompt-director/requirements.txt
+
+      - name: Install pinned Python dependency
+        run: python -m pip install --disable-pip-version-check Pillow==11.3.0
+
+      - name: Install FFmpeg on Ubuntu
+        if: runner.os == 'Linux'
+        run: sudo apt-get update && sudo apt-get install -y ffmpeg
+
+      - name: Install FFmpeg on macOS
+        if: runner.os == 'macOS'
+        run: brew list ffmpeg >/dev/null 2>&1 || brew install ffmpeg
+
+      - name: Install FFmpeg on Windows
+        if: runner.os == 'Windows'
+        shell: pwsh
+        run: choco install ffmpeg --no-progress -y
+
+      - name: Validate distribution and Python syntax
+        shell: bash
+        run: |
+          python high-control-ai-tvc/tools/validate_distribution.py
+          python high-control-ai-tvc/tools/preflight.py --repository-only --format json
+          python -m compileall -q high-control-ai-tvc/tools
+
+      - name: Exercise guarded install lifecycle in paths with spaces
+        run: python high-control-ai-tvc/tools/test_install_lifecycle.py
+
+      - name: Run six-Skill integration and 13-package contract suite
+        run: python ai-video-omni-reference-prompt-director/scripts/validate_ai_video_suite.py --suite-root .
+
+      - name: Parse PowerShell scripts
+        if: runner.os == 'Windows'
+        shell: pwsh
+        run: |
+          $errors = @()
+          Get-ChildItem high-control-ai-tvc/tools -Filter *.ps1 | ForEach-Object {
+            $tokens = $null
+            $parseErrors = $null
+            [System.Management.Automation.Language.Parser]::ParseFile($_.FullName, [ref]$tokens, [ref]$parseErrors) | Out-Null
+            $errors += $parseErrors
+          }
+          if ($errors.Count -gt 0) {
+            $errors | Format-List | Out-String | Write-Error
+            exit 1
+          }
+
+      - name: Validate POSIX shell syntax
+        if: runner.os != 'Windows'
+        shell: bash
+        run: bash -n high-control-ai-tvc/tools/*.sh
+
+      - name: Exercise POSIX wrappers
+        if: runner.os != 'Windows'
+        shell: bash
+        run: |
+          export AI_TVC_PYTHON="$(command -v python)"
+          high-control-ai-tvc/tools/preflight.sh --repository-only --format json
+          target="$RUNNER_TEMP/Codex Skills"
+          high-control-ai-tvc/tools/install.sh install --target "$target" --mode symlink --format json
+          high-control-ai-tvc/tools/install.sh status --target "$target" --format json
+          high-control-ai-tvc/tools/install.sh audit --target "$target" --automatic-only --format json
+          python ai-video-omni-reference-prompt-director/scripts/validate_ai_video_suite.py --suite-root . --skip-tests --require-discovery --discovery-root "$target"
+          project="$RUNNER_TEMP/Client Project"
+          high-control-ai-tvc/tools/new-project.sh "$project" --name "Client Project" --format json
+          test -d "$project/01_sources"
+          test -d "$project/outputs"
+          test ! -e "$project/00_project_canon/PROJECT_CANON_MANIFEST.json"
+          python -c "import json, pathlib; assert json.loads((pathlib.Path(r'$project') / '.ai-tvc-project.json').read_text())['project_name'] == 'Client Project'"
+          high-control-ai-tvc/tools/install.sh uninstall --target "$target" --format json
+
+      - name: Exercise Windows PowerShell wrappers
+        if: runner.os == 'Windows'
+        shell: pwsh
+        run: |
+          $env:AI_TVC_PYTHON = (Get-Command python).Source
+          .\high-control-ai-tvc\tools\preflight.ps1 -RepositoryOnly -Format json
+          $target = Join-Path $env:RUNNER_TEMP 'Codex Skills'
+          .\high-control-ai-tvc\tools\install.ps1 install -Target $target -Mode junction -Format json
+          .\high-control-ai-tvc\tools\install.ps1 status -Target $target -Format json
+          .\high-control-ai-tvc\tools\install.ps1 audit -Target $target -AutomaticOnly -Format json
+          python .\ai-video-omni-reference-prompt-director\scripts\validate_ai_video_suite.py --suite-root . --skip-tests --require-discovery --discovery-root $target
+          $project = Join-Path $env:RUNNER_TEMP 'Client Project'
+          .\high-control-ai-tvc\tools\new-project.ps1 -Destination $project -Name 'Client Project' -Format json
+          if (-not (Test-Path -LiteralPath (Join-Path $project '01_sources') -PathType Container)) { throw 'missing 01_sources' }
+          if (-not (Test-Path -LiteralPath (Join-Path $project 'outputs') -PathType Container)) { throw 'missing outputs' }
+          if (Test-Path -LiteralPath (Join-Path $project '00_project_canon\PROJECT_CANON_MANIFEST.json')) { throw 'project helper fabricated Canon' }
+          $projectMarker = Get-Content -LiteralPath (Join-Path $project '.ai-tvc-project.json') -Raw | ConvertFrom-Json
+          if ($projectMarker.project_name -ne 'Client Project') { throw 'project name was not preserved' }
+          .\high-control-ai-tvc\tools\install.ps1 uninstall -Target $target -Format json
+
+      - name: Exercise POSIX runtime setup wrapper
+        if: runner.os != 'Windows' && matrix.python == '3.11'
+        shell: bash
+        run: |
+          export AI_TVC_PYTHON="$(command -v python)"
+          runtime="$RUNNER_TEMP/TVC Runtime"
+          high-control-ai-tvc/tools/setup-runtime.sh --venv "$runtime" --format json
+          "$runtime/bin/python" -c "from PIL import __version__; assert __version__ == '11.3.0'"
+
+      - name: Exercise Windows runtime setup wrapper
+        if: runner.os == 'Windows' && matrix.python == '3.11'
+        shell: pwsh
+        run: |
+          $env:AI_TVC_PYTHON = (Get-Command python).Source
+          $runtime = Join-Path $env:RUNNER_TEMP 'TVC Runtime'
+          .\high-control-ai-tvc\tools\setup-runtime.ps1 -Venv $runtime -Format json
+          & (Join-Path $runtime 'Scripts\python.exe') -c "from PIL import __version__; assert __version__ == '11.3.0'"

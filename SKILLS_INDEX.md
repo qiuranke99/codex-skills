@@ -4,15 +4,33 @@ Migration date: 2026-05-27
 
 Last updated: 2026-07-12
 
-Canonical root: `D:\AI\skill`
+Windows canonical checkout used by the existing workstation: `D:\AI\skill`
 
-Codex discovery root: `C:\Users\Administrator\.codex\skills`
+Current recommended user discovery root: `%USERPROFILE%\.agents\skills`
+
+Legacy workstation discovery snapshot: `C:\Users\Administrator\.codex\skills`
+
+Do not expose the same Skill name in both discovery roots.
+
+## High-Control AI TVC Production System
+
+The 15 maintained Skill directories below form one installable distribution:
+
+- 13 core production Skills: six workflow owners plus seven Canon Asset Owners;
+- 2 optional cinematic exploration Skills;
+- one unique top-level directory per Skill, with no duplicate copies.
+
+The complete SOP, SVG, installation tools, machine manifest and workstation
+preflight live under [`high-control-ai-tvc/`](high-control-ai-tvc/README.md).
+The production endpoint is a provider-ready P2 package. Actual paid video
+generation, music, final editing, color mastering and independent output QC are
+outside the distribution.
 
 ## Maintained Skills
 
 | Skill | Target path | Purpose | Original path | Status |
 | --- | --- | --- | --- | --- |
-| `character-final-lock-board` | `D:\AI\skill\character-final-lock-board` | Request a horizontal 16:9 final character board with nonblocking built-in dimensions, retain `high_angle_evidence: required | optional | off`, publish the complete prompt pair, and optionally export the approved terminal identity/wardrobe authority through the fixed-owner AI-video Project Canon bridge. | `D:\AI视觉工作室\.agents\skills\character-final-lock-board` | Active |
+| `character-final-lock-board` | `D:\AI\skill\character-final-lock-board` | Request a horizontal 16:9 final character board with nonblocking built-in dimensions, retain `high_angle_evidence: required / optional / off`, publish the complete prompt pair, and optionally export the approved terminal identity/wardrobe authority through the fixed-owner AI-video Project Canon bridge. | `D:\AI视觉工作室\.agents\skills\character-final-lock-board` | Active |
 | `character-casting-lock-board` | `D:\AI\skill\character-casting-lock-board` | Request horizontal 16:9 text-free casting boards with complete prompt pairs; casting stays pre-Canon unless explicitly selected as the terminal character authority, after which the fixed-owner AI-video Project Canon bridge may export it. | `D:\AI视觉工作室\.agents\skills\character-casting-lock-board` | Active |
 | `single-face-character-lock-board` | `D:\AI\skill\single-face-character-lock-board` | Request a horizontal 16:9 one-face topology board, publish the complete topology-preserving prompt pair, and optionally export the approved terminal identity/wardrobe authority through the fixed-owner AI-video Project Canon bridge. | `D:\AI视觉工作室\.agents\skills\single-face-character-lock-board` | Active |
 | `cinematic_shot_image_explorer` | `D:\AI\skill\cinematic_shot_image_explorer` | Turn ideas, rough prompts, reference images, products, characters, scenes, or visual directions into exactly 10 cinematic film-still image prompts and 10 generated images. | `D:\AI视觉工作室\.agents\skills\cinematic_shot_image_explorer` | Active |
@@ -28,9 +46,11 @@ Codex discovery root: `C:\Users\Administrator\.codex\skills`
 | `ai-video-keyframe-continuity-pack` | `D:\AI\skill\ai-video-keyframe-continuity-pack` | Create K1 per-shot Omni-reference anchors and continuity ledgers, then an immutable P1-bound K2 boundary supplement; never endpoint-frame controls. | Created in place | Active |
 | `ai-video-omni-reference-prompt-director` | `D:\AI\skill\ai-video-omni-reference-prompt-director` | Preflight and compile complete all-reference packages with Seedance 2.5-first semantics, capability-verified Seedance 2.0/provider renders, exact asset bindings, payloads, locks, and owner-routed selective revisions. | Created in place | Active |
 
-## Codex Discovery Entries
+## Legacy workstation discovery snapshot
 
-As of 2026-07-10, this workspace exposes the following user-maintained Codex discovery entries.
+As of 2026-07-10, the existing Windows workstation exposed the following
+user-maintained entries through the legacy root. This is historical machine
+state, not the current cross-platform installation contract.
 
 | Codex entry | Junction target |
 | --- | --- |
@@ -44,9 +64,11 @@ As of 2026-07-10, this workspace exposes the following user-maintained Codex dis
 | `C:\Users\Administrator\.codex\skills\packaging-product-identity-label-lock-board` | `D:\AI\skill\packaging-product-identity-label-lock-board` |
 | `C:\Users\Administrator\.codex\skills\material-sensitive-product-master-asset-board` | `D:\AI\skill\material-sensitive-product-master-asset-board` |
 
-### Windows installation map for newly published skills
+### Historical pending entries for the six newly published Skills
 
-These repository targets are ready for the next Windows sync. They are not claimed as live junctions in the 2026-07-10 discovery snapshot above.
+These targets were not live in the 2026-07-10 snapshot. Use the guarded
+installer in `high-control-ai-tvc/tools/` to audit, explicitly adopt exact
+existing links, install or migrate; do not create duplicate entries by hand.
 
 | Pending Codex entry | Repository target |
 | --- | --- |
@@ -69,8 +91,13 @@ The following classes are intentionally excluded from this archive:
 
 ## Notes
 
-- `D:\AI\skill` is the canonical maintenance location for these user-created skills.
-- `C:\Users\Administrator\.codex\skills` keeps only the Codex discovery entries for these skills, as junctions pointing back to `D:\AI\skill`.
+- `D:\AI\skill` is the canonical maintenance location on the existing Windows
+  workstation. A macOS checkout may live at any stable local path.
+- New cross-platform installations use `%USERPROFILE%\.agents\skills` or
+  `$HOME/.agents/skills` by default. Existing `.codex/skills` entries are legacy
+  and must be audited before migration; never keep two live copies of one name.
+- The Skill directories must remain siblings because the high-control TVC
+  workflow uses intentional cross-Skill imports.
 - High-angle character continuity is maintained inside `character-final-lock-board` as the `high_angle_evidence` mode; the former standalone package was retired on 2026-07-10.
 - Previous entries and obsolete duplicate sources were moved to `D:\AI\skill-migration-backups\20260527-112423`.
 - Do not add loose skill files directly under `D:\AI\skill`; each skill must live in its own folder containing `SKILL.md`.

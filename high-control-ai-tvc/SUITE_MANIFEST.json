@@ -1,0 +1,116 @@
+{
+  "schema_version": "high-control-ai-tvc-suite.v1",
+  "suite_id": "high-control-ai-tvc-production-system",
+  "suite_name": "High-Control AI TVC Production System",
+  "repository": "qiuranke99/codex-skills",
+  "subsystem_path": "high-control-ai-tvc",
+  "source_repository": "qiuranke99/codex-skills",
+  "source_commit": "cd72953b283b52b83e144e3e82d40e59d3275bdd",
+  "production_endpoint": "provider_ready_p2_package",
+  "generation_mode": "omni_reference_to_video",
+  "forbidden_generation_routes": [
+    "text_to_video",
+    "standalone_single_image_to_video",
+    "first_last_frame",
+    "endpoint_frame_interpolation"
+  ],
+  "skills": [
+    {
+      "name": "ai-video-shot-script-director",
+      "tier": "core",
+      "origin_group": "new_sop",
+      "stage": "intake_and_professional_shot_contract"
+    },
+    {
+      "name": "ai-video-global-look-lock",
+      "tier": "core",
+      "origin_group": "new_sop",
+      "stage": "global_look_lock"
+    },
+    {
+      "name": "ai-video-modular-storyboard",
+      "tier": "core",
+      "origin_group": "new_sop",
+      "stage": "modular_storyboard"
+    },
+    {
+      "name": "ai-video-timed-animatic-previs-director",
+      "tier": "core",
+      "origin_group": "new_sop",
+      "stage": "timing_animatic_and_control_previs"
+    },
+    {
+      "name": "ai-video-keyframe-continuity-pack",
+      "tier": "core",
+      "origin_group": "new_sop",
+      "stage": "keyframe_continuity"
+    },
+    {
+      "name": "ai-video-omni-reference-prompt-director",
+      "tier": "core",
+      "origin_group": "new_sop",
+      "stage": "provider_preflight_and_prompt_compile"
+    },
+    {
+      "name": "character-casting-lock-board",
+      "tier": "core",
+      "origin_group": "original_asset_owner",
+      "stage": "character_canon"
+    },
+    {
+      "name": "character-final-lock-board",
+      "tier": "core",
+      "origin_group": "original_asset_owner",
+      "stage": "character_canon"
+    },
+    {
+      "name": "single-face-character-lock-board",
+      "tier": "core",
+      "origin_group": "original_asset_owner",
+      "stage": "character_canon"
+    },
+    {
+      "name": "multi-angle-product-identity-lock-board",
+      "tier": "core",
+      "origin_group": "original_asset_owner",
+      "stage": "product_canon"
+    },
+    {
+      "name": "packaging-product-identity-label-lock-board",
+      "tier": "core",
+      "origin_group": "original_asset_owner",
+      "stage": "product_and_label_canon"
+    },
+    {
+      "name": "material-sensitive-product-master-asset-board",
+      "tier": "core",
+      "origin_group": "original_asset_owner",
+      "stage": "material_sensitive_product_canon"
+    },
+    {
+      "name": "scene-canon-asset-pack",
+      "tier": "core",
+      "origin_group": "original_asset_owner",
+      "stage": "scene_canon"
+    },
+    {
+      "name": "cinematic_shot_image_explorer",
+      "tier": "optional",
+      "origin_group": "original_exploration",
+      "stage": "preproduction_visual_exploration"
+    },
+    {
+      "name": "cinematic_world_builder",
+      "tier": "optional",
+      "origin_group": "original_exploration",
+      "stage": "preproduction_world_exploration"
+    }
+  ],
+  "excluded_capabilities": [
+    "actual_video_provider_submission",
+    "music_and_soundtrack_creation",
+    "final_editing",
+    "color_mastering",
+    "independent_video_output_qc"
+  ]
+}

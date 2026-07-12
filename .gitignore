@@ -12,3 +12,19 @@
 # OS/editor files.
 Thumbs.db
 .DS_Store
+
+# Public-repository safety: never commit runtime secrets or customer projects.
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+00_project_canon/
+outputs/
+local-projects/
+client-projects/
+
+# High-Control AI TVC local runtime.
+high-control-ai-tvc/.venv/
+high-control-ai-tvc/validation-report.json
+high-control-ai-tvc/**/*.tmp
