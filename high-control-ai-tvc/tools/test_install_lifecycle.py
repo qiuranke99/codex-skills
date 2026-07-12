@@ -47,8 +47,12 @@ def main() -> int:
             raise AssertionError("fresh managed copy is not ready")
 
         changed_file = target / first_name / "SKILL.md"
-        original = changed_file.read_text(encoding="utf-8")
-        changed_file.write_text(original + "\nlocal edit that must be preserved\n", encoding="utf-8")
+        # Preserve the exact installed bytes.  Reading and rewriting through
+        # text mode would silently convert LF to CRLF on Windows and make the
+        # restored copy look locally modified even though its content is the
+        # same to a human reviewer.
+        original = changed_file.read_bytes()
+        changed_file.write_bytes(original + b"\nlocal edit that must be preserved\n")
         try:
             uninstall(REPO_ROOT, target, "all")
         except InstallSafetyError:
@@ -57,7 +61,7 @@ def main() -> int:
             raise AssertionError("uninstall deleted a changed managed copy")
         if not changed_file.is_file():
             raise AssertionError("changed managed copy was not preserved")
-        changed_file.write_text(original, encoding="utf-8")
+        changed_file.write_bytes(original)
 
         removed = uninstall(REPO_ROOT, target, "all")
         if len(removed["removed"]) != len(skills):

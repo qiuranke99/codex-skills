@@ -114,7 +114,7 @@ def create_project(destination: Path, project_name: str) -> Dict[str, Any]:
 
     readme = destination / "README.md"
     if not readme.exists():
-        readme.write_text(_project_readme(project_name), encoding="utf-8")
+        readme.write_bytes(_project_readme(project_name).encode("utf-8"))
         created.append("README.md")
     elif not readme.is_file():
         raise RuntimeError(f"project README collision: {readme}")
@@ -131,7 +131,9 @@ def create_project(destination: Path, project_name: str) -> Dict[str, Any]:
             "canon_initialized": False,
             "note": "This marker is not Project Canon and carries no production authority.",
         }
-        marker_path.write_text(json.dumps(marker, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
+        marker_path.write_bytes(
+            (json.dumps(marker, ensure_ascii=False, indent=2) + "\n").encode("utf-8")
+        )
         created.append(MARKER_NAME)
     else:
         existing.append(MARKER_NAME)
