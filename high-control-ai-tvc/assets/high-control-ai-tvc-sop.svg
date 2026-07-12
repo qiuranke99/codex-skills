@@ -222,12 +222,12 @@
 
   <g transform="translate(470 1065)">
     <rect width="350" height="205" rx="18" class="card"/>
-    <text x="22" y="31" class="stage">ACCEPTED · SYSTEM EXIT</text>
+    <text x="22" y="31" class="stage">ACCEPTED · EXTERNAL LOOP EXIT</text>
     <text x="22" y="64" class="title">用户接受画面</text>
     <text x="22" y="89" class="skill">outside this repository</text>
     <text x="22" y="120" class="body">冻结接受结果与对应请求包</text>
     <text x="22" y="149" class="body">后续制作属于仓库外部范围</text>
-    <text x="22" y="178" class="muted">生产系统终点：可接受画面与可追溯请求包</text>
+    <text x="22" y="178" class="muted">外部运行闭环终点：可接受画面与可追溯请求包</text>
   </g>
 
   <g transform="translate(60 1065)">

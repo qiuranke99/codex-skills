@@ -101,6 +101,14 @@ def safe_file(root: Path, relative: Any, label: str, errors: list[str]) -> Path 
     if not isinstance(relative, str) or not relative:
         errors.append(f"{label}: file path missing")
         return None
+    if "\\" in relative or relative.startswith("/") or (
+        len(relative) > 1 and relative[0].isalpha() and relative[1] == ":"
+    ):
+        errors.append(f"{label}: file path must use portable POSIX package-relative syntax")
+        return None
+    if any(part == ".." for part in relative.split("/")):
+        errors.append(f"{label}: file path escapes package root")
+        return None
     candidate = (root / relative).resolve()
     try:
         candidate.relative_to(root.resolve())

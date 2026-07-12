@@ -656,6 +656,45 @@ def main() -> int:
 
     expect_attack("keyframe path traversal", traversal, "escapes package root")
 
+    def normalized_inside_traversal(_project: Path, package: Path) -> None:
+        def mutate(value: dict[str, Any]) -> None:
+            frame = value["shot_records"][0]["keyframes"][0]
+            frame["file_path"] = "01_keyframes/../" + frame["file_path"]
+        mutate_manifest(package, mutate)
+
+    expect_attack(
+        "keyframe root-contained traversal",
+        normalized_inside_traversal,
+        "escapes package root",
+    )
+
+    for attack_name, nonportable_path in (
+        ("keyframe backslash path", "01_keyframes\\SHT_001\\frame.png"),
+        ("keyframe drive-prefixed path", "C:\\frame.png"),
+        ("keyframe absolute path", "/absolute/frame.png"),
+    ):
+        expect_attack(
+            attack_name,
+            lambda _project, package, rel=nonportable_path: mutate_manifest(
+                package,
+                lambda value: value["shot_records"][0]["keyframes"][0].__setitem__(
+                    "file_path", rel
+                ),
+            ),
+            "portable POSIX package-relative syntax",
+        )
+
+    expect_attack(
+        "keyframe prompt backslash path",
+        lambda _project, package: mutate_manifest(
+            package,
+            lambda value: value["shot_records"][0]["keyframes"][0].__setitem__(
+                "prompt_path", "01_keyframes\\SHT_001\\prompt.md"
+            ),
+        ),
+        "portable POSIX package-relative syntax",
+    )
+
     def wrong_frame_dependencies(_project: Path, package: Path) -> None:
         def mutate(value: dict[str, Any]) -> None:
             artifact = value["shot_records"][0]["keyframes"][0]["artifact"]
@@ -759,7 +798,7 @@ def main() -> int:
         promote_storyboard=True,
     )
 
-    print("OK: real-authority K1/P1/K2 integration, source-bound label-heavy promotion, and 18 adversarial Keyframe cases passed")
+    print("OK: real-authority K1/P1/K2 integration, source-bound label-heavy promotion, and adversarial Keyframe cases passed")
     return 0
 
 

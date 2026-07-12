@@ -57,8 +57,8 @@ USER_NOTES: <USER_NOTES>
 2. 使用唯一的 <PROJECT_ROOT>/00_project_canon/PROJECT_CANON_MANIFEST.json。不得建立第二本 Canon，也不得让生产 artifact 反向依赖 Canon。
 3. 不得因为脚本缺少专业机位、运镜、blocking、continuity、产品使用逻辑或功能说明而停工。保留源创意模式，自主推断普通导演决策并写入 inference ledger；写意品牌片不得被强改成功能演示片。
 4. 不得发明产品功效、配方、测试数据、认证、法规 claim、精确包装 copy 或未被证据支持的机械结构。只隔离真正不可替代的 blocker，继续完成所有不受影响的工作。
-5. 依次执行 0–11 完整节点：
-   Intake → Shot Contract → Canon Assets → Global Look → Storyboard Structure → Storyboard Final → V1 → K1 → P1 → K2 → V2 → P2 → User Review / sole-owner return loop。Storyboard Structure 与 Final 是同一阶段的两个审批子门；User Review 不是独立 QC。
+5. 依次执行 0–10 完整仓库生产节点：
+   Intake → Shot Contract → Canon Assets → Global Look → Storyboard Structure → Storyboard Final → V1 → K1 → P1 → K2 → V2 → P2。Storyboard Structure 与 Final 是同一阶段的两个审批子门。节点 11 User Review 只在我已于仓库外部完成第三方 Omni 生成并提供候选视频后启用；它属于外部返工回路，不是独立 QC，也不是本次 P2 交付前置条件。
 6. 故事板必须保持 script_shot_count = independent_storyboard_frame_count = rendered_valid_cell_count = N。每镜独立生成；多宫格只用于人审，绝不作为模型输入。
 7. 全局影调必须是三层锁：GLOBAL_LOOK_PROMPT_FULL + 独立 Look Reference Set + 下游继承。每个最终故事板、关键帧、generation-unit prompt 和 repair prompt逐字继承 Global Directing、Look Core、assigned Look State 和 legal Shot Delta。V1/V2 保持中性，不承担最终影调。
 8. 只允许 omni_reference_to_video / all-reference / multimodal reference-to-video。禁止 text-to-video、classic standalone single-image-to-video、first/last/start/end/endpoint-frame 和 interpolation。普通图片作为 Omni 并行参考是允许且必要的。

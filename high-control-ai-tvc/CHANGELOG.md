@@ -17,6 +17,11 @@
   legacy console codec 在报告中文路径或合同术语时中断；
 - CI 使用 Node 24 代际的 checkout/setup-python Action，移除已弃用
   Node 20 Action runtime；
+- 流程图明确区分仓库生产终点 P2 与仓库外部的用户审片闭环终点；
+- Keyframe/Boundary 文件定位器强制 portable POSIX project-relative 语法，
+  拒绝反斜杠、盘符、绝对路径与 traversal；
+- Windows CI 直接在 Windows PowerShell 5.1 下验证 copy-mode 安装生命周期
+  与 pinned runtime setup；
 - 固定来源提交
   `cd72953b283b52b83e144e3e82d40e59d3275bdd`；
 - 保持实际视频 API 提交、音乐、剪辑、调色和独立 QC 在系统范围之外。

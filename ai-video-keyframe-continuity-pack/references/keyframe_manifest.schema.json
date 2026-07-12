@@ -49,6 +49,10 @@
     "invalidation_report_path": {"const": "04_reports/INVALIDATION_REPORT.md"}
   },
   "$defs": {
+    "portablePath": {
+      "type": "string", "minLength": 1,
+      "not": {"pattern": "(^/|^[A-Za-z]:|\\\\|(^|/)\\.\\.(/|$))"}
+    },
     "dependency": {
       "type": "object", "additionalProperties": false,
       "required": ["artifact_id", "owner_skill", "version", "sha256"],
@@ -119,9 +123,9 @@
         "frame_role": {"enum": ["primary_anchor", "action_state", "material_state", "boundary_handoff"]},
         "usage_mode": {"const": "omni_reference_anchor"},
         "source_mode": {"enum": ["independent_keyframe", "validated_storyboard_promotion"]},
-        "file_path": {"type": "string", "minLength": 1},
+        "file_path": {"$ref": "#/$defs/portablePath"},
         "file_sha256": {"type": "string", "pattern": "^[a-f0-9]{64}$"},
-        "prompt_path": {"type": ["string", "null"]},
+        "prompt_path": {"oneOf": [{"type": "null"}, {"$ref": "#/$defs/portablePath"}]},
         "prompt_file_sha256": {"oneOf": [{"type": "null"}, {"type": "string", "pattern": "^[a-f0-9]{64}$"}]},
         "time_anchor": {"$ref": "#/$defs/timeAnchor"},
         "terminal_generation_call": {"enum": ["executed", "not_applicable_promoted"]},
@@ -144,7 +148,7 @@
           },
           "else": {
             "properties": {
-              "prompt_path": {"type": "string", "minLength": 1},
+              "prompt_path": {"$ref": "#/$defs/portablePath"},
               "prompt_file_sha256": {"type": "string", "pattern": "^[a-f0-9]{64}$"},
               "terminal_generation_call": {"const": "executed"},
               "generation_turn": {"type": "integer", "minimum": 1},

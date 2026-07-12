@@ -119,6 +119,18 @@ jobs:
           if ($projectMarker.project_name -ne 'Client Project') { throw 'project name was not preserved' }
           .\high-control-ai-tvc\tools\install.ps1 uninstall -Target $target -Format json
 
+      - name: Exercise Windows PowerShell 5.1 wrappers
+        if: runner.os == 'Windows' && matrix.python == '3.11'
+        shell: powershell
+        run: |
+          $env:AI_TVC_PYTHON = (Get-Command python).Source
+          .\high-control-ai-tvc\tools\preflight.ps1 -RepositoryOnly -Format json
+          $target = Join-Path $env:RUNNER_TEMP 'Codex Skills PS51'
+          .\high-control-ai-tvc\tools\install.ps1 install -Target $target -Mode copy -Format json
+          .\high-control-ai-tvc\tools\install.ps1 status -Target $target -Format json
+          .\high-control-ai-tvc\tools\install.ps1 audit -Target $target -AutomaticOnly -Format json
+          .\high-control-ai-tvc\tools\install.ps1 uninstall -Target $target -Format json
+
       - name: Exercise POSIX runtime setup wrapper
         if: runner.os != 'Windows' && matrix.python == '3.11'
         shell: bash
@@ -130,7 +142,7 @@ jobs:
 
       - name: Exercise Windows runtime setup wrapper
         if: runner.os == 'Windows' && matrix.python == '3.11'
-        shell: pwsh
+        shell: powershell
         run: |
           $env:AI_TVC_PYTHON = (Get-Command python).Source
           $runtime = Join-Path $env:RUNNER_TEMP 'TVC Runtime'

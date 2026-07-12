@@ -145,6 +145,7 @@ rough source
 → K2 Boundary Supplement
 → V2 Control Previs
 → P2 Final Prompt Package
+→ [external third-party Omni generation]
 → user footage review → precise owner loop
 ```
 
