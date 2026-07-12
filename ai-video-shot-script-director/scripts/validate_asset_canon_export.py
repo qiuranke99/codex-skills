@@ -64,7 +64,7 @@ def main() -> int:
                 errors.append("Canon entry file_sha256 differs from owner primary asset")
             try:
                 expected_record_file_hash = hashlib.sha256(args.record.read_bytes()).hexdigest()
-                record_locator = str(args.record.resolve().relative_to(args.project_root.resolve()))
+                record_locator = args.record.resolve().relative_to(args.project_root.resolve()).as_posix()
             except (OSError, ValueError) as exc:
                 errors.append(f"record path is outside project root or unreadable: {exc}")
             else:

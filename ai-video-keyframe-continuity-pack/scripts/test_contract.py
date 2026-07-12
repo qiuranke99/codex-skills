@@ -236,14 +236,14 @@ def write_receipt(package: Path, canon: dict[str, Any], registered: set[str]) ->
 
 
 def keyframe_owned_entries(project: Path, package: Path, manifest: dict[str, Any], projections: list[tuple[str, dict[str, Any]]]) -> tuple[list[dict[str, Any]], set[str]]:
-    manifest_rel = str((package / "00_manifest/KEYFRAME_CONTINUITY_MANIFEST.json").relative_to(project))
+    manifest_rel = (package / "00_manifest/KEYFRAME_CONTINUITY_MANIFEST.json").relative_to(project).as_posix()
     entries = [canon_entry(manifest, "keyframe_continuity_manifest", "keyframe_continuity_manifest", manifest_rel, file_hash(project / manifest_rel))]
     registered = {manifest["artifact_id"]}
     for record in manifest["shot_records"]:
         for frame in record["keyframes"]:
             artifact = frame["artifact"]
-            rel = str((package / frame["file_path"]).relative_to(project))
-            record_rel = str((package / f"00_manifest/owned_artifacts/{artifact['artifact_id']}.json").relative_to(project))
+            rel = (package / frame["file_path"]).relative_to(project).as_posix()
+            record_rel = (package / f"00_manifest/owned_artifacts/{artifact['artifact_id']}.json").relative_to(project).as_posix()
             write_json(project / record_rel, artifact)
             entries.append(canon_entry(
                 artifact,
@@ -256,7 +256,7 @@ def keyframe_owned_entries(project: Path, package: Path, manifest: dict[str, Any
             ))
             registered.add(artifact["artifact_id"])
     for rel, projection in projections:
-        project_rel = str((package / rel).relative_to(project))
+        project_rel = (package / rel).relative_to(project).as_posix()
         entries.append(canon_entry(projection, f"keyframe_projection:{projection['projection_type']}", projection["projection_type"], project_rel, file_hash(project / project_rel)))
         registered.add(projection["artifact_id"])
     return entries, registered
@@ -494,7 +494,7 @@ def add_k2(project: Path, package: Path, registered: set[str]) -> tuple[dict[str
     supplement["sha256"] = validator.canonical_envelope_hash(supplement)
     supplement_rel_package = "03_boundaries/BOUNDARY_SUPPLEMENT.json"
     write_json(package / supplement_rel_package, supplement)
-    supplement_rel_project = str((package / supplement_rel_package).relative_to(project))
+    supplement_rel_project = (package / supplement_rel_package).relative_to(project).as_posix()
     entry = canon_entry(supplement, "keyframe_boundary_supplement_k2", "boundary_supplement_k2", supplement_rel_project, file_hash(project / supplement_rel_project))
     canon = apply_canon_update(project, [entry], OWNER, "boundary_supplement_k2")
     registered = set(registered)

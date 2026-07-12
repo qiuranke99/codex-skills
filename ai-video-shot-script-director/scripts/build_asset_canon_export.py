@@ -20,7 +20,7 @@ import uuid
 import warnings
 from contextlib import contextmanager
 from dataclasses import dataclass
-from pathlib import Path
+from pathlib import Path, PurePosixPath
 from typing import Any, Iterator, Sequence
 
 from validate_manifest_update_receipt import validate_receipt
@@ -178,8 +178,9 @@ def _sha(data: bytes) -> str:
 def _safe_locator(value: Any) -> bool:
     if not isinstance(value, str) or not value.strip():
         return False
-    path = Path(value)
-    return not path.is_absolute() and ".." not in path.parts
+    if "\\" in value or value.startswith("/") or re.match(r"^[A-Za-z]:", value):
+        return False
+    return ".." not in PurePosixPath(value).parts
 
 
 def _resolve_locked_file(project_root: Path, locator: str, expected_sha256: str, label: str) -> tuple[Path, bytes]:
@@ -668,7 +669,7 @@ def _recover_or_gate_asset_pending_transaction(
     if errors:
         raise ExportError("pending Canon transaction journal is invalid: " + "; ".join(errors))
     pending_profile = OWNER_PROFILES[journal["profile_id"]]
-    requested_package_locator = str(requested_package_root.resolve().relative_to(project_root.resolve()))
+    requested_package_locator = requested_package_root.resolve().relative_to(project_root.resolve()).as_posix()
     requested_matches = (
         requested_profile is not None
         and journal.get("profile_id") == requested_profile.profile_id
@@ -765,7 +766,7 @@ def _recover_or_gate_workflow_pending_transaction(
     errors = validate_workflow_pending_transaction(journal)
     if errors:
         raise ExportError("workflow Canon transaction journal is invalid: " + "; ".join(errors))
-    package_locator = str(requested_package_root.resolve().relative_to(project_root.resolve()))
+    package_locator = requested_package_root.resolve().relative_to(project_root.resolve()).as_posix()
     requested_matches = (
         journal.get("updated_by_skill") == requested_writer
         and journal.get("transaction_id") == requested_transaction_id
@@ -1109,7 +1110,7 @@ def _apply_fixed_owner_export_locked(
             "primary_asset_sha256": _sha(primary_bytes),
             "base_snapshot_file_sha256": _sha(stored_base_bytes),
             "resulting_manifest_sha256": base["sha256"],
-            "receipt_locator": str(receipt_path.relative_to(project_root)),
+            "receipt_locator": receipt_path.relative_to(project_root).as_posix(),
         }
 
     post = copy.deepcopy(base)
@@ -1224,7 +1225,7 @@ def _apply_fixed_owner_export_locked(
     if errors:
         raise ExportError("candidate Canon transition is invalid: " + "; ".join(errors))
 
-    package_root_locator = str(package_root.relative_to(project_root))
+    package_root_locator = package_root.relative_to(project_root).as_posix()
     pending_journal: dict[str, Any] = {
         "schema_version": "ai-video-asset-canon-pending-transaction.v1",
         "status": "prepared_or_committed_receipt_pending",
@@ -1232,10 +1233,10 @@ def _apply_fixed_owner_export_locked(
         "updated_by_skill": profile.owner_skill,
         "artifact_id": artifact_id,
         "package_root_locator": package_root_locator,
-        "base_snapshot_locator": str(base_snapshot_path.relative_to(project_root)),
-        "delta_locator": str(delta_path.relative_to(project_root)),
+        "base_snapshot_locator": base_snapshot_path.relative_to(project_root).as_posix(),
+        "delta_locator": delta_path.relative_to(project_root).as_posix(),
         "artifact_record_locator": record_locator,
-        "receipt_locator": str(receipt_path.relative_to(project_root)),
+        "receipt_locator": receipt_path.relative_to(project_root).as_posix(),
         "base_manifest_sha256": base["sha256"],
         "resulting_manifest_sha256": post["sha256"],
         "registered_artifact_ids": sorted(receipt_registered_ids),
@@ -1314,7 +1315,7 @@ def _apply_fixed_owner_export_locked(
         "primary_asset_sha256": _sha(primary_bytes),
         "base_snapshot_file_sha256": base_file_sha,
         "resulting_manifest_sha256": durable_post["sha256"],
-        "receipt_locator": str(receipt_path.relative_to(project_root)),
+        "receipt_locator": receipt_path.relative_to(project_root).as_posix(),
     }
 
 
@@ -1429,17 +1430,17 @@ def _apply_workflow_canon_transition_locked(
     if current_bytes != base_bytes or current.get("sha256") != base.get("sha256"):
         raise ExportError("workflow base snapshot is not the exact current Canon bytes")
 
-    package_locator = str(package_root.relative_to(project_root))
+    package_locator = package_root.relative_to(project_root).as_posix()
     journal: dict[str, Any] = {
         "schema_version": "ai-video-workflow-canon-pending-transaction.v1",
         "status": "prepared_or_committed_receipt_pending",
         "updated_by_skill": owner_skill,
         "transaction_id": transaction_id,
         "package_root_locator": package_locator,
-        "base_snapshot_locator": str(base_path.relative_to(project_root)),
-        "candidate_post_locator": str(candidate_path.relative_to(project_root)),
+        "base_snapshot_locator": base_path.relative_to(project_root).as_posix(),
+        "candidate_post_locator": candidate_path.relative_to(project_root).as_posix(),
         "candidate_post_file_sha256": _sha(candidate_bytes),
-        "receipt_locator": str(receipt_path.relative_to(project_root)),
+        "receipt_locator": receipt_path.relative_to(project_root).as_posix(),
         "base_manifest_sha256": base["sha256"],
         "resulting_manifest_sha256": candidate["sha256"],
         "registered_artifact_ids": sorted(registered_artifact_ids),

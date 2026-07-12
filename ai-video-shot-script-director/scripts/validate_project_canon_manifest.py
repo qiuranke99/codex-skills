@@ -9,7 +9,7 @@ import hashlib
 import json
 import re
 import sys
-from pathlib import Path
+from pathlib import Path, PurePosixPath
 from typing import Any
 
 SEMVER = re.compile(r"^[0-9]+\.[0-9]+\.[0-9]+$")
@@ -67,8 +67,9 @@ def _is_semver(value: Any) -> bool:
 def _is_safe_project_locator(value: Any) -> bool:
     if not _is_text(value):
         return False
-    path = Path(value)
-    return not path.is_absolute() and ".." not in path.parts
+    if "\\" in value or value.startswith("/") or re.match(r"^[A-Za-z]:", value):
+        return False
+    return ".." not in PurePosixPath(value).parts
 
 
 def verify_artifact_files(data: dict[str, Any], project_root: Path) -> list[str]:

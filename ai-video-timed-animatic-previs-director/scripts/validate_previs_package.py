@@ -192,6 +192,9 @@ def safe_file(root: Path, rel: Any, label: str, errors: list[str]) -> Path | Non
     if not isinstance(rel, str) or not rel:
         errors.append(f"{label}: missing file_path")
         return None
+    if "\\" in rel or rel.startswith("/") or (len(rel) > 1 and rel[0].isalpha() and rel[1] == ":"):
+        errors.append(f"{label}: file_path must use portable POSIX package-relative syntax")
+        return None
     candidate = (root / rel).resolve()
     try:
         candidate.relative_to(root.resolve())

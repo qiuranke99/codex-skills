@@ -82,7 +82,7 @@
         "owner_skill": {"type": "string", "minLength": 1},
         "version": {"type": "string", "pattern": "^[0-9]+\\.[0-9]+\\.[0-9]+$"},
         "sha256": {"type": "string", "pattern": "^[a-f0-9]{64}$"},
-        "locator": {"type": "string", "minLength": 1, "not": {"pattern": "(^/|(^|/)\\.\\.(/|$))"}},
+        "locator": {"type": "string", "minLength": 1, "not": {"pattern": "(^/|^[A-Za-z]:|\\\\|(^|/)\\.\\.(/|$))"}},
         "file_sha256": {"type": "string", "pattern": "^[a-f0-9]{64}$"},
         "authority_type": {"enum": ["shot_contract", "storyboard", "global_look", "global_look_reference", "character", "product", "packaging", "material", "scene", "timing_animatic_v1", "timing_exemption"]},
         "approval_status": {"enum": ["assistant_validated", "user_approved"]},

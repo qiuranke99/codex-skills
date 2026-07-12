@@ -279,7 +279,7 @@ def build_project_canon(
     extra_active_entries: list[dict[str, Any]] | None = None,
 ) -> dict[str, Any]:
     def project_rel(path: Path) -> str:
-        return str(path.resolve().relative_to(project_root.resolve()))
+        return path.resolve().relative_to(project_root.resolve()).as_posix()
 
     active = [canon_entry(shot, "shot_contract", "shot_contract", shot_rel, sha256_file(project_root / shot_rel))]
     active.extend(copy.deepcopy(extra_active_entries or []))

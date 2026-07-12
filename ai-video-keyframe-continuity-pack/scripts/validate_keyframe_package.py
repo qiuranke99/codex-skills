@@ -675,7 +675,16 @@ def _validate_package(
         if authority.get("approval_status") not in {"assistant_validated", "user_approved"}:
             errors.append(f"{label}: authority must be validated or approved")
         locator = authority.get("locator")
-        if not isinstance(locator, str) or not locator or Path(locator).is_absolute() or ".." in Path(locator).parts or not is_hash(authority.get("file_sha256")):
+        if (
+            not isinstance(locator, str)
+            or not locator
+            or "\\" in locator
+            or locator.startswith("/")
+            or (len(locator) > 1 and locator[0].isalpha() and locator[1] == ":")
+            or Path(locator).is_absolute()
+            or ".." in Path(locator).parts
+            or not is_hash(authority.get("file_sha256"))
+        ):
             errors.append(f"{label}: locator/file_sha256 required")
         scope = authority.get("affected_shot_uids")
         if not isinstance(scope, list) or not all(isinstance(item, str) and item in scripted for item in scope):
@@ -876,7 +885,7 @@ def _validate_package(
                 errors.append(f"{shot}/{frame_id}: file_sha256 mismatch")
             if canon_manifest is not None and project_root is not None and resolved_frame is not None:
                 try:
-                    expected_locator = str(resolved_frame.resolve().relative_to(project_root.resolve()))
+                    expected_locator = resolved_frame.resolve().relative_to(project_root.resolve()).as_posix()
                 except ValueError:
                     expected_locator = None
                 frame_artifact_for_canon = frame.get("artifact") if isinstance(frame.get("artifact"), dict) else {}

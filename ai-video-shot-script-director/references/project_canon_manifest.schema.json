@@ -89,9 +89,9 @@
           "if": {"properties": {"eligible_for_downstream": {"const": true}}},
           "then": {
             "properties": {
-              "locator": {"type": "string", "minLength": 1, "not": {"pattern": "(^/|(^|/)\\.\\.(/|$))"}},
+              "locator": {"type": "string", "minLength": 1, "not": {"pattern": "(^/|^[A-Za-z]:|\\\\|(^|/)\\.\\.(/|$))"}},
               "file_sha256": {"$ref": "#/$defs/sha"},
-              "artifact_record_locator": {"type": "string", "minLength": 1, "pattern": "\\.json$", "not": {"pattern": "(^/|(^|/)\\.\\.(/|$))"}},
+              "artifact_record_locator": {"type": "string", "minLength": 1, "pattern": "\\.json$", "not": {"pattern": "(^/|^[A-Za-z]:|\\\\|(^|/)\\.\\.(/|$))"}},
               "artifact_record_file_sha256": {"$ref": "#/$defs/sha"}
             }
           }
@@ -142,9 +142,9 @@
       },
       "allOf": [{
         "properties": {
-          "locator": {"type": "string", "minLength": 1, "not": {"pattern": "(^/|(^|/)\\.\\.(/|$))"}},
+          "locator": {"type": "string", "minLength": 1, "not": {"pattern": "(^/|^[A-Za-z]:|\\\\|(^|/)\\.\\.(/|$))"}},
           "file_sha256": {"$ref": "#/$defs/sha"},
-          "artifact_record_locator": {"type": "string", "minLength": 1, "pattern": "\\.json$", "not": {"pattern": "(^/|(^|/)\\.\\.(/|$))"}},
+          "artifact_record_locator": {"type": "string", "minLength": 1, "pattern": "\\.json$", "not": {"pattern": "(^/|^[A-Za-z]:|\\\\|(^|/)\\.\\.(/|$))"}},
           "artifact_record_file_sha256": {"$ref": "#/$defs/sha"}
         }
       }]

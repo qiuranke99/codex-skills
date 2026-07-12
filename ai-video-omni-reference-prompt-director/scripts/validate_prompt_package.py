@@ -127,6 +127,8 @@ def resolve_package_path(root: Path, value: Any, label: str) -> tuple[Path | Non
     candidate = Path(value)
     if candidate.is_absolute():
         return None, [f"{label}: absolute paths are forbidden"]
+    if "\\" in value or (len(value) > 1 and value[0].isalpha() and value[1] == ":"):
+        return None, [f"{label}: file path must use portable POSIX package-relative syntax"]
     candidate = root / candidate
     try:
         resolved = candidate.resolve()

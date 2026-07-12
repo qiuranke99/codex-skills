@@ -116,7 +116,7 @@ def main() -> int:
         ])
     with tempfile.TemporaryDirectory(prefix="previs-metadata-") as temp_dir:
         metadata_path = Path(temp_dir) / "timeline.ffmetadata"
-        metadata_path.write_text("\n".join(metadata_lines) + "\n", encoding="utf-8")
+        metadata_path.write_bytes(("\n".join(metadata_lines) + "\n").encode("utf-8"))
         metadata_index = len(input_paths)
         command.extend(["-f", "ffmetadata", "-i", str(metadata_path)])
         command.extend([

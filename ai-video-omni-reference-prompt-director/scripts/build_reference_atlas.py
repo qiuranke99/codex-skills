@@ -279,7 +279,13 @@ def compose(
     return encode_png(width, height, bytes(pixels)), panels, width, height
 
 
-def resolve_project_path(root: Path, value: str) -> Path:
+def resolve_project_path(root: Path, value: str, portable_locator: bool = False) -> Path:
+    if portable_locator and (
+        "\\" in value
+        or value.startswith("/")
+        or (len(value) > 1 and value[0].isalpha() and value[1] == ":")
+    ):
+        raise ValueError(f"serialized atlas source must use portable POSIX project-relative syntax: {value}")
     candidate = Path(value)
     if not candidate.is_absolute():
         candidate = root / candidate
@@ -350,7 +356,7 @@ def build_from_spec(root: Path, spec: dict[str, Any]) -> tuple[bytes, dict[str, 
             raise ValueError(f"sources[{index}] control_roles cannot be transported through an atlas")
         if control_roles != sorted(control_roles, key=ATLAS_CONTROL_ROLE_ORDER.index):
             raise ValueError(f"sources[{index}] control_roles must follow canonical semantic order")
-        path = resolve_project_path(root, str(item.get("file_path", "")))
+        path = resolve_project_path(root, str(item.get("file_path", "")), portable_locator=True)
         source_bytes = path.read_bytes()
         actual_hash = sha256_bytes(source_bytes)
         if item.get("file_sha256") != actual_hash:
@@ -418,7 +424,7 @@ def main(argv: list[str]) -> int:
     atlas_path.parent.mkdir(parents=True, exist_ok=True)
     receipt_path.parent.mkdir(parents=True, exist_ok=True)
     atlas_path.write_bytes(atlas_bytes)
-    receipt_path.write_text(json.dumps(receipt, ensure_ascii=False, sort_keys=True, indent=2) + "\n", encoding="utf-8")
+    receipt_path.write_bytes((json.dumps(receipt, ensure_ascii=False, sort_keys=True, indent=2) + "\n").encode("utf-8"))
     print(f"PASS: wrote deterministic RGB8 PNG atlas {atlas_path}")
     return 0
 

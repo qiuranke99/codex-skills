@@ -11,7 +11,12 @@ import sys
 import tempfile
 from pathlib import Path
 
-from validate_project_canon_manifest import canonical_hash, validate_manifest, verify_artifact_files
+from validate_project_canon_manifest import (
+    _is_safe_project_locator,
+    canonical_hash,
+    validate_manifest,
+    verify_artifact_files,
+)
 from validate_manifest_update_receipt import validate_receipt
 from validate_project_canon_transition import validate_transition
 
@@ -147,6 +152,9 @@ def assert_invalid(name: str, value: dict[str, object], needle: str) -> None:
 
 
 def main() -> int:
+    for unsafe_locator in (r"artifacts\SHOT.json", r"C:\project\SHOT.json", "/absolute/SHOT.json", "../SHOT.json"):
+        if _is_safe_project_locator(unsafe_locator):
+            raise AssertionError(f"non-portable project locator was accepted: {unsafe_locator}")
     base = fixture()
     assert_valid("valid draft registry", base)
 

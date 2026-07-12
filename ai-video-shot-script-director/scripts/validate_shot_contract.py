@@ -83,6 +83,9 @@ def verify_declared_file_hashes(record: dict[str, Any], file_root: Path) -> list
         if not isinstance(locator, str) or not locator:
             errors.append(f"source_inputs[{index}] verified locator missing")
             continue
+        if "\\" in locator or locator.startswith("/") or (len(locator) > 1 and locator[0].isalpha() and locator[1] == ":"):
+            errors.append(f"source_inputs[{index}] verified locator must be project-root-relative and use portable POSIX syntax: {locator}")
+            continue
         path = Path(locator)
         if path.is_absolute() or ".." in path.parts:
             errors.append(f"source_inputs[{index}] verified locator must be project-root-relative without traversal: {locator}")

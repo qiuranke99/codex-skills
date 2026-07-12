@@ -34,7 +34,7 @@
     "sha": {"type": "string", "pattern": "^[a-f0-9]{64}$"},
     "safeLocator": {
       "type": "string", "minLength": 1,
-      "not": {"pattern": "(^/|(^|/)\\.\\.(/|$))"}
+      "not": {"pattern": "(^/|^[A-Za-z]:|\\\\|(^|/)\\.\\.(/|$))"}
     }
   }
 }

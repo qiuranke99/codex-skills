@@ -73,7 +73,12 @@ def control_roles_for(artifact_type: str) -> tuple[list[str], str]:
 
 def write_json(path: Path, value: Any) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
-    path.write_text(json.dumps(value, ensure_ascii=False, sort_keys=True, indent=2) + "\n", encoding="utf-8")
+    path.write_bytes((json.dumps(value, ensure_ascii=False, sort_keys=True, indent=2) + "\n").encode("utf-8"))
+
+
+def write_text_lf(path: Path, text: str) -> None:
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_bytes(text.encode("utf-8"))
 
 
 def file_hash(path: Path) -> str:
@@ -346,9 +351,9 @@ def make_bridge_asset(
     for role in prompt_roles:
         prompt_rel = f"sources/{artifact_id}_{role}.md"
         prompt_path = project_root / prompt_rel
-        prompt_path.write_text(
+        write_text_lf(
+            prompt_path,
             f"Approved {role} for {artifact_id}; preserve the fixed owner evidence exactly.\n",
-            encoding="utf-8",
         )
         digest = file_hash(prompt_path)
         prompt_evidence.append({"role": role, "locator": prompt_rel, "file_sha256": digest})
@@ -683,9 +688,9 @@ def create_package(root: Path, project_root: Path | None = None) -> None:
         keyframe = envelope(f"KF_{shot_uid}", "ai-video-keyframe-continuity-pack", [shot_uid], [dependency(shot), dependency(look), dependency(storyboard), dependency(v1_media)], status="user_approved")
         rel, digest = make_png(project_root, keyframe["artifact_id"], (40, int(shot_uid[1:]) * 37 % 256, 180))
         keyframe_prompt_rel = f"sources/{keyframe['artifact_id']}_generation_prompt.md"
-        (project_root / keyframe_prompt_rel).write_text(
+        write_text_lf(
+            project_root / keyframe_prompt_rel,
             f"Generate {keyframe['artifact_id']} from approved source-authorized controls only.\n",
-            encoding="utf-8",
         )
         keyframe_prompt_hash = file_hash(project_root / keyframe_prompt_rel)
         finalize(keyframe)
@@ -1210,7 +1215,7 @@ def create_package(root: Path, project_root: Path | None = None) -> None:
     }.items():
         path = root / rel
         path.parent.mkdir(parents=True, exist_ok=True)
-        path.write_text(text, encoding="utf-8")
+        write_text_lf(path, text)
 
     payload_doc = envelope("PAYLOAD", validator.OWNER, SHOTS, all_refs, status="assistant_validated")
     payload_doc.update({
@@ -1323,9 +1328,9 @@ def create_revise_package(root: Path, project_root: Path | None = None) -> None:
     changed = {validator.IR_PATH, validator.FEEDBACK, validator.REPAIR_PROMPTS, "04_reports/PROMPT_REVISION_DIFF.md"}
     unchanged = validator.EXPECTED_OUTPUT_LOCK_PATHS - changed
     diff_path = root / "04_reports/PROMPT_REVISION_DIFF.md"
-    diff_path.write_text(
+    write_text_lf(
+        diff_path,
         "Revision R1: user requested a prompt-owned emphasis in S005; no upstream canon changed.\n",
-        encoding="utf-8",
     )
     anchor = {
         "previous_package_ref": dependency(previous_ir),
@@ -1943,7 +1948,7 @@ def main() -> int:
 
     def drift_unchanged_revision_output(root: Path) -> None:
         path = root / "04_reports/CAPACITY_DEGRADATION_REPORT.md"
-        path.write_text(path.read_text(encoding="utf-8") + "malicious unnoticed drift\n", encoding="utf-8")
+        write_text_lf(path, path.read_text(encoding="utf-8") + "malicious unnoticed drift\n")
         def mutate(value: dict[str, Any]) -> None:
             item = next(item for item in value["output_locks"] if item["file_path"] == "04_reports/CAPACITY_DEGRADATION_REPORT.md")
             item["file_sha256"] = file_hash(path)
@@ -1954,7 +1959,7 @@ def main() -> int:
 
     def tamper_previous_revision_lock(root: Path) -> None:
         path = root / "previous/PREVIOUS_DEPENDENCY_LOCKFILE.json"
-        path.write_text(path.read_text(encoding="utf-8") + " ", encoding="utf-8")
+        write_text_lf(path, path.read_text(encoding="utf-8") + " ")
     revision_anchor_errors = run_revise_case(tamper_previous_revision_lock)
     if not any("previous lockfile: file SHA-256 mismatch" in error for error in revision_anchor_errors):
         raise AssertionError(f"revision accepted tampered previous lock: {revision_anchor_errors}")
@@ -2083,7 +2088,7 @@ def main() -> int:
     def omit_master_unit(root: Path) -> None:
         unit = json.loads((root / validator.UNIT_PROMPTS).read_text(encoding="utf-8"))["generation_unit_prompts"][0]["prompt_text"]
         path = root / "02_prompts/SEEDANCE_2_5_MASTER_PROMPT.md"
-        path.write_text(path.read_text(encoding="utf-8").replace(unit, "unit omitted"), encoding="utf-8")
+        write_text_lf(path, path.read_text(encoding="utf-8").replace(unit, "unit omitted"))
     expect_error("master prompt omits unit", omit_master_unit, "missing complete generation-unit prompt")
 
     expect_error(

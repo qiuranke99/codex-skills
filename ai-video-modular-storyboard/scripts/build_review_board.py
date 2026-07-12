@@ -114,13 +114,13 @@ def main() -> int:
             "label_height": args.label_height,
             "padding": args.padding,
         },
-        "file_path": str(output.relative_to(root)),
+        "file_path": output.relative_to(root).as_posix(),
         "file_sha256": file_sha(output),
     }
     metadata_path = (root / args.metadata).resolve()
     metadata_path.relative_to(root)
     metadata_path.parent.mkdir(parents=True, exist_ok=True)
-    metadata_path.write_text(json.dumps(metadata, ensure_ascii=False, sort_keys=True, indent=2) + "\n", encoding="utf-8")
+    metadata_path.write_bytes((json.dumps(metadata, ensure_ascii=False, sort_keys=True, indent=2) + "\n").encode("utf-8"))
     print(json.dumps(metadata, ensure_ascii=False, sort_keys=True))
     return 0
 

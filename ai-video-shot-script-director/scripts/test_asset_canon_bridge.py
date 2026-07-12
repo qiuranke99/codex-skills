@@ -19,7 +19,7 @@ import zlib
 from pathlib import Path
 from typing import Any
 
-from build_asset_canon_export import ExportError, OWNER_PROFILES, _image_metadata, validate_export_record
+from build_asset_canon_export import ExportError, OWNER_PROFILES, _image_metadata, _safe_locator, validate_export_record
 from validate_project_canon_manifest import canonical_hash, validate_manifest, verify_artifact_files
 
 
@@ -310,6 +310,9 @@ def add_consumer_chain(root: Path, producer_entry: dict[str, Any]) -> None:
 
 
 def main() -> int:
+    for unsafe_locator in (r"exports\asset.json", r"D:\asset.json", "/asset.json", "../asset.json"):
+        if _safe_locator(unsafe_locator):
+            raise AssertionError(f"non-portable asset locator was accepted: {unsafe_locator}")
     original_import = builtins.__import__
 
     def import_without_pillow(name: str, *args: Any, **kwargs: Any) -> Any:

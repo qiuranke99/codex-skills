@@ -85,6 +85,9 @@ def safe_file(root: Path, rel: Any, label: str, errors: list[str]) -> Path | Non
     if not isinstance(rel, str) or not rel:
         errors.append(f"{label}: missing file_path")
         return None
+    if "\\" in rel or rel.startswith("/") or (len(rel) > 1 and rel[0].isalpha() and rel[1] == ":"):
+        errors.append(f"{label}: file_path must use portable POSIX package-relative syntax: {rel}")
+        return None
     candidate = (root / rel).resolve()
     try:
         candidate.relative_to(root.resolve())
@@ -608,7 +611,7 @@ def _validate_package(root: Path, canon_manifest: dict[str, Any] | None = None, 
         if file_path is not None and sha256_file(file_path) != frame.get("file_sha256"):
             errors.append(f"{label}: file_sha256 mismatch")
         if canon_manifest is not None and project_root is not None and file_path is not None:
-            expected_locator = str(file_path.resolve().relative_to(project_root.resolve())) if project_root.resolve() in file_path.resolve().parents else None
+            expected_locator = file_path.resolve().relative_to(project_root.resolve()).as_posix() if project_root.resolve() in file_path.resolve().parents else None
             canon_frame_entry = next(
                 (
                     item for item in canon_manifest.get("active_artifacts", []) if isinstance(item, dict)
@@ -753,7 +756,7 @@ def _validate_package(root: Path, canon_manifest: dict[str, Any] | None = None, 
         if board_path is not None and sha256_file(board_path) != board.get("file_sha256"):
             errors.append("review_board file_sha256 mismatch")
         if canon_manifest is not None and project_root is not None and board_path is not None:
-            expected_board_locator = str(board_path.resolve().relative_to(project_root.resolve())) if project_root.resolve() in board_path.resolve().parents else None
+            expected_board_locator = board_path.resolve().relative_to(project_root.resolve()).as_posix() if project_root.resolve() in board_path.resolve().parents else None
             canon_board_entry = next(
                 (
                     item for item in canon_manifest.get("active_artifacts", []) if isinstance(item, dict)

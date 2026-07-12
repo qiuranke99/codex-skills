@@ -40,6 +40,8 @@ def load_object(path: Path, label: str) -> tuple[dict[str, Any] | None, list[str
 def resolve_project_file(project_root: Path, locator: Any, label: str) -> tuple[Path | None, list[str]]:
     if not isinstance(locator, str) or not locator:
         return None, [f"{label}: non-empty project-relative locator required"]
+    if "\\" in locator or locator.startswith("/") or (len(locator) > 1 and locator[0].isalpha() and locator[1] == ":"):
+        return None, [f"{label}: locator must use portable POSIX project-relative syntax"]
     relative = Path(locator)
     if relative.is_absolute() or ".." in relative.parts:
         return None, [f"{label}: absolute paths and traversal are forbidden"]

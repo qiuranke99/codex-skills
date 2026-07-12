@@ -11,6 +11,8 @@
   安全恢复，并拒绝 state/discovery 重定向与非隔离 Python 运行时；
 - GitHub Actions 覆盖 Ubuntu、macOS、Windows 与 Python 3.11/3.12，动态
   验证安装、完整 automatic audit、项目骨架、runtime 和卸载生命周期；
+- 所有 Canon/package locator 统一序列化为 POSIX project-relative 路径，
+  文本、提示词证据与机器收据固定为 UTF-8/LF，确保 Windows/Mac 可迁移；
 - 固定来源提交
   `cd72953b283b52b83e144e3e82d40e59d3275bdd`；
 - 保持实际视频 API 提交、音乐、剪辑、调色和独立 QC 在系统范围之外。
