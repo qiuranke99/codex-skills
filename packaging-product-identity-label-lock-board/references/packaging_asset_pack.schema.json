@@ -1,0 +1,150 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "packaging_asset_pack.schema.json",
+  "title": "OCR-first Rotation-ready Packaging Asset Pack Run",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version", "contract_version", "run_id", "product_id", "product_state_id", "stage",
+    "exact_copy_mode", "allow_geometry_only_preview", "rotation_profile", "master_resolution_contract",
+    "product_features", "paths", "hashes", "gates", "production_approval_status"
+  ],
+  "properties": {
+    "schema_version": {"const": "packaging-asset-pack-run.v3"},
+    "contract_version": {"const": "whole_product_ocr_rotation_pack_v3"},
+    "run_id": {"type": "string", "pattern": "^[A-Za-z0-9][A-Za-z0-9_.-]*$"},
+    "product_id": {"type": "string", "minLength": 1},
+    "product_state_id": {"type": "string", "minLength": 1},
+    "stage": {
+      "enum": [
+        "SOURCE_INGESTED", "OCR_DISCOVERY_COMPLETE", "COPY_REVIEW_REQUIRED",
+        "COPY_SSOT_FROZEN", "COVERAGE_PLAN_FROZEN", "READY_FOR_GENERATION",
+        "GENERATING", "INSPECTING", "COMPOSITING_EXACT_COPY",
+        "POST_COMPOSITE_VERIFYING", "BUILDING_REVIEW_BOARDS", "QA_PASSED",
+        "COMPLETE", "BLOCKED"
+      ]
+    },
+    "exact_copy_mode": {"enum": ["all_visible_product_native_copy", "selected_fields_exact", "geometry_only_preview"]},
+    "allow_geometry_only_preview": {"type": "boolean"},
+    "rotation_profile": {"enum": ["R8", "R12", "R16", "R24"]},
+    "master_resolution_contract": {
+      "type": "object", "additionalProperties": false,
+      "required": [
+        "aspect_ratio", "minimum_native_width_px", "minimum_native_height_px",
+        "post_generation_resize_allowed_to_meet_minimum", "external_4k_is_separate_delivery_state"
+      ],
+      "properties": {
+        "aspect_ratio": {"const": "16:9"},
+        "minimum_native_width_px": {"const": 1280},
+        "minimum_native_height_px": {"const": 720},
+        "post_generation_resize_allowed_to_meet_minimum": {"const": false},
+        "external_4k_is_separate_delivery_state": {"const": true}
+      }
+    },
+    "product_features": {
+      "type": "array", "uniqueItems": true,
+      "items": {
+        "enum": [
+          "transparent_or_translucent", "liquid_or_gel", "pump_or_spray",
+          "embossing_or_debossing", "foil_or_reflective_print", "wrap_label",
+          "box_or_carton", "pouch_or_bag", "tube",
+          "simple_near_rotational_symmetry", "low_copy_risk", "ordinary_label_heavy_packaging",
+          "flat_or_rectangular_body", "non_symmetric_closure", "high_material_risk",
+          "complex_reflection", "continuous_wrap_copy", "macro_rotation",
+          "visible_dip_tube", "visible_fill_line_or_liquid_boundary"
+        ]
+      }
+    },
+    "paths": {
+      "type": "object", "additionalProperties": false,
+      "required": [
+        "source_manifest", "surface_inventory", "ocr_observations",
+        "text_ssot", "code_manifest", "logo_graphic_manifest",
+        "exact_copy_bundle", "coverage_matrix", "motion_envelope",
+        "continuity_contract", "composition_plan", "generation_prompt_index",
+        "surface_texture_atlas", "protected_region_masks", "asset_qa",
+        "continuity_qa", "post_composite_verification"
+      ],
+      "properties": {
+        "source_manifest": {"type": "string", "minLength": 1},
+        "surface_inventory": {"type": "string", "minLength": 1},
+        "ocr_observations": {"type": "string", "minLength": 1},
+        "text_ssot": {"type": "string", "minLength": 1},
+        "code_manifest": {"type": "string", "minLength": 1},
+        "logo_graphic_manifest": {"type": "string", "minLength": 1},
+        "exact_copy_bundle": {"type": "string", "minLength": 1},
+        "coverage_matrix": {"type": "string", "minLength": 1},
+        "motion_envelope": {"type": "string", "minLength": 1},
+        "continuity_contract": {"type": "string", "minLength": 1},
+        "composition_plan": {"type": "string", "minLength": 1},
+        "surface_texture_atlas": {"type": "string", "minLength": 1},
+        "protected_region_masks": {"type": "string", "minLength": 1},
+        "generation_prompt_index": {"type": "string", "minLength": 1},
+        "asset_qa": {"type": "string", "minLength": 1},
+        "continuity_qa": {"type": "string", "minLength": 1},
+        "post_composite_verification": {"type": "string", "minLength": 1}
+      }
+    },
+    "hashes": {
+      "type": "object", "additionalProperties": false,
+      "required": [
+        "source_manifest_sha256", "surface_inventory_sha256", "ocr_observations_sha256",
+        "text_ssot_sha256", "code_manifest_sha256", "logo_graphic_manifest_sha256",
+        "exact_copy_bundle_sha256", "exact_copy_bundle_file_sha256", "coverage_matrix_sha256",
+        "motion_envelope_sha256",
+        "continuity_contract_sha256", "composition_plan_sha256",
+        "surface_texture_atlas_sha256", "protected_region_masks_sha256",
+        "generation_prompt_index_sha256", "asset_qa_sha256",
+        "continuity_qa_sha256", "post_composite_verification_sha256"
+      ],
+      "properties": {
+        "source_manifest_sha256": {"type": "string", "pattern": "^[a-f0-9]{64}$"},
+        "surface_inventory_sha256": {"type": "string", "pattern": "^[a-f0-9]{64}$"},
+        "ocr_observations_sha256": {"type": "string", "pattern": "^[a-f0-9]{64}$"},
+        "text_ssot_sha256": {"type": "string", "pattern": "^[a-f0-9]{64}$"},
+        "code_manifest_sha256": {"type": "string", "pattern": "^[a-f0-9]{64}$"},
+        "logo_graphic_manifest_sha256": {"type": "string", "pattern": "^[a-f0-9]{64}$"},
+        "exact_copy_bundle_sha256": {"type": "string", "pattern": "^[a-f0-9]{64}$"},
+        "exact_copy_bundle_file_sha256": {"type": "string", "pattern": "^[a-f0-9]{64}$"},
+        "coverage_matrix_sha256": {"type": "string", "pattern": "^[a-f0-9]{64}$"},
+        "motion_envelope_sha256": {"type": "string", "pattern": "^[a-f0-9]{64}$"},
+        "continuity_contract_sha256": {"type": "string", "pattern": "^[a-f0-9]{64}$"},
+        "composition_plan_sha256": {"type": "string", "pattern": "^[a-f0-9]{64}$"},
+        "surface_texture_atlas_sha256": {"type": "string", "pattern": "^[a-f0-9]{64}$"},
+        "protected_region_masks_sha256": {"type": "string", "pattern": "^[a-f0-9]{64}$"},
+        "generation_prompt_index_sha256": {"type": ["string", "null"], "pattern": "^[a-f0-9]{64}$"},
+        "asset_qa_sha256": {"type": ["string", "null"], "pattern": "^[a-f0-9]{64}$"},
+        "continuity_qa_sha256": {"type": ["string", "null"], "pattern": "^[a-f0-9]{64}$"},
+        "post_composite_verification_sha256": {"type": ["string", "null"], "pattern": "^[a-f0-9]{64}$"}
+      }
+    },
+    "gates": {
+      "type": "object", "additionalProperties": false,
+      "required": [
+        "variant_conflict_status", "whole_product_ocr_status", "region_ocr_status",
+        "copy_preflight_status", "exact_copy_bundle_hash_verified",
+        "unresolved_required_field_count", "source_conflict_count",
+        "required_code_decodes_pass", "logo_graphic_binding_pass",
+        "deterministic_composition_plan_status", "required_view_surface_coverage_status",
+        "prompt_compilation_allowed", "image_generation_allowed"
+      ],
+      "properties": {
+        "variant_conflict_status": {"enum": ["passed", "blocked_source_conflict"]},
+        "whole_product_ocr_status": {"enum": ["passed", "blocked_ocr_capability", "blocked_required_language_support", "pending"]},
+        "region_ocr_status": {"enum": ["passed", "review_required", "blocked", "pending"]},
+        "copy_preflight_status": {"enum": ["passed_ssot_frozen", "review_required", "blocked", "not_required_geometry_preview"]},
+        "exact_copy_bundle_hash_verified": {"type": "boolean"},
+        "unresolved_required_field_count": {"type": "integer", "minimum": 0},
+        "source_conflict_count": {"type": "integer", "minimum": 0},
+        "required_code_decodes_pass": {"type": "boolean"},
+        "logo_graphic_binding_pass": {"type": "boolean"},
+        "deterministic_composition_plan_status": {"enum": ["ready", "blocked_no_deterministic_projection", "pending"]},
+        "required_view_surface_coverage_status": {"enum": ["passed", "blocked_missing_source", "conditional_limited_motion", "pending"]},
+        "prompt_compilation_allowed": {"type": "boolean"},
+        "image_generation_allowed": {"type": "boolean"}
+      }
+    },
+    "production_approval_status": {"enum": ["not_granted", "user_granted", "external_pipeline_granted", "forbidden"]},
+    "blocked_reason": {"type": ["string", "null"]}
+  }
+}

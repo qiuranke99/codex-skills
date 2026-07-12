@@ -1,0 +1,145 @@
+{
+  "schema_version": "packaging-continuity-semantic-evidence.v2",
+  "input_locks": {
+    "source_manifest_path": "00_source/source_manifest.json",
+    "source_manifest_sha256": "0000000000000000000000000000000000000000000000000000000000000000",
+    "asset_qa_path": "07_qa/asset_qa.json",
+    "asset_qa_sha256": "0000000000000000000000000000000000000000000000000000000000000000",
+    "coverage_matrix_path": "02_coverage/coverage_matrix.json",
+    "coverage_matrix_sha256": "0000000000000000000000000000000000000000000000000000000000000000",
+    "continuity_contract_path": "02_coverage/continuity_contract.json",
+    "continuity_contract_sha256": "0000000000000000000000000000000000000000000000000000000000000000"
+  },
+  "annotations": [
+    {
+      "annotation_id": "ANNOTATION_RAW_GEOMETRY_001",
+      "annotation_type": "raw_geometry_json",
+      "annotation_path": "07_qa/continuity_annotations/raw_geometry_001.json",
+      "annotation_sha256": "2222222222222222222222222222222222222222222222222222222222222222",
+      "view_ids": ["ROT_0000", "ROT_0225"],
+      "asset_file_sha256s": [
+        "0000000000000000000000000000000000000000000000000000000000000000",
+        "1111111111111111111111111111111111111111111111111111111111111111"
+      ],
+      "region_ids": ["REGION_FRONT_LABEL"]
+    }
+  ],
+  "gate_measurements": [
+    {
+      "gate_id": "product_frame_gate",
+      "metric_records": [
+        {
+          "metric_id": "product_frame_gate:rotation_center_spread",
+          "algorithm_id": "landmark_coordinate_spread",
+          "parameters": {
+            "view_ids": ["ROT_0000", "ROT_0225"],
+            "landmark_ids": ["PRODUCT_ROTATION_CENTER"],
+            "axis": "euclidean"
+          },
+          "annotation_ids": ["ANNOTATION_RAW_GEOMETRY_001"],
+          "tolerance": 0.02,
+          "comparator": "lte",
+          "asset_file_sha256s": [
+            "0000000000000000000000000000000000000000000000000000000000000000",
+            "1111111111111111111111111111111111111111111111111111111111111111"
+          ],
+          "measurement_scope": {"scope_type": "whole_product", "region_ids": []},
+          "unit": "normalized"
+        }
+      ]
+    },
+    {
+      "gate_id": "board_derivation_gate",
+      "metric_records": [
+        {
+          "metric_id": "board_derivation_gate:approved_input_binding_error",
+          "algorithm_id": "board_input_binding",
+          "parameters": {"required_role": "human_review_qa_board"},
+          "annotation_ids": [],
+          "tolerance": 0.0,
+          "comparator": "lte",
+          "asset_file_sha256s": [
+            "0000000000000000000000000000000000000000000000000000000000000000",
+            "1111111111111111111111111111111111111111111111111111111111111111"
+          ],
+          "measurement_scope": {"scope_type": "whole_product", "region_ids": []},
+          "unit": "error_fraction"
+        }
+      ]
+    },
+    {
+      "gate_id": "label_surface_binding_gate",
+      "metric_records": [
+        {
+          "metric_id": "label_surface_binding_gate:local_surface_frame_centroid_spread",
+          "algorithm_id": "local_frame_polygon_centroid_spread",
+          "parameters": {
+            "view_ids": ["ROT_0000", "ROT_0225"],
+            "polygon_ids": ["LABEL_SURFACE_REGION"],
+            "frame_landmark_ids": ["LABEL_FRAME_ORIGIN", "LABEL_FRAME_X", "LABEL_FRAME_Y"]
+          },
+          "annotation_ids": ["ANNOTATION_RAW_GEOMETRY_001"],
+          "tolerance": 0.03,
+          "comparator": "lte",
+          "asset_file_sha256s": [
+            "0000000000000000000000000000000000000000000000000000000000000000",
+            "1111111111111111111111111111111111111111111111111111111111111111"
+          ],
+          "measurement_scope": {"scope_type": "region", "region_ids": ["REGION_FRONT_LABEL"]},
+          "unit": "local_frame_normalized"
+        }
+      ]
+    },
+    {
+      "gate_id": "copy_render_gate",
+      "metric_records": [
+        {
+          "metric_id": "copy_render_gate:post_copy_failure_fraction",
+          "algorithm_id": "post_copy_verification_lock",
+          "parameters": {
+            "post_composite_verification_path": "07_qa/post_composite_verification.json",
+            "post_composite_verification_sha256": "3333333333333333333333333333333333333333333333333333333333333333"
+          },
+          "annotation_ids": [],
+          "tolerance": 0.0,
+          "comparator": "lte",
+          "asset_file_sha256s": [
+            "0000000000000000000000000000000000000000000000000000000000000000",
+            "1111111111111111111111111111111111111111111111111111111111111111"
+          ],
+          "measurement_scope": {"scope_type": "whole_product", "region_ids": []},
+          "unit": "error_fraction"
+        }
+      ]
+    }
+  ],
+  "edge_measurements": [
+    {
+      "edge_id": "ROT_0000__TO__ROT_0225",
+      "from_view_id": "ROT_0000",
+      "to_view_id": "ROT_0225",
+      "metric_records": [
+        {
+          "metric_id": "ROT_0000__TO__ROT_0225:pose_conditioned_anchor_vector_error",
+          "algorithm_id": "edge_pose_conditioned_landmark_vector_error",
+          "parameters": {
+            "from_view_id": "ROT_0000",
+            "to_view_id": "ROT_0225",
+            "landmark_ids": ["EDGE_CONTINUITY_ANCHOR_A", "EDGE_CONTINUITY_ANCHOR_B"],
+            "aggregation": "max",
+            "calibration_id": "edge_motion_pose_baseline_v1"
+          },
+          "annotation_ids": ["ANNOTATION_RAW_GEOMETRY_001"],
+          "tolerance": 0.02,
+          "comparator": "lte",
+          "asset_file_sha256s": [
+            "0000000000000000000000000000000000000000000000000000000000000000",
+            "1111111111111111111111111111111111111111111111111111111111111111"
+          ],
+          "measurement_scope": {"scope_type": "whole_product", "region_ids": []},
+          "unit": "normalized_vector_error"
+        }
+      ]
+    }
+  ]
+}

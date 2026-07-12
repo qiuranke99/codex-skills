@@ -1,0 +1,22 @@
+{
+  "schema_version": "packaging-generation-receipt.v1",
+  "asset_id": "ASSET_ROT_0000",
+  "view_id": "ROT_0000",
+  "prompt_sha256": "0000000000000000000000000000000000000000000000000000000000000000",
+  "output_path": "05_masters_raw/neutral_ring/ROT_0000.png",
+  "output_file_sha256": "0000000000000000000000000000000000000000000000000000000000000000",
+  "generation_mode": "independent_full_frame",
+  "output_pixel_dimensions": {"width": 1280, "height": 720},
+  "post_generation_resize_applied": false,
+  "reference_ids": ["SRC_FRONT"],
+  "submitted_reference_bindings": [
+    {
+      "role": "source_reference",
+      "reference_id": "SRC_FRONT",
+      "source_id": "SRC_FRONT",
+      "locator": "00_source/front.png",
+      "file_sha256": "0000000000000000000000000000000000000000000000000000000000000000"
+    }
+  ],
+  "submitted_reference_set_sha256": "0000000000000000000000000000000000000000000000000000000000000000"
+}

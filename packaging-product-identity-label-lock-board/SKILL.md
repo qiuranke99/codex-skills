@@ -1,376 +1,657 @@
 ---
 name: packaging-product-identity-label-lock-board
-description: Use when supplied bottle, box, pouch, can, tube, jar, carton, bag, or other label-heavy packaging references need one board that requests horizontal 16:9 and separates geometry/label layout from exact-copy verification. After inspecting the actual board, publish one final main result containing the complete exact generation prompt and image-specific 4K enhancement prompt with both SHA-256 values. Approve exact text, logos, QR codes, barcodes, specifications, or certifications only with source assets and deterministic composition or field-level OCR/decode evidence. Do not use for simple low-text products, material-first glass/liquid/reflective products, mechanisms, scenes, or posters.
+description: Use when label-heavy packaging must be OCRed before generation and delivered as a rotation-ready product asset pack. The workflow freezes an exact-copy SSOT, decodes codes, binds logos and label artwork, plans R8/R12/R16/R24 azimuth coverage plus high/low/top/bottom and detail masters, generates one independent horizontal 16:9 master per unit, applies product copy deterministically, verifies the final pixels, and compiles review boards only from approved masters. Do not use for low-text simple products, prompt-only output, ad posters, scenes, or any workflow that expects a generative model to typeset exact packaging copy.
 ---
 
-# Packaging Product Identity + Label Lock Board
+# Packaging Product Identity + Exact-Copy Rotation Asset Pack
 
-Contract version: `asset_board_contract_version: built_in_nonblocking_prompt_pair_v2`.
+Contract version: `asset_pack_contract_version: whole_product_ocr_rotation_pack_v3`.
 
-Chinese name: 包装产品身份与标签文案双锁定资产板
+Chinese name: 包装产品身份、文案与旋转连续性资产包
 
-Create one clean composite product-reference board for label-heavy packaging. Treat `geometry_layout_lock` and `exact_copy_lock` as separate claims. A generated board may stabilize product form and label hierarchy without proving that every character, logo, barcode, QR code, certification, or legal field is exact. Completion also requires one final-channel main result that visibly contains both complete prompts and both hashes.
+This Skill creates a production reference pack, not one generative collage. Its machine assets are independently generated or deterministically composed full-frame masters. Horizontal 16:9 review boards are derived from approved masters and never become the sole product truth.
 
-Only product-native graphics may appear inside the image. Keep headings, view names, status, evidence, prompts, and registry IDs in chat text.
+## Required resources
 
-## Boundary and risk-vector routing
+Before acting, read completely:
 
-Require at least one usable target-product image. Before generation, classify:
+- `references/packaging_asset_pack_contract.md` for artifact, exact-copy, coverage, prompt, QA, and state contracts;
+- `references/view_coverage_profiles.json` for the canonical R8/R12/R16/R24 view IDs and conditional detail requirements;
+- `references/generation_unit_prompt_template.md` before compiling any image-generation prompt.
 
-- `geometry_risk`: package silhouette, volume, proportions, closure, edges, top/bottom;
-- `label_risk`: copy density, logo, claims, specifications, certifications, codes;
-- `material_risk`: glass, transparency, liquid, chrome, foil, refraction, mixed shells;
-- `structure_risk`: mechanisms, joints, folding, complex open/close topology;
-- `state_risk`: multiple use, assembly, open/closed, deployed/stored states.
+The copy-ready JSON starters are `references/*.template.json`. They are
+structural starters with explicit `REPLACE_*` and zero-hash values, never
+pre-approved evidence. At minimum instantiate the source, surface, OCR/Text
+SSOT, code, graphic, texture, mask, coverage, motion, continuity, composition,
+prompt-index, asset-QA, continuity-QA, and post-verification templates. Replace
+every placeholder, expand every required view/edge/result, re-hash the real
+files, and validate the run before advancing state.
 
-Use this skill when label risk is primary and packaging geometry is source-supported. Route instead when:
+Install the package's pinned raster dependency before any OCR, composition,
+review-board, continuity, validation, or Canon-export command:
 
-- text is minimal and shape is the main risk: use `multi-angle-product-identity-lock-board`;
-- material behavior is primary: use `material-sensitive-product-master-asset-board`;
-- label and material are both high: use a main-agent compound workflow that coordinates both risk contracts; do not make either skill claim complete coverage alone;
-- mechanisms or state topology dominate: use a main-agent/custom-agent workflow unless a dedicated active skill exists;
-- the request is an ad poster, scene, redesign, campaign visual, or e-commerce layout: lock the product first or use a different workflow.
-
-If no visual product source exists, stop and request it. Descriptive text alone cannot lock product identity.
-
-## Source ledger
-
-Build a source ledger before generation. Give each item a stable `field_id` and record:
-
-```text
-field_id:
-field_type: geometry / label_layout / exact_text / logo / barcode / qr_code / certification / material
-required_for_run: yes / no
-expected_value_or_asset:
-source_file_or_reference:
-source_region:
-source_status: source_verified / source_inferred / needs_source / conflict
-planned_verification: visual_compare / ocr_field_match / code_decode_match / deterministic_composite / not_verifiable
+```bash
+python3 -m pip install -r requirements.txt
 ```
 
-Acceptable exact-copy sources include:
+Use the bundled tools when their stage applies:
 
-- original flat label artwork or package dieline;
-- vector/raster logo master;
-- high-resolution orthographic label crop;
-- user-supplied exact text table;
-- expected barcode or QR payload plus symbology;
-- authoritative certification artwork or exact mark asset.
-
-Do not treat a small, blurred, oblique, occluded, generated, or inferred surface as exact-copy source evidence. Do not merge conflicting variants. If required sources conflict and authority cannot be resolved, stop with `source_conflict`.
-
-## Two independent lock layers
-
-### Geometry and layout layer
-
-`geometry_layout_lock` covers:
-
-- package silhouette, volume, proportions, thickness, shoulder, cap, lid, pump, rim, base, seal, and closure;
-- label position, scale relationship, hierarchy, color blocks, graphic zones, and orientation;
-- consistency across video-relevant views.
-
-It may be assessed visually against supplied product references. A pass does not imply exact readable copy.
-
-### Exact-copy layer
-
-Classify fields:
-
-- `A_exact`: brand, logo, product name, hero title/claim, capacity/specification, and anything the user names as exact;
-- `B_targeted`: ingredients, parameters, usage, warnings, side/back copy, certification text;
-- `C_texture`: non-critical microcopy that may remain non-readable texture.
-
-If the user requires all text to be exact, promote A, B, and C to `A_exact`.
-
-An exact field can pass only when source evidence and final-artifact evidence both exist:
-
-- readable text: authoritative expected text plus field-level OCR/transcription comparison of the final artifact, with normalization rules and a zero-unresolved-difference result;
-- barcode or QR code: authoritative expected payload and symbology plus successful decode from the final artifact matching both;
-- logo or certification artwork: supplied master asset plus deterministic placement/compositing evidence, or another reproducible region comparison that proves the final artwork was not generatively rewritten;
-- flat label artwork: deterministic compositing of the supplied artwork onto the final board, with source/output asset hashes and transform record, may satisfy exactness without generative rerendering.
-
-Visual resemblance, prompt wording, an agent reading what it expects to see, OCR without an expected field value, or a code-like pattern that was not decoded cannot approve exact copy.
-
-Declare OCR normalization before comparison. It may normalize Unicode representation and ignorable spacing only when the source contract permits; it must not silently change letters, numbers, punctuation, units, order, language, capitalization, or legal meaning to manufacture a match.
-
-If the board is produced only by generative image synthesis, `exact_copy_lock_status` is at most `conditional_unverified`, even when text looks correct. If required exact evidence is missing or a field differs, use `not_approved` for that field. Never fabricate unseen copy, claims, certification marks, codes, or logos.
-
-## Angle and panel-capacity gate
-
-Default video-reference views:
-
-1. front;
-2. back;
-3. left;
-4. right;
-5. 3/4 front;
-6. 3/4 back;
-7. high angle;
-8. low angle.
-
-Mark each view `source_verified`, `source_inferred`, or `needs_source`. High/low views do not prove unseen top/bottom text or structure. A forward-use inferred view may be useful, but the board is at most conditional for those faces.
-
-Before generation, allocate a `panel_capacity_budget` for the one-board composition. Include only detail crops required by the source ledger. Every product view and exact-copy region must remain distinguishable at the intended downstream reference size. If eight views plus required detail regions cannot remain legible:
-
-- prioritize geometry views and A-exact regions;
-- remove decorative or redundant details;
-- do not shrink proof regions until text or code evidence becomes unreadable;
-- mark the excluded fields `needs_source_or_separate_deterministic_evidence`;
-- never claim one crowded generated board proves all microcopy.
-
-## Clean-board contract
-
-Generate exactly one board image and put `horizontal 16:9` in the built-in prompt as the sole creative ratio request. The built-in tool exposes no ratio or size argument, so record the original returned file's dimensions and observed ratio without turning them into a pass/fail condition. A `1672x941`, `1536x1024`, or other returned size remains `codex_board_role: content_qa_reference` when the packaging content contract passes. Do not crop or stretch it; the external stage must rebuild from that board plus the original references using its own exact 16:9 and 4K controls. Use a neutral white, light-gray, or neutral-gray studio presentation with even lighting, complete uncropped products, and no dramatic scene.
-
-The board may include:
-
-- the eight product views;
-- source-required close crops for logo, A-exact fields, codes, label adhesion, print, embossing, foil, closure, or package construction;
-- real product-native text, logos, patterns, and marks only.
-
-Forbid board titles, section headings, view labels, asset IDs, dates, statuses, legends, arrows, callouts, tables, UI, prompt text, captions, watermarks, people, hands, props, lifestyle scenes, posters, and non-product-native typography.
-
-Preserve source-supported geometry, label placement, color, material, and graphic hierarchy. Do not redesign, premiumize, modernize, simplify, rebrand, relabel, recolor, advertise, or invent hidden surfaces.
-
-## Runtime capability snapshot
-
-Inspect the currently exposed tools and record only observed capabilities:
-
-```text
-runtime_capability_snapshot:
-- image_generation_callable: supported / unsupported / unknown
-- reference_images_attachable: supported / unsupported / unknown
-- explicit_aspect_ratio_argument: supported / unsupported / unknown
-- explicit_size_argument: supported / unsupported / unknown
-- built_in_prompt_aspect_ratio_request: horizontal 16:9
-- built_in_prompt_alternate_aspect_ratios_allowed: false
-- returned_file_inspectable: supported / unsupported / unknown
-- pixel_dimensions_inspectable: supported / unsupported / unknown
-- post_generation_text_allowed_same_turn: supported / unsupported / unknown
-- deterministic_compositor_available: supported / unsupported / unknown
-- ocr_available: supported / unsupported / unknown
-- barcode_qr_decoder_available: supported / unsupported / unknown
-- hashing_available: supported / unsupported / unknown
+```bash
+python3 scripts/run_ocr_preflight.py --help
+python3 scripts/run_region_ocr.py --help
+python3 scripts/compose_exact_copy.py --help
+python3 scripts/compile_generation_prompts.py --help
+python3 scripts/run_post_composite_verification.py --help
+python3 scripts/build_continuity_measurements.py --help
+python3 scripts/validate_packaging_run.py --help
+python3 scripts/build_review_boards.py --help
+python3 scripts/build_exact_copy_canon_evidence.py --help
+python3 scripts/validate_template_contract.py
 ```
 
-Do not infer a capability from desired prompt language. If generation or reference attachment is unavailable, report `blocked_capability`. Set `built_in_dimensions_policy: evidence_only_nonblocking`: built-in dimensions and ratio are observations, never geometry/layout QA, exact-copy QA, repair, role-demotion, finalization, or external-handoff gates. If the user requires exact copy and no qualifying deterministic/OCR/decode path exists, generation may still create a geometry/layout candidate only with explicit `exact_copy_lock_status: blocked_verification_capability`; do not promise an exact lock.
+`scripts/validate_template_contract.py` proves that the shipped starters close
+their feature, ID, authority, projection, post-OCR, prompt, and continuity
+interfaces. `scripts/test_contract.py` is the package acceptance suite. Do not
+claim the Skill is valid after editing unless both pass.
 
-## Prompt record and terminal generation call
+## Non-negotiable rules
 
-Build one public `final_generation_prompt` from the source ledger, angle map, and panel budget. Before calling image generation:
+1. Run whole-product OCR before compiling any image prompt. Full-image discovery OCR must precede region OCR.
+2. OCR output is candidate evidence, not truth. Reconcile it against authoritative artwork, text masters, direct photographs, code payloads, and field-level review.
+3. Freeze `exact_copy_bundle_sha256` before prompt compilation. Any later byte change invalidates every dependent prompt and asset.
+4. A generative model is never the typesetter for exact packaging copy, logos, certification marks, barcodes, QR codes, batch codes, or dates.
+5. In exact-copy mode, missing OCR, language, code-decode, artwork, or deterministic-projection capability blocks generation. Never silently downgrade to a geometry-only preview.
+6. One generation unit produces one independent full-frame asset. Do not generate a contact sheet and crop it into machine references.
+7. For video rotation, use a closed azimuth coverage graph with calibrated neighboring views. Front/back/one three-quarter image is not 360-degree coverage.
+8. High angle is not top view. Low angle is not bottom view. Treat all four as distinct evidence roles.
+9. Generated or inferred assets can never upgrade themselves to `source_verified`.
+10. Review boards are deterministic composites of approved masters. Never feed a crowded overview board to a video model when the matching 2-4 adjacent masters exist.
+11. Every source OCR detection and every final OCR detection needs an explicit reviewed disposition. Unknown or extra pseudo-copy blocks exact-copy authority.
+12. Production authority is validator-derived. A JSON field named `authorized`, `approved`, or `passed` never authorizes itself.
+13. `05_masters_raw` and `05_masters` are different byte domains: the generation receipt binds the raw asset; the composition replay binds the final asset.
 
-1. freeze the exact prompt bytes;
-2. write those exact bytes to `<asset_id>_generation_prompt.md`, re-read the file as bytes, and calculate `generation_prompt_sha256` from the re-read bytes;
-3. stop with `blocked_generation_prompt_persistence` if write, re-read, or hash verification fails; never reconstruct the prompt later;
-4. show the complete `final_generation_prompt`;
-5. set `prompt_disclosed_before_generation: true` only when the shown, persisted, hashed, and submitted bytes are identical;
-6. set `terminal_generation_call: pending`, `assistant_qa_status: pending_post_generation_inspection`, and `production_approval_status: not_granted`.
+## Routing and compound risk
 
-Before generation, an enhancement prompt may exist only as `draft_4k_enhancement_prompt`. Label it `4k_enhancement_prompt_status: draft_pre_generation`; do not call it final and do not publish a final-prompt hash. The actual board must be visually inspected before `final_4k_enhancement_prompt` is frozen.
+Classify:
 
-Then submit the exact prompt with all source references. The image-generation call is the terminal action of that assistant turn. Do not append a prompt, QA, or commentary after the call when the runtime forbids post-generation text.
+- `geometry_risk`: silhouette, depth, shoulder, closure, side wall, base, seams;
+- `copy_risk`: text, numerals, units, punctuation, layout, batch/date fields;
+- `code_graphic_risk`: logo, certification, barcode, QR, handling marks;
+- `material_risk`: transparency, liquid, refraction, chrome, foil, print adhesion;
+- `mechanism_risk`: pump, spray head, cap, lock/unlock, open/closed state;
+- `motion_risk`: static hero, partial orbit, full spin, pitched orbit, macro rotation.
 
-Before the terminal call, set `task_finalization_status: generation_terminal_pending`. The tool/runtime call trace is the evidence for changing `terminal_generation_call` from `pending` to `executed`; never predeclare execution. Only an executed trace promotes the task to `awaiting_post_generation_continuation`. The generation turn is then only `stage_complete`, never task-complete. If the host does not automatically continue, leave that derived awaiting state with `main_result_prompt_pair_status: pending`. The next continuation must inspect the actual board and finish prompt-pair finalization. A failed or missing call never enters the awaiting state.
+Use this Skill when packaging copy and rotation continuity are primary. When transparent, liquid, reflective, or layered material risk is also high, apply the material-sensitive risk rules inside the same main-agent compound workflow; do not let either contract claim complete coverage alone. A multi-component kit requires one asset pack per component plus a relationship manifest.
 
-When the trace proves `executed` and the board is available but not yet inspected, set `4k_enhancement_prompt_status: awaiting_post_generation_inspection`. Advance to `finalized_post_inspection` only after the actual board passes the post-generation inspection gate.
+If the request is only a scene, poster, ad layout, or lifestyle composition, lock the product here first and route the later scene separately.
 
-The prompt must request one clean 16:9 board, consistent package geometry, the planned views and details, source-bound label layout, no invented readable text, and no non-product-native text. It must not offer another aspect ratio or claim that generation alone will produce verified exact copy.
+## Run root and durable truth
 
-If the runtime allows inspection only in a later continuation, perform artifact QA, OCR/decode, or deterministic compositing there. Any repair generation follows the same sequence: disclose and hash the repair prompt, then use the image call as the turn's terminal action.
-
-## Artifact QA and exact-copy verification
-
-In a separate inspection step, assess:
-
-```text
-geometry_layout_lock_status: passed / conditional / failed / unverified
-angle_source_status: passed / conditional / failed
-built_in_dimensions_policy: evidence_only_nonblocking
-built_in_observed_pixel_dimensions: width x height / unavailable
-built_in_observed_aspect_ratio: value / unavailable
-no_non_product_text_pollution: pass / fail
-material_source_consistent: pass / fail / unverified
-panel_legibility_status: pass / fail / unverified
-prompt_bound: pass / fail
-exact_copy_lock_status: approved / conditional_unverified / not_approved / not_required
-assistant_qa_status: passed / conditional / failed / pending_post_generation_inspection
-production_approval_status: not_granted / user_granted / external_pipeline_granted
-```
-
-For every required exact field, append an evidence row:
+Create one run root:
 
 ```text
-field_id:
-expected_value_or_asset:
-final_observation:
-verification_method:
-verification_evidence:
-field_result: pass / fail / unverified
+<workspace>/runs/packaging-product-asset-pack/<run_id>/
 ```
 
-Set `exact_copy_lock_status: approved` only when every required exact field passes its qualifying evidence method. A geometry/layout pass and an exact-copy pass remain independently visible.
-
-Assistant QA does not grant production approval or admission to an Approved Packaging Asset Registry. Registry admission requires all required gates, retained evidence, and an explicit user or external-pipeline approval.
-
-## Post-inspection external 4K handoff
-
-After inspecting the actual Codex board, create a board-specific 4K handoff for Nano Banana Pro, Nano Banana 2, or a comparable image-to-image model. Use **both** the inspected Codex board and the original product references; include authoritative flat artwork, logo masters, exact-text tables, and expected barcode/QR payloads when the exact-copy layer requires them. A board-only enhancement is incomplete because low-resolution pixels cannot prove missing package detail.
-
-Freeze a public English `final_4k_enhancement_prompt` that names the observed panel-level defects and preserves:
-
-- the exact board topology, planned view assignments, complete package geometry, closure, label positions, color blocks, graphic zones, and neutral studio presentation;
-- source-supported edge separation, print boundaries, embossing/foil/material cues, and label-layout hierarchy without redesign or relabeling;
-- existing exact-copy regions as protected evidence regions, while explicitly leaving unreadable or unsupported copy unresolved rather than generating plausible characters, logos, certifications, barcodes, or QR codes;
-- one 16:9 result using the provider's actual 4K profile, with no crop, stretch, reframing, panel reorder, additional panel, advertising treatment, or non-product-native text.
-
-Hash the frozen prompt as `4k_enhancement_prompt_sha256`. Persist these required sidecar files in run-scoped writable storage. If any file cannot be written and re-read, set `blocked_prompt_pair_persistence`; a fenced record or chat copy cannot substitute:
-
-- `<asset_id>_generation_prompt.md`: the pre-generation frozen `final_generation_prompt` single source of truth, re-read rather than rewritten;
-- `<asset_id>_4k_enhancement_prompt.md`: the inspected-board-specific `final_4k_enhancement_prompt` and its SHA-256;
-- `<asset_id>_4k_handoff.yaml`: model target, reference bundle, request, state, and verification evidence.
-
-The handoff must contain:
+The required layout is:
 
 ```text
-4k_enhancement_prompt_status: finalized_post_inspection
-4k_enhancement_prompt_sha256: <sha256>
-third_party_model_target: nano_banana_pro / nano_banana_2 / model_agnostic
-codex_board_role: content_qa_reference
-external_reference_bundle:
-- codex_asset_board: <inspected artifact id/path>
-- original_source_references: <all authoritative product references>
-- exact_copy_assets: <required authoritative assets or not_required>
-source_fidelity_status: pending / passed / failed / unverified / blocked_missing_original_sources
-external_runtime_request:
-- aspect_ratio: "16:9"
-- image_size: "4K"
-- alternate_aspect_ratios_allowed: false
-external_4k_status: not_ready / handoff_ready / blocked_runtime_controls / pending_external_generation / returned_unverified / verified / rejected
-external_4k_qa_status: pending / passed / failed
+00_manifest/run_manifest.json
+00_source/source_manifest.json
+00_source/surface_inventory.json
+01_ocr/ocr_observations.json
+01_ocr/exact_copy_text_ssot.json
+01_ocr/code_manifest.json
+01_ocr/logo_graphic_manifest.json
+01_ocr/exact_copy_bundle_manifest.json
+02_coverage/coverage_matrix.json
+02_coverage/motion_envelope.json
+02_coverage/continuity_contract.json
+03_composition/surface_texture_atlas.json
+03_composition/protected_region_masks.json
+03_composition/deterministic_composition_plan.json
+04_prompts/generation_prompt_index.json
+04_prompts/generation_units/<asset_id>_generation_prompt.md
+05_masters_raw/<family>/<view_id>.png
+05_masters/neutral_ring/
+05_masters/high_angle/
+05_masters/low_angle/
+05_masters/upper_half_close/
+05_masters/lower_half_close/
+05_masters/top_bottom/
+05_masters/details_structure/
+05_masters/details_copy/
+05_masters/details_material/
+06_review_boards/
+07_qa/asset_qa.json
+07_qa/continuity_qa.json
+07_qa/continuity_measurements.json
+07_qa/composition_jobs/
+07_qa/composition_receipts/
+07_qa/post_ocr/
+07_qa/graphic_comparisons/
+07_qa/post_composite_verification.json
+08_validation/packaging_exact_copy_canon_evidence.json
+08_4k/four_k_prompt_index.json
 ```
 
-Use `handoff_ready` only when the final prompt is hashed and every required reference is resolvable; `pending_external_generation` only after submission; `returned_unverified` only when an original returned file exists; `verified` only after the QA below; otherwise use `rejected`.
+`run_manifest.json` is the run SSOT. Chat text, a generated board, or an earlier prompt never substitutes for these files.
 
-If the selected platform does not expose both the exact 16:9 aspect-ratio control and the 4K image-size control, set `external_4k_status: blocked_runtime_controls`; choose no fallback size or ratio.
+## Stage 0: runtime capability gate
 
-For every returned external artifact, record `provider`, `model`, `surface`, `model_profile`, requested settings, `observed_pixel_dimensions`, `provider_declared_aspect_ratio_profile`, `observed_file_aspect_ratio`, `aspect_ratio_evidence`, and `four_k_evidence`. Accept only a returned artifact whose request and provider metadata identify the 16:9 profile, whose original-file dimensions match that provider/model/surface's documented 4K 16:9 profile, and whose `source_fidelity_status` and `external_4k_qa_status` pass. Arbitrary landscape dimensions, filenames, screenshots, previews, local resize, or export enlargement are insufficient.
-
-External 4K QA must re-run geometry/layout QA and additionally pass `package_geometry_preserved`, `label_layout_preserved`, `no_generated_exact_copy_claim`, `external_reference_bundle_complete`, `external_16_9_verified`, and `external_4k_profile_verified`. Keep `exact_copy_lock_status` independent: a generative 4K result remains at most `conditional_unverified` for text, logos, certifications, barcodes, and QR codes. Only deterministic composition plus field-level OCR, reproducible region comparison, or payload decode evidence can approve those fields after enhancement.
-
-## Final main-result prompt pair
-
-Use only these finalization vocabularies:
+Record observed capabilities only:
 
 ```text
-task_finalization_status: generation_terminal_pending | awaiting_post_generation_continuation | prompt_pair_ready | final_main_result_published
-main_result_prompt_pair_status: pending | published
+image_generation_callable
+reference_images_attachable
+whole_product_ocr_callable
+required_language_support
+region_ocr_callable
+barcode_decoder_callable
+qr_decoder_callable
+deterministic_compositor_callable
+hashing_callable
+image_file_inspectable
+pixel_dimensions_inspectable
+final_post_composite_vision_callable
+exact_16_9_external_control
+exact_4k_external_control
 ```
 
-In the post-generation continuation, inspect the actual board, finalize the image-specific `final_4k_enhancement_prompt`, write it to `<asset_id>_4k_enhancement_prompt.md`, re-read the exact bytes, and calculate `4k_enhancement_prompt_sha256`. Then re-read `<asset_id>_generation_prompt.md` and verify its bytes against the recorded `generation_prompt_sha256`. A missing file, byte mismatch, or hash mismatch is `blocked_prompt_pair_integrity`; do not reconstruct either prompt.
+The discovery and source-bound region OCR runners support macOS Vision on
+compatible Macs or Tesseract when installed. The v3 final-master
+post-composite adapter is deliberately narrower: it uses bundled macOS Vision
+for combined accurate text plus barcode/QR detection and has no Tesseract code
+decoder fallback. Therefore an all-visible exact-copy run may advance toward
+generation only when Darwin, Swift, the bundled Vision script, and Pillow pass
+the runtime preflight. On Windows or Linux, or when that toolchain is missing,
+set `blocked_ocr_capability` before prompt compilation; do not generate assets
+that cannot reach COMPLETE. `run_region_ocr.py` never auto-approves output; it
+returns `review_required`. For exact-copy requests,
+`allow_geometry_only_preview` defaults to `false` and can become true only
+after an explicit user instruction that also accepts
+`production_approval_status: forbidden` and `rotation_ready: false`.
 
-Set `task_finalization_status: prompt_pair_ready` only when both re-read hashes pass. Then publish one **final-channel main result**, not commentary, containing the complete unabridged text of both prompts and both hashes in the fixed fields below. A sidecar, path, summary, excerpt, earlier commentary, or earlier turn never substitutes for either complete prompt.
+`compile_generation_prompts.py` re-derives the final capability from the live
+host; it does not trust a manifest boolean. Every non-geometry-only mode checks
+Darwin, Swift, both installed bundled scripts, the exact pinned Pillow version,
+then runs the bundled OCR/EAN/QR live smoke before writing any prompt or index
+bytes. A missing or failing capability blocks the compiler. Cross-platform
+contract tests may exercise downstream validation through an in-process
+test-only override, but the production CLI exposes no bypass.
 
-`prompt_pair_ready` proves prompt integrity only. It does not imply `external_4k_status: handoff_ready`; the external reference bundle, exact-copy assets, and exact 16:9/4K runtime controls must independently pass their existing gates.
+## Stage 1: source ingest, variant resolution, and coordinate frame
 
-If the final response cannot contain both complete prompts because of a real output-capacity limit, set `blocked_final_output_capacity`; do not truncate, abbreviate, split across responses, or claim either published state.
+Hash every original file and record dimensions, orientation, source kind, target SKU/instance, photographed state, and visible surfaces. Every direct photograph must also bind one canonical `view_id`, numeric azimuth/elevation, and the exact surfaces physically visible from that pose; a three-quarter image cannot be relabeled as a direct side/top/bottom anchor. Generated files and prior failed boards have `source_authority: prohibited`.
+
+Stop on unresolved product-variant conflict. Do not merge labels, batches, closures, colors, or capacities from different variants.
+
+Audit every canonical product feature, not only features that appear obvious. Each `product_feature_classification` row is `present` or `reviewed_absent` and binds source IDs, a named reviewer, and an evidence note. The run manifest stores exactly the present subset. This closed-world audit uniquely derives the minimum R profile, conditional detail masters, and continuity gates; omitting an inconvenient feature cannot reduce required evidence.
+
+Freeze a product coordinate frame:
 
 ```text
-final_generation_prompt:
-<complete exact bytes re-read from the frozen generation sidecar>
-generation_prompt_sha256: <verified sha256>
-
-final_4k_enhancement_prompt:
-<complete exact bytes re-read from the finalized enhancement sidecar>
-4k_enhancement_prompt_sha256: <verified sha256>
-
-main_result_prompt_pair_status: published
-task_finalization_status: final_main_result_published
+z_axis: product vertical axis, positive upward
+front_axis: outward normal of the authoritative front face
+right_axis: product right when viewed from the authoritative front
+azimuth_0: straight front
+positive_azimuth: camera moves clockwise around the product when viewed from above
+elevation_0: horizontal lens axis through the product visual center
+product_state_id: one immutable physical state
 ```
 
-Include both published statuses in that final block. Successful emission of the complete block is the transition evidence; require no write or status mutation after the terminal final response. Until emission succeeds, the task remains incomplete even when the board, sidecars, exact-copy evidence, or handoff already exist.
+Record fixed component IDs, geometry-landmark IDs, material-feature IDs, label surface anchors, closure orientation, pump/nozzle direction in product space, fill level, internal-tube topology, seam positions, embossing map, and base shape. Every source and view must reference only these frozen inventories, and generated views cannot first expose an ID absent from their direct parents. These facts belong in the manifest and continuity contract, not only in prose prompts.
 
-## Repair rules
+## Stage 2: mandatory whole-product OCR and exact-copy freeze
 
-Attempt at most two generative repairs. Repair one dominant issue at a time:
+### 2.1 Surface inventory
 
-1. geometry or cross-view identity;
-2. missing/cropped/repeated views;
-3. label position or hierarchy;
-4. non-product text pollution;
-5. material or panel legibility.
-
-Do not repeatedly regenerate exact text, logos, or codes when deterministic compositing is the reliable path. A repair that improves text but breaks geometry, source identity, or clean-board rules still fails. Stop when missing source evidence or unavailable verification capability is the blocker.
-
-## Output contract
-
-Before the terminal generation call, provide concise Chinese text:
+Inventory every visible and required coordinate surface: `front`, `back`, `left`, `right`, `top`, and `bottom`. Do not overload this camera-facing topology with subparts. Freeze `closure`, `collar`, `shoulder`, `base edge`, `mold seam`, `batch_stamp`, `embossing`, label zones, and code zones as component IDs, physical-layer IDs, or region IDs anchored to one of those six coordinate surfaces. Every coordinate surface and every anchored region must end as:
 
 ```text
-风险向量：geometry / label / material / structure / state
-来源账本：<compact field summary>
-geometry_layout_lock_status: pending_generation
-exact_copy_lock_status: pending_verification / blocked_verification_capability / not_required
-panel_capacity_budget: pass / constrained / blocked
-runtime_capability_snapshot: ...
-
-built_in_prompt_aspect_ratio_request: "horizontal 16:9"
-built_in_prompt_alternate_aspect_ratios_allowed: false
-built_in_dimensions_policy: evidence_only_nonblocking
-codex_board_role: pending_content_qa
-final_generation_prompt:
-<exact prompt that will be submitted>
-generation_prompt_sha256: <verified sha256>
-prompt_disclosed_before_generation: true / false
-terminal_generation_call: pending
-assistant_qa_status: pending_post_generation_inspection
-production_approval_status: not_granted
-4k_enhancement_prompt_status: draft_pre_generation / awaiting_post_generation_inspection
-draft_4k_enhancement_prompt: <optional provisional prompt; never final>
-external_4k_status: not_ready
-task_finalization_status: generation_terminal_pending
-main_result_prompt_pair_status: pending
+text_detected | verified_no_copy | decorative_graphic | occluded | needs_source
 ```
 
-In the later inspection continuation, report both lock-layer statuses, field evidence rows, nonblocking built-in dimension observations, external runtime state, limitations, registry eligibility, and production approval, then publish the complete prompt pair in the final-channel main result exactly as required above. After external return, append provider/surface/profile/dimension evidence and external 4K QA. Keep all metadata outside the image.
+Absence of an OCR detection is not proof of `verified_no_copy`.
 
-## End condition
+### 2.2 OCR order
 
-The image-generation turn may end only as `stage_complete` with `task_finalization_status: awaiting_post_generation_continuation`. The task completes only when geometry/layout and exact-copy claims are independently classified, the source-bound exact-16:9/4K handoff is ready or honestly runtime-blocked, and `task_finalization_status: final_main_result_published` proves the final channel displayed both complete prompts and both verified hashes. Missing sources, capability, persistence, or prompt-integrity failures may end the run without a completion claim.
+1. Run full-image OCR on every original product source to discover all copy, including small or unexpected markings.
+2. Create source-bound region crops for every detected or expected text, code,
+   native-graphic, or mixed evidence region. Each spec binds `surface_id`,
+   `physical_layer_id`, `visibility_mode`, and `region_purpose`.
+3. Crop declared regions and run accurate region OCR without language-model autocorrection. V3 accepts only the bundled, replayable axis-aligned normalized crop implemented by `scripts/run_region_ocr.py`. A perspective, cylindrical, mesh, or depth-warped label requires a new authoritative orthographic source or a future contract version with a bundled deterministic rectifier; it blocks this V3 exact-copy path and cannot be approximated silently.
+4. Compare multiple passes, preprocessing variants, engines, and source views where available.
+5. Reconcile fields against authoritative sources. Escalate only genuinely unresolved differences; do not ask the user to retype information already legible in supplied files.
+
+Every OCR observation must end with one reviewed disposition:
+
+```text
+mapped_to_field | duplicate_showthrough | decorative_non_product_copy | false_positive
+```
+
+`unresolved` and `review_required` are discovery states and block `READY_FOR_GENERATION`. A `verified_no_copy` surface requires a named reviewer and evidence note; it cannot be inferred from zero detections. Region crop authority additionally binds the original source hash, region spec, normalized crop geometry, surface, physical layer, visibility, purpose, installed rectifier hash, crop receipt self-hash, and pixel-for-pixel crop replay. Crop provenance and text presence are separate gates: `text` and `mixed` regions require at least one region text detection; `code`-only and `graphic`-only regions may contain zero OCR text, but they remain blocked until their decode or graphic disposition is reciprocally mapped and approved by a named reviewer. Zero text never proves `verified_no_copy`.
+
+When all visible copy must be exact, `C_texture` is illegal. Promote every product-native character to `A_exact`.
+
+### 2.3 Transparent packaging layers
+
+Separate direct copy from show-through:
+
+```text
+front_print_outer
+front_label_opaque
+front_embossing
+internal_content
+internal_components
+rear_print_outer
+rear_label_or_compliance_block
+```
+
+Mirrored or refracted rear copy visible through the front is an observation of the rear field, not a new front field. It must carry `visibility_mode: mirrored_showthrough` or `refracted`. Occluded characters cannot be filled by language inference.
+
+### 2.4 Codes and graphics
+
+- Barcode: bind symbology, payload, checksum, source symbol asset, and successful final decode.
+- QR: bind raw payload bytes and printed-symbol evidence separately.
+- Logo, certification, recycling, and handling marks: bind a master asset or approved orthographic crop and SHA-256. OCR resemblance cannot approve a graphic.
+- Batch/date/lot fields: prefer the photographed instance over a generic SKU artwork master.
+
+### 2.5 Exact-copy bundle and hard gate
+
+Freeze:
+
+```text
+text_ssot_sha256
+code_manifest_sha256
+logo_graphic_manifest_sha256
+surface_texture_atlas_sha256
+protected_region_masks_sha256
+deterministic_composition_plan_sha256
+exact_copy_bundle_sha256
+exact_copy_bundle_file_sha256
+```
+
+Prompt compilation is legal only when:
+
+```text
+copy_preflight_status == passed_ssot_frozen
+AND exact_copy_bundle_hash_verified == true
+AND unresolved_required_field_count == 0
+AND source_conflict_count == 0
+AND required_code_decodes_pass == true
+AND logo_graphic_binding_pass == true
+AND deterministic_composition_plan_status == ready
+AND required_view_surface_coverage_status == passed
+```
+
+Then and only then set `prompt_compilation_allowed: true` and `image_generation_allowed: true`.
+
+## Stage 3: motion envelope and view coverage
+
+Do not choose views from a generic checklist alone. Freeze the intended motion envelope first: static hero, bounded orbit, neutral-height full spin, pitched orbit, macro rotation, or mechanism state change.
+
+Use only the canonical motion pairs in the contract. `bounded_high_orbit` and
+`bounded_low_orbit` may use the four cardinal high/low anchors. A
+`pitched_full_rotation` scope must declare the matching complete profile-sized
+`HIGH` and/or `LOW` ring with every edge and final-to-first closure; four
+anchors can never authorize a pitched full spin.
+
+Select the neutral ring from `references/view_coverage_profiles.json`:
+
+- `R8`: 45-degree spacing; only simple, near-rotationally-symmetric, low-copy products.
+- `R12`: 30-degree spacing; default for ordinary label-heavy packaging.
+- `R16`: 22.5-degree spacing; default for transparent, flat/rectangular, wrap-label, non-symmetric closure, pump, or high material-risk products.
+- `R24`: 15-degree spacing; macro rotation, complex reflection, or continuous wrap-copy when the evidence supports it.
+
+For a normal production pack also require:
+
+- high-angle full-product front/right/back/left at approximately +25 to +35 degrees;
+- low-angle full-product front/right/back/left at approximately -15 to -25 degrees;
+- true top at +90 degrees;
+- true bottom at -90 degrees;
+- required structural, copy, code, and material details.
+- four-way `upper_half_close` and four-way `lower_half_close` bridge masters at
+  front/right/back/left, so video reframing never jumps directly from a full
+  product to an unrelated macro.
+
+If the target motion performs a full rotation at high or low elevation, four anchors are insufficient; use a full high/low R12, R16, or R24 ring.
+
+Each coverage row records numeric pose, shot scale, visible surfaces, source refs, preceding and following view, visible field/code/graphic IDs, material features, derivation status, and production authority. Every `source_refs` value must resolve to the source manifest, and a `source_verified` surface claim must be covered by those source records. The neutral ring must close from the last angle back to 0 degrees. A pitched full rotation declares a complete `elevation_rings` sequence in the motion envelope; the validator compiles and checks its profile-matched adjacency and loop.
+
+Use separate evidence dimensions:
+
+```text
+pose_source_status
+surface_source_status
+copy_source_status
+material_source_status
+derivation_status
+```
+
+`inferred_from_sources` is allowed only for a `generated` view with at least two unique source-verified parent anchors. The inferred view cannot first reveal a new surface, seam, top, bottom, field, code, graphic, or asymmetric mechanism; all four evidence dimensions must be inferred or legitimately not applicable. Any `needs_source` value blocks production authority.
+
+The validator derives visible surfaces from the canonical product coordinate frame: 0° front, 90° right, 180° back, 270° left; intermediate azimuths require both adjacent surfaces; high views also require top, low views bottom, and true top/bottom require their own direct surfaces. One v3 run may declare at most one dynamic `HIGH` ring and one dynamic `LOW` ring because their IDs do not encode elevation. A second ring with the same prefix is a collision and fails closed.
+
+## Stage 4: independent master assets, not a generated board
+
+Every generation unit creates exactly one horizontal 16:9 full-frame asset with one product or one detail job. Full-product masters must keep one calibrated lens profile, camera distance profile, product-center height, object occupancy, neutral background, lighting, state, and rotation axis.
+
+Exact 16:9 is necessary but not sufficient. Every raw and final machine master
+must decode at no less than 1280x720. The generation receipt records the
+returned pixel dimensions and `post_generation_resize_applied: false`; the
+validator re-opens both files, rejects a smaller canvas, and requires exact-copy
+composition to preserve the raw canvas dimensions. A 512x288 image placed on a
+4K review board, or resized after generation merely to meet the floor, never
+becomes an approved machine master. This is a minimum HD delivery floor, not a
+native-4K claim.
+
+Required shot scales:
+
+```text
+full_product
+upper_half_close
+lower_half_close
+macro_component
+rectified_surface_evidence
+```
+
+These are executable requirements, not a vocabulary list. The coverage
+profile freezes all eight upper/lower bridge rows. Every fixed `DETAIL_*` also
+freezes family, shot scale, numeric azimuth/elevation, target coordinate
+surface, framing, focus, and semantic review-board role. A detail name that
+contradicts its camera pose fails before prompt compilation.
+
+Base detail families include:
+
+- front and back label plates;
+- left and right label wrap/seam;
+- closure/pump front, side, and top;
+- neck, collar, shoulder, and actuator interfaces;
+- side-wall depth, mold seam, base edge, and true bottom;
+- capacity, batch/date/lot, barcode, QR, certification, and handling marks;
+- print boundary, foil/embossing, label adhesion, texture, and material transitions.
+
+Transparent/liquid/pump products additionally require fill line, air layer, internal tube start/middle/end, bottle-wall thickness, refraction boundary, reverse show-through, and internal/external layer details.
+
+The fixed detail catalog never substitutes for actual copy regions. Derive one
+additional safe, collision-checked `DETAIL_REGION_<slug>_<hash>` master for
+every unique Text SSOT, Code, or Graphic `region_id`. That master binds exactly
+one physical region and exactly its field/code/graphic IDs. At COMPLETE, the
+validator measures its projected bbox and smallest raw OCR line against the
+frozen 3840x2160-equivalent region, text, code, and graphic thresholds. A
+single generic back-label detail cannot absorb several dense or spatially
+separate regions. “3840x2160-equivalent” is a normalized readability reference
+canvas; it does not prove that the source master is native 4K.
+
+## Stage 5: prompt compiler contract
+
+Create one prompt per generation unit. It must bind:
+
+```text
+asset_id
+product_coordinate_frame
+product_state_id
+camera_pose: azimuth/elevation/roll
+shot_scale
+lens_profile and camera_distance_profile
+geometry_landmark_contract
+surface_atlas_sha256
+exact_copy_bundle_sha256
+exact_copy_bundle_file_sha256
+coverage_matrix_sha256
+visible_surface_ids
+ranked_reference_ids
+previous_anchor_id and next_anchor_id
+protected_copy_region_ids
+deterministic_composition_plan_id
+generation_authority
+forbidden_inventions
+```
+
+The prompt must request one complete product or one explicit detail, not a board. It must use `horizontal 16:9` as the sole creative ratio request when the built-in image tool exposes no explicit ratio argument.
+
+The prompt must explicitly set:
+
+```text
+generation_text_policy: no_model_generated_product_copy
+raw_generated_asset_publishable: false
+raw_generated_asset_registry_eligible: false
+```
+
+For text-bearing surfaces, generate only a source-bound substrate/base with protected copy regions or use an editing path that preserves supplied exact pixels. Do not paste OCR text into the prompt and expect the model to typeset it.
+
+Before every image call:
+
+1. after every hard gate passes, compile the frozen batch with
+   `python3 scripts/compile_generation_prompts.py <run_root>`;
+2. record the returned `generation_prompt_index_sha256` in
+   `run_manifest.hashes.generation_prompt_index_sha256`; do not rewrite any
+   prompt while doing so;
+3. for the current unit, re-read the exact prompt bytes at
+   `04_prompts/generation_units/<asset_id>_generation_prompt.md` and verify its
+   SHA-256 against `generation_prompt_index.json`;
+4. show the complete prompt and hash;
+5. make the image-generation call the terminal action of that turn.
+
+The compiler refuses closed generation gates, stale dependency hashes,
+incomplete identity/material locks, unknown reference IDs, partial composition
+coverage, or replacement of different frozen bytes without explicit
+`--replace`. `--replace` is an invalidation action: recompile and regenerate
+every affected asset; it is never a convenience overwrite.
+
+Any dependency change invalidates the prompt and all derived assets. Never reconstruct a prompt after the fact.
+
+## Stage 6: per-master inspection and continuity QA
+
+Inspect each returned master in a later continuation. Reject:
+
+- cropped or multiple products;
+- camera/lens/scale drift;
+- silhouette breathing or topology change;
+- closure or nozzle rotating independently of the body;
+- label migrating, duplicating, disappearing, or crossing surfaces;
+- fill-level movement, broken internal tube, drifting embossing;
+- incorrect transparent show-through or material response;
+- any model-generated product copy in protected regions.
+
+Run adjacent-edge QA for every neighboring view and loop-closure QA for the final-to-front edge. Build byte-bound measurements with `scripts/build_continuity_measurements.py`; the builder also reads and locks `00_source/source_manifest.json`. The only legal gate set is derived from the reviewed-present feature taxonomy. Universal gates cover product frame, topology, silhouette, label/surface binding, material, camera calibration, adjacent edges, loop closure, exact-copy render, and board derivation. A visible fill line/liquid boundary adds fill volume; pump/spray adds nozzle-frame binding; a visible dip tube adds tube topology; emboss/deboss adds registration; transparent/translucent adds show-through. A gate for a reviewed-absent feature is invalid, and omission of a derived gate is invalid.
+
+`continuity_qa.json` must contain one result per derived hard gate and one hash-bound result per ring edge, each bound to actual approved master hashes, installed measurement-tool hash, non-empty metric records, declared comparator/tolerance, and a self-hashed evidence receipt. Screen-space constancy is not continuity authority: label registration is measured in a surface-local frame; nozzle vectors are measured in a product/closure-local frame; silhouette, material, and show-through compare each pose against source-bound baselines frozen in `continuity_contract.json` before generation; every adjacent edge and the final-to-first loop compare actual landmark motion vectors with frozen pose-conditioned baselines. Missing, stale, or post-hoc calibration remains blocked.
+
+Pass `packaging-continuity-semantic-evidence.v2` with `--semantic-evidence`. It locks source manifest, asset QA, coverage, and continuity-contract bytes. Each `packaging-continuity-annotation.v2` contains only normalized, hash-bound raw landmarks, polylines, polygons, or masks; it cannot contain computed `value`, `status`, `tolerance`, `comparator`, or `algorithm_id`. The semantic file selects one frozen algorithm and parameters per derived gate/edge, and the bundled builder derives each value and status from raw structures, approved master bytes, and pre-generation calibration. Image statistics, pass strings, stationary billboard labels, or constant screen geometry never approve product-space continuity.
+
+Repair only one failed asset or one failed dependency at a time. Never regenerate the complete pack because one view fails. Attempt at most two generative repairs per asset before stopping on the real source or capability blocker.
+
+## Stage 7: deterministic exact-copy composition and post-verification
+
+The raw generative master is never publishable. First verify that protected regions contain no surviving generated pseudo-copy. Then apply the frozen exact-copy assets using a recorded method:
+
+```text
+source_pixel_preservation
+planar_rectangle
+planar_homography
+```
+
+If a required view has no reliable projection method, set `blocked_no_deterministic_projection`; do not let the model redraw the label.
+
+Use `scripts/compose_exact_copy.py` with `references/exact_copy_composition_job.template.json`. The bundled compositor supports source-pixel preservation, rectangular planar placement, and deterministic four-corner planar homography. Every job has a semantic self-hash, locks the raw base, layers, masks, visible field/code/graphic IDs, destination geometry, final output, and receipt path. The validator reloads the installed compositor and replays every COMPLETE job byte-for-byte. Cylindrical, conical, mesh, or depth-aware projection is not bundled in v3; a view needing one must remain `blocked_no_deterministic_projection` unless an equivalent callable and validator are added.
+
+After composition, run `scripts/run_post_composite_verification.py` to repeat whole-product and projected-region OCR, barcode/QR decode, deterministic logo/graphic projection verification, and label-registration QA with the bundled OCR/decode adapter. The command intentionally writes immutable `07_qa/post_composite_verification.candidate.json`; it never edits the canonical manifest. Review the candidate and all referenced OCR/decode/graphic receipts, require `candidate_status: ready_for_manifest_binding`, copy the exact candidate bytes without rewriting into `07_qa/post_composite_verification.json`, record that file hash as `run_manifest.hashes.post_composite_verification_sha256`, and re-run the validator. If any byte changes, discard the promotion and rerun the adapter. This review-and-bind step is evidence promotion, not approval: only the validator may derive the locks below.
+
+In v3 this final OCR/decode adapter is macOS-only. A Tesseract discovery or
+region pass does not imply final barcode/QR capability. If the same frozen run
+cannot return to a verified Mac for post-composite execution, block it during
+Stage 0 rather than generating unfinishable exact-copy masters.
+
+A Text SSOT field uses either one exact observation or explicitly declared ordered-line aggregation; the latter follows fixed bounding-box reading order and hashes the aggregate UTF-8 bytes without language-model correction. `post_composite_verification.json` must cover every approved master and exactly the field/code/graphic IDs declared visible for that view. Extra OCR text, duplicate fields, unknown product-native observations, undeclared codes, or an untrusted/run-local engine fail exact-copy approval. Every result binds the final master hash plus OCR/decode/comparison/compositor receipts. This adapter does not verify transparent-layer order, refraction, fill level, internal components, or material continuity; those remain owned by the continuity measurement and semantic-evidence pipeline. Top-level approval values are derived from these records, never accepted as self-reported truth. Report independently:
+
+```text
+copy_content_lock_status
+label_artwork_lock_status
+code_payload_lock_status
+code_symbol_lock_status
+logo_graphic_lock_status
+geometry_lock_status
+material_lock_status
+continuity_lock_status
+```
+
+`exact_copy_lock_status: approved` is legal only when all required copy-related locks pass against the frozen bundle.
+
+## Stage 8: deterministic review boards and downstream use
+
+Build review boards only with `scripts/build_review_boards.py` from approved masters. Never image-generate them.
+
+Build one semantic sequence at a time: `neutral_rotation`, `elevation`,
+`framing_bridge`, `copy`, `code`, `structure`, or `material`. Neutral and
+elevation/bridge boards use canonical camera order; detail boards use stable
+view-ID order. The validator requires every approved master exactly once,
+preserves the ordered view IDs across pagination, and rejects mixed-role or
+reordered boards.
+
+- geometry QA board: at most 6 full-product masters at 4K 16:9;
+- detail QA board: at most 4 large evidence regions at 4K 16:9;
+- dense index board: allowed only as `review_only_no_qa_authority`;
+- split boards whenever the minimum cell size would be violated; never shrink evidence to force one board.
+
+The 4K value above describes the review-board canvas only. It never upgrades
+the resolution authority of any input master.
+
+Typical outputs:
+
+```text
+overview_index_16x9.png
+rotation_000_180_16x9.png
+rotation_180_360_16x9.png
+elevation_16x9.png
+structure_details_16x9.png
+copy_evidence_16x9.png
+material_details_16x9.png
+```
+
+Downstream video prompts select the 2-4 approved masters adjacent to the intended camera/object trajectory, plus the required exact-copy and material anchors. Do not attach the entire contact sheet as the only reference.
+
+## External 4K
+
+External 4K enhancement is per approved master, not one global board rewrite. Every enhancement prompt binds the source master, original sources, exact-copy bundle, coverage plan, and observed defects. Exact copy must remain deterministic after enhancement and must pass OCR/decode again.
+
+External 4K is a separate delivery state. A verified enhanced 4K result is not
+`native_4k`, and no 4K claim is legal until the returned 3840x2160 pixels,
+lineage, deterministic copy recomposition, and repeat OCR/decode/comparison have
+all been validated. Masters below the 1280x720 floor cannot gain production
+eligibility merely by upscaling.
+
+Use exact external controls only:
+
+```text
+aspect_ratio: "16:9"
+image_size: "4K"
+alternate_aspect_ratios_allowed: false
+```
+
+If the provider lacks either control, set `blocked_runtime_controls`; do not substitute another size or ratio. Review boards are rebuilt deterministically from the returned verified masters.
+
+## Run states and completion
+
+Allowed run states:
+
+```text
+SOURCE_INGESTED
+OCR_DISCOVERY_COMPLETE
+COPY_REVIEW_REQUIRED
+COPY_SSOT_FROZEN
+COVERAGE_PLAN_FROZEN
+READY_FOR_GENERATION
+GENERATING
+INSPECTING
+COMPOSITING_EXACT_COPY
+POST_COMPOSITE_VERIFYING
+BUILDING_REVIEW_BOARDS
+QA_PASSED
+COMPLETE
+BLOCKED
+```
+
+Per-asset states:
+
+```text
+PLANNED
+PROMPT_FROZEN
+GENERATED
+INSPECTED
+TEXT_POLLUTION_PASSED
+COPY_COMPOSITED
+POST_VERIFIED
+APPROVED
+REJECTED
+```
+
+The run is `COMPLETE` only when `python3 scripts/validate_packaging_run.py <run_root>` exits zero and:
+
+- OCR and exact-copy bundle gates pass;
+- the requested motion coverage graph is complete and closed;
+- every required independent master is approved;
+- every raw and final machine master is exact 16:9, at least 1280x720, and its
+  generation receipt proves no post-generation resize was used to meet the floor;
+- continuity, geometry, material, copy, codes, and graphics pass;
+- review boards are deterministic and role-labeled;
+- prompt, asset, board, manifest, and QA hashes re-read correctly;
+- production approval is explicit when required.
+
+A visually attractive board never overrides a failed gate.
+
+## Final result contract
+
+Per generation turn, disclose the complete unit prompt and its SHA-256 before the terminal image call. At final completion, publish concise Chinese text containing:
+
+```text
+run_root
+run_manifest_path and sha256
+source_manifest_sha256
+exact_copy_bundle_sha256
+coverage_matrix_sha256
+generation_prompt_index_path and sha256
+approved_master_count / required_master_count
+review_board_paths and sha256 values
+four_k_prompt_index_path and sha256 when applicable
+copy_content_lock_status
+label_artwork_lock_status
+code_payload_lock_status
+code_symbol_lock_status
+logo_graphic_lock_status
+geometry_lock_status
+material_lock_status
+continuity_lock_status
+exact_copy_lock_status
+coverage_status
+assistant_qa_status
+production_approval_status
+task_finalization_status
+```
+
+The scalable prompt indexes and sidecars are the durable prompt truth. Do not concatenate dozens of full unit prompts into the final response; each was already disclosed before its generation call and remains hash-bound on disk.
 
 ## Optional AI-Video Project Canon Export
 
-This downstream integration never changes the geometry/layout and exact-copy
-separation, board composition, deterministic evidence rules, generation,
-inspection, 4K handoff, or prompt-pair publication. Export only a board whose
-assistant QA passed, whose `generation_prompt` and
-`four_k_enhancement_prompt` sidecars re-hash exactly, and whose production use
-has an explicit `user_granted` or `external_pipeline_granted` decision. Exact
-copy remains approved only under the evidence gates above; Canon export cannot
-upgrade it.
+Canon export remains optional and cannot upgrade any lock. Use `scripts/export_ai_video_canon.py` only after the asset pack QA passes, prompt and asset indexes re-hash, the selected primary packaging asset is fully decodable, and production approval is explicit.
 
-The owner writes approval evidence conforming to
-`../ai-video-shot-script-director/references/ai_video_owner_asset_approval.schema.json`,
-binding this fixed owner, asset key, board hash, both prompt hashes, affected
-canonical Shot UIDs, QA pass, and decision. Invoke only
-`scripts/export_ai_video_canon.py` with project-relative locked files. It has no
-owner override. Default export uses `authority_mode: geometry_layout_only` and
-authorizes only `[product_geometry]`. Use
-`geometry_layout_exact_copy_verified` and
-`[product_geometry, label_copy]` only when every required exact field already
-has `exact_copy_lock_status: approved` under the deterministic/OCR/decode gates
-above; the owner approval JSON must bind that mode. `conditional_unverified`
-can never authorize `label_copy`.
-Pillow is a required export dependency and must verify plus fully load the
-primary PNG/JPEG/WebP board at 64×64 or larger. Missing decoder support,
-corruption, or extension mismatch fails closed and cannot be bypassed by exact
-copy approval.
+Default export uses `authority_mode: geometry_layout_only` and authorizes only `product_geometry`. Use `geometry_layout_exact_copy_verified` and authorize `label_copy` only when all copy, artwork, code, graphic, and post-composite gates pass. A review board with missing masters, an inferred view, a generative label, or a conditional exact-copy result cannot authorize `label_copy`.
 
-Success produces the true owner `ai-video-artifact-v1` record, primary/record
-four locks, immutable base snapshot, delta, receipt, and validated transition.
-Prompt Director must preserve this packaging owner when routing feedback and
-may not create an authority projection. Failure leaves all original packaging
-claims and asset state unchanged.
+Exact-copy export must use `scripts/build_exact_copy_canon_evidence.py` to create a v2 sidecar, then pass it with `--packaging-exact-copy-evidence LOCATOR=SHA256`. The v2 sidecar binds the COMPLETE run manifest, installed validator hash, frozen exact-copy bundle, coverage matrix, prompt index, asset QA, continuity QA, post verification, and one unique primary master/post-result member. During export the shared bridge executes `validate_packaging_run.py` again and compares the selected primary path and bytes. Approval JSON, a v1 sidecar, a review board, an arbitrary PNG, or status strings alone never grant `label_copy`.
 
-Approval and export records must also bind
-`authority_stage: terminal_packaging_canon` and
-`terminal_route_decision: not_applicable`. Install the pinned decoder with
-`python3 -m pip install -r ../ai-video-shot-script-director/requirements.txt`.
+The fixed lifecycle markers are:
+
+```text
+authority_stage: terminal_packaging_canon
+terminal_route_decision: not_applicable
+geometry_layout_only -> [product_geometry]
+geometry_layout_exact_copy_verified -> [product_geometry, label_copy]
+```
+
+Pillow must be installed from this package's pinned dependency file before the
+workflow or optional export: `python3 -m pip install -r requirements.txt`.
+The shared bridge must verify and fully decode the selected primary
+PNG/JPEG/WebP asset before any Canon write.
+
+The existing fixed-owner bridge exports one selected primary packaging asset. It does not replace the run manifest or compress a rotation pack into one source of truth.

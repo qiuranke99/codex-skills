@@ -182,13 +182,31 @@ GENERATION_ROUTE_MARKERS = (
     "standalone_single_image_to_video: forbidden",
     "ordinary_image_references_in_omni_r2v: allowed",
 )
-TEXT_SUFFIXES = {".md", ".py", ".json", ".yaml", ".yml", ".txt", ".toml", ".ini", ".cfg", ".sh"}
-FORBIDDEN_PATH_PARTS = {"__pycache__", ".DS_Store", ".pytest_cache", ".mypy_cache"}
+TEXT_SUFFIXES = {
+    ".md", ".py", ".json", ".yaml", ".yml", ".txt", ".toml", ".ini",
+    ".cfg", ".sh", ".swift",
+}
+FORBIDDEN_PATH_PARTS = {
+    "__pycache__", ".pytest_cache", ".mypy_cache", ".DS_Store",
+    "runs", "outputs", "output", "tmp", "temp",
+}
+FORBIDDEN_FILE_SUFFIXES = {".pyc", ".tmp", ".bak", ".log"}
+FORBIDDEN_FILE_NAMES = {".env", ".DS_Store", "id_rsa", "id_ed25519"}
+MAX_PUBLICATION_FILE_BYTES = 1024 * 1024
 ABSOLUTE_PATH_RE = re.compile(r"(?<!https:)(?<!http:)/" + r"(?:Volumes|Users)/")
 SECRET_RES = (
     re.compile(r"-----BEGIN (?:RSA |EC |OPENSSH )?PRIVATE KEY-----"),
     re.compile(r"\bgh[opusr]_[A-Za-z0-9]{24,}\b"),
     re.compile(r"\bsk-[A-Za-z0-9_-]{20,}\b"),
+    re.compile(r"\bAKIA[0-9A-Z]{16}\b"),
+    re.compile(r"\bAIza[0-9A-Za-z_-]{35}\b"),
+    re.compile(r"\bxox[baprs]-[0-9A-Za-z-]{10,}\b"),
+    re.compile(r"\beyJ[A-Za-z0-9_-]{10,}\.[A-Za-z0-9_-]{10,}\.[A-Za-z0-9_-]{10,}\b"),
+    re.compile(r"(?i)\bBearer\s+[A-Za-z0-9._~+/-]{20,}={0,2}\b"),
+    re.compile(
+        r"(?i)\b(?:api[_-]?key|client[_-]?secret|refresh[_-]?token)"
+        r"\s*[:=]\s*[\"']?[A-Za-z0-9._~+/-]{20,}"
+    ),
 )
 
 
@@ -255,13 +273,30 @@ def _validate_publication_surface(root: Path, skill: str, errors: list[str]) -> 
                 errors.append(f"{skill}: SKILL.md frontmatter name mismatch")
 
     for path in skill_root.rglob("*"):
-        if any(part in FORBIDDEN_PATH_PARTS for part in path.parts):
+        relative_to_skill = path.relative_to(skill_root)
+        if any(part in FORBIDDEN_PATH_PARTS for part in relative_to_skill.parts):
             errors.append(f"{skill}: forbidden generated/cache path: {path.relative_to(root)}")
-        if not path.is_file():
+        if path.is_symlink():
+            errors.append(f"{skill}: symlinks are forbidden in publication packages: {path.relative_to(root)}")
             continue
-        if path.suffix == ".pyc" or path.name in {".env", "id_rsa", "id_ed25519"}:
+        if path.is_dir():
+            continue
+        if not path.is_file():
+            errors.append(f"{skill}: non-regular publication entry: {path.relative_to(root)}")
+            continue
+        if path.suffix.lower() in FORBIDDEN_FILE_SUFFIXES or path.name in FORBIDDEN_FILE_NAMES:
             errors.append(f"{skill}: forbidden file: {path.relative_to(root)}")
+        try:
+            file_size = path.stat().st_size
+        except OSError as exc:
+            errors.append(f"{skill}: cannot stat publication file {path.relative_to(root)}: {exc}")
+            continue
+        if file_size > MAX_PUBLICATION_FILE_BYTES:
+            errors.append(
+                f"{skill}: publication file exceeds 1 MiB review cap: {path.relative_to(root)}"
+            )
         if path.suffix.lower() not in TEXT_SUFFIXES:
+            errors.append(f"{skill}: unsupported publication file type: {path.relative_to(root)}")
             continue
         try:
             source = path.read_text(encoding="utf-8")
@@ -318,7 +353,12 @@ def _validate_owner_export_surface(root: Path, skill: str, errors: list[str]) ->
         return
     if "## Optional AI-Video Project Canon Export" not in skill_text:
         errors.append(f"{skill}: Project Canon export appendix missing")
-    if "../ai-video-shot-script-director/requirements.txt" not in skill_text or "Pillow" not in skill_text:
+    dependency_marker = (
+        "requirements.txt"
+        if skill == "packaging-product-identity-label-lock-board"
+        else "../ai-video-shot-script-director/requirements.txt"
+    )
+    if dependency_marker not in skill_text or "Pillow" not in skill_text:
         errors.append(f"{skill}: pinned Pillow export dependency marker missing")
     for field in ("authority_stage", "terminal_route_decision"):
         expected = contract[field]
@@ -426,8 +466,13 @@ def validate_suite(
 
     shot_requirements = root / "ai-video-shot-script-director/requirements.txt"
     prompt_requirements = root / "ai-video-omni-reference-prompt-director/requirements.txt"
+    packaging_requirements = root / "packaging-product-identity-label-lock-board/requirements.txt"
     pillow_pins: dict[str, str] = {}
-    for label, path in (("Shot Director", shot_requirements), ("Prompt Director", prompt_requirements)):
+    for label, path in (
+        ("Shot Director", shot_requirements),
+        ("Prompt Director", prompt_requirements),
+        ("Packaging owner", packaging_requirements),
+    ):
         if not path.is_file():
             errors.append(f"{label}: requirements.txt missing")
             continue
@@ -439,8 +484,8 @@ def validate_suite(
             errors.append(f"{label}: Pillow must have one exact == version pin")
         else:
             pillow_pins[label] = pins[0]
-    if len(pillow_pins) == 2 and len(set(pillow_pins.values())) != 1:
-        errors.append("Shot Director and Prompt Director Pillow pins must remain identical")
+    if len(pillow_pins) == 3 and len(set(pillow_pins.values())) != 1:
+        errors.append("Shot Director, Prompt Director, and Packaging owner Pillow pins must remain identical")
 
     if run_tests:
         for label, skill, rel in TEST_COMMANDS:

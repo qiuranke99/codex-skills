@@ -1,0 +1,212 @@
+{
+  "schema_version": "packaging-source-manifest.v1",
+  "product_id": "REPLACE_PRODUCT_ID",
+  "product_state_id": "STATE_CLOSED_001",
+  "variant_resolution_status": "resolved_single_sku_and_instance",
+  "product_feature_classification": [
+    {
+      "feature_id": "box_or_carton", "status": "reviewed_absent",
+      "evidence_source_ids": ["SRC_FRONT", "SRC_BACK"], "review_status": "reviewed",
+      "reviewer_id": "REPLACE_REVIEWER_ID", "evidence_note": "Reviewed all spatial sources; this product is not a box or carton."
+    },
+    {
+      "feature_id": "complex_reflection", "status": "reviewed_absent",
+      "evidence_source_ids": ["SRC_FRONT", "SRC_BACK"], "review_status": "reviewed",
+      "reviewer_id": "REPLACE_REVIEWER_ID", "evidence_note": "No complex-reflection mode beyond the frozen material contract is present."
+    },
+    {
+      "feature_id": "continuous_wrap_copy", "status": "reviewed_absent",
+      "evidence_source_ids": ["SRC_FRONT", "SRC_BACK", "SRC_LEFT", "SRC_RIGHT"], "review_status": "reviewed",
+      "reviewer_id": "REPLACE_REVIEWER_ID", "evidence_note": "Copy does not form one continuous wrap across the side sources."
+    },
+    {
+      "feature_id": "embossing_or_debossing", "status": "present",
+      "evidence_source_ids": ["SRC_FRONT", "SRC_BACK"], "review_status": "reviewed",
+      "reviewer_id": "REPLACE_REVIEWER_ID", "evidence_note": "Embossed bottle decoration is visible in direct spatial evidence."
+    },
+    {
+      "feature_id": "flat_or_rectangular_body", "status": "present",
+      "evidence_source_ids": ["SRC_FRONT", "SRC_LEFT", "SRC_RIGHT"], "review_status": "reviewed",
+      "reviewer_id": "REPLACE_REVIEWER_ID", "evidence_note": "Front and side sources confirm a flattened rectangular body."
+    },
+    {
+      "feature_id": "foil_or_reflective_print", "status": "reviewed_absent",
+      "evidence_source_ids": ["SRC_FRONT", "SRC_BACK"], "review_status": "reviewed",
+      "reviewer_id": "REPLACE_REVIEWER_ID", "evidence_note": "No foil or reflective print layer is present on the reviewed label sources."
+    },
+    {
+      "feature_id": "high_material_risk", "status": "present",
+      "evidence_source_ids": ["SRC_FRONT", "SRC_BACK", "SRC_LEFT", "SRC_RIGHT"], "review_status": "reviewed",
+      "reviewer_id": "REPLACE_REVIEWER_ID", "evidence_note": "Transparent walls, liquid, refraction and show-through create high material risk."
+    },
+    {
+      "feature_id": "liquid_or_gel", "status": "present",
+      "evidence_source_ids": ["SRC_FRONT", "SRC_BACK"], "review_status": "reviewed",
+      "reviewer_id": "REPLACE_REVIEWER_ID", "evidence_note": "Contained liquid is directly visible."
+    },
+    {
+      "feature_id": "low_copy_risk", "status": "reviewed_absent",
+      "evidence_source_ids": ["SRC_FRONT", "SRC_BACK"], "review_status": "reviewed",
+      "reviewer_id": "REPLACE_REVIEWER_ID", "evidence_note": "Multiple exact text, code and graphic regions make copy risk non-low."
+    },
+    {
+      "feature_id": "macro_rotation", "status": "reviewed_absent",
+      "evidence_source_ids": ["SRC_FRONT", "SRC_BACK"], "review_status": "reviewed",
+      "reviewer_id": "REPLACE_REVIEWER_ID", "evidence_note": "The starter motion envelope is not a macro rotation."
+    },
+    {
+      "feature_id": "non_symmetric_closure", "status": "present",
+      "evidence_source_ids": ["SRC_FRONT", "SRC_TOP"], "review_status": "reviewed",
+      "reviewer_id": "REPLACE_REVIEWER_ID", "evidence_note": "The pump actuator and nozzle have a fixed asymmetric direction."
+    },
+    {
+      "feature_id": "ordinary_label_heavy_packaging", "status": "present",
+      "evidence_source_ids": ["SRC_FRONT", "SRC_BACK"], "review_status": "reviewed",
+      "reviewer_id": "REPLACE_REVIEWER_ID", "evidence_note": "Front and rear contain multiple exact-copy regions."
+    },
+    {
+      "feature_id": "pouch_or_bag", "status": "reviewed_absent",
+      "evidence_source_ids": ["SRC_FRONT", "SRC_BACK"], "review_status": "reviewed",
+      "reviewer_id": "REPLACE_REVIEWER_ID", "evidence_note": "This product is not a pouch or bag."
+    },
+    {
+      "feature_id": "pump_or_spray", "status": "present",
+      "evidence_source_ids": ["SRC_FRONT", "SRC_TOP"], "review_status": "reviewed",
+      "reviewer_id": "REPLACE_REVIEWER_ID", "evidence_note": "Pump collar, actuator and nozzle are directly visible."
+    },
+    {
+      "feature_id": "simple_near_rotational_symmetry", "status": "reviewed_absent",
+      "evidence_source_ids": ["SRC_FRONT", "SRC_LEFT", "SRC_RIGHT"], "review_status": "reviewed",
+      "reviewer_id": "REPLACE_REVIEWER_ID", "evidence_note": "Flattened body and asymmetric pump prevent near-rotational symmetry."
+    },
+    {
+      "feature_id": "transparent_or_translucent", "status": "present",
+      "evidence_source_ids": ["SRC_FRONT", "SRC_BACK"], "review_status": "reviewed",
+      "reviewer_id": "REPLACE_REVIEWER_ID", "evidence_note": "The bottle wall and opposite-side show-through are visible."
+    },
+    {
+      "feature_id": "tube", "status": "reviewed_absent",
+      "evidence_source_ids": ["SRC_FRONT", "SRC_BACK"], "review_status": "reviewed",
+      "reviewer_id": "REPLACE_REVIEWER_ID", "evidence_note": "This product is not a tube package."
+    },
+    {
+      "feature_id": "visible_dip_tube", "status": "present",
+      "evidence_source_ids": ["SRC_FRONT", "SRC_BACK"], "review_status": "reviewed",
+      "reviewer_id": "REPLACE_REVIEWER_ID", "evidence_note": "The internal pump tube is visible through the bottle wall."
+    },
+    {
+      "feature_id": "visible_fill_line_or_liquid_boundary", "status": "present",
+      "evidence_source_ids": ["SRC_FRONT", "SRC_BACK"], "review_status": "reviewed",
+      "reviewer_id": "REPLACE_REVIEWER_ID", "evidence_note": "The liquid-air boundary is visible and must remain world-horizontal."
+    },
+    {
+      "feature_id": "wrap_label", "status": "reviewed_absent",
+      "evidence_source_ids": ["SRC_FRONT", "SRC_BACK", "SRC_LEFT", "SRC_RIGHT"], "review_status": "reviewed",
+      "reviewer_id": "REPLACE_REVIEWER_ID", "evidence_note": "Separate front and rear labels are used instead of a wrap label."
+    }
+  ],
+  "sources": [
+    {
+      "source_id": "SRC_FRONT",
+      "file_path": "00_source/front.png",
+      "file_sha256": "0000000000000000000000000000000000000000000000000000000000000000",
+      "pixel_dimensions": {"width": 4000, "height": 6000},
+      "source_kind": "direct_product_photograph",
+      "source_authority": "authoritative",
+      "required_for_run": true,
+      "product_id": "REPLACE_PRODUCT_ID",
+      "product_state_id": "STATE_CLOSED_001",
+      "view_id": "ROT_0000",
+      "azimuth_deg": 0.0,
+      "elevation_deg": 0.0,
+      "visible_surfaces": ["SURFACE_FRONT"],
+      "visible_component_ids": ["BODY", "FRONT_LABEL", "CLOSURE_FRONT"],
+      "photographed_instance_fields": []
+    },
+    {
+      "source_id": "SRC_BACK",
+      "file_path": "00_source/back.png",
+      "file_sha256": "0000000000000000000000000000000000000000000000000000000000000000",
+      "pixel_dimensions": {"width": 4000, "height": 6000},
+      "source_kind": "direct_product_photograph",
+      "source_authority": "authoritative",
+      "required_for_run": true,
+      "product_id": "REPLACE_PRODUCT_ID",
+      "product_state_id": "STATE_CLOSED_001",
+      "view_id": "ROT_1800",
+      "azimuth_deg": 180.0,
+      "elevation_deg": 0.0,
+      "visible_surfaces": ["SURFACE_BACK"],
+      "visible_component_ids": ["BODY", "BACK_LABEL"],
+      "photographed_instance_fields": ["FIELD_BACK_LEGAL", "CODE_EAN13"]
+    },
+    {
+      "source_id": "SRC_LEFT",
+      "file_path": "00_source/left.png",
+      "file_sha256": "0000000000000000000000000000000000000000000000000000000000000000",
+      "pixel_dimensions": {"width": 4000, "height": 6000},
+      "source_kind": "direct_product_photograph",
+      "source_authority": "authoritative",
+      "required_for_run": true,
+      "product_id": "REPLACE_PRODUCT_ID",
+      "product_state_id": "STATE_CLOSED_001",
+      "view_id": "ROT_2700",
+      "azimuth_deg": 270.0,
+      "elevation_deg": 0.0,
+      "visible_surfaces": ["SURFACE_LEFT"],
+      "visible_component_ids": ["BODY", "LEFT_LABEL_SEAM"],
+      "photographed_instance_fields": []
+    },
+    {
+      "source_id": "SRC_RIGHT",
+      "file_path": "00_source/right.png",
+      "file_sha256": "0000000000000000000000000000000000000000000000000000000000000000",
+      "pixel_dimensions": {"width": 4000, "height": 6000},
+      "source_kind": "direct_product_photograph",
+      "source_authority": "authoritative",
+      "required_for_run": true,
+      "product_id": "REPLACE_PRODUCT_ID",
+      "product_state_id": "STATE_CLOSED_001",
+      "view_id": "ROT_0900",
+      "azimuth_deg": 90.0,
+      "elevation_deg": 0.0,
+      "visible_surfaces": ["SURFACE_RIGHT"],
+      "visible_component_ids": ["BODY", "RIGHT_LABEL_SEAM", "SIDE_WALL_AND_MOLD_SEAM"],
+      "photographed_instance_fields": []
+    },
+    {
+      "source_id": "SRC_TOP",
+      "file_path": "00_source/top.png",
+      "file_sha256": "0000000000000000000000000000000000000000000000000000000000000000",
+      "pixel_dimensions": {"width": 4000, "height": 6000},
+      "source_kind": "direct_product_photograph",
+      "source_authority": "authoritative",
+      "required_for_run": true,
+      "product_id": "REPLACE_PRODUCT_ID",
+      "product_state_id": "STATE_CLOSED_001",
+      "view_id": "TOP_0000",
+      "azimuth_deg": 0.0,
+      "elevation_deg": 90.0,
+      "visible_surfaces": ["SURFACE_TOP"],
+      "visible_component_ids": ["BODY", "CLOSURE_TOP", "NECK_COLLAR_SHOULDER"],
+      "photographed_instance_fields": []
+    },
+    {
+      "source_id": "SRC_BOTTOM",
+      "file_path": "00_source/bottom.png",
+      "file_sha256": "0000000000000000000000000000000000000000000000000000000000000000",
+      "pixel_dimensions": {"width": 4000, "height": 6000},
+      "source_kind": "direct_product_photograph",
+      "source_authority": "authoritative",
+      "required_for_run": true,
+      "product_id": "REPLACE_PRODUCT_ID",
+      "product_state_id": "STATE_CLOSED_001",
+      "view_id": "BOTTOM_0000",
+      "azimuth_deg": 0.0,
+      "elevation_deg": -90.0,
+      "visible_surfaces": ["SURFACE_BOTTOM"],
+      "visible_component_ids": ["BODY", "BASE_EDGE", "TRUE_BOTTOM"],
+      "photographed_instance_fields": ["FIELD_BOTTOM_STAMP"]
+    }
+  ]
+}

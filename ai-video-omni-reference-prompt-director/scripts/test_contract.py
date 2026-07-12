@@ -10,11 +10,14 @@ import json
 import shutil
 import struct
 import subprocess
+import sys
 import tempfile
 import wave
 import zlib
 from pathlib import Path
 from typing import Any, Callable
+
+from PIL import Image
 
 
 HERE = Path(__file__).resolve().parent
@@ -22,6 +25,95 @@ SPEC = importlib.util.spec_from_file_location("validator", HERE / "validate_prom
 assert SPEC and SPEC.loader
 validator = importlib.util.module_from_spec(SPEC)
 SPEC.loader.exec_module(validator)
+
+# The Prompt Director suite exercises the same immutable packaging owner export
+# across many unrelated mutation cases.  Validate one byte-identical packaging
+# run fully, then reuse that result only when a root-independent hash of every
+# run member is unchanged.  A changed nested receipt/master gets a new key and
+# is live-validated again, so this removes repeated work without weakening a
+# packaging mutation test.
+_ORIGINAL_VALIDATE_OWNER_ASSET_EXPORT = validator.validate_owner_asset_export
+_PACKAGING_OWNER_VALIDATION_CACHE: dict[str, tuple[str, ...]] = {}
+
+
+def _resolve_non_symlink_project_path(project_root: Path, locator: str) -> Path | None:
+    """Resolve one project locator only when no lexical path component is a symlink."""
+    relative = Path(locator)
+    if relative.is_absolute() or ".." in relative.parts:
+        return None
+    root = project_root.resolve()
+    lexical = root
+    try:
+        for part in relative.parts:
+            lexical = lexical / part
+            if lexical.is_symlink():
+                return None
+        resolved = lexical.resolve()
+        resolved.relative_to(root)
+    except (OSError, RuntimeError, ValueError):
+        return None
+    return resolved
+
+
+def _packaging_tree_fingerprint(record: dict[str, Any], project_root: Path) -> str | None:
+    if (
+        record.get("profile_id") != "packaging_product"
+        or record.get("authority_mode") != "geometry_layout_exact_copy_verified"
+    ):
+        return None
+    authority = record.get("authority_evidence")
+    if not isinstance(authority, dict) or not isinstance(authority.get("locator"), str):
+        return None
+    try:
+        external_locators = {
+            record["primary_asset"]["locator"],
+            authority["locator"],
+            record["production_approval"]["evidence_locator"],
+            *(item["locator"] for item in record["prompt_evidence"]),
+        }
+        locked_external_files: list[tuple[str, Path]] = []
+        for locator in external_locators:
+            path = _resolve_non_symlink_project_path(project_root, locator)
+            if path is None or not path.is_file():
+                return None
+            locked_external_files.append((Path(locator).as_posix(), path))
+        evidence = json.loads((project_root / authority["locator"]).read_text(encoding="utf-8"))
+        run_locator = evidence["packaging_run"]["run_root_locator"]
+        run_root = _resolve_non_symlink_project_path(project_root, run_locator)
+    except (OSError, KeyError, TypeError, ValueError, json.JSONDecodeError):
+        return None
+    if run_root is None or not run_root.is_dir() or any(path.is_symlink() for path in run_root.rglob("*")):
+        return None
+    digest = hashlib.sha256()
+    digest.update(str(record.get("sha256", "")).encode("utf-8"))
+    for locator, path in sorted(locked_external_files):
+        digest.update(locator.encode("utf-8"))
+        digest.update(b"\0")
+        digest.update(hashlib.sha256(path.read_bytes()).digest())
+    for path in sorted((item for item in run_root.rglob("*") if item.is_file()), key=lambda item: item.relative_to(run_root).as_posix()):
+        digest.update(path.relative_to(run_root).as_posix().encode("utf-8"))
+        digest.update(b"\0")
+        digest.update(hashlib.sha256(path.read_bytes()).digest())
+    return digest.hexdigest()
+
+
+def _cached_validate_owner_asset_export(record: Any, project_root: Path | None = None) -> list[str]:
+    if not isinstance(record, dict) or project_root is None:
+        return _ORIGINAL_VALIDATE_OWNER_ASSET_EXPORT(record, project_root)
+    key = _packaging_tree_fingerprint(record, project_root)
+    if key is None:
+        return _ORIGINAL_VALIDATE_OWNER_ASSET_EXPORT(record, project_root)
+    cached = _PACKAGING_OWNER_VALIDATION_CACHE.get(key)
+    if cached is None:
+        cached = tuple(_ORIGINAL_VALIDATE_OWNER_ASSET_EXPORT(record, project_root))
+        _PACKAGING_OWNER_VALIDATION_CACHE[key] = cached
+    return list(cached)
+
+
+validator.validate_owner_asset_export = _cached_validate_owner_asset_export
+
+_PACKAGING_FIXTURE_CACHE: dict[str, Path] = {}
+_PACKAGING_FIXTURE_MODULE: Any | None = None
 
 SHOTS = [f"S{index:03d}" for index in range(1, 7)]
 DURATIONS = [1.0, 2.0, 3.0, 2.0, 4.0, 3.0]
@@ -113,6 +205,15 @@ def envelope(
 def finalize(value: dict[str, Any]) -> dict[str, Any]:
     value["sha256"] = validator.canonical_envelope_hash(value)
     return value
+
+
+def canonical_hash_omitting(value: dict[str, Any], field: str) -> str:
+    payload = copy.deepcopy(value)
+    payload.pop(field, None)
+    encoded = json.dumps(
+        payload, ensure_ascii=False, sort_keys=True, separators=(",", ":"), allow_nan=False
+    ).encode("utf-8")
+    return hashlib.sha256(encoded).hexdigest()
 
 
 def profile(
@@ -322,6 +423,99 @@ def make_source(
     return finalize(envelope(artifact_id, owner, shots, deps, status="user_approved"))
 
 
+def make_packaging_exact_copy_authority_evidence(
+    project_root: Path,
+    artifact_id: str,
+    asset_key: str,
+) -> tuple[str, str, dict[str, str]]:
+    global _PACKAGING_FIXTURE_MODULE
+    packaging_scripts = HERE.parents[1] / "packaging-product-identity-label-lock-board/scripts"
+    if str(packaging_scripts) not in sys.path:
+        sys.path.insert(0, str(packaging_scripts))
+    if _PACKAGING_FIXTURE_MODULE is None:
+        module_path = packaging_scripts / "test_contract.py"
+        spec = importlib.util.spec_from_file_location("_omni_packaging_contract_fixture", module_path)
+        if spec is None or spec.loader is None:
+            raise AssertionError("packaging fixture module is unavailable")
+        module = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(module)
+        _PACKAGING_FIXTURE_MODULE = module
+    module = _PACKAGING_FIXTURE_MODULE
+    run_root = project_root / f"sources/{artifact_id}_complete_packaging_run"
+    cache_root = _PACKAGING_FIXTURE_CACHE.get(artifact_id)
+    if cache_root is None:
+        cache_root = Path(tempfile.mkdtemp(prefix="omni-packaging-fixture-")) / "complete_run"
+        module.create_complete_run(cache_root)
+        run_errors = module.validate_run(cache_root)
+        if run_errors:
+            raise AssertionError(f"packaging exact-copy fixture invalid: {run_errors}")
+        _PACKAGING_FIXTURE_CACHE[artifact_id] = cache_root
+    shutil.copytree(cache_root, run_root)
+    manifest_path = run_root / "00_manifest/run_manifest.json"
+    manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
+    asset_qa_path = run_root / manifest["paths"]["asset_qa"]
+    asset_qa = json.loads(asset_qa_path.read_text(encoding="utf-8"))
+    primary = next(item for item in asset_qa["assets"] if item["view_id"] == "ROT_0000")
+    post_path = run_root / manifest["paths"]["post_composite_verification"]
+    post = json.loads(post_path.read_text(encoding="utf-8"))
+    post_result = next(
+        item for item in post["asset_results"]
+        if item["asset_id"] == primary["asset_id"] and item["view_id"] == primary["view_id"]
+    )
+    run_root_rel = run_root.relative_to(project_root).as_posix()
+    primary_rel = (Path(run_root_rel) / primary["file_path"]).as_posix()
+    role_mapping = {
+        "exact_copy_bundle": ("exact_copy_bundle", "exact_copy_bundle_file_sha256"),
+        "coverage_matrix": ("coverage_matrix", "coverage_matrix_sha256"),
+        "generation_prompt_index": ("generation_prompt_index", "generation_prompt_index_sha256"),
+        "asset_qa": ("asset_qa", "asset_qa_sha256"),
+        "continuity_qa": ("continuity_qa", "continuity_qa_sha256"),
+        "post_composite_verification": (
+            "post_composite_verification", "post_composite_verification_sha256"
+        ),
+    }
+    locks = {
+        role: {
+            "locator": (Path(run_root_rel) / manifest["paths"][path_key]).as_posix(),
+            "file_sha256": manifest["hashes"][hash_key],
+        }
+        for role, (path_key, hash_key) in role_mapping.items()
+    }
+    validator_path = packaging_scripts / "validate_packaging_run.py"
+    evidence = {
+        "schema_version": "packaging-exact-copy-canon-evidence.v2",
+        "owner_skill": "packaging-product-identity-label-lock-board",
+        "asset_key": asset_key,
+        "primary_asset_sha256": primary["file_sha256"],
+        "packaging_run": {
+            "run_root_locator": run_root_rel,
+            "run_manifest_locator": (Path(run_root_rel) / "00_manifest/run_manifest.json").as_posix(),
+            "run_manifest_file_sha256": file_hash(manifest_path),
+            "run_id": manifest["run_id"],
+            "contract_version": manifest["contract_version"],
+        },
+        "validator_file_sha256": file_hash(validator_path),
+        "run_artifact_locks": locks,
+        "primary_member": {
+            "asset_id": primary["asset_id"], "view_id": primary["view_id"],
+            "locator": primary_rel, "file_sha256": primary["file_sha256"],
+            "post_result_id": post_result["result_id"],
+            "post_result_sha256": validator.canonical_envelope_hash(post_result),
+        },
+        "sha256": None,
+    }
+    evidence["sha256"] = validator.canonical_envelope_hash(evidence)
+    evidence_rel = f"sources/{artifact_id}_packaging_exact_copy_canon_evidence.json"
+    write_json(project_root / evidence_rel, evidence)
+    authority = {
+        "role": "packaging_exact_copy",
+        "locator": evidence_rel,
+        "file_sha256": file_hash(project_root / evidence_rel),
+        "semantic_sha256": evidence["sha256"],
+    }
+    return primary_rel, primary["file_sha256"], authority
+
+
 def make_bridge_asset(
     project_root: Path,
     artifact_id: str,
@@ -345,7 +539,21 @@ def make_bridge_asset(
         "scene_canon": ("terminal_scene_canon", "not_applicable"),
     }
     authority_stage, terminal_route_decision = lifecycle[profile_id]
-    primary_rel, primary_hash = make_png(project_root, artifact_id, color)
+    authority_evidence = None
+    if (
+        profile_id == "packaging_product"
+        and authority_mode == "geometry_layout_exact_copy_verified"
+    ):
+        primary_rel, primary_hash, authority_evidence = (
+            make_packaging_exact_copy_authority_evidence(
+                project_root, artifact_id, asset_key
+            )
+        )
+    else:
+        primary_rel, primary_hash = make_png(project_root, artifact_id, color)
+    with Image.open(project_root / primary_rel) as primary_image:
+        primary_image.verify()
+        primary_width, primary_height = primary_image.size
     prompt_evidence: list[dict[str, str]] = []
     prompt_hashes: dict[str, str] = {}
     for role in prompt_roles:
@@ -387,8 +595,13 @@ def make_bridge_asset(
         "authority_stage": authority_stage,
         "terminal_route_decision": terminal_route_decision,
         "primary_asset": {"locator": primary_rel, "file_sha256": primary_hash},
-        "primary_asset_media": {"media_type": "image/png", "width_px": 256, "height_px": 256},
+        "primary_asset_media": {
+            "media_type": "image/png",
+            "width_px": primary_width,
+            "height_px": primary_height,
+        },
         "prompt_evidence": prompt_evidence,
+        "authority_evidence": authority_evidence,
         "production_approval": {
             "status": "user_granted",
             "evidence_locator": approval_rel,

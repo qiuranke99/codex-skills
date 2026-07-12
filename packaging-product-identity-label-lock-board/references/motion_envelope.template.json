@@ -1,0 +1,19 @@
+{
+  "schema_version": "packaging-motion-envelope.v1",
+  "motion_type": "neutral_height_full_spin",
+  "motion_scope": "neutral_height_full_360_rotation",
+  "product_state_id": "STATE_CLOSED_001",
+  "required_view_ids": [
+    "ROT_0000",
+    "REPLACE_WITH_ALL_REMAINING_PROFILE_AND_REQUIRED_DETAIL_VIEW_IDS"
+  ],
+  "required_edge_ids": [
+    "ROT_0000__TO__ROT_0225",
+    "REPLACE_WITH_ALL_REMAINING_EDGES_INCLUDING_LAST_TO_FIRST"
+  ],
+  "loop_closure_required": true,
+  "elevation_rings": [],
+  "elevation_ring_instruction": "bounded_high_orbit/bounded_low_orbit use the four base anchors only; pitched_full_rotation scopes must declare exactly the required complete profile-matched HIGH and/or LOW ring with loop_closure_required=true",
+  "coverage_status": "passed",
+  "blocked_motion_segments": []
+}

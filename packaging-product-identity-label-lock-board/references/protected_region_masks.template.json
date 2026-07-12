@@ -1,0 +1,50 @@
+{
+  "schema_version": "packaging-protected-region-masks.v1",
+  "freeze_status": "frozen",
+  "masks": [
+    {
+      "region_id": "REGION_FRONT_LABEL",
+      "surface_id": "SURFACE_FRONT",
+      "asset_path": "03_composition/masks/REGION_FRONT_LABEL.png",
+      "asset_sha256": "0000000000000000000000000000000000000000000000000000000000000000",
+      "mask_semantics": "white_pixels_are_fully_replaced_by_deterministic_composition",
+      "source_refs": ["SRC_FRONT"],
+      "coverage_field_ids": ["FIELD_FRONT_HERO"],
+      "coverage_code_ids": [],
+      "coverage_graphic_ids": ["GRAPHIC_BRAND_LOGO"]
+    },
+    {
+      "region_id": "REGION_BACK_LABEL",
+      "surface_id": "SURFACE_BACK",
+      "asset_path": "03_composition/masks/REGION_BACK_LABEL.png",
+      "asset_sha256": "0000000000000000000000000000000000000000000000000000000000000000",
+      "mask_semantics": "white_pixels_are_fully_replaced_by_deterministic_composition",
+      "source_refs": ["SRC_BACK"],
+      "coverage_field_ids": ["FIELD_BACK_LEGAL"],
+      "coverage_code_ids": [],
+      "coverage_graphic_ids": []
+    },
+    {
+      "region_id": "REGION_BACK_BARCODE",
+      "surface_id": "SURFACE_BACK",
+      "asset_path": "03_composition/masks/REGION_BACK_BARCODE.png",
+      "asset_sha256": "0000000000000000000000000000000000000000000000000000000000000000",
+      "mask_semantics": "white_pixels_are_fully_replaced_by_deterministic_composition",
+      "source_refs": ["SRC_BACK"],
+      "coverage_field_ids": [],
+      "coverage_code_ids": ["CODE_EAN13"],
+      "coverage_graphic_ids": []
+    },
+    {
+      "region_id": "REGION_BOTTOM_STAMP",
+      "surface_id": "SURFACE_BOTTOM",
+      "asset_path": "03_composition/masks/REGION_BOTTOM_STAMP.png",
+      "asset_sha256": "0000000000000000000000000000000000000000000000000000000000000000",
+      "mask_semantics": "white_pixels_are_fully_replaced_by_deterministic_composition",
+      "source_refs": ["SRC_BOTTOM"],
+      "coverage_field_ids": ["FIELD_BOTTOM_STAMP"],
+      "coverage_code_ids": [],
+      "coverage_graphic_ids": []
+    }
+  ]
+}

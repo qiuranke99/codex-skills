@@ -1,0 +1,52 @@
+{
+  "schema_version": "packaging-post-composite-verification.v1",
+  "candidate_provenance": {
+    "adapter_path": "scripts/run_post_composite_verification.py",
+    "adapter_sha256": "0000000000000000000000000000000000000000000000000000000000000000",
+    "run_manifest_path": "00_manifest/run_manifest.json",
+    "run_manifest_sha256": "0000000000000000000000000000000000000000000000000000000000000000",
+    "engine_id": "bundled_macos_vision_ocr",
+    "engine_script_path": "scripts/macos_vision_ocr.swift",
+    "engine_script_sha256": "0000000000000000000000000000000000000000000000000000000000000000",
+    "uses_language_correction": false
+  },
+  "asset_results": [
+    {
+      "result_id": "POST_ASSET_ROT_0000",
+      "asset_id": "ASSET_ROT_0000",
+      "view_id": "ROT_0000",
+      "asset_file_sha256": "0000000000000000000000000000000000000000000000000000000000000000",
+      "composition_receipt_path": "07_qa/composition_receipts/ROT_0000.json",
+      "composition_receipt_sha256": "0000000000000000000000000000000000000000000000000000000000000000",
+      "post_ocr_evidence_path": "07_qa/post_ocr/ROT_0000.json",
+      "post_ocr_evidence_sha256": "0000000000000000000000000000000000000000000000000000000000000000",
+      "field_results": [
+        {
+          "field_id": "FIELD_FRONT_HERO",
+          "observation_id": "POST_ROT_0000_FIELD_FRONT_HERO",
+          "expected_text_sha256": "0000000000000000000000000000000000000000000000000000000000000000",
+          "observed_text_sha256": "0000000000000000000000000000000000000000000000000000000000000000",
+          "match": true,
+          "ocr_match_policy": "ordered_line_aggregation_exact",
+          "line_joiner": "newline"
+        }
+      ],
+      "code_results": [],
+      "graphic_results": [
+        {
+          "graphic_id": "GRAPHIC_BRAND_LOGO",
+          "source_graphic_sha256": "0000000000000000000000000000000000000000000000000000000000000000",
+          "comparison_status": "matched",
+          "comparison_receipt_path": "07_qa/graphic_comparisons/ROT_0000_GRAPHIC_BRAND_LOGO.json",
+          "comparison_receipt_sha256": "0000000000000000000000000000000000000000000000000000000000000000"
+        }
+      ]
+    }
+  ],
+  "copy_content_lock_status": "approved",
+  "label_artwork_lock_status": "approved",
+  "code_payload_lock_status": "approved",
+  "code_symbol_lock_status": "approved",
+  "logo_graphic_lock_status": "approved",
+  "exact_copy_lock_status": "approved"
+}

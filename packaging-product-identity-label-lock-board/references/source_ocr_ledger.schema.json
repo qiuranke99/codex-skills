@@ -1,0 +1,192 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "source_ocr_ledger.schema.json",
+  "title": "Packaging Whole-Product OCR Observations",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema_version", "engine", "engine_version", "preflight_adapter_path", "preflight_adapter_sha256", "engine_adapter_path", "engine_adapter_sha256", "language_set", "uses_language_correction", "created_at", "source_records", "preflight_status", "ledger_semantic_sha256"],
+  "properties": {
+    "schema_version": {"const": "packaging-ocr-observations.v1"},
+    "engine": {"enum": ["macos_vision", "tesseract"]},
+    "engine_version": {"type": ["string", "null"]},
+    "preflight_adapter_path": {"const": "scripts/run_ocr_preflight.py"},
+    "preflight_adapter_sha256": {"type": "string", "pattern": "^[a-f0-9]{64}$"},
+    "engine_adapter_path": {"type": "string", "minLength": 1},
+    "engine_adapter_sha256": {"type": "string", "pattern": "^[a-f0-9]{64}$"},
+    "language_set": {"type": "array", "minItems": 1, "uniqueItems": true, "items": {"type": "string", "minLength": 1}},
+    "uses_language_correction": {"const": false},
+    "created_at": {"type": "string", "minLength": 1},
+    "source_records": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "source_id", "file_path", "file_sha256", "pixel_dimensions",
+          "whole_product_ocr_passes", "region_ocr_passes", "text_observations",
+          "code_observations", "ocr_review_status", "zero_detection_review_status"
+        ],
+        "properties": {
+          "source_id": {"type": "string", "minLength": 1},
+          "file_path": {"type": "string", "minLength": 1},
+          "file_sha256": {"type": "string", "pattern": "^[a-f0-9]{64}$"},
+          "pixel_dimensions": {
+            "type": "object", "additionalProperties": false,
+            "required": ["width", "height"],
+            "properties": {"width": {"type": "integer", "minimum": 1}, "height": {"type": "integer", "minimum": 1}}
+          },
+          "whole_product_ocr_passes": {
+            "type": "array", "minItems": 1,
+            "items": {
+              "type": "object", "additionalProperties": false,
+              "required": ["pass_id", "scope", "engine_id", "engine_version", "preflight_adapter_path", "preflight_adapter_sha256", "engine_adapter_path", "engine_adapter_sha256", "source_sha256", "language_set", "uses_language_correction", "observation_count"],
+              "properties": {
+                "pass_id": {"type": "string", "minLength": 1},
+                "scope": {"const": "whole_product"},
+                "engine_id": {"enum": ["macos_vision", "tesseract"]},
+                "engine_version": {"type": "string", "minLength": 1},
+                "preflight_adapter_path": {"const": "scripts/run_ocr_preflight.py"},
+                "preflight_adapter_sha256": {"type": "string", "pattern": "^[a-f0-9]{64}$"},
+                "engine_adapter_path": {"type": "string", "minLength": 1},
+                "engine_adapter_sha256": {"type": "string", "pattern": "^[a-f0-9]{64}$"},
+                "source_sha256": {"type": "string", "pattern": "^[a-f0-9]{64}$"},
+                "language_set": {"type": "array", "minItems": 1, "items": {"type": "string", "minLength": 1}},
+                "uses_language_correction": {"const": false},
+                "observation_count": {"type": "integer", "minimum": 0}
+              }
+            }
+          },
+          "region_ocr_passes": {
+            "type": "array",
+            "items": {
+              "type": "object", "additionalProperties": false,
+              "required": [
+                "pass_id", "region_id", "surface_id", "physical_layer_id", "visibility_mode", "region_purpose",
+                "source_id", "source_file_sha256", "engine_id", "engine_version", "language_set",
+                "uses_language_correction", "observation_count",
+                "zero_detection_review_status",
+                "region_spec_path", "region_spec_sha256", "coordinate_origin", "bounding_box_normalized",
+                "crop_method", "rectifier_script_sha256", "crop_receipt_path", "crop_receipt_sha256",
+                "crop_receipt_semantic_sha256", "rectified_crop_path", "rectified_crop_sha256"
+              ],
+              "properties": {
+                "pass_id": {"type": "string", "minLength": 1},
+                "region_id": {"type": "string", "minLength": 1},
+                "surface_id": {"type": "string", "minLength": 1},
+                "physical_layer_id": {"type": "string", "minLength": 1},
+                "visibility_mode": {"enum": ["direct", "oblique", "mirrored_showthrough", "refracted", "reflected", "occluded"]},
+                "region_purpose": {"enum": ["text", "code", "graphic", "mixed"]},
+                "source_id": {"type": "string", "minLength": 1},
+                "source_file_sha256": {"type": "string", "pattern": "^[a-f0-9]{64}$"},
+                "engine_id": {"type": "string", "minLength": 1},
+                "engine_version": {"type": "string", "minLength": 1},
+                "language_set": {"type": "array", "minItems": 1, "items": {"type": "string", "minLength": 1}},
+                "uses_language_correction": {"const": false},
+                "observation_count": {"type": "integer", "minimum": 0},
+                "zero_detection_review_status": {"enum": ["not_applicable", "review_required", "not_applicable_non_text_region"]},
+                "region_spec_path": {"type": "string", "minLength": 1},
+                "region_spec_sha256": {"type": "string", "pattern": "^[a-f0-9]{64}$"},
+                "coordinate_origin": {"enum": ["top_left", "bottom_left"]},
+                "bounding_box_normalized": {
+                  "type": "object", "additionalProperties": false,
+                  "required": ["x", "y", "width", "height"],
+                  "properties": {
+                    "x": {"type": "number", "minimum": 0, "maximum": 1},
+                    "y": {"type": "number", "minimum": 0, "maximum": 1},
+                    "width": {"type": "number", "exclusiveMinimum": 0, "maximum": 1},
+                    "height": {"type": "number", "exclusiveMinimum": 0, "maximum": 1}
+                  }
+                },
+                "crop_method": {"const": "axis_aligned_normalized_bbox_v1"},
+                "rectifier_script_sha256": {"type": "string", "pattern": "^[a-f0-9]{64}$"},
+                "crop_receipt_path": {"type": "string", "minLength": 1},
+                "crop_receipt_sha256": {"type": "string", "pattern": "^[a-f0-9]{64}$"},
+                "crop_receipt_semantic_sha256": {"type": "string", "pattern": "^[a-f0-9]{64}$"},
+                "rectified_crop_path": {"type": "string", "minLength": 1},
+                "rectified_crop_sha256": {"type": "string", "pattern": "^[a-f0-9]{64}$"}
+              }
+            }
+          },
+          "text_observations": {
+            "type": "array",
+            "items": {
+              "type": "object", "additionalProperties": false,
+              "required": ["observation_id", "text", "confidence", "bounding_box_normalized", "scope", "visibility_mode", "disposition"],
+              "properties": {
+                "observation_id": {"type": "string", "minLength": 1},
+                "text": {"type": "string"},
+                "confidence": {"type": "number", "minimum": 0, "maximum": 1},
+                "bounding_box_normalized": {
+                  "type": "object", "additionalProperties": false,
+                  "required": ["x", "y", "width", "height"],
+                  "properties": {
+                    "x": {"type": "number", "minimum": 0, "maximum": 1},
+                    "y": {"type": "number", "minimum": 0, "maximum": 1},
+                    "width": {"type": "number", "minimum": 0, "maximum": 1},
+                    "height": {"type": "number", "minimum": 0, "maximum": 1}
+                  }
+                },
+                "scope": {"enum": ["whole_product", "region"]},
+                "region_id": {"type": ["string", "null"]},
+                "region_pass_id": {"type": ["string", "null"]},
+                "surface_id": {"type": "string", "minLength": 1},
+                "physical_layer_id": {"type": "string", "minLength": 1},
+                "region_purpose": {"enum": ["text", "code", "graphic", "mixed"]},
+                "visibility_mode": {"enum": ["direct", "oblique", "mirrored_showthrough", "refracted", "reflected", "occluded", "unclassified"]}
+                ,"disposition": {
+                  "type": "object", "additionalProperties": false,
+                  "required": ["status", "review_status", "reviewer_id", "field_id", "evidence_note"],
+                  "properties": {
+                    "status": {"enum": ["mapped_to_field", "duplicate_showthrough", "decorative_non_product_copy", "false_positive", "unresolved"]},
+                    "review_status": {"enum": ["reviewed", "review_required"]},
+                    "reviewer_id": {"type": ["string", "null"]},
+                    "field_id": {"type": ["string", "null"]},
+                    "evidence_note": {"type": "string", "minLength": 1}
+                  }
+                }
+              },
+              "allOf": [
+                {
+                  "if": {"properties": {"scope": {"const": "region"}}, "required": ["scope"]},
+                  "then": {"required": ["region_id", "region_pass_id", "surface_id", "physical_layer_id", "region_purpose"]}
+                }
+              ]
+            }
+          },
+          "code_observations": {
+            "type": "array",
+            "items": {
+              "type": "object", "additionalProperties": false,
+              "required": ["code_id", "symbology", "payload", "bounding_box_normalized", "disposition"],
+              "properties": {
+                "code_id": {"type": "string", "minLength": 1},
+                "symbology": {"type": "string", "minLength": 1},
+                "payload": {"type": ["string", "null"]},
+                "bounding_box_normalized": {"type": "object"},
+                "disposition": {
+                  "type": "object", "additionalProperties": false,
+                  "required": ["status", "review_status", "reviewer_id", "manifest_code_id", "evidence_note"],
+                  "properties": {
+                    "status": {"enum": ["mapped_to_code", "duplicate_code_observation", "decorative_non_product_code", "false_positive", "unresolved"]},
+                    "review_status": {"enum": ["reviewed", "review_required"]},
+                    "reviewer_id": {"type": ["string", "null"]},
+                    "manifest_code_id": {"type": ["string", "null"]},
+                    "evidence_note": {"type": "string", "minLength": 1}
+                  }
+                }
+              }
+            }
+          },
+          "ocr_review_status": {"enum": ["pending", "review_required", "reviewed"]},
+          "zero_detection_review_status": {
+            "type": ["string", "null"],
+            "enum": ["reviewed_no_copy_detected", null]
+          }
+        }
+      }
+    },
+    "preflight_status": {"enum": ["observations_ready", "blocked_ocr_capability", "blocked_required_language_support", "failed"]},
+    "ledger_semantic_sha256": {"type": "string", "pattern": "^[a-f0-9]{64}$"}
+  }
+}

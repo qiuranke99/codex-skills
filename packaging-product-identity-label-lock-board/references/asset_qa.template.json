@@ -1,0 +1,41 @@
+{
+  "schema_version": "packaging-asset-qa.v1",
+  "assets": [
+    {
+      "asset_id": "ASSET_ROT_0000",
+      "view_id": "ROT_0000",
+      "family": "neutral_ring",
+      "raw_file_path": "05_masters_raw/neutral_ring/ROT_0000.png",
+      "raw_file_sha256": "0000000000000000000000000000000000000000000000000000000000000000",
+      "file_path": "05_masters/neutral_ring/ROT_0000.png",
+      "file_sha256": "0000000000000000000000000000000000000000000000000000000000000000",
+      "generation_prompt_sha256": "0000000000000000000000000000000000000000000000000000000000000000",
+      "generation_receipt_path": "05_masters/receipts/ROT_0000_generation_receipt.json",
+      "generation_receipt_sha256": "0000000000000000000000000000000000000000000000000000000000000000",
+      "independently_generated": true,
+      "derived_from_multipanel": false,
+      "assistant_qa_status": "passed",
+      "text_pollution_status": "passed",
+      "copy_composition_status": "passed",
+      "post_verification_status": "passed"
+    }
+  ],
+  "review_boards": [
+    {
+      "file_path": "06_review_boards/rotation_000_135_16x9.png",
+      "file_sha256": "0000000000000000000000000000000000000000000000000000000000000000",
+      "derivation_mode": "deterministic_composite",
+      "role": "human_review_qa_board",
+      "semantic_board_role": "neutral_rotation",
+      "ordered_view_ids": ["ROT_0000"],
+      "inputs": [
+        {
+          "asset_id": "ASSET_ROT_0000",
+          "view_id": "ROT_0000",
+          "file_path": "05_masters/neutral_ring/ROT_0000.png",
+          "file_sha256": "0000000000000000000000000000000000000000000000000000000000000000"
+        }
+      ]
+    }
+  ]
+}

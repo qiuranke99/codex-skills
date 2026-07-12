@@ -1,0 +1,94 @@
+{
+  "schema_version": "packaging-surface-inventory.v1",
+  "required_surface_ids": [
+    "SURFACE_FRONT",
+    "SURFACE_BACK",
+    "SURFACE_LEFT",
+    "SURFACE_RIGHT",
+    "SURFACE_TOP",
+    "SURFACE_BOTTOM"
+  ],
+  "surfaces": [
+    {
+      "surface_id": "SURFACE_FRONT",
+      "semantic_role": "front",
+      "physical_layer_ids": ["front_wall", "front_label_opaque", "front_print_outer"],
+      "coverage_status": "accounted",
+      "text_detection_status": "text_detected",
+      "source_refs": ["SRC_FRONT"],
+      "region_ids": ["REGION_FRONT_LABEL"],
+      "required_copy_field_ids": ["FIELD_FRONT_HERO"],
+      "required_code_ids": [],
+      "required_graphic_ids": ["GRAPHIC_BRAND_LOGO"]
+    },
+    {
+      "surface_id": "SURFACE_BACK",
+      "semantic_role": "back",
+      "physical_layer_ids": ["rear_wall", "rear_label_or_compliance_block"],
+      "coverage_status": "accounted",
+      "text_detection_status": "text_detected",
+      "source_refs": ["SRC_BACK"],
+      "region_ids": ["REGION_BACK_LABEL", "REGION_BACK_BARCODE"],
+      "required_copy_field_ids": ["FIELD_BACK_LEGAL"],
+      "required_code_ids": ["CODE_EAN13"],
+      "required_graphic_ids": []
+    },
+    {
+      "surface_id": "SURFACE_LEFT",
+      "semantic_role": "left",
+      "physical_layer_ids": ["left_wall"],
+      "coverage_status": "verified_no_copy",
+      "text_detection_status": "verified_no_copy",
+      "no_copy_review_status": "reviewed",
+      "no_copy_reviewer_id": "REPLACE_REVIEWER_ID",
+      "no_copy_evidence_note": "Whole-product and side-region review found no product-native copy on the direct left source.",
+      "source_refs": ["SRC_LEFT"],
+      "region_ids": [],
+      "required_copy_field_ids": [],
+      "required_code_ids": [],
+      "required_graphic_ids": []
+    },
+    {
+      "surface_id": "SURFACE_RIGHT",
+      "semantic_role": "right",
+      "physical_layer_ids": ["right_wall"],
+      "coverage_status": "verified_no_copy",
+      "text_detection_status": "verified_no_copy",
+      "no_copy_review_status": "reviewed",
+      "no_copy_reviewer_id": "REPLACE_REVIEWER_ID",
+      "no_copy_evidence_note": "Whole-product and side-region review found no product-native copy on the direct right source.",
+      "source_refs": ["SRC_RIGHT"],
+      "region_ids": [],
+      "required_copy_field_ids": [],
+      "required_code_ids": [],
+      "required_graphic_ids": []
+    },
+    {
+      "surface_id": "SURFACE_TOP",
+      "semantic_role": "top",
+      "physical_layer_ids": ["closure", "actuator"],
+      "coverage_status": "verified_no_copy",
+      "text_detection_status": "verified_no_copy",
+      "no_copy_review_status": "reviewed",
+      "no_copy_reviewer_id": "REPLACE_REVIEWER_ID",
+      "no_copy_evidence_note": "Whole-product and closure-region review found no product-native copy on the direct top source.",
+      "source_refs": ["SRC_TOP"],
+      "region_ids": [],
+      "required_copy_field_ids": [],
+      "required_code_ids": [],
+      "required_graphic_ids": []
+    },
+    {
+      "surface_id": "SURFACE_BOTTOM",
+      "semantic_role": "bottom",
+      "physical_layer_ids": ["base", "bottom_stamp"],
+      "coverage_status": "accounted",
+      "text_detection_status": "text_detected",
+      "source_refs": ["SRC_BOTTOM"],
+      "region_ids": ["REGION_BOTTOM_STAMP"],
+      "required_copy_field_ids": ["FIELD_BOTTOM_STAMP"],
+      "required_code_ids": [],
+      "required_graphic_ids": []
+    }
+  ]
+}

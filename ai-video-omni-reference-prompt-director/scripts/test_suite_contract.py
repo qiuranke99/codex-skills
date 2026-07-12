@@ -117,10 +117,64 @@ def main() -> int:
         assert_has(validate_suite(copied, run_tests=False), "hardcoded local absolute path")
         private_path.unlink()
 
+        swift_path = copied / "packaging-product-identity-label-lock-board/scripts/leaky.swift"
+        swift_path.write_text(
+            "let privatePath = \"" + "/" + "Users/example/private.json\"\n",
+            encoding="utf-8",
+        )
+        assert_has(validate_suite(copied, run_tests=False), "hardcoded local absolute path")
+        swift_path.unlink()
+
         secret_path = copied / "multi-angle-product-identity-lock-board/leak.md"
         secret_path.write_text("token=" + "ghp_" + "A" * 30 + "\n", encoding="utf-8")
         assert_has(validate_suite(copied, run_tests=False), "possible secret/private key")
         secret_path.unlink()
+
+        for label, secret in (
+            ("aws", "AKIA" + "A" * 16),
+            ("slack", "xoxb-" + "B" * 24),
+            ("bearer", "Bearer " + "C" * 32),
+        ):
+            expanded_secret = copied / f"multi-angle-product-identity-lock-board/{label}-leak.md"
+            expanded_secret.write_text(secret + "\n", encoding="utf-8")
+            assert_has(validate_suite(copied, run_tests=False), "possible secret/private key")
+            expanded_secret.unlink()
+
+        binary = copied / "packaging-product-identity-label-lock-board/private-photo.jpg"
+        binary.write_bytes(b"not-a-public-source-artifact")
+        assert_has(validate_suite(copied, run_tests=False), "unsupported publication file type")
+        binary.unlink()
+
+        run_artifact = copied / "packaging-product-identity-label-lock-board/runs/run.json"
+        run_artifact.parent.mkdir()
+        run_artifact.write_text("{}\n", encoding="utf-8")
+        assert_has(validate_suite(copied, run_tests=False), "forbidden generated/cache path")
+        shutil.rmtree(run_artifact.parent)
+
+        oversized = copied / "packaging-product-identity-label-lock-board/oversized.md"
+        oversized.write_bytes(b"x" * (1024 * 1024 + 1))
+        assert_has(validate_suite(copied, run_tests=False), "exceeds 1 MiB review cap")
+        oversized.unlink()
+
+        symlink = copied / "packaging-product-identity-label-lock-board/linked-skill.md"
+        try:
+            symlink.symlink_to("SKILL.md")
+        except OSError:
+            pass  # Windows may deny unprivileged symlink creation; Unix CI covers this negative.
+        else:
+            assert_has(validate_suite(copied, run_tests=False), "symlinks are forbidden")
+            symlink.unlink()
+
+        packaging_requirements = copied / "packaging-product-identity-label-lock-board/requirements.txt"
+        packaging_requirements.write_text(
+            packaging_requirements.read_text(encoding="utf-8").replace("Pillow==11.3.0", "Pillow==11.2.0"),
+            encoding="utf-8",
+        )
+        assert_has(validate_suite(copied, run_tests=False), "Pillow pins must remain identical")
+        shutil.copy2(
+            SUITE_ROOT / "packaging-product-identity-label-lock-board/requirements.txt",
+            packaging_requirements,
+        )
 
         bad_python = copied / "material-sensitive-product-master-asset-board/scripts/bad_publish.py"
         bad_python.write_text("def broken(:\n", encoding="utf-8")
@@ -141,7 +195,8 @@ def main() -> int:
         "PASS: suite validator accepts the 13-package publication surface and rejects "
         "six/owner frontmatter drift, suite-wide generation-route marker drift, "
         "owner wrapper/appendix drift, private paths, secrets, invalid Python/JSON, "
-        "metadata drift, and owner caches"
+        "Swift leaks, expanded secrets, unsupported binaries, run/temp artifacts, "
+        "oversized files, symlinks, Pillow-pin drift, metadata drift, and owner caches"
     )
     return 0
 

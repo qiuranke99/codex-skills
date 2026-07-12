@@ -21,6 +21,8 @@ PAIRS = (
     ("ai-video-timed-animatic-previs-director/references/previs_manifest.schema.json", "ai-video-timed-animatic-previs-director/references/previs_manifest_template.json"),
     ("ai-video-keyframe-continuity-pack/references/keyframe_manifest.schema.json", "ai-video-keyframe-continuity-pack/references/keyframe_manifest_template.json"),
     ("ai-video-keyframe-continuity-pack/references/boundary_supplement.schema.json", "ai-video-keyframe-continuity-pack/references/boundary_supplement.template.json"),
+    ("packaging-product-identity-label-lock-board/references/packaging_asset_pack.schema.json", "packaging-product-identity-label-lock-board/references/packaging_asset_pack.template.json"),
+    ("packaging-product-identity-label-lock-board/references/source_ocr_ledger.schema.json", "packaging-product-identity-label-lock-board/references/source_ocr_ledger.template.json"),
     ("ai-video-omni-reference-prompt-director/references/generation_unit_preflight.schema.json", "ai-video-omni-reference-prompt-director/references/generation_unit_preflight.template.json"),
     ("ai-video-omni-reference-prompt-director/references/canonical_ir.schema.json", "ai-video-omni-reference-prompt-director/references/canonical_ir_template.json"),
     ("ai-video-omni-reference-prompt-director/references/acceptance_gap_report.schema.json", "ai-video-omni-reference-prompt-director/references/acceptance_gap_report.template.json"),

@@ -1,0 +1,38 @@
+{
+  "schema_version": "packaging-graphic-comparison-receipt.v1",
+  "asset_id": "ASSET_ROT_0000",
+  "view_id": "ROT_0000",
+  "asset_file_sha256": "0000000000000000000000000000000000000000000000000000000000000000",
+  "graphic_id": "GRAPHIC_BRAND_LOGO",
+  "source_graphic_sha256": "0000000000000000000000000000000000000000000000000000000000000000",
+  "comparison_adapter_path": "scripts/run_post_composite_verification.py",
+  "comparison_adapter_sha256": "0000000000000000000000000000000000000000000000000000000000000000",
+  "composition_job_path": "07_qa/composition_jobs/ROT_0000.json",
+  "composition_job_sha256": "0000000000000000000000000000000000000000000000000000000000000000",
+  "composition_receipt_path": "07_qa/composition_receipts/ROT_0000.json",
+  "composition_receipt_sha256": "0000000000000000000000000000000000000000000000000000000000000000",
+  "layer_id": "ROT_0000_LOGO_LAYER_INSTANCE",
+  "layer_source_lock": {
+    "path": "01_ocr/rectified_regions/SRC_FRONT/REGION_FRONT_LABEL.png",
+    "sha256": "0000000000000000000000000000000000000000000000000000000000000000",
+    "source_crop_box_px": [0, 0, 300, 120]
+  },
+  "projection_lock": {
+    "projection_model": "source_pixel_preservation",
+    "destination_box_px": [1450, 1200, 1750, 1320]
+  },
+  "mask_lock": {
+    "path": "03_composition/masks/REGION_FRONT_LABEL.png",
+    "sha256": "0000000000000000000000000000000000000000000000000000000000000000"
+  },
+  "final_compositor_replay": {
+    "status": "byte_identical",
+    "output_file_sha256": "0000000000000000000000000000000000000000000000000000000000000000",
+    "compositor_script_sha256": "0000000000000000000000000000000000000000000000000000000000000000",
+    "composition_receipt_replay_status": "byte_identical"
+  },
+  "comparison_method": "bundled_composition_replay_source_projection_binding_v1",
+  "deterministic_similarity": 1.0,
+  "comparison_status": "matched",
+  "receipt_sha256": "0000000000000000000000000000000000000000000000000000000000000000"
+}

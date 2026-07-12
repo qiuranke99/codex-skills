@@ -1,0 +1,26 @@
+{
+  "schema_version": "packaging-deterministic-composition-plan.v1",
+  "plan_id": "COMPOSITION_PLAN_REPLACE_V1",
+  "status": "ready",
+  "view_statuses": [
+    {
+      "view_id": "ROT_0000",
+      "status": "ready",
+      "projection_model": "source_pixel_preservation",
+      "source_layer_ids": ["LAYER_FRONT_TEXT", "LAYER_FRONT_LOGO"],
+      "protected_region_ids": ["REGION_FRONT_LABEL"],
+      "ocr_field_ids_visible": ["FIELD_FRONT_HERO"],
+      "code_ids_visible": [],
+      "graphic_ids_visible": ["GRAPHIC_BRAND_LOGO"],
+      "transform_contract": {
+        "layer_destination_contracts": {
+          "LAYER_FRONT_TEXT": {"destination_box_px": [1420, 1180, 2420, 1580]},
+          "LAYER_FRONT_LOGO": {"destination_box_px": [1450, 1200, 1750, 1320]}
+        },
+        "depth_order": ["front_wall", "front_label_opaque", "front_print_outer"],
+        "visibility_rule": "source_bound_front_facing_pixels_only"
+      },
+      "binding_receipt_required": true
+    }
+  ]
+}

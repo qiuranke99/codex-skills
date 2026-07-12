@@ -11,6 +11,7 @@ from __future__ import annotations
 import argparse
 import copy
 import hashlib
+import importlib.util
 import io
 import json
 import os
@@ -41,7 +42,7 @@ RECORD_FIELDS = {
     "schema_version", "profile_id", "asset_key", "artifact_slot", "artifact_type",
     "authority_mode", "control_roles_authorized", "authority_stage",
     "terminal_route_decision", "primary_asset", "primary_asset_media",
-    "prompt_evidence", "production_approval", "export_status",
+    "prompt_evidence", "authority_evidence", "production_approval", "export_status",
 }
 APPROVAL_FIELDS = {
     "schema_version", "approval_event_id", "owner_skill", "asset_key",
@@ -167,6 +168,15 @@ def _json_hash(value: dict[str, Any]) -> str:
     return hashlib.sha256(encoded).hexdigest()
 
 
+def _json_hash_omitting(value: dict[str, Any], field: str) -> str:
+    payload = copy.deepcopy(value)
+    payload.pop(field, None)
+    encoded = json.dumps(
+        payload, ensure_ascii=False, sort_keys=True, separators=(",", ":"), allow_nan=False
+    ).encode("utf-8")
+    return hashlib.sha256(encoded).hexdigest()
+
+
 def _json_bytes(value: dict[str, Any]) -> bytes:
     return (json.dumps(value, ensure_ascii=False, sort_keys=True, indent=2, allow_nan=False) + "\n").encode("utf-8")
 
@@ -257,6 +267,13 @@ def _parse_prompt_spec(value: str) -> tuple[str, str, str]:
     return parts[0], parts[1], parts[2]
 
 
+def _parse_file_lock_spec(value: str) -> tuple[str, str]:
+    parts = value.split("=", 1)
+    if len(parts) != 2 or not all(parts):
+        raise argparse.ArgumentTypeError("file evidence must be PROJECT_RELATIVE_LOCATOR=SHA256")
+    return parts[0], parts[1]
+
+
 def _semver_tuple(value: str) -> tuple[int, int, int]:
     if not SEMVER.fullmatch(value):
         raise ExportError("asset version must be SemVer x.y.z")
@@ -284,6 +301,202 @@ def _read_json_bytes(data: bytes, label: str) -> dict[str, Any]:
     if not isinstance(value, dict):
         raise ExportError(f"{label} root must be an object")
     return value
+
+
+def validate_packaging_exact_copy_evidence(
+    value: Any,
+    project_root: Path,
+    asset_key: str,
+    primary_asset_sha256: str,
+    primary_asset_path: Path | None = None,
+) -> list[str]:
+    if not isinstance(value, dict):
+        return ["packaging exact-copy evidence root must be an object"]
+    required_fields = {
+        "schema_version", "owner_skill", "asset_key", "primary_asset_sha256",
+        "packaging_run", "validator_file_sha256", "run_artifact_locks",
+        "primary_member", "sha256",
+    }
+    errors: list[str] = []
+    if set(value) != required_fields:
+        errors.append("packaging exact-copy evidence must contain exact fields")
+    if value.get("schema_version") != "packaging-exact-copy-canon-evidence.v2":
+        errors.append("packaging exact-copy evidence schema_version is invalid")
+    if value.get("owner_skill") != "packaging-product-identity-label-lock-board":
+        errors.append("packaging exact-copy evidence owner_skill is invalid")
+    if value.get("asset_key") != asset_key:
+        errors.append("packaging exact-copy evidence asset_key mismatch")
+    if value.get("primary_asset_sha256") != primary_asset_sha256:
+        errors.append("packaging exact-copy evidence primary_asset_sha256 mismatch")
+    digest = value.get("sha256")
+    if not isinstance(digest, str) or not SHA.fullmatch(digest) or digest != _json_hash(value):
+        errors.append("packaging exact-copy evidence sha256 is not canonical")
+    packaging_run = value.get("packaging_run")
+    if not isinstance(packaging_run, dict) or set(packaging_run) != {
+        "run_root_locator", "run_manifest_locator", "run_manifest_file_sha256",
+        "run_id", "contract_version",
+    }:
+        errors.append("packaging exact-copy evidence packaging_run lock is invalid")
+        return errors
+    run_root_locator = packaging_run.get("run_root_locator")
+    if not _safe_locator(run_root_locator):
+        errors.append("packaging run_root_locator must be a safe project-relative path")
+        return errors
+    run_root = (project_root.resolve() / str(run_root_locator)).resolve()
+    try:
+        run_root.relative_to(project_root.resolve())
+    except ValueError:
+        errors.append("packaging run root escapes project root")
+        return errors
+    if not run_root.is_dir():
+        errors.append("packaging run root is missing")
+        return errors
+    expected_manifest_path = (run_root / "00_manifest/run_manifest.json").resolve()
+    try:
+        manifest_path, manifest_bytes = _resolve_locked_file(
+            project_root,
+            packaging_run.get("run_manifest_locator"),
+            packaging_run.get("run_manifest_file_sha256"),
+            "packaging COMPLETE run manifest",
+        )
+    except ExportError as exc:
+        errors.append(str(exc))
+        return errors
+    if manifest_path != expected_manifest_path:
+        errors.append("packaging run manifest must be the canonical run-root manifest")
+    run_manifest = _read_json_bytes(manifest_bytes, "packaging COMPLETE run manifest")
+    if (
+        run_manifest.get("stage") != "COMPLETE"
+        or run_manifest.get("exact_copy_mode") != "all_visible_product_native_copy"
+        or run_manifest.get("allow_geometry_only_preview") is not False
+        or run_manifest.get("production_approval_status") not in {"user_granted", "external_pipeline_granted"}
+    ):
+        errors.append("packaging Canon authority requires a production-approved COMPLETE all-visible exact-copy run")
+    if packaging_run.get("run_id") != run_manifest.get("run_id"):
+        errors.append("packaging evidence run_id mismatch")
+    if packaging_run.get("contract_version") != run_manifest.get("contract_version"):
+        errors.append("packaging evidence contract_version mismatch")
+
+    validator_path = (
+        Path(__file__).resolve().parents[2]
+        / "packaging-product-identity-label-lock-board/scripts/validate_packaging_run.py"
+    )
+    if not validator_path.is_file():
+        errors.append("packaging run validator is unavailable; exact authority fails closed")
+        return errors
+    validator_sha = _sha(validator_path.read_bytes())
+    if value.get("validator_file_sha256") != validator_sha:
+        errors.append("packaging evidence validator_file_sha256 is stale")
+    try:
+        spec = importlib.util.spec_from_file_location(
+            "_packaging_exact_copy_canon_validator", validator_path
+        )
+        if spec is None or spec.loader is None:
+            raise ImportError("validator module spec unavailable")
+        validator_module = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(validator_module)
+        run_errors = validator_module.validate_run(run_root)
+    except Exception as exc:
+        errors.append(f"packaging COMPLETE run validator could not execute: {exc}")
+        return errors
+    if run_errors:
+        errors.append("packaging COMPLETE run failed live validation: " + "; ".join(run_errors))
+
+    lock_roles = {
+        "exact_copy_bundle": ("exact_copy_bundle", "exact_copy_bundle_file_sha256"),
+        "coverage_matrix": ("coverage_matrix", "coverage_matrix_sha256"),
+        "generation_prompt_index": ("generation_prompt_index", "generation_prompt_index_sha256"),
+        "asset_qa": ("asset_qa", "asset_qa_sha256"),
+        "continuity_qa": ("continuity_qa", "continuity_qa_sha256"),
+        "post_composite_verification": (
+            "post_composite_verification", "post_composite_verification_sha256"
+        ),
+    }
+    artifact_locks = value.get("run_artifact_locks")
+    if not isinstance(artifact_locks, dict) or set(artifact_locks) != set(lock_roles):
+        errors.append("packaging run_artifact_locks must contain the exact v2 closure")
+        artifact_locks = {}
+    for role, (path_key, hash_key) in lock_roles.items():
+        lock = artifact_locks.get(role)
+        if not isinstance(lock, dict) or set(lock) != {"locator", "file_sha256"}:
+            errors.append(f"packaging run artifact lock {role} is invalid")
+            continue
+        run_relative = run_manifest.get("paths", {}).get(path_key)
+        expected_hash = run_manifest.get("hashes", {}).get(hash_key)
+        expected_locator = (Path(str(run_root_locator)) / str(run_relative)).as_posix()
+        if lock.get("locator") != expected_locator or lock.get("file_sha256") != expected_hash:
+            errors.append(f"packaging run artifact lock {role} does not match COMPLETE manifest")
+            continue
+        try:
+            _resolve_locked_file(project_root, lock["locator"], lock["file_sha256"], f"packaging run {role}")
+        except ExportError as exc:
+            errors.append(str(exc))
+
+    primary_member = value.get("primary_member")
+    required_member_fields = {
+        "asset_id", "view_id", "locator", "file_sha256", "post_result_id",
+        "post_result_sha256",
+    }
+    if not isinstance(primary_member, dict) or set(primary_member) != required_member_fields:
+        errors.append("packaging primary_member lock is invalid")
+        return errors
+    asset_lock = artifact_locks.get("asset_qa") if isinstance(artifact_locks, dict) else None
+    post_lock = artifact_locks.get("post_composite_verification") if isinstance(artifact_locks, dict) else None
+    if not isinstance(asset_lock, dict) or not isinstance(post_lock, dict):
+        return errors
+    try:
+        _, asset_qa_bytes = _resolve_locked_file(
+            project_root, asset_lock.get("locator"), asset_lock.get("file_sha256"), "packaging asset QA"
+        )
+        _, post_bytes = _resolve_locked_file(
+            project_root, post_lock.get("locator"), post_lock.get("file_sha256"), "packaging post verification"
+        )
+        asset_qa = _read_json_bytes(asset_qa_bytes, "packaging asset QA")
+        post = _read_json_bytes(post_bytes, "packaging post verification")
+    except ExportError as exc:
+        errors.append(str(exc))
+        return errors
+    matching_assets = [
+        item for item in asset_qa.get("assets", [])
+        if isinstance(item, dict) and item.get("file_sha256") == primary_asset_sha256
+    ]
+    if len(matching_assets) != 1:
+        errors.append("Canon primary must uniquely match one approved packaging master")
+        return errors
+    asset = matching_assets[0]
+    expected_primary_locator = (
+        Path(str(run_root_locator)) / str(asset.get("file_path"))
+    ).as_posix()
+    if (
+        primary_member.get("asset_id") != asset.get("asset_id")
+        or primary_member.get("view_id") != asset.get("view_id")
+        or primary_member.get("locator") != expected_primary_locator
+        or primary_member.get("file_sha256") != asset.get("file_sha256")
+        or asset.get("assistant_qa_status") != "passed"
+        or asset.get("independently_generated") is not True
+        or asset.get("derived_from_multipanel") is not False
+    ):
+        errors.append("packaging primary_member does not match the approved independent master")
+    expected_primary_path = (project_root.resolve() / expected_primary_locator).resolve()
+    if primary_asset_path is not None and primary_asset_path.resolve() != expected_primary_path:
+        errors.append("Canon primary path is not the approved packaging master path")
+    matching_post = [
+        item for item in post.get("asset_results", [])
+        if isinstance(item, dict)
+        and item.get("asset_id") == asset.get("asset_id")
+        and item.get("view_id") == asset.get("view_id")
+        and item.get("asset_file_sha256") == primary_asset_sha256
+    ]
+    if len(matching_post) != 1:
+        errors.append("packaging primary lacks one exact post-verification result")
+    else:
+        result = matching_post[0]
+        if (
+            primary_member.get("post_result_id") != result.get("result_id")
+            or primary_member.get("post_result_sha256") != _json_hash(result)
+        ):
+            errors.append("packaging primary post-result lock mismatch")
+    return errors
 
 
 def validate_approval_evidence(
@@ -395,6 +608,7 @@ def validate_export_record(value: Any, project_root: Path | None = None) -> list
     primary = value.get("primary_asset")
     primary_media = value.get("primary_asset_media")
     prompts = value.get("prompt_evidence")
+    authority_evidence = value.get("authority_evidence")
     if not isinstance(primary, dict) or set(primary) != {"locator", "file_sha256"}:
         errors.append("primary_asset must contain exact locator/file_sha256 fields")
     if (
@@ -418,12 +632,25 @@ def validate_export_record(value: Any, project_root: Path | None = None) -> list
     for index, item in enumerate(prompts):
         if not isinstance(item, dict) or set(item) != {"role", "locator", "file_sha256"}:
             errors.append(f"prompt_evidence[{index}] must contain exact fields")
+    exact_packaging_mode = (
+        profile.profile_id == "packaging_product"
+        and authority_mode == "geometry_layout_exact_copy_verified"
+    )
+    if exact_packaging_mode:
+        if (
+            not isinstance(authority_evidence, dict)
+            or set(authority_evidence) != {"role", "locator", "file_sha256", "semantic_sha256"}
+            or authority_evidence.get("role") != "packaging_exact_copy"
+        ):
+            errors.append("exact packaging export requires locked packaging_exact_copy authority_evidence")
+    elif authority_evidence is not None:
+        errors.append("authority_evidence is forbidden outside exact packaging export mode")
     if not isinstance(approval, dict) or set(approval) != {"status", "evidence_locator", "evidence_file_sha256"}:
         errors.append("production_approval must contain exact fields")
 
     if project_root is not None and isinstance(primary, dict) and isinstance(scope, list):
         try:
-            _, primary_bytes = _resolve_locked_file(project_root, primary.get("locator"), primary.get("file_sha256"), "primary asset")
+            primary_path, primary_bytes = _resolve_locked_file(project_root, primary.get("locator"), primary.get("file_sha256"), "primary asset")
             observed_media = _image_metadata(primary_bytes, str(primary.get("locator")))
             if observed_media != primary_media:
                 errors.append("primary_asset_media differs from the actual image bytes")
@@ -434,6 +661,21 @@ def validate_export_record(value: Any, project_root: Path | None = None) -> list
                 _, prompt_bytes = _resolve_locked_file(project_root, item.get("locator"), item.get("file_sha256"), f"prompt evidence {item.get('role')}")
                 _validate_prompt_bytes(prompt_bytes, str(item.get("role")))
                 prompt_hashes[str(item.get("role"))] = _sha(prompt_bytes)
+            if exact_packaging_mode and isinstance(authority_evidence, dict):
+                _, authority_bytes = _resolve_locked_file(
+                    project_root,
+                    authority_evidence.get("locator"),
+                    authority_evidence.get("file_sha256"),
+                    "packaging exact-copy authority evidence",
+                )
+                authority_value = _read_json_bytes(
+                    authority_bytes, "packaging exact-copy authority evidence"
+                )
+                if authority_evidence.get("semantic_sha256") != authority_value.get("sha256"):
+                    errors.append("packaging exact-copy authority evidence semantic hash mismatch")
+                errors.extend(validate_packaging_exact_copy_evidence(
+                    authority_value, project_root, asset_key, _sha(primary_bytes), primary_path
+                ))
             if isinstance(approval, dict):
                 _, approval_bytes = _resolve_locked_file(
                     project_root, approval.get("evidence_locator"), approval.get("evidence_file_sha256"), "approval evidence"
@@ -892,6 +1134,7 @@ def _apply_fixed_owner_export_locked(
     approval_evidence_sha256: str,
     requested_shot_uids: Sequence[str],
     explicit_terminal_route: bool = False,
+    packaging_exact_copy_evidence_spec: tuple[str, str] | None = None,
 ) -> dict[str, Any]:
     project_root = project_root.resolve()
     package_root = package_root.resolve()
@@ -940,10 +1183,45 @@ def _apply_fixed_owner_export_locked(
         raise ExportError("affected Shot UIDs are not in Project Canon: " + ", ".join(unknown))
     affected = [uid for uid in canonical_shots if uid in set(requested)]
 
-    _, primary_bytes = _resolve_locked_file(
+    primary_path, primary_bytes = _resolve_locked_file(
         project_root, primary_asset_locator, primary_asset_sha256, "primary asset"
     )
     primary_asset_media = _image_metadata(primary_bytes, primary_asset_locator)
+    authority_evidence: dict[str, Any] | None = None
+    exact_packaging_mode = (
+        profile.profile_id == "packaging_product"
+        and authority_mode == "geometry_layout_exact_copy_verified"
+    )
+    if exact_packaging_mode:
+        if packaging_exact_copy_evidence_spec is None:
+            raise ExportError(
+                "geometry_layout_exact_copy_verified requires --packaging-exact-copy-evidence "
+                "LOCATOR=SHA256"
+            )
+        evidence_locator, evidence_expected_sha = packaging_exact_copy_evidence_spec
+        _, evidence_bytes = _resolve_locked_file(
+            project_root, evidence_locator, evidence_expected_sha,
+            "packaging exact-copy authority evidence",
+        )
+        evidence_value = _read_json_bytes(evidence_bytes, "packaging exact-copy authority evidence")
+        evidence_errors = validate_packaging_exact_copy_evidence(
+            evidence_value, project_root, asset_key, _sha(primary_bytes), primary_path
+        )
+        if evidence_errors:
+            raise ExportError(
+                "packaging exact-copy authority evidence is invalid: " + "; ".join(evidence_errors)
+            )
+        authority_evidence = {
+            "role": "packaging_exact_copy",
+            "locator": evidence_locator,
+            "file_sha256": _sha(evidence_bytes),
+            "semantic_sha256": evidence_value["sha256"],
+        }
+    elif packaging_exact_copy_evidence_spec is not None:
+        raise ExportError(
+            "--packaging-exact-copy-evidence is only allowed for packaging "
+            "geometry_layout_exact_copy_verified exports"
+        )
     prompt_by_role: dict[str, tuple[str, str]] = {}
     for role, locator, expected_hash in prompt_specs:
         if role in prompt_by_role:
@@ -998,6 +1276,7 @@ def _apply_fixed_owner_export_locked(
             {"role": role, "locator": prompt_by_role[role][0], "file_sha256": prompt_by_role[role][1]}
             for role in profile.required_prompt_roles
         ],
+        "authority_evidence": authority_evidence,
         "production_approval": {
             "status": approval["production_approval_status"],
             "evidence_locator": approval_evidence_locator,
@@ -1333,6 +1612,7 @@ def apply_fixed_owner_export(
     approval_evidence_sha256: str,
     requested_shot_uids: Sequence[str],
     explicit_terminal_route: bool = False,
+    packaging_exact_copy_evidence_spec: tuple[str, str] | None = None,
 ) -> dict[str, Any]:
     root = project_root.resolve()
     if not root.is_dir():
@@ -1366,6 +1646,7 @@ def apply_fixed_owner_export(
             approval_evidence_sha256=approval_evidence_sha256,
             requested_shot_uids=requested_shot_uids,
             explicit_terminal_route=explicit_terminal_route,
+            packaging_exact_copy_evidence_spec=packaging_exact_copy_evidence_spec,
         )
 
 
@@ -1605,6 +1886,13 @@ def run_fixed_owner_cli(profile_id: str, wrapper_path: Path, argv: Sequence[str]
     parser.add_argument("--approval-evidence", required=True)
     parser.add_argument("--approval-evidence-sha256", required=True)
     parser.add_argument("--affected-shot-uid", action="append", required=True)
+    if profile.profile_id == "packaging_product":
+        parser.add_argument(
+            "--packaging-exact-copy-evidence",
+            type=_parse_file_lock_spec,
+            metavar="LOCATOR=SHA256",
+            help="Required COMPLETE-run-bound v2 exact-copy authority evidence for label_copy exports",
+        )
     if profile.requires_explicit_terminal_route:
         parser.add_argument(
             "--casting-as-terminal",
@@ -1627,6 +1915,7 @@ def run_fixed_owner_cli(profile_id: str, wrapper_path: Path, argv: Sequence[str]
             approval_evidence_sha256=args.approval_evidence_sha256,
             requested_shot_uids=args.affected_shot_uid,
             explicit_terminal_route=getattr(args, "casting_as_terminal", False),
+            packaging_exact_copy_evidence_spec=getattr(args, "packaging_exact_copy_evidence", None),
         )
     except (ExportError, OSError, TypeError, ValueError) as exc:
         print(f"ERROR: {exc}")
@@ -1638,5 +1927,5 @@ def run_fixed_owner_cli(profile_id: str, wrapper_path: Path, argv: Sequence[str]
 __all__ = [
     "ExportError", "OWNER_PROFILES", "OwnerProfile", "apply_fixed_owner_export",
     "run_fixed_owner_cli", "validate_approval_evidence", "validate_canon_delta",
-    "validate_export_record",
+    "validate_export_record", "validate_packaging_exact_copy_evidence",
 ]

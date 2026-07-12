@@ -16,6 +16,15 @@ import validate_preflight_package as preflight
 import validate_prompt_package as shared
 
 
+# Production P1 validation must live-replay a packaging COMPLETE run.  This
+# test module intentionally rebuilds the same immutable Canon snapshot for many
+# unrelated decision-matrix mutations, so reuse the suite's test-only cache.
+# Its key hashes every file below the packaging run root; any nested master or
+# receipt mutation is therefore a cache miss and invokes the original owner
+# validator again.  The production validator itself remains unpatched.
+preflight.validate_owner_asset_export = fixture._cached_validate_owner_asset_export
+
+
 P2_ONLY_FILES = (
     shared.COMPILE_SNAPSHOT,
     shared.MANIFEST_RECEIPT,
@@ -65,6 +74,63 @@ def expect_error(name: str, mutator: Callable[[Path, Path, Path], None], needle:
     errors = run_case(mutator)
     if not any(needle in error for error in errors):
         raise AssertionError(f"{name}: expected {needle!r}, got {errors}")
+
+
+def assert_packaging_cache_fingerprint_tamper() -> None:
+    """Prove every owner-read external lock and nested run byte changes the key."""
+    with tempfile.TemporaryDirectory() as temp:
+        project_root = Path(temp)
+        root, _canon = prepare_case(project_root)
+        snapshot = json.loads((root / shared.PREFLIGHT_SNAPSHOT).read_text(encoding="utf-8"))
+        entry = next(
+            item for item in snapshot["active_artifacts"]
+            if item["owner_skill"] == "packaging-product-identity-label-lock-board"
+        )
+        record = json.loads(
+            (project_root / entry["artifact_record_locator"]).read_text(encoding="utf-8")
+        )
+        before = fixture._packaging_tree_fingerprint(record, project_root)
+        external_locators = {
+            record["authority_evidence"]["locator"],
+            record["production_approval"]["evidence_locator"],
+            *(item["locator"] for item in record["prompt_evidence"]),
+        }
+        for locator in sorted(external_locators):
+            external_path = project_root / locator
+            original = external_path.read_bytes()
+            external_path.write_bytes(original + b"\n")
+            mutated = fixture._packaging_tree_fingerprint(record, project_root)
+            external_path.write_bytes(original)
+            if not before or not mutated or before == mutated:
+                raise AssertionError(
+                    f"packaging owner cache fingerprint ignored external locked bytes: {locator}"
+                )
+        prompt_path = project_root / record["prompt_evidence"][0]["locator"]
+        prompt_target = prompt_path.with_name(prompt_path.name + ".cache-target")
+        prompt_path.rename(prompt_target)
+        prompt_path.symlink_to(prompt_target.name)
+        if fixture._packaging_tree_fingerprint(record, project_root) is not None:
+            raise AssertionError("packaging owner cache accepted an external locked-file symlink")
+        prompt_path.unlink()
+        prompt_target.rename(prompt_path)
+        authority = record["authority_evidence"]
+        evidence = json.loads((project_root / authority["locator"]).read_text(encoding="utf-8"))
+        run_root = project_root / evidence["packaging_run"]["run_root_locator"]
+        run_target = run_root.with_name(run_root.name + ".cache-target")
+        run_root.rename(run_target)
+        run_root.symlink_to(run_target.name, target_is_directory=True)
+        if fixture._packaging_tree_fingerprint(record, project_root) is not None:
+            raise AssertionError("packaging owner cache accepted a symlinked packaging run root")
+        run_root.unlink()
+        run_target.rename(run_root)
+        target = next(
+            path for path in sorted(run_root.rglob("*"))
+            if path.is_file() and not path.is_symlink()
+        )
+        target.write_bytes(target.read_bytes() + b"\n")
+        after = fixture._packaging_tree_fingerprint(record, project_root)
+        if not before or not after or before == after:
+            raise AssertionError("packaging owner cache fingerprint ignored a nested run-byte mutation")
 
 
 def build_unit_decisions(root: Path, unit_id: str, unit_shots: list[str]) -> dict[str, Any]:
@@ -139,6 +205,10 @@ def main() -> int:
     errors = run_case()
     if errors:
         raise AssertionError(f"valid standalone P1 package rejected: {errors}")
+    cache_size_after_positive = len(fixture._PACKAGING_OWNER_VALIDATION_CACHE)
+    if cache_size_after_positive < 1:
+        raise AssertionError("standalone P1 positive did not perform a cached packaging live validation")
+    assert_packaging_cache_fingerprint_tamper()
 
     registered_profiles = (
         ("character-casting-lock-board", "character_asset:cast", "CHARACTER_CASTING_LOCK_BOARD_ASSET"),
@@ -536,6 +606,9 @@ def main() -> int:
             }
         mutate_plan(root, mutate)
     expect_error("provider capacity", provider_over_limit, "planned image count exceeds effective provider/backend capacity")
+
+    if len(fixture._PACKAGING_OWNER_VALIDATION_CACHE) != cache_size_after_positive:
+        raise AssertionError("byte-identical packaging fixtures produced unstable validation-cache keys")
 
     print(
         "PASS: standalone P1 accepts a no-P2 package and rejects omitted Canon assets, narrowed or "

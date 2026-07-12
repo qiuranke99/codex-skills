@@ -1,0 +1,53 @@
+{
+  "schema_version": "packaging-generation-prompt-index.v1",
+  "contract_version": "whole_product_ocr_rotation_pack_v3",
+  "compiler_path": "scripts/compile_generation_prompts.py",
+  "compiler_sha256": "0000000000000000000000000000000000000000000000000000000000000000",
+  "dependency_hashes": {
+    "exact_copy_bundle_sha256": "0000000000000000000000000000000000000000000000000000000000000000",
+    "exact_copy_bundle_file_sha256": "0000000000000000000000000000000000000000000000000000000000000000",
+    "coverage_matrix_sha256": "0000000000000000000000000000000000000000000000000000000000000000",
+    "surface_texture_atlas_sha256": "0000000000000000000000000000000000000000000000000000000000000000"
+  },
+  "extended_dependency_hashes": {
+    "source_manifest_sha256": "0000000000000000000000000000000000000000000000000000000000000000",
+    "protected_region_masks_sha256": "0000000000000000000000000000000000000000000000000000000000000000",
+    "composition_plan_sha256": "0000000000000000000000000000000000000000000000000000000000000000"
+  },
+  "global_identity_core_sha256": "0000000000000000000000000000000000000000000000000000000000000000",
+  "prompts": [
+    {
+      "asset_id": "ASSET_ROT_0000",
+      "view_id": "ROT_0000",
+      "prompt_path": "04_prompts/generation_units/ASSET_ROT_0000_generation_prompt.md",
+      "prompt_sha256": "0000000000000000000000000000000000000000000000000000000000000000",
+      "dependency_hashes": {
+        "exact_copy_bundle_sha256": "0000000000000000000000000000000000000000000000000000000000000000",
+        "exact_copy_bundle_file_sha256": "0000000000000000000000000000000000000000000000000000000000000000",
+        "coverage_matrix_sha256": "0000000000000000000000000000000000000000000000000000000000000000",
+        "surface_texture_atlas_sha256": "0000000000000000000000000000000000000000000000000000000000000000"
+      },
+      "extended_dependency_hashes": {
+        "source_manifest_sha256": "0000000000000000000000000000000000000000000000000000000000000000",
+        "protected_region_masks_sha256": "0000000000000000000000000000000000000000000000000000000000000000",
+        "composition_plan_sha256": "0000000000000000000000000000000000000000000000000000000000000000"
+      },
+      "compiler_sha256": "0000000000000000000000000000000000000000000000000000000000000000",
+      "product_state_id": "STATE_CLOSED_001",
+      "reference_ids": ["SRC_FRONT"],
+      "ranked_reference_bindings": [
+        {"rank": 1, "role": "authoritative_source", "reference_id": "SRC_FRONT"},
+        {"rank": 2, "role": "previous_neighbor", "reference_id": "ROT_3375"},
+        {"rank": 3, "role": "next_neighbor", "reference_id": "ROT_0225"}
+      ],
+      "previous_anchor_id": "ROT_3375",
+      "next_anchor_id": "ROT_0225",
+      "parent_anchor_view_ids": [],
+      "protected_copy_region_ids": ["REGION_FRONT_LABEL"],
+      "deterministic_composition_plan_id": "COMPOSITION_PLAN_REPLACE_V1",
+      "generation_text_policy": "no_model_generated_product_copy",
+      "minimum_returned_pixel_dimensions": {"width": 1280, "height": 720},
+      "post_generation_resize_allowed_to_meet_minimum": false
+    }
+  ]
+}

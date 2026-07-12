@@ -8,6 +8,7 @@ import contextlib
 import binascii
 import builtins
 import hashlib
+import importlib.util
 import io
 import json
 import os
@@ -125,6 +126,100 @@ def initialize_project(root: Path) -> None:
     write_json(root, "00_project_canon/PROJECT_CANON_MANIFEST.json", manifest)
 
 
+def load_packaging_fixture_module() -> Any:
+    scripts = SKILL_ROOT / "packaging-product-identity-label-lock-board/scripts"
+    module_path = scripts / "test_contract.py"
+    if str(scripts) not in sys.path:
+        sys.path.insert(0, str(scripts))
+    spec = importlib.util.spec_from_file_location("_packaging_contract_fixture", module_path)
+    if spec is None or spec.loader is None:
+        raise AssertionError("packaging fixture module is unavailable")
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    return module
+
+
+def create_packaging_exact_copy_run_and_evidence(
+    root: Path,
+    prefix: str,
+    asset_key: str,
+) -> dict[str, str]:
+    """Build one fully validated COMPLETE run and bind its primary master."""
+    fixture = load_packaging_fixture_module()
+    run_root = root / prefix / "complete_packaging_run"
+    fixture.create_complete_run(run_root)
+    run_errors = fixture.validate_run(run_root)
+    if run_errors:
+        raise AssertionError(f"packaging exact-copy fixture invalid: {run_errors}")
+    manifest_path = run_root / "00_manifest/run_manifest.json"
+    manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
+    asset_qa_path = run_root / manifest["paths"]["asset_qa"]
+    asset_qa = json.loads(asset_qa_path.read_text(encoding="utf-8"))
+    primary = next(item for item in asset_qa["assets"] if item["view_id"] == "ROT_0000")
+    post_path = run_root / manifest["paths"]["post_composite_verification"]
+    post = json.loads(post_path.read_text(encoding="utf-8"))
+    post_result = next(
+        item for item in post["asset_results"]
+        if item["asset_id"] == primary["asset_id"] and item["view_id"] == primary["view_id"]
+    )
+    run_root_locator = run_root.relative_to(root).as_posix()
+    primary_locator = (Path(run_root_locator) / primary["file_path"]).as_posix()
+    role_mapping = {
+        "exact_copy_bundle": ("exact_copy_bundle", "exact_copy_bundle_file_sha256"),
+        "coverage_matrix": ("coverage_matrix", "coverage_matrix_sha256"),
+        "generation_prompt_index": ("generation_prompt_index", "generation_prompt_index_sha256"),
+        "asset_qa": ("asset_qa", "asset_qa_sha256"),
+        "continuity_qa": ("continuity_qa", "continuity_qa_sha256"),
+        "post_composite_verification": (
+            "post_composite_verification", "post_composite_verification_sha256"
+        ),
+    }
+    locks = {
+        role: {
+            "locator": (Path(run_root_locator) / manifest["paths"][path_key]).as_posix(),
+            "file_sha256": manifest["hashes"][hash_key],
+        }
+        for role, (path_key, hash_key) in role_mapping.items()
+    }
+    validator_path = (
+        SKILL_ROOT
+        / "packaging-product-identity-label-lock-board/scripts/validate_packaging_run.py"
+    )
+    evidence = {
+        "schema_version": "packaging-exact-copy-canon-evidence.v2",
+        "owner_skill": "packaging-product-identity-label-lock-board",
+        "asset_key": asset_key,
+        "primary_asset_sha256": primary["file_sha256"],
+        "packaging_run": {
+            "run_root_locator": run_root_locator,
+            "run_manifest_locator": (Path(run_root_locator) / "00_manifest/run_manifest.json").as_posix(),
+            "run_manifest_file_sha256": hashlib.sha256(manifest_path.read_bytes()).hexdigest(),
+            "run_id": manifest["run_id"],
+            "contract_version": manifest["contract_version"],
+        },
+        "validator_file_sha256": hashlib.sha256(validator_path.read_bytes()).hexdigest(),
+        "run_artifact_locks": locks,
+        "primary_member": {
+            "asset_id": primary["asset_id"], "view_id": primary["view_id"],
+            "locator": primary_locator, "file_sha256": primary["file_sha256"],
+            "post_result_id": post_result["result_id"],
+            "post_result_sha256": canonical_hash(post_result),
+        },
+        "sha256": None,
+    }
+    evidence["sha256"] = canonical_hash(evidence)
+    evidence_locator = f"{prefix}/packaging_exact_copy_canon_evidence.json"
+    evidence_file_sha = write_json(root, evidence_locator, evidence)
+    return {
+        "primary_locator": primary_locator,
+        "primary_hash": primary["file_sha256"],
+        "packaging_exact_copy_evidence_locator": evidence_locator,
+        "packaging_exact_copy_evidence_hash": evidence_file_sha,
+        "packaging_run_root_locator": run_root_locator,
+        "exact_copy_bundle_locator": locks["exact_copy_bundle"]["locator"],
+    }
+
+
 def create_inputs(
     root: Path,
     profile_id: str,
@@ -140,8 +235,19 @@ def create_inputs(
     if authority_roles is None:
         raise AssertionError(f"test selected invalid authority mode {selected_authority_mode}")
     prefix = f"inputs/{profile_id}/{input_tag or asset_key}"
-    primary_locator = f"{prefix}/primary.png"
-    primary_hash = write_bytes(root, primary_locator, make_png())
+    exact_context: dict[str, str] = {}
+    if (
+        profile_id == "packaging_product"
+        and selected_authority_mode == "geometry_layout_exact_copy_verified"
+    ):
+        exact_context = create_packaging_exact_copy_run_and_evidence(
+            root, prefix, asset_key
+        )
+        primary_locator = exact_context["primary_locator"]
+        primary_hash = exact_context["primary_hash"]
+    else:
+        primary_locator = f"{prefix}/primary.png"
+        primary_hash = write_bytes(root, primary_locator, make_png())
     prompt_specs: list[tuple[str, str, str]] = []
     prompt_hashes: dict[str, str] = {}
     for role in profile.required_prompt_roles:
@@ -166,7 +272,7 @@ def create_inputs(
     }
     approval_locator = f"{prefix}/approval.json"
     approval_hash = write_json(root, approval_locator, approval)
-    return {
+    values = {
         "primary_locator": primary_locator,
         "primary_hash": primary_hash,
         "prompt_specs": prompt_specs,
@@ -174,6 +280,8 @@ def create_inputs(
         "approval_hash": approval_hash,
         "authority_mode": selected_authority_mode,
     }
+    values.update(exact_context)
+    return values
 
 
 def command(
@@ -202,6 +310,14 @@ def command(
         "--approval-evidence-sha256", values["approval_hash"],
         "--affected-shot-uid", "S001",
     ]
+    if "packaging_exact_copy_evidence_locator" in values:
+        cmd += [
+            "--packaging-exact-copy-evidence",
+            (
+                f"{values['packaging_exact_copy_evidence_locator']}="
+                f"{values['packaging_exact_copy_evidence_hash']}"
+            ),
+        ]
     if profile_id == "character_casting" and casting_as_terminal:
         cmd.append("--casting-as-terminal")
     return cmd
@@ -446,13 +562,71 @@ def main() -> int:
             "exactpack",
             authority_mode="geometry_layout_exact_copy_verified",
         )
-        exact_result = run(command(root, "packaging_product", "exactpack", exact_values))
+        exact_command = command(root, "packaging_product", "exactpack", exact_values)
+        missing_evidence = list(exact_command)
+        exact_flag_index = missing_evidence.index("--packaging-exact-copy-evidence")
+        del missing_evidence[exact_flag_index:exact_flag_index + 2]
+        expect_failure_without_manifest_mutation(
+            root,
+            "exact packaging without authority evidence",
+            missing_evidence,
+            "requires --packaging-exact-copy-evidence",
+        )
+        legacy_v1 = {
+            "schema_version": "packaging-exact-copy-canon-evidence.v1",
+            "owner_skill": "packaging-product-identity-label-lock-board",
+            "asset_key": "exactpack",
+            "primary_asset_sha256": exact_values["primary_hash"],
+            "exact_copy_bundle": {}, "coverage_matrix": {},
+            "generation_prompt_index": {}, "post_composite_verification": {},
+            "lock_statuses": {}, "assistant_qa_status": "passed", "sha256": None,
+        }
+        legacy_v1["sha256"] = canonical_hash(legacy_v1)
+        legacy_locator = "inputs/packaging_product/exactpack/legacy_v1_evidence.json"
+        legacy_hash = write_json(root, legacy_locator, legacy_v1)
+        legacy_command = list(exact_command)
+        legacy_command[legacy_command.index("--packaging-exact-copy-evidence") + 1] = (
+            f"{legacy_locator}={legacy_hash}"
+        )
+        expect_failure_without_manifest_mutation(
+            root, "legacy v1 exact-copy evidence", legacy_command, "schema_version"
+        )
+
+        arbitrary_locator = "inputs/packaging_product/exactpack/arbitrary.png"
+        arbitrary_hash = write_bytes(root, arbitrary_locator, make_png())
+        arbitrary_command = list(exact_command)
+        arbitrary_command[arbitrary_command.index("--primary-asset") + 1] = arbitrary_locator
+        arbitrary_command[arbitrary_command.index("--primary-asset-sha256") + 1] = arbitrary_hash
+        expect_failure_without_manifest_mutation(
+            root,
+            "exact packaging arbitrary non-member primary",
+            arbitrary_command,
+            "primary_asset_sha256 mismatch",
+        )
+        exact_result = run(exact_command)
         if exact_result.returncode != 0:
             raise AssertionError(f"exact-copy-verified packaging export failed: {exact_result.stdout}")
         exact_payload = json.loads(exact_result.stdout.strip().splitlines()[-1])
         exact_record = json.loads((root / exact_payload["artifact_record_locator"]).read_text(encoding="utf-8"))
         if exact_record["control_roles_authorized"] != ["product_geometry", "label_copy"]:
             raise AssertionError("exact-copy-verified packaging export did not lock label_copy authority")
+        if exact_record.get("authority_evidence", {}).get("role") != "packaging_exact_copy":
+            raise AssertionError("exact-copy packaging export did not bind authority evidence")
+
+        stale_exact_values = create_inputs(
+            root,
+            "packaging_product",
+            "staleexact",
+            authority_mode="geometry_layout_exact_copy_verified",
+        )
+        stale_bundle = root / stale_exact_values["exact_copy_bundle_locator"]
+        stale_bundle.write_bytes(stale_bundle.read_bytes() + b"\n")
+        expect_failure_without_manifest_mutation(
+            root,
+            "exact packaging with drifted bundle",
+            command(root, "packaging_product", "staleexact", stale_exact_values),
+            "sha-256 mismatch",
+        )
 
         # Wrapper CLI has no owner field, so an attempted owner override is rejected.
         values = create_inputs(root, "character_final", "spoofcli")

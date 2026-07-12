@@ -23,7 +23,7 @@ python3 scripts/test_global_canon_write_gate.py
 10. **Atomic Canon delta**: the updater validates a raw-hash-locked immutable base snapshot against the actual post manifest and receipt; unchanged and explicitly preserved entries are byte-identical. Pass.
 11. **Seven fixed asset owners**: every maintained character/product/packaging/material/scene owner exports its own approved binary asset and required prompt evidence through a package-local wrapper into one four-lock `ai-video-artifact-v1` Canon entry. Pass.
 12. **Replacement closure**: replacing an asset supersedes the old entry, preserves its historical locks/edges, applies an event-bound stale overlay to direct and transitive consumers, and leaves their immutable owner records approved. Pass.
-13. **Capability-bound packaging**: an ordinary packaging asset authorizes only `product_geometry`; only owner-approved `geometry_layout_exact_copy_verified` evidence authorizes `label_copy`. Pass.
+13. **Capability-bound packaging**: an ordinary packaging asset authorizes only `product_geometry`; `label_copy` additionally requires a hash-locked exact-copy authority sidecar that binds the frozen copy bundle, passed coverage matrix, dependency-bound prompt index, passed post-composite verification and explicit production approval. Pass.
 14. **Crash-safe commit recovery**: a fault after atomic Canon replacement but before receipt publication leaves no `applied` receipt; an identical rerun reconstructs it from the immutable base/delta/record and exact post manifest. Pass.
 15. **Concurrent exports**: two processes export different fixed-owner assets simultaneously; a project lock plus raw-byte compare-and-swap serializes them, and the final Canon contains both revisions with no lost update. Pass.
 16. **Prepared-transaction resume**: faults after base/delta or after owner-record publication leave Canon untouched and no receipt; an exact rerun reuses identical immutable bytes and completes. Pass.
@@ -59,6 +59,7 @@ python3 scripts/test_global_canon_write_gate.py
 24. **Forged image header**: a CRC-correct PNG advertises 1024×1024 in IHDR but its IDAT cannot decode that raster. Full decoder verification/load fails. Fail.
 25. **Character route spoof**: casting omits its explicit terminal flag, approval changes `authority_stage`/`terminal_route_decision`, or a different character owner tries to replace the same terminal slot. Fail.
 26. **Global gate bypass**: any existing-Canon writer writes directly, crosses another prepared transaction, resumes with different registered/preserved IDs, or publishes receipt before durable post readback. Fail.
+27. **Packaging exact-copy evidence bypass**: `geometry_layout_exact_copy_verified` omits the authority sidecar, drifts any locked bundle/coverage/prompt/post bytes, presents stale dependency hashes, or marks any copy/code/logo/post lock unapproved. Fail before Canon mutation.
 
 ## Completion evidence
 

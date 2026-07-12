@@ -1,0 +1,138 @@
+{
+  "schema_version": "packaging-post-ocr-evidence.v1",
+  "asset_id": "ASSET_ROT_0000",
+  "view_id": "ROT_0000",
+  "asset_file_path": "05_masters/neutral_ring/ROT_0000.png",
+  "asset_file_sha256": "0000000000000000000000000000000000000000000000000000000000000000",
+  "engine_id": "bundled_macos_vision_ocr",
+  "engine_version": "REPLACE_OBSERVED_VERSION",
+  "engine_script_path": "scripts/macos_vision_ocr.swift",
+  "engine_script_sha256": "0000000000000000000000000000000000000000000000000000000000000000",
+  "language_set": ["zh-Hans", "en-US"],
+  "uses_language_correction": false,
+  "review_status": "review_required",
+  "mapping_policy": "exact_utf8_single_or_fixed_bbox_line_aggregation_one_to_one_v2",
+  "aggregation_order_contract": {
+    "reading_order": "top_to_bottom_then_same_line_left_to_right",
+    "same_line_min_center_delta": 0.0025,
+    "same_line_height_ratio": 0.35,
+    "intra_line_joiner": "U+0020",
+    "language_model_correction": "forbidden"
+  },
+  "scans": [
+    {
+      "scan_id": "ROT_0000_FINAL_MASTER",
+      "scope": "final_master",
+      "image_path": "05_masters/neutral_ring/ROT_0000.png",
+      "image_sha256": "0000000000000000000000000000000000000000000000000000000000000000",
+      "pixel_dimensions": {"width": 3840, "height": 2160},
+      "crop_box_px_on_final_master": null,
+      "region_ids": [],
+      "field_ids": [],
+      "code_ids": [],
+      "graphic_ids": [],
+      "layer_ids": []
+    },
+    {
+      "scan_id": "ROT_0000_PROJECTED_REGION_001",
+      "scope": "projected_region_crop",
+      "image_path": "07_qa/post_ocr/crops/ROT_0000/REGION_001.png",
+      "image_sha256": "0000000000000000000000000000000000000000000000000000000000000000",
+      "pixel_dimensions": {"width": 1000, "height": 400},
+      "crop_box_px_on_final_master": [1420, 1180, 2420, 1580],
+      "region_ids": ["REGION_FRONT_LABEL"],
+      "field_ids": ["FIELD_FRONT_HERO"],
+      "code_ids": [],
+      "graphic_ids": [],
+      "layer_ids": ["ROT_0000_TEXT_LAYER_INSTANCE"]
+    },
+    {
+      "scan_id": "ROT_0000_PROJECTED_REGION_002",
+      "scope": "projected_region_crop",
+      "image_path": "07_qa/post_ocr/crops/ROT_0000/REGION_002.png",
+      "image_sha256": "0000000000000000000000000000000000000000000000000000000000000000",
+      "pixel_dimensions": {"width": 300, "height": 120},
+      "crop_box_px_on_final_master": [1450, 1200, 1750, 1320],
+      "region_ids": ["REGION_FRONT_LABEL"],
+      "field_ids": [],
+      "code_ids": [],
+      "graphic_ids": ["GRAPHIC_BRAND_LOGO"],
+      "layer_ids": ["ROT_0000_LOGO_LAYER_INSTANCE"]
+    }
+  ],
+  "raw_scan_observations": {
+    "text": [
+      {
+        "raw_observation_id": "RAW_ROT_0000_PROJECTED_REGION_001_TEXT_0001",
+        "scan_id": "ROT_0000_PROJECTED_REGION_001",
+        "scan_scope": "projected_region_crop",
+        "text": "REPLACE_EXACT_OBSERVED_LINE_01",
+        "observed_hash": "0000000000000000000000000000000000000000000000000000000000000000",
+        "confidence": 0.99,
+        "scan_bounding_box_normalized": {"x": 0.05, "y": 0.70, "width": 0.9, "height": 0.1},
+        "full_master_bounding_box_normalized": {"x": 0.383, "y": 0.28, "width": 0.234, "height": 0.0185},
+        "candidate_ids": [],
+        "region_ids": ["REGION_FRONT_LABEL"]
+      }
+    ],
+    "codes": []
+  },
+  "aggregate_observations": [
+    {
+      "raw_observation_id": "AGG_FIELD_FRONT_HERO",
+      "scan_id": "ROT_0000_PROJECTED_REGION_001",
+      "scan_scope": "projected_region_crop",
+      "text": "REPLACE_EXACT_OBSERVED_LINE_01",
+      "observed_hash": "0000000000000000000000000000000000000000000000000000000000000000",
+      "confidence": 0.99,
+      "scan_bounding_box_normalized": {"x": 0.05, "y": 0.70, "width": 0.9, "height": 0.1},
+      "full_master_bounding_box_normalized": {"x": 0.383, "y": 0.28, "width": 0.234, "height": 0.0185},
+      "candidate_ids": ["FIELD_FRONT_HERO"],
+      "region_ids": ["REGION_FRONT_LABEL"],
+      "aggregation": {
+        "policy": "ordered_line_aggregation_exact",
+        "line_joiner": "newline",
+        "intra_line_joiner": "U+0020",
+        "reading_order": "top_to_bottom_then_same_line_left_to_right",
+        "same_line_min_center_delta": 0.0025,
+        "same_line_height_ratio": 0.35,
+        "component_raw_observation_ids_by_line": [["RAW_ROT_0000_PROJECTED_REGION_001_TEXT_0001"]],
+        "aggregate_text_sha256": "0000000000000000000000000000000000000000000000000000000000000000",
+        "uses_language_correction": false
+      }
+    }
+  ],
+  "observations": [
+    {
+      "observation_id": "POST_ROT_0000_FIELD_FRONT_HERO",
+      "field_id": "FIELD_FRONT_HERO",
+      "text": "REPLACE_EXACT_OBSERVED_LINE_01",
+      "text_sha256": "0000000000000000000000000000000000000000000000000000000000000000",
+      "confidence": 0.99,
+      "region_id": "REGION_FRONT_LABEL",
+      "full_master_bounding_box_normalized": {"x": 0.383, "y": 0.28, "width": 0.234, "height": 0.0185},
+      "source_scan_id": "ROT_0000_PROJECTED_REGION_001",
+      "raw_observation_ids": ["AGG_FIELD_FRONT_HERO"],
+      "disposition": "mapped_to_expected_field",
+      "product_native": true,
+      "review_status": "reviewed",
+      "ocr_match_policy": "ordered_line_aggregation_exact",
+      "mapping_basis": "ordered_bbox_line_aggregation_exact_utf8_hash_one_to_one",
+      "aggregation": {
+        "policy": "ordered_line_aggregation_exact",
+        "line_joiner": "newline",
+        "intra_line_joiner": "U+0020",
+        "reading_order": "top_to_bottom_then_same_line_left_to_right",
+        "same_line_min_center_delta": 0.0025,
+        "same_line_height_ratio": 0.35,
+        "component_raw_observation_ids_by_line": [["RAW_ROT_0000_PROJECTED_REGION_001_TEXT_0001"]],
+        "aggregate_text_sha256": "0000000000000000000000000000000000000000000000000000000000000000",
+        "uses_language_correction": false
+      }
+    }
+  ],
+  "code_observations": [],
+  "unresolved_observation_ids": [],
+  "missing_field_ids": [],
+  "missing_code_ids": []
+}

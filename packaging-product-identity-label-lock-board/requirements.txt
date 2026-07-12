@@ -1,0 +1,3 @@
+# Deterministic raster decode, crop, composition, review-board, and continuity runtime.
+# Keep this exact pin in parity with Shot Director and Prompt Director.
+Pillow==11.3.0
