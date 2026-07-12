@@ -2314,7 +2314,7 @@ def main() -> int:
 
     print(
         "PASS: prompt validator covers owner-schema-valid authorities, project/package roots, binary/record locks, "
-        "actual post-Canon ancestry, exact P1→P2 artifact identities and multi-role bindings, provider snapshot and "
+        "actual post-Canon ancestry, exact P1->P2 artifact identities and multi-role bindings, provider snapshot and "
         "live image/video/audio upload constraints, stored-probe lies, deterministic atlas dry-build/rebuild and "
         "label exclusion, same-count swaps, role-complete prompts and feedback routing, whole-shot units, anchored "
         "revisions, payload denylist, and receipts"

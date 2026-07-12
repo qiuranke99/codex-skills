@@ -215,11 +215,19 @@ def _frontmatter_name(text: str) -> str | None:
 def _run(command: list[str], cwd: Path) -> tuple[int, str]:
     env = dict(os.environ)
     env["PYTHONDONTWRITEBYTECODE"] = "1"
+    # Windows can otherwise launch child validators with a legacy console
+    # codec (for example cp1252), which makes legitimate Unicode contract
+    # terms crash the test process instead of being reported.  Force one
+    # deterministic transport and decode it explicitly in the parent.
+    env["PYTHONUTF8"] = "1"
+    env["PYTHONIOENCODING"] = "utf-8"
     result = subprocess.run(
         command,
         cwd=cwd,
         env=env,
         text=True,
+        encoding="utf-8",
+        errors="backslashreplace",
         stdout=subprocess.PIPE,
         stderr=subprocess.STDOUT,
         timeout=180,
@@ -466,6 +474,13 @@ def validate_suite(
 
 
 def main() -> int:
+    # Failures can legitimately quote non-ASCII project evidence.  Keep the
+    # verifier total on legacy Windows consoles instead of throwing a second
+    # UnicodeEncodeError while it is trying to explain the first problem.
+    for stream in (sys.stdout, sys.stderr):
+        reconfigure = getattr(stream, "reconfigure", None)
+        if callable(reconfigure):
+            reconfigure(encoding="utf-8", errors="backslashreplace")
     parser = argparse.ArgumentParser(description=__doc__)
     default_root = Path(__file__).resolve().parents[2]
     parser.add_argument("--suite-root", type=Path, default=default_root)
