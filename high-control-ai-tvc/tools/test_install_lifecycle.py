@@ -70,14 +70,12 @@ def main() -> int:
         if os.name == "nt":
             percent_destination = root / "Literal %TEMP% Junction" / first_name
             percent_destination.parent.mkdir()
-            try:
-                _create_link(REPO_ROOT / first_name, percent_destination, "junction")
-            except InstallSafetyError:
-                pass
-            else:
-                raise AssertionError("junction creation accepted a literal percent-token path")
+            _create_link(REPO_ROOT / first_name, percent_destination, "junction")
+            if percent_destination.resolve() != (REPO_ROOT / first_name).resolve():
+                raise AssertionError("literal percent-token junction resolved to the wrong target")
+            manager._remove_link_only(percent_destination, "junction")
             if os.path.lexists(str(percent_destination)):
-                raise AssertionError("rejected percent-token junction left a destination")
+                raise AssertionError("literal percent-token junction cleanup left a destination")
         install(REPO_ROOT, linked_target, "all", linked_mode)
         if not inspect_installation(REPO_ROOT, linked_target, "all")["ready"]:
             raise AssertionError(f"fresh {linked_mode} installation is not ready")

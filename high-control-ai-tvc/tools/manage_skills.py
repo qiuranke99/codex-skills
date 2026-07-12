@@ -232,13 +232,20 @@ def _create_link(source: Path, destination: Path, method: str) -> None:
     if method == "junction":
         if os.name != "nt":
             raise InstallSafetyError("junction mode is available only on Windows")
-        if "%" in str(source) or "%" in str(destination):
-            raise InstallSafetyError(
-                "junction mode refuses literal '%' in source or destination paths because cmd.exe expands environment tokens; use a stable path without '%' or explicit copy mode"
-            )
-        command = f'mklink /J "{destination}" "{source}"'
+        powershell = shutil.which("powershell.exe") or shutil.which("pwsh")
+        if powershell is None:
+            raise InstallSafetyError("PowerShell is required to create a Windows directory junction")
+        junction_env = os.environ.copy()
+        junction_env["AI_TVC_JUNCTION_DESTINATION"] = str(destination)
+        junction_env["AI_TVC_JUNCTION_SOURCE"] = str(source)
+        command = (
+            "$ErrorActionPreference='Stop'; "
+            "New-Item -ItemType Junction -Path $env:AI_TVC_JUNCTION_DESTINATION "
+            "-Target $env:AI_TVC_JUNCTION_SOURCE | Out-Null"
+        )
         result = subprocess.run(
-            ["cmd.exe", "/d", "/v:off", "/s", "/c", command],
+            [powershell, "-NoLogo", "-NoProfile", "-NonInteractive", "-Command", command],
+            env=junction_env,
             text=True,
             stdout=subprocess.PIPE,
             stderr=subprocess.STDOUT,

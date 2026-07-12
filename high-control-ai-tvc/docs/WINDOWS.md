@@ -90,9 +90,6 @@ camera, blocking, timing, and product-use decisions without refusing the job.
 
 - **Junction creation failed:** repository or target filesystem/policy does not
   support the chosen method; use explicit copy mode.
-- **Path contains a literal `%`:** junction mode refuses it because `cmd.exe`
-  expands environment tokens; move the checkout/target to a stable path without
-  `%`, or use explicit managed-copy mode.
 - **Duplicate discovery entry:** the same Skill name already exists under
   `.codex\skills` or `.agents\skills`; remove it through the installer/repository
   that owns it, then retry. Do not mass-delete either directory.
