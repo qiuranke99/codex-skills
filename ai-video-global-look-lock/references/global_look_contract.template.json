@@ -1,0 +1,261 @@
+{
+  "schema_version": "ai-video-global-look.v1",
+  "contract_version": "ai-video-artifact-v1",
+  "artifact_id": "GLOBAL_LOOK_PROJECT_001",
+  "owner_skill": "ai-video-global-look-lock",
+  "version": "0.1.0",
+  "sha256": null,
+  "approval_status": "draft",
+  "dependencies": [
+    {
+      "artifact_id": "SHOT_CONTRACT_PROJECT_001",
+      "owner_skill": "ai-video-shot-script-director",
+      "version": "1.0.0",
+      "sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+    }
+  ],
+  "affected_shot_uids": ["S001", "S002"],
+  "stale_reason": null,
+  "project_id": "PROJECT_001",
+  "source_inputs": [
+    {
+      "source_id": "SOURCE_LOOK_001",
+      "locator": "user-provided/look-reference.jpg",
+      "source_type": "look_image",
+      "file_sha256": null,
+      "integrity_status": "runtime_reference_bound",
+      "authority_scope": ["palette relationship", "lighting hierarchy", "contrast behavior"],
+      "inspection_status": "passed"
+    }
+  ],
+  "project_shot_uids": ["S001", "S002"],
+  "project_constraints": {
+    "products_present": true,
+    "characters_present": true,
+    "multiple_look_states": true
+  },
+  "source_evidence_decomposition": [
+    {
+      "reference_id": "SOURCE_LOOK_001",
+      "look_evidence": ["soft warm side-key hierarchy", "restrained amber-green palette relationship"],
+      "intrinsic_facts_deferred_to": ["PRODUCT_ASSET_001", "CHARACTER_ASSET_001"],
+      "conflicts": []
+    }
+  ],
+  "look_core": {
+    "identity": "restrained natural-luxury sensorial realism",
+    "palette_relationships": ["warm skin and amber product remain separated from muted botanical greens"],
+    "lighting_architecture": ["one motivated soft key with controlled ambient fill and readable material edges"],
+    "contrast_curve": "gentle toe, readable lower mids, controlled midtone separation",
+    "black_floor": "soft open black without gray wash or crushed detail",
+    "highlight_rolloff": "long smooth roll-off; no clipped skin or specular product edges",
+    "skin_rendering": ["preserve complexion and texture; luminous highlights without whitening or smoothing"],
+    "material_response": ["amber oil remains translucent; glass and liquid edges stay physically readable"],
+    "optical_texture": ["subtle diffusion around non-critical practical highlights; product labels remain crisp"],
+    "grain_and_texture": ["fine restrained organic grain with no plastic denoising"],
+    "atmosphere": ["clean air with light botanical depth separation; no decorative haze over product proof"],
+    "invariant_rules": [
+      "preserve verified product base color and material construction",
+      "preserve source-supported skin identity",
+      "keep highlights controlled and blacks readable"
+    ]
+  },
+  "global_look_prompt_full": "GLOBAL LOOK CORE — inherit this block verbatim in every static-generation and video-generation prompt.\nIdentity: restrained natural-luxury sensorial realism\nPalette relationship: warm skin and amber product remain separated from muted botanical greens\nLighting architecture: one motivated soft key with controlled ambient fill and readable material edges\nContrast curve: gentle toe, readable lower mids, controlled midtone separation\nBlack floor: soft open black without gray wash or crushed detail\nHighlight rolloff: long smooth roll-off; no clipped skin or specular product edges\nSkin rendering: preserve complexion and texture; luminous highlights without whitening or smoothing\nMaterial response: amber oil remains translucent; glass and liquid edges stay physically readable\nOptical texture: subtle diffusion around non-critical practical highlights; product labels remain crisp\nGrain and texture: fine restrained organic grain with no plastic denoising\nAtmosphere: clean air with light botanical depth separation; no decorative haze over product proof\nInvariant: preserve verified product base color and material construction\nInvariant: preserve source-supported skin identity\nInvariant: keep highlights controlled and blacks readable\nUse only the assigned legal Look State for environmental changes. Allow only explicitly approved Shot Look Deltas. Never introduce crushed blacks, clipped skin, neon saturation, arbitrary teal-orange grading, product recoloring, material redesign, plastic skin, heavy bloom or inconsistent light-source direction.",
+  "look_reference_set": [
+    {
+      "artifact": {
+        "contract_version": "ai-video-artifact-v1",
+        "artifact_id": "LOOK_REFERENCE_ASSET_HERO_001",
+        "owner_skill": "ai-video-global-look-lock",
+        "version": "1.0.0",
+        "sha256": null,
+        "approval_status": "draft",
+        "dependencies": [{"artifact_id": "SHOT_CONTRACT_PROJECT_001", "owner_skill": "ai-video-shot-script-director", "version": "1.0.0", "sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"}],
+        "affected_shot_uids": ["S001", "S002"],
+        "stale_reason": null
+      },
+      "reference_id": "LOOK_REF_HERO_001",
+      "locator": "look/hero_core.png",
+      "role": "hero_core",
+      "source_type": "machine_generated",
+      "source_input_ids": ["SOURCE_LOOK_001"],
+      "authority_scope": ["palette relationship", "contrast", "skin rendering", "material response"],
+      "applicable_state_ids": ["LOOK_STATE_FIELD", "LOOK_STATE_MACRO"],
+      "approval_status": "draft",
+      "inspection_status": "pending",
+      "integrity_status": "pending",
+      "file_sha256": null,
+      "generation_prompt_sha256": null,
+      "actual_dimensions": null,
+      "independent_full_frame": true,
+      "derived_from_multipanel": false,
+      "intrinsic_boundary_check": "pending"
+    },
+    {
+      "artifact": {
+        "contract_version": "ai-video-artifact-v1",
+        "artifact_id": "LOOK_REFERENCE_ASSET_MACRO_001",
+        "owner_skill": "ai-video-global-look-lock",
+        "version": "1.0.0",
+        "sha256": null,
+        "approval_status": "draft",
+        "dependencies": [{"artifact_id": "SHOT_CONTRACT_PROJECT_001", "owner_skill": "ai-video-shot-script-director", "version": "1.0.0", "sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"}],
+        "affected_shot_uids": ["S002"],
+        "stale_reason": null
+      },
+      "reference_id": "LOOK_REF_MACRO_001",
+      "locator": "look/macro_state.png",
+      "role": "state_validation",
+      "source_type": "machine_generated",
+      "source_input_ids": ["SOURCE_LOOK_001"],
+      "authority_scope": ["macro contrast", "oil translucency", "skin highlight roll-off"],
+      "applicable_state_ids": ["LOOK_STATE_MACRO"],
+      "approval_status": "draft",
+      "inspection_status": "pending",
+      "integrity_status": "pending",
+      "file_sha256": null,
+      "generation_prompt_sha256": null,
+      "actual_dimensions": null,
+      "independent_full_frame": true,
+      "derived_from_multipanel": false,
+      "intrinsic_boundary_check": "pending"
+    }
+  ],
+  "look_state_matrix_id": "LOOK_STATE_MATRIX_PROJECT_001_V1",
+  "look_states": [
+    {
+      "state_id": "LOOK_STATE_FIELD",
+      "name": "late-afternoon botanical exterior",
+      "core_relation": "hero manifestation of the global core",
+      "state_prompt_full": "LOOK_STATE_FIELD — hero manifestation of the global core; architectural glass-atrium exterior; late-afternoon motivated sun; soft lateral sun as key, broad sky fill, restrained botanical bounce; skin and product retained below clipping with open background separation; warm key, neutral-to-cool ambient separation without cyan skin; stable lateral key from camera-right world direction; medium-low contrast with readable local texture; preserve complexion and undertone under warm key; amber remains source-bound and distinct from skin; oil translucency and glass edges remain legible; minor exposure compensation for wide versus close framing; forbid product recolor, crushed shadows, new grade family.",
+      "activation_conditions": ["architectural glass-atrium exterior", "late-afternoon motivated sun"],
+      "illumination_architecture": "soft lateral sun as key, broad sky fill, restrained botanical bounce",
+      "exposure_relation": "skin and product retained below clipping with open background separation",
+      "color_temperature_relation": "warm key, neutral-to-cool ambient separation without cyan skin",
+      "light_direction": "stable lateral key from camera-right world direction",
+      "contrast_behavior": "medium-low contrast with readable local texture",
+      "skin_tone_protection": "preserve complexion and undertone under warm key",
+      "product_color_protection": "amber remains source-bound and distinct from skin",
+      "material_response_rules": ["oil translucency and glass edges remain legible"],
+      "allowed_deltas": ["minor exposure compensation for wide versus close framing"],
+      "forbidden_changes": ["product recolor", "crushed shadows", "new grade family"],
+      "reference_ids": ["LOOK_REF_HERO_001"]
+    },
+    {
+      "state_id": "LOOK_STATE_MACRO",
+      "name": "controlled tactile macro",
+      "core_relation": "close-range material manifestation of the same global core",
+      "state_prompt_full": "LOOK_STATE_MACRO — close-range material manifestation of the same global core; oil, skin or packaging macro insert; large soft lateral source plus narrow edge separation for transparent material; protect oil and skin highlights while raising tactile midtone detail; same warm-neutral relation with reduced background color influence; retain camera-right world key direction unless object orientation requires documented rotation; slightly stronger local microcontrast, same global black floor and roll-off; retain pores and complexion; no whitening or plastic smoothing; amber liquid, glass thickness and label white remain source-bound; show liquid boundary, refraction edge and wet highlight without invented sparkle; reduce diffusion around label; increase edge separation without changing material; forbid opaque oil, iridescent glass, clipped specular edge.",
+      "activation_conditions": ["oil, skin or packaging macro insert"],
+      "illumination_architecture": "large soft lateral source plus narrow edge separation for transparent material",
+      "exposure_relation": "protect oil and skin highlights while raising tactile midtone detail",
+      "color_temperature_relation": "same warm-neutral relation with reduced background color influence",
+      "light_direction": "retain camera-right world key direction unless object orientation requires documented rotation",
+      "contrast_behavior": "slightly stronger local microcontrast, same global black floor and roll-off",
+      "skin_tone_protection": "retain pores and complexion; no whitening or plastic smoothing",
+      "product_color_protection": "amber liquid, glass thickness and label white remain source-bound",
+      "material_response_rules": ["show liquid boundary, refraction edge and wet highlight without invented sparkle"],
+      "allowed_deltas": ["reduce diffusion around label", "increase edge separation without changing material"],
+      "forbidden_changes": ["opaque oil", "iridescent glass", "clipped specular edge"],
+      "reference_ids": ["LOOK_REF_HERO_001", "LOOK_REF_MACRO_001"]
+    }
+  ],
+  "shot_look_assignments": [
+    {
+      "shot_uid": "S001",
+      "state_id": "LOOK_STATE_FIELD",
+      "shot_look_delta": {
+        "active": false,
+        "scope": [],
+        "description": "none",
+      "reason": "hero state already fits the shot",
+      "preserves_look_core": true
+    },
+    "shot_look_delta_prompt_full": "SHOT LOOK DELTA — FROZEN STRUCTURED AUTHORITY\nactive: false\nscope: []\ndescription: none\nreason: hero state already fits the shot\npreserves_look_core: true"
+    },
+    {
+      "shot_uid": "S002",
+      "state_id": "LOOK_STATE_MACRO",
+      "shot_look_delta": {
+        "active": true,
+        "scope": ["optical_texture"],
+        "description": "reduce diffusion locally around packaging copy",
+      "reason": "preserve label legibility without changing the global optical family",
+      "preserves_look_core": true
+    },
+    "shot_look_delta_prompt_full": "SHOT LOOK DELTA — FROZEN STRUCTURED AUTHORITY\nactive: true\nscope: [\"optical_texture\"]\ndescription: reduce diffusion locally around packaging copy\nreason: preserve label legibility without changing the global optical family\npreserves_look_core: true"
+    }
+  ],
+  "look_risk_coverage": [
+    {
+      "risk_id": "LOOK_RISK_PRODUCT_MATERIAL",
+      "risk_type": "material_response",
+      "subject_asset_ids": ["PRODUCT_ASSET_001"],
+      "state_ids": ["LOOK_STATE_FIELD", "LOOK_STATE_MACRO"],
+      "reference_ids": ["LOOK_REF_HERO_001", "LOOK_REF_MACRO_001"],
+      "affected_shot_uids": ["S001", "S002"],
+      "coverage_status": "planned",
+      "resolution": "verify amber liquid translucency, glass edge and highlight roll-off in both scales"
+    },
+    {
+      "risk_id": "LOOK_RISK_SKIN",
+      "risk_type": "skin_rendering",
+      "subject_asset_ids": ["CHARACTER_ASSET_001"],
+      "state_ids": ["LOOK_STATE_FIELD", "LOOK_STATE_MACRO"],
+      "reference_ids": ["LOOK_REF_HERO_001", "LOOK_REF_MACRO_001"],
+      "affected_shot_uids": ["S001", "S002"],
+      "coverage_status": "planned",
+      "resolution": "verify complexion, highlight texture and identity preservation under both States"
+    }
+  ],
+  "intrinsic_product_boundaries": [
+    {
+      "product_id": "PRODUCT_001",
+      "source_asset_ids": ["PRODUCT_ASSET_001"],
+      "invariant_base_colors": ["source-verified amber liquid", "source-verified package white"],
+      "invariant_material_properties": ["transparent liquid", "source-verified glass finish", "fixed label placement"],
+      "packaging_copy_policy": "exact copy remains owned by the approved packaging asset",
+      "prohibited_style_overrides": ["recolor", "opacity change", "invented iridescence", "label rewrite"]
+    }
+  ],
+  "skin_tone_boundaries": [
+    {
+      "character_id": "CHARACTER_001",
+      "source_asset_ids": ["CHARACTER_ASSET_001"],
+      "preserved_features": ["source-supported complexion", "undertone", "marks", "age"],
+      "allowed_rendering_variation": ["exposure and highlight response inside assigned Look State"],
+      "prohibited_identity_changes": ["whitening", "tanning", "plastic smoothing", "de-aging", "face reshaping"]
+    }
+  ],
+  "allowed_look_delta": ["narrow exposure compensation", "state-consistent atmosphere density", "risk-driven diffusion reduction"],
+  "negative_look": ["crushed blacks", "clipped highlights", "neon saturation", "arbitrary teal-orange grade", "product recoloring", "material redesign", "plastic skin", "heavy bloom"],
+  "three_layer_lock": {
+    "textual_contract_frozen": false,
+    "visual_reference_set_approved": false,
+    "inheritance_contract_required": true,
+    "exact_prompt_injection_required": true,
+    "look_version_binding_required": true,
+    "look_applied_storyboard_required": true,
+    "look_applied_keyframe_required": true,
+    "every_video_prompt_required": true
+  },
+  "invalidation_rules": {
+    "core_change_invalidates": ["look_applied_storyboard_frame", "generation_ready_keyframe", "video_generation_prompt"],
+    "state_change_assigned_shots_only": true,
+    "shot_delta_change_named_shots_only": true,
+    "reference_repair_propagates_to_bindings": true,
+    "neutral_motion_timing_data_preserved_on_look_change": true
+  },
+  "revision_scope": {
+    "mode": "initial",
+    "requested_state_ids": [],
+    "changed_state_ids": ["LOOK_STATE_FIELD", "LOOK_STATE_MACRO"],
+    "requested_shot_uids": [],
+    "changed_shot_uids": ["S001", "S002"],
+    "look_core_changed": true,
+    "invalidated_artifact_ids": [],
+    "preserved_artifact_ids": [],
+    "predecessor_artifact": null,
+    "changed_json_pointers": []
+  }
+}

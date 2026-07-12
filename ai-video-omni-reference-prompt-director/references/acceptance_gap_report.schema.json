@@ -1,0 +1,56 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "ai-video-acceptance-gap-report.schema.json",
+  "title": "AI Video Suite Acceptance Gap Report",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version", "suite_version", "candidate_id", "audit_round", "audit_roles",
+    "gaps", "validation_commands", "exit_gate", "final_status"
+  ],
+  "properties": {
+    "schema_version": {"const": "ai-video-acceptance-gap-report.v1"},
+    "suite_version": {"type": "string", "pattern": "^[0-9]+\\.[0-9]+\\.[0-9]+$"},
+    "candidate_id": {"type": "string", "minLength": 1},
+    "audit_round": {"type": "integer", "minimum": 1},
+    "audit_roles": {
+      "type": "array",
+      "minItems": 3,
+      "uniqueItems": true,
+      "items": {"enum": ["boundary_and_ownership", "contract_and_package", "scenario_and_counterexample"]}
+    },
+    "gaps": {"type": "array", "items": {"$ref": "#/$defs/gap"}},
+    "validation_commands": {"type": "array", "items": {"type": "string", "minLength": 1}},
+    "exit_gate": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["all_accepted_gaps_verified", "zero_open_critical_high", "all_validators_pass", "discovery_verified", "remote_readback_verified"],
+      "properties": {
+        "all_accepted_gaps_verified": {"type": "boolean"},
+        "zero_open_critical_high": {"type": "boolean"},
+        "all_validators_pass": {"type": "boolean"},
+        "discovery_verified": {"type": "boolean"},
+        "remote_readback_verified": {"type": "boolean"}
+      }
+    },
+    "final_status": {"enum": ["open", "blocked", "validated_local", "validated_remote"]}
+  },
+  "$defs": {
+    "gap": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["gap_id", "source_agent", "severity", "artifact", "owner", "evidence", "status", "fix", "verification"],
+      "properties": {
+        "gap_id": {"type": "string", "minLength": 1},
+        "source_agent": {"type": "string", "minLength": 1},
+        "severity": {"enum": ["critical", "high", "medium", "low"]},
+        "artifact": {"type": "string", "minLength": 1},
+        "owner": {"type": "string", "minLength": 1},
+        "evidence": {"type": "array", "minItems": 1, "items": {"type": "string", "minLength": 1}},
+        "status": {"enum": ["open", "adjudicated", "fixing", "verified", "rejected"]},
+        "fix": {"type": ["string", "null"]},
+        "verification": {"type": ["string", "null"]}
+      }
+    }
+  }
+}

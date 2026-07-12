@@ -1,0 +1,30 @@
+{
+  "schema_version": "ai-video-deterministic-atlas-spec.v2",
+  "atlas_id": "ATLAS_GU001",
+  "generation_unit_id": "GU001",
+  "layout_columns": 2,
+  "background_rgb": [0, 0, 0],
+  "minimum_panel_width_pixels": 256,
+  "minimum_panel_height_pixels": 256,
+  "legibility_policy": "identity_geometry_look_only_no_microcopy",
+  "source_decode_policy": "pillow_common_raster_to_rgb8_no_resize_v1",
+  "output_encode_policy": "pillow_png_rgb8_fixed_v1",
+  "layout_policy": "max_native_cell_center_floor_no_resize_v1",
+  "output_codec": "PNG_RGB8",
+  "sources": [
+    {
+      "artifact_id": "ASSET_CHARACTER_LEAD",
+      "file_path": "sources/ASSET_CHARACTER_LEAD.png",
+      "file_sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+      "control_roles": ["identity"],
+      "control_role": "identity"
+    },
+    {
+      "artifact_id": "ASSET_SCENE_CANON",
+      "file_path": "sources/ASSET_SCENE_CANON.webp",
+      "file_sha256": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+      "control_roles": ["scene_canon"],
+      "control_role": "scene_canon"
+    }
+  ]
+}

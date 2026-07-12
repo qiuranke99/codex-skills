@@ -1,0 +1,3 @@
+# Deterministic common-raster atlas decoder/encoder.
+# The exact runtime and linked codec versions are also sealed into every atlas receipt.
+Pillow==11.3.0

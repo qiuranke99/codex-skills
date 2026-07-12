@@ -1,0 +1,246 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "keyframe_manifest.schema.json",
+  "title": "AI Video Keyframe Continuity Manifest",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "contract_version", "artifact_id", "owner_skill", "version", "sha256",
+    "approval_status", "dependencies", "affected_shot_uids", "stale_reason",
+    "schema_version", "manifest_role", "project_id", "package_id", "package_status",
+    "assistant_qa_status", "production_approval_status", "timing_source", "authority_inventory",
+    "forbidden_video_generation_modes", "scripted_shot_uids", "shot_records", "inferred_execution_decisions",
+    "upstream_change_requests", "qa_report_path", "invalidation_report_path"
+  ],
+  "properties": {
+    "contract_version": {"const": "ai-video-artifact-v1"},
+    "artifact_id": {"type": "string", "minLength": 1},
+    "owner_skill": {"const": "ai-video-keyframe-continuity-pack"},
+    "version": {"type": "string", "pattern": "^[0-9]+\\.[0-9]+\\.[0-9]+$"},
+    "sha256": {"type": ["string", "null"], "pattern": "^[a-f0-9]{64}$"},
+    "approval_status": {"enum": ["draft", "assistant_validated", "user_approved", "stale", "blocked"]},
+    "dependencies": {"type": "array", "items": {"$ref": "#/$defs/dependency"}},
+    "affected_shot_uids": {"type": "array", "items": {"type": "string", "minLength": 1}, "uniqueItems": true},
+    "stale_reason": {"type": ["string", "null"]},
+    "schema_version": {"const": "ai-video-keyframe-continuity-pack.v1"},
+    "manifest_role": {"const": "core_keyframe_authority_before_generation_unit_preflight"},
+    "project_id": {"type": "string", "minLength": 1},
+    "package_id": {"type": "string", "minLength": 1},
+    "package_status": {"enum": ["draft", "generating", "awaiting_post_generation_continuation", "qa_pending", "repair_required", "packaged", "blocked_upstream_conflict", "blocked_missing_authority", "hard_blocked_generation_runtime"]},
+    "assistant_qa_status": {"enum": ["not_reviewed", "failed", "passed", "blocked"]},
+    "production_approval_status": {"enum": ["not_granted", "user_granted", "external_pipeline_granted"]},
+    "timing_source": {"$ref": "#/$defs/timingSource"},
+    "forbidden_video_generation_modes": {
+      "type": "array",
+      "uniqueItems": true,
+      "items": {"enum": ["text_to_video", "first_last_frame", "standalone_single_image_to_video"]},
+      "allOf": [
+        {"contains": {"const": "text_to_video"}},
+        {"contains": {"const": "first_last_frame"}},
+        {"contains": {"const": "standalone_single_image_to_video"}}
+      ]
+    },
+    "authority_inventory": {"type": "array", "minItems": 3, "items": {"$ref": "#/$defs/authorityRecord"}},
+    "scripted_shot_uids": {"type": "array", "minItems": 1, "uniqueItems": true, "items": {"type": "string", "minLength": 1}},
+    "shot_records": {"type": "array", "minItems": 1, "items": {"$ref": "#/$defs/shotRecord"}},
+    "inferred_execution_decisions": {"type": "array", "items": {"type": "string", "minLength": 1}},
+    "upstream_change_requests": {"type": "array", "items": {"$ref": "#/$defs/changeRequest"}},
+    "qa_report_path": {"const": "04_reports/QA_REPORT.md"},
+    "invalidation_report_path": {"const": "04_reports/INVALIDATION_REPORT.md"}
+  },
+  "$defs": {
+    "dependency": {
+      "type": "object", "additionalProperties": false,
+      "required": ["artifact_id", "owner_skill", "version", "sha256"],
+      "properties": {
+        "artifact_id": {"type": "string", "minLength": 1},
+        "owner_skill": {"type": "string", "minLength": 1},
+        "version": {"type": "string", "pattern": "^[0-9]+\\.[0-9]+\\.[0-9]+$"},
+        "sha256": {"type": "string", "pattern": "^[a-f0-9]{64}$"}
+      }
+    },
+    "artifactEnvelope": {
+      "type": "object", "additionalProperties": false,
+      "required": ["contract_version", "artifact_id", "owner_skill", "version", "sha256", "approval_status", "dependencies", "affected_shot_uids", "stale_reason"],
+      "properties": {
+        "contract_version": {"const": "ai-video-artifact-v1"},
+        "artifact_id": {"type": "string", "minLength": 1},
+        "owner_skill": {"type": "string", "minLength": 1},
+        "version": {"type": "string", "pattern": "^[0-9]+\\.[0-9]+\\.[0-9]+$"},
+        "sha256": {"type": ["string", "null"], "pattern": "^[a-f0-9]{64}$"},
+        "approval_status": {"enum": ["draft", "assistant_validated", "user_approved", "stale", "blocked"]},
+        "dependencies": {"type": "array", "items": {"$ref": "#/$defs/dependency"}},
+        "affected_shot_uids": {"type": "array", "items": {"type": "string"}, "uniqueItems": true},
+        "stale_reason": {"type": ["string", "null"]}
+      }
+    },
+    "authorityRecord": {
+      "type": "object", "additionalProperties": false,
+      "required": ["artifact_id", "owner_skill", "version", "sha256", "locator", "file_sha256", "authority_type", "approval_status", "affected_shot_uids"],
+      "properties": {
+        "artifact_id": {"type": "string", "minLength": 1},
+        "owner_skill": {"type": "string", "minLength": 1},
+        "version": {"type": "string", "pattern": "^[0-9]+\\.[0-9]+\\.[0-9]+$"},
+        "sha256": {"type": "string", "pattern": "^[a-f0-9]{64}$"},
+        "locator": {"type": "string", "minLength": 1, "not": {"pattern": "(^/|(^|/)\\.\\.(/|$))"}},
+        "file_sha256": {"type": "string", "pattern": "^[a-f0-9]{64}$"},
+        "authority_type": {"enum": ["shot_contract", "storyboard", "global_look", "global_look_reference", "character", "product", "packaging", "material", "scene", "timing_animatic_v1", "timing_exemption"]},
+        "approval_status": {"enum": ["assistant_validated", "user_approved"]},
+        "affected_shot_uids": {"type": "array", "uniqueItems": true, "items": {"type": "string", "minLength": 1}}
+      }
+    },
+    "timingSource": {
+      "type": "object", "additionalProperties": false,
+      "required": ["mode", "artifact_id", "owner_skill", "version", "sha256"],
+      "properties": {
+        "mode": {"enum": ["v1_timing_animatic", "single_static_shot_exemption"]},
+        "artifact_id": {"type": ["string", "null"]},
+        "owner_skill": {"type": ["string", "null"]},
+        "version": {"type": ["string", "null"], "pattern": "^[0-9]+\\.[0-9]+\\.[0-9]+$"},
+        "sha256": {"type": ["string", "null"], "pattern": "^[a-f0-9]{64}$"}
+      }
+    },
+    "timeAnchor": {
+      "type": "object", "additionalProperties": false,
+      "required": ["source", "timecode_seconds", "relative_state"],
+      "properties": {
+        "source": {"enum": ["v1_timing_animatic", "shot_contract_static_state"]},
+        "timecode_seconds": {"type": ["number", "null"], "minimum": 0},
+        "relative_state": {"enum": ["primary_control_state", "preparation", "action_onset", "contact_change", "settled_exit", "boundary_handoff"]}
+      }
+    },
+    "keyframe": {
+      "type": "object", "additionalProperties": false,
+      "required": ["artifact", "keyframe_id", "shot_uid", "frame_role", "usage_mode", "source_mode", "file_path", "file_sha256", "prompt_path", "prompt_file_sha256", "time_anchor", "terminal_generation_call", "generation_turn", "inspection_turn", "visual_qa_status", "promotion_evidence"],
+      "properties": {
+        "artifact": {"$ref": "#/$defs/artifactEnvelope"},
+        "keyframe_id": {"type": "string", "minLength": 1},
+        "shot_uid": {"type": "string", "minLength": 1},
+        "frame_role": {"enum": ["primary_anchor", "action_state", "material_state", "boundary_handoff"]},
+        "usage_mode": {"const": "omni_reference_anchor"},
+        "source_mode": {"enum": ["independent_keyframe", "validated_storyboard_promotion"]},
+        "file_path": {"type": "string", "minLength": 1},
+        "file_sha256": {"type": "string", "pattern": "^[a-f0-9]{64}$"},
+        "prompt_path": {"type": ["string", "null"]},
+        "prompt_file_sha256": {"oneOf": [{"type": "null"}, {"type": "string", "pattern": "^[a-f0-9]{64}$"}]},
+        "time_anchor": {"$ref": "#/$defs/timeAnchor"},
+        "terminal_generation_call": {"enum": ["executed", "not_applicable_promoted"]},
+        "generation_turn": {"type": ["integer", "null"], "minimum": 1},
+        "inspection_turn": {"type": "integer", "minimum": 1},
+        "visual_qa_status": {"const": "passed"},
+        "promotion_evidence": {"type": "array", "uniqueItems": true, "items": {"type": "string", "minLength": 1}}
+      },
+      "allOf": [
+        {
+          "if": {"properties": {"source_mode": {"const": "validated_storyboard_promotion"}}, "required": ["source_mode"]},
+          "then": {
+            "properties": {
+              "prompt_path": {"type": "null"},
+              "prompt_file_sha256": {"type": "null"},
+              "terminal_generation_call": {"const": "not_applicable_promoted"},
+              "generation_turn": {"type": "null"},
+              "promotion_evidence": {"minItems": 12}
+            }
+          },
+          "else": {
+            "properties": {
+              "prompt_path": {"type": "string", "minLength": 1},
+              "prompt_file_sha256": {"type": "string", "pattern": "^[a-f0-9]{64}$"},
+              "terminal_generation_call": {"const": "executed"},
+              "generation_turn": {"type": "integer", "minimum": 1},
+              "promotion_evidence": {"maxItems": 0}
+            }
+          }
+        }
+      ]
+    },
+    "characterState": {
+      "type": "object", "additionalProperties": false,
+      "required": ["character_id", "identity_asset_id", "wardrobe_state", "hair_makeup_state", "accessory_prop_state", "body_orientation", "gaze_expression", "hand_state", "screen_direction", "frame_position", "continuity_in", "continuity_out"],
+      "properties": {
+        "character_id": {"type": "string"}, "identity_asset_id": {"type": "string"},
+        "wardrobe_state": {"type": "string"}, "hair_makeup_state": {"type": "string"},
+        "accessory_prop_state": {"type": "string"}, "body_orientation": {"type": "string"},
+        "gaze_expression": {"type": "string"}, "hand_state": {"type": "string"},
+        "screen_direction": {"type": "string"}, "frame_position": {"type": "string"},
+        "continuity_in": {"type": "string"}, "continuity_out": {"type": "string"}
+      }
+    },
+    "productState": {
+      "type": "object", "additionalProperties": false,
+      "required": ["product_id", "identity_asset_ids", "geometry_material_state", "label_facing_state", "orientation_placement", "hand_contact", "mechanism_state", "visible_contents_state", "continuity_in", "continuity_out"],
+      "properties": {
+        "product_id": {"type": "string"},
+        "identity_asset_ids": {"type": "array", "minItems": 1, "items": {"type": "string"}},
+        "geometry_material_state": {"type": "string"}, "label_facing_state": {"type": "string"},
+        "orientation_placement": {"type": "string"}, "hand_contact": {"type": "string"},
+        "mechanism_state": {"type": "string"}, "visible_contents_state": {"type": "string"},
+        "continuity_in": {"type": "string"}, "continuity_out": {"type": "string"}
+      }
+    },
+    "materialTrajectory": {
+      "type": "object", "additionalProperties": false,
+      "required": ["material_id", "source_asset_id", "states", "forbidden_inventions"],
+      "properties": {
+        "material_id": {"type": "string"}, "source_asset_id": {"type": "string"},
+        "states": {"type": "array", "minItems": 1, "items": {"$ref": "#/$defs/materialState"}},
+        "forbidden_inventions": {"type": "array", "items": {"type": "string"}}
+      }
+    },
+    "materialState": {
+      "type": "object", "additionalProperties": false,
+      "required": ["state_id", "time_anchor", "fill_level", "viscosity_flow", "droplet_stream_meniscus", "wetting_footprint", "reflection_refraction", "surface_highlight_state"],
+      "properties": {
+        "state_id": {"type": "string"}, "time_anchor": {"$ref": "#/$defs/timeAnchor"},
+        "fill_level": {"type": "string"}, "viscosity_flow": {"type": "string"},
+        "droplet_stream_meniscus": {"type": "string"}, "wetting_footprint": {"type": "string"},
+        "reflection_refraction": {"type": "string"}, "surface_highlight_state": {"type": "string"}
+      }
+    },
+    "dynamicState": {
+      "type": "object", "additionalProperties": false,
+      "required": ["state_id", "order", "time_anchor", "subject_pose_state", "object_material_state", "camera_blocking_state", "transition_intent"],
+      "properties": {
+        "state_id": {"type": "string"}, "order": {"type": "integer", "minimum": 1},
+        "time_anchor": {"$ref": "#/$defs/timeAnchor"},
+        "subject_pose_state": {"type": "string"}, "object_material_state": {"type": "string"},
+        "camera_blocking_state": {"type": "string"}, "transition_intent": {"type": "string"}
+      }
+    },
+    "shotRecord": {
+      "type": "object", "additionalProperties": false,
+      "required": ["shot_uid", "storyboard_artifact_id", "required_authority_artifact_ids", "global_directing_prompt_full", "global_look_artifact_id", "global_look_prompt_full", "look_state_id", "look_state_prompt_full", "shot_look_delta_prompt_full", "look_reference_asset_ids", "anchor_route", "keyframes", "character_state_ledger", "product_state_ledger", "material_control_required", "material_control_reason", "material_anchor_keyframe_ids", "material_state_trajectory", "dynamic_state_ladder", "continuity_in", "continuity_out"],
+      "properties": {
+        "shot_uid": {"type": "string", "minLength": 1},
+        "storyboard_artifact_id": {"type": "string", "minLength": 1},
+        "required_authority_artifact_ids": {"type": "array", "minItems": 3, "uniqueItems": true, "items": {"type": "string", "minLength": 1}},
+        "global_directing_prompt_full": {"type": "string", "minLength": 40},
+        "global_look_artifact_id": {"type": "string", "minLength": 1},
+        "global_look_prompt_full": {"type": "string", "minLength": 200},
+        "look_state_id": {"type": "string", "minLength": 1},
+        "look_state_prompt_full": {"type": "string", "minLength": 80},
+        "shot_look_delta_prompt_full": {"type": "string", "minLength": 1},
+        "look_reference_asset_ids": {"type": "array", "minItems": 1, "uniqueItems": true, "items": {"type": "string", "minLength": 1}},
+        "anchor_route": {"enum": ["independent_keyframe", "validated_storyboard_promotion"]},
+        "keyframes": {"type": "array", "minItems": 1, "items": {"$ref": "#/$defs/keyframe"}},
+        "character_state_ledger": {"type": "array", "items": {"$ref": "#/$defs/characterState"}},
+        "product_state_ledger": {"type": "array", "items": {"$ref": "#/$defs/productState"}},
+        "material_control_required": {"type": "boolean"},
+        "material_control_reason": {"type": "string", "minLength": 1},
+        "material_anchor_keyframe_ids": {"type": "array", "uniqueItems": true, "items": {"type": "string", "minLength": 1}},
+        "material_state_trajectory": {"type": "array", "items": {"$ref": "#/$defs/materialTrajectory"}},
+        "dynamic_state_ladder": {"type": "array", "minItems": 1, "items": {"$ref": "#/$defs/dynamicState"}},
+        "continuity_in": {"type": "string"}, "continuity_out": {"type": "string"}
+      }
+    },
+    "changeRequest": {
+      "type": "object", "additionalProperties": false,
+      "required": ["request_id", "target_owner_skill", "affected_shot_uids", "conflict", "required_resolution"],
+      "properties": {
+        "request_id": {"type": "string"}, "target_owner_skill": {"type": "string"},
+        "affected_shot_uids": {"type": "array", "items": {"type": "string"}},
+        "conflict": {"type": "string"}, "required_resolution": {"type": "string"}
+      }
+    }
+  }
+}

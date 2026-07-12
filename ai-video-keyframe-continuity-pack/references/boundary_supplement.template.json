@@ -1,0 +1,30 @@
+{
+  "contract_version": "ai-video-artifact-v1",
+  "artifact_id": "KF_BOUNDARY_SUPPLEMENT_PROJECT01_V1",
+  "owner_skill": "ai-video-keyframe-continuity-pack",
+  "version": "1.0.0",
+  "sha256": null,
+  "approval_status": "draft",
+  "dependencies": [],
+  "affected_shot_uids": ["S001"],
+  "stale_reason": null,
+  "schema_version": "ai-video-keyframe-boundary-supplement.v1",
+  "project_id": "PROJECT01",
+  "core_keyframe_manifest": {
+    "artifact_id": "KF_PACK_PROJECT01_V1",
+    "owner_skill": "ai-video-keyframe-continuity-pack",
+    "version": "1.0.0",
+    "sha256": "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef"
+  },
+  "prompt_preflight": {
+    "artifact_id": "PROMPT_PREFLIGHT_PROJECT01_V1",
+    "owner_skill": "ai-video-omni-reference-prompt-director",
+    "version": "1.0.0",
+    "sha256": "abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789"
+  },
+  "scripted_shot_uids": ["S001"],
+  "generation_units": [{"generation_unit_id": "GU001", "ordered_shot_uids": ["S001"]}],
+  "supplemental_keyframes": [],
+  "cross_generation_unit_boundaries": [],
+  "exemption": "single_generation_unit"
+}

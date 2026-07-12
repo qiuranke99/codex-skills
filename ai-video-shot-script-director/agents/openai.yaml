@@ -1,0 +1,6 @@
+interface:
+  display_name: "AI Video Shot Script Director"
+  short_description: "Upgrade creative shot drafts into validated director contracts."
+  default_prompt: "Use $ai-video-shot-script-director to professionalize my rough or structured ad script. Preserve the creative mode, infer ordinary directing details without blocking, close timing and continuity, and never invent unsupported product claims."
+policy:
+  allow_implicit_invocation: true

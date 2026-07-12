@@ -1,0 +1,122 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "ai-video-owner-asset-export.schema.json",
+  "title": "AI Video Owner Asset Canon Export Record",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "contract_version", "artifact_id", "owner_skill", "version", "sha256",
+    "approval_status", "dependencies", "affected_shot_uids", "stale_reason",
+    "schema_version", "profile_id", "asset_key", "artifact_slot", "artifact_type",
+    "authority_mode", "control_roles_authorized", "authority_stage",
+    "terminal_route_decision", "primary_asset", "primary_asset_media",
+    "prompt_evidence", "production_approval", "export_status"
+  ],
+  "properties": {
+    "contract_version": {"const": "ai-video-artifact-v1"},
+    "artifact_id": {"type": "string", "pattern": "^ASSET_[A-Z0-9_-]+_V[0-9]+_[0-9]+_[0-9]+$"},
+    "owner_skill": {
+      "enum": [
+        "character-casting-lock-board",
+        "character-final-lock-board",
+        "single-face-character-lock-board",
+        "multi-angle-product-identity-lock-board",
+        "packaging-product-identity-label-lock-board",
+        "material-sensitive-product-master-asset-board",
+        "scene-canon-asset-pack"
+      ]
+    },
+    "version": {"type": "string", "pattern": "^[0-9]+\\.[0-9]+\\.[0-9]+$"},
+    "sha256": {"type": "string", "pattern": "^[a-f0-9]{64}$"},
+    "approval_status": {"enum": ["assistant_validated", "user_approved"]},
+    "dependencies": {"type": "array", "maxItems": 0},
+    "affected_shot_uids": {
+      "type": "array", "minItems": 1, "uniqueItems": true,
+      "items": {"type": "string", "minLength": 1}
+    },
+    "stale_reason": {"type": "null"},
+    "schema_version": {"const": "ai-video-owner-asset-export.v1"},
+    "profile_id": {
+      "enum": [
+        "character_casting", "character_final", "single_face_character",
+        "multi_angle_product", "packaging_product", "material_sensitive_product",
+        "scene_canon"
+      ]
+    },
+    "asset_key": {"type": "string", "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]*$"},
+    "artifact_slot": {"type": "string", "minLength": 3},
+    "artifact_type": {"type": "string", "minLength": 3},
+    "authority_mode": {
+      "enum": [
+        "identity_and_wardrobe", "geometry_only", "geometry_layout_only",
+        "geometry_layout_exact_copy_verified", "geometry_and_material", "scene_canon"
+      ]
+    },
+    "control_roles_authorized": {
+      "type": "array", "minItems": 1, "uniqueItems": true,
+      "items": {
+        "enum": ["identity", "wardrobe", "product_geometry", "label_copy", "material_behavior", "scene_canon"]
+      }
+    },
+    "authority_stage": {
+      "enum": [
+        "terminal_character_canon", "terminal_product_canon",
+        "terminal_packaging_canon", "terminal_material_canon", "terminal_scene_canon"
+      ]
+    },
+    "terminal_route_decision": {
+      "enum": ["casting_as_terminal", "character_final", "single_face_character", "not_applicable"]
+    },
+    "primary_asset": {"$ref": "#/$defs/fileLock"},
+    "primary_asset_media": {
+      "type": "object", "additionalProperties": false,
+      "required": ["media_type", "width_px", "height_px"],
+      "properties": {
+        "media_type": {"enum": ["image/png", "image/jpeg", "image/webp"]},
+        "width_px": {"type": "integer", "minimum": 64},
+        "height_px": {"type": "integer", "minimum": 64}
+      }
+    },
+    "prompt_evidence": {
+      "type": "array", "minItems": 1,
+      "items": {"$ref": "#/$defs/promptLock"}
+    },
+    "production_approval": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["status", "evidence_locator", "evidence_file_sha256"],
+      "properties": {
+        "status": {"enum": ["user_granted", "external_pipeline_granted"]},
+        "evidence_locator": {"$ref": "#/$defs/safeLocator"},
+        "evidence_file_sha256": {"$ref": "#/$defs/sha"}
+      }
+    },
+    "export_status": {"const": "canon_ready"}
+  },
+  "$defs": {
+    "sha": {"type": "string", "pattern": "^[a-f0-9]{64}$"},
+    "safeLocator": {
+      "type": "string", "minLength": 1,
+      "not": {"pattern": "(^/|(^|/)\\.\\.(/|$))"}
+    },
+    "fileLock": {
+      "type": "object", "additionalProperties": false,
+      "required": ["locator", "file_sha256"],
+      "properties": {
+        "locator": {"$ref": "#/$defs/safeLocator"},
+        "file_sha256": {"$ref": "#/$defs/sha"}
+      }
+    },
+    "promptLock": {
+      "type": "object", "additionalProperties": false,
+      "required": ["role", "locator", "file_sha256"],
+      "properties": {
+        "role": {
+          "enum": ["generation_prompt", "four_k_enhancement_prompt", "four_k_regeneration_prompt"]
+        },
+        "locator": {"$ref": "#/$defs/safeLocator"},
+        "file_sha256": {"$ref": "#/$defs/sha"}
+      }
+    }
+  }
+}

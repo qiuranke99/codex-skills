@@ -1,0 +1,140 @@
+{
+  "contract_version": "ai-video-artifact-v1",
+  "artifact_id": "VIDEO_IR_PROJECT01_V1",
+  "owner_skill": "ai-video-omni-reference-prompt-director",
+  "version": "1.0.0",
+  "sha256": null,
+  "approval_status": "draft",
+  "dependencies": [],
+  "affected_shot_uids": ["S001"],
+  "stale_reason": null,
+  "schema_version": "ai-video-canonical-ir.v2",
+  "ir_stage": "final_compile",
+  "package_mode": "compile",
+  "project_id": "PROJECT01",
+  "package_id": "PROMPT_PACKAGE_PROJECT01_V1",
+  "package_status": "blocked",
+  "generation_mode": "omni_reference_to_video",
+  "generation_unit_boundary_policy": "whole_shot_uids_only",
+  "revision_anchor": null,
+  "project_canon_read_receipt": {
+    "manifest_artifact_id": "PROJECT_CANON_MANIFEST_PROJECT01",
+    "manifest_version": "1.0.0",
+    "manifest_sha256": "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef",
+    "snapshot_path": "00_manifest/PROJECT_CANON_COMPILE_INPUT_SNAPSHOT.json",
+    "snapshot_file_sha256": "abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789"
+  },
+  "preflight_plan_ref": {
+    "artifact_id": "PREFLIGHT_PLAN_PROJECT01",
+    "owner_skill": "ai-video-omni-reference-prompt-director",
+    "version": "1.0.0",
+    "sha256": "1111111111111111111111111111111111111111111111111111111111111111"
+  },
+  "boundary_supplement_ref": {
+    "artifact_id": "BOUNDARY_SUPPLEMENT_PROJECT01",
+    "owner_skill": "ai-video-keyframe-continuity-pack",
+    "version": "1.0.0",
+    "sha256": "2222222222222222222222222222222222222222222222222222222222222222"
+  },
+  "target_profile_id": "seedance_2_5_forward_compatible",
+  "compatible_backend_profile_ids": ["seedance_2_0_documented_omni"],
+  "source_artifact_inventory": [
+    {
+      "artifact": {
+        "contract_version": "ai-video-artifact-v1",
+        "artifact_id": "LOOK_REF_PROJECT01",
+        "owner_skill": "ai-video-global-look-lock",
+        "version": "1.0.0",
+        "sha256": "3333333333333333333333333333333333333333333333333333333333333333",
+        "approval_status": "user_approved",
+        "dependencies": [],
+        "affected_shot_uids": ["S001"],
+        "stale_reason": null
+      },
+      "artifact_slot": "global_look_reference",
+      "artifact_type": "GLOBAL_LOOK_REFERENCE",
+      "control_roles": ["global_look"],
+      "control_role": "global_look",
+      "approval_status": "user_approved",
+      "eligible_for_downstream": true,
+      "file_path": "sources/look-reference.png",
+      "file_sha256": "4444444444444444444444444444444444444444444444444444444444444444",
+      "artifact_record_locator": "sources/look-reference.artifact.json",
+      "artifact_record_file_sha256": "5555555555555555555555555555555555555555555555555555555555555555"
+    }
+  ],
+  "global_directing_prompt_full": "GLOBAL DIRECTING GRAMMAR — preserve the complete approved director grammar here verbatim, including lens, composition, movement, cutting, performance, reveal, and rhythm rules.",
+  "global_look": {
+    "artifact_id": "GLOBAL_LOOK_PROJECT01_V1",
+    "exact_prompt_block": "GLOBAL LOOK PROMPT FULL — preserve the complete approved production-wide palette relationships, lighting architecture, contrast curve, black floor, highlight roll-off, skin rendering, product and material response, optical texture, grain, atmosphere, allowed variation, and negative look here verbatim in every unit and repair prompt.",
+    "reference_asset_ids": ["LOOK_REF_PROJECT01"],
+    "look_state_matrix_id": "LOOK_STATE_MATRIX_PROJECT01_V1"
+  },
+  "ordered_shot_uids": ["S001"],
+  "shots": [
+    {
+      "shot_uid": "S001",
+      "target_start_seconds": 0.0,
+      "target_end_seconds": 5.0,
+      "advertising_function": "source-approved product attention",
+      "subjects": ["approved product"],
+      "scene_initial_state": "approved scene state",
+      "visible_action_expression": "visible source-aligned action",
+      "camera_composition": "approved static storyboard realization",
+      "blocking_spatial_change": "static hold",
+      "product_material_change": "none",
+      "ending_continuity_state": "stable hold",
+      "look_state_id": "LOOK_STATE_HERO",
+      "look_state_prompt_full": "LOOK_STATE_HERO — preserve the complete approved State block here, including activation, illumination, exposure, color temperature, direction, contrast, skin, product, material, allowed deltas, and forbidden changes.",
+      "look_state_reference_asset_ids": ["LOOK_REF_PROJECT01"],
+      "shot_look_delta": {
+        "active": false,
+        "scope": [],
+        "description": "none",
+        "reason": "assigned State already fits",
+        "preserves_look_core": true,
+        "prompt_full": "SHOT_LOOK_DELTA — none; preserve the complete Core and assigned State."
+      },
+      "storyboard_artifact_id": "SB_S001",
+      "storyboard_stage": "look_applied_final",
+      "storyboard_model_input_eligible": true,
+      "keyframe_artifact_ids": ["KF_S001"],
+      "control_previs_artifact_id": null,
+      "spoken_content": {
+        "text": "",
+        "copy_status": "not_used",
+        "source_reference_ids": [],
+        "claim_ids": [],
+        "delivery_mode": "prohibited_model_text"
+      },
+      "on_screen_copy": [],
+      "claim_provenance": [],
+      "required_control_artifact_ids": ["LOOK_REF_PROJECT01", "SB_S001", "KF_S001"],
+      "must_preserve": ["approved identity and material"],
+      "must_avoid": ["invented text or claim"]
+    }
+  ],
+  "generation_units": [
+    {
+      "generation_unit_id": "GU001",
+      "ordered_shot_uids": ["S001"],
+      "target_duration_seconds": 5.0,
+      "continuity_boundary_in": "project start",
+      "continuity_boundary_out": "project end",
+      "timing_sensitive": false,
+      "control_previs_requirement": "exempt_single_static_shot",
+      "control_previs_artifact_id": null,
+      "boundary_supplement_artifact_id": "BOUNDARY_SUPPLEMENT_PROJECT01",
+      "required_modalities": ["text", "image"],
+      "preflight_status": "ready"
+    }
+  ],
+  "claim_boundary": {
+    "claims": [],
+    "prohibited_unsourced_claims": ["unsupported efficacy"],
+    "compliance_unknowns": []
+  },
+  "forbidden_fallbacks": ["text_only_generation", "endpoint_frame_generation"],
+  "inferred_prompt_decisions": [],
+  "upstream_change_requests": []
+}

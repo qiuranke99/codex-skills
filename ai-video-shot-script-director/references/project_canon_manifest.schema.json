@@ -1,0 +1,189 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "ai-video-project-canon-manifest.schema.json",
+  "title": "AI Video PROJECT_CANON_MANIFEST",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "contract_version", "artifact_id", "owner_skill", "version", "sha256",
+    "approval_status", "dependencies", "affected_shot_uids", "stale_reason",
+    "schema_version", "project_id", "manifest_role", "manifest_update_policy",
+    "current_phase", "revision_counter", "updated_by_skill", "base_manifest_sha256",
+    "canonical_shot_uids", "active_artifacts", "superseded_artifacts",
+    "dependency_edges", "stale_events", "unresolved_change_requests"
+  ],
+  "properties": {
+    "contract_version": {"const": "ai-video-artifact-v1"},
+    "artifact_id": {"type": "string", "pattern": "^PROJECT_CANON_MANIFEST_[A-Z0-9_-]+$"},
+    "owner_skill": {"const": "ai-video-shot-script-director"},
+    "version": {"type": "string", "pattern": "^[0-9]+\\.[0-9]+\\.[0-9]+$"},
+    "sha256": {"oneOf": [{"type": "null"}, {"type": "string", "pattern": "^[a-f0-9]{64}$"}]},
+    "approval_status": {"enum": ["draft", "assistant_validated", "user_approved", "stale", "blocked"]},
+    "dependencies": {"type": "array", "maxItems": 0},
+    "affected_shot_uids": {"type": "array", "uniqueItems": true, "items": {"type": "string", "minLength": 1}},
+    "stale_reason": {"type": ["string", "null"]},
+    "schema_version": {"const": "ai-video-project-canon-manifest.v1"},
+    "project_id": {"type": "string", "minLength": 1},
+    "manifest_role": {"const": "artifact_registry_only"},
+    "manifest_update_policy": {"const": "validated_atomic_delta_no_reverse_dependency"},
+    "current_phase": {
+      "enum": [
+        "intake", "professional_script", "canon_assets", "global_look",
+        "storyboard_structure", "storyboard_final", "timing_animatic_v1",
+        "keyframes", "core_keyframes_k1", "prompt_preflight", "generation_unit_preflight_p1",
+        "boundary_supplement_k2", "control_previs_v2", "prompt_compile", "prompt_compile_p2",
+        "user_review_revision"
+      ]
+    },
+    "revision_counter": {"type": "integer", "minimum": 0},
+    "updated_by_skill": {"type": "string", "minLength": 1},
+    "base_manifest_sha256": {"oneOf": [{"type": "null"}, {"type": "string", "pattern": "^[a-f0-9]{64}$"}]},
+    "canonical_shot_uids": {"type": "array", "uniqueItems": true, "items": {"type": "string", "minLength": 1}},
+    "active_artifacts": {"type": "array", "items": {"$ref": "#/$defs/artifactEntry"}},
+    "superseded_artifacts": {"type": "array", "items": {"$ref": "#/$defs/supersededEntry"}},
+    "dependency_edges": {"type": "array", "items": {"$ref": "#/$defs/dependencyEdge"}},
+    "stale_events": {"type": "array", "items": {"$ref": "#/$defs/staleEvent"}},
+    "unresolved_change_requests": {"type": "array", "items": {"$ref": "#/$defs/changeRequest"}}
+  },
+  "$defs": {
+    "semver": {"type": "string", "pattern": "^[0-9]+\\.[0-9]+\\.[0-9]+$"},
+    "sha": {"type": "string", "pattern": "^[a-f0-9]{64}$"},
+    "artifactRef": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["artifact_id", "owner_skill", "version", "sha256"],
+      "properties": {
+        "artifact_id": {"type": "string", "minLength": 1},
+        "owner_skill": {"type": "string", "minLength": 1},
+        "version": {"$ref": "#/$defs/semver"},
+        "sha256": {"$ref": "#/$defs/sha"}
+      }
+    },
+    "artifactEntry": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "artifact_slot", "artifact_id", "artifact_type", "owner_skill", "version", "sha256",
+        "approval_status", "stale_reason", "eligible_for_downstream", "affected_shot_uids",
+        "locator", "file_sha256", "artifact_record_locator", "artifact_record_file_sha256", "dependencies"
+      ],
+      "properties": {
+        "artifact_slot": {"type": "string", "minLength": 1},
+        "artifact_id": {"type": "string", "minLength": 1},
+        "artifact_type": {"type": "string", "minLength": 1},
+        "owner_skill": {"type": "string", "minLength": 1},
+        "version": {"$ref": "#/$defs/semver"},
+        "sha256": {"oneOf": [{"type": "null"}, {"$ref": "#/$defs/sha"}]},
+        "approval_status": {"enum": ["draft", "assistant_validated", "user_approved", "stale", "blocked"]},
+        "stale_reason": {"type": ["string", "null"]},
+        "eligible_for_downstream": {"type": "boolean"},
+        "affected_shot_uids": {"type": "array", "uniqueItems": true, "items": {"type": "string", "minLength": 1}},
+        "locator": {"type": ["string", "null"]},
+        "file_sha256": {"oneOf": [{"type": "null"}, {"$ref": "#/$defs/sha"}]},
+        "artifact_record_locator": {"type": ["string", "null"]},
+        "artifact_record_file_sha256": {"oneOf": [{"type": "null"}, {"$ref": "#/$defs/sha"}]},
+        "dependencies": {"type": "array", "items": {"$ref": "#/$defs/artifactRef"}}
+      },
+      "allOf": [
+        {
+          "if": {"properties": {"eligible_for_downstream": {"const": true}}},
+          "then": {
+            "properties": {
+              "locator": {"type": "string", "minLength": 1, "not": {"pattern": "(^/|(^|/)\\.\\.(/|$))"}},
+              "file_sha256": {"$ref": "#/$defs/sha"},
+              "artifact_record_locator": {"type": "string", "minLength": 1, "pattern": "\\.json$", "not": {"pattern": "(^/|(^|/)\\.\\.(/|$))"}},
+              "artifact_record_file_sha256": {"$ref": "#/$defs/sha"}
+            }
+          }
+        },
+        {
+          "if": {"properties": {"locator": {"type": "null"}}},
+          "then": {"properties": {"file_sha256": {"type": "null"}}}
+        },
+        {
+          "if": {"properties": {"file_sha256": {"type": "null"}}},
+          "then": {"properties": {"locator": {"type": "null"}}}
+        },
+        {
+          "if": {"properties": {"artifact_record_locator": {"type": "null"}}},
+          "then": {"properties": {"artifact_record_file_sha256": {"type": "null"}}}
+        },
+        {
+          "if": {"properties": {"artifact_record_file_sha256": {"type": "null"}}},
+          "then": {"properties": {"artifact_record_locator": {"type": "null"}}}
+        }
+      ]
+    },
+    "supersededEntry": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "artifact_slot", "artifact_id", "artifact_type", "owner_skill", "version", "sha256",
+        "approval_status", "stale_reason", "eligible_for_downstream", "affected_shot_uids",
+        "locator", "file_sha256", "artifact_record_locator", "artifact_record_file_sha256", "dependencies", "superseded_by_artifact_id"
+      ],
+      "properties": {
+        "artifact_slot": {"type": "string", "minLength": 1},
+        "artifact_id": {"type": "string", "minLength": 1},
+        "artifact_type": {"type": "string", "minLength": 1},
+        "owner_skill": {"type": "string", "minLength": 1},
+        "version": {"$ref": "#/$defs/semver"},
+        "sha256": {"oneOf": [{"type": "null"}, {"$ref": "#/$defs/sha"}]},
+        "approval_status": {"enum": ["draft", "assistant_validated", "user_approved", "stale", "blocked"]},
+        "stale_reason": {"type": ["string", "null"]},
+        "eligible_for_downstream": {"type": "boolean"},
+        "affected_shot_uids": {"type": "array", "uniqueItems": true, "items": {"type": "string", "minLength": 1}},
+        "locator": {"type": ["string", "null"]},
+        "file_sha256": {"oneOf": [{"type": "null"}, {"$ref": "#/$defs/sha"}]},
+        "artifact_record_locator": {"type": ["string", "null"]},
+        "artifact_record_file_sha256": {"oneOf": [{"type": "null"}, {"$ref": "#/$defs/sha"}]},
+        "dependencies": {"type": "array", "items": {"$ref": "#/$defs/artifactRef"}},
+        "superseded_by_artifact_id": {"type": "string", "minLength": 1}
+      },
+      "allOf": [{
+        "properties": {
+          "locator": {"type": "string", "minLength": 1, "not": {"pattern": "(^/|(^|/)\\.\\.(/|$))"}},
+          "file_sha256": {"$ref": "#/$defs/sha"},
+          "artifact_record_locator": {"type": "string", "minLength": 1, "pattern": "\\.json$", "not": {"pattern": "(^/|(^|/)\\.\\.(/|$))"}},
+          "artifact_record_file_sha256": {"$ref": "#/$defs/sha"}
+        }
+      }]
+    },
+    "dependencyEdge": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["producer_artifact_id", "consumer_artifact_id", "producer_sha256", "affected_shot_uids"],
+      "properties": {
+        "producer_artifact_id": {"type": "string", "minLength": 1},
+        "consumer_artifact_id": {"type": "string", "minLength": 1},
+        "producer_sha256": {"$ref": "#/$defs/sha"},
+        "affected_shot_uids": {"type": "array", "uniqueItems": true, "items": {"type": "string", "minLength": 1}}
+      }
+    },
+    "staleEvent": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["event_id", "changed_artifact_id", "stale_artifact_ids", "affected_shot_uids", "reason"],
+      "properties": {
+        "event_id": {"type": "string", "minLength": 1},
+        "changed_artifact_id": {"type": "string", "minLength": 1},
+        "stale_artifact_ids": {"type": "array", "minItems": 1, "uniqueItems": true, "items": {"type": "string", "minLength": 1}},
+        "affected_shot_uids": {"type": "array", "uniqueItems": true, "items": {"type": "string", "minLength": 1}},
+        "reason": {"type": "string", "minLength": 1}
+      }
+    },
+    "changeRequest": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["request_id", "requesting_skill", "target_owner_skill", "affected_shot_uids", "reason", "required_resolution"],
+      "properties": {
+        "request_id": {"type": "string", "minLength": 1},
+        "requesting_skill": {"type": "string", "minLength": 1},
+        "target_owner_skill": {"type": "string", "minLength": 1},
+        "affected_shot_uids": {"type": "array", "uniqueItems": true, "items": {"type": "string", "minLength": 1}},
+        "reason": {"type": "string", "minLength": 1},
+        "required_resolution": {"type": "string", "minLength": 1}
+      }
+    }
+  }
+}

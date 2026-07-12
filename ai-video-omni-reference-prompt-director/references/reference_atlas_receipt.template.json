@@ -1,0 +1,91 @@
+{
+  "schema_version": "ai-video-deterministic-atlas-receipt.v2",
+  "atlas_id": "ATLAS_GU001",
+  "generation_unit_id": "GU001",
+  "codec": "PNG_RGB8",
+  "media_type": "image/png",
+  "width": 512,
+  "height": 256,
+  "layout_columns": 2,
+  "background_rgb": [0, 0, 0],
+  "minimum_panel_width_pixels": 256,
+  "minimum_panel_height_pixels": 256,
+  "legibility_policy": "identity_geometry_look_only_no_microcopy",
+  "layout_policy": "max_native_cell_center_floor_no_resize_v1",
+  "decoder_runtime": {
+    "implementation": "Pillow",
+    "implementation_version": "11.3.0",
+    "policy": "pillow_common_raster_to_rgb8_no_resize_v1",
+    "codec_backends": [
+      {"source_codec": "PNG", "backend": "zlib", "backend_version": "1.3.1"},
+      {"source_codec": "WEBP", "backend": "libwebp", "backend_version": "1.5.0"}
+    ],
+    "exif_orientation_policy": "lossless_transpose_before_dimension_check",
+    "alpha_policy": "composite_over_spec_background_rgb",
+    "color_profile_policy": "embedded_icc_to_srgb_else_raw_samples_as_srgb",
+    "color_management_backend": null
+  },
+  "encoder_runtime": {
+    "implementation": "Pillow",
+    "implementation_version": "11.3.0",
+    "policy": "pillow_png_rgb8_fixed_v1",
+    "backend": "zlib",
+    "backend_version": "1.3.1",
+    "parameters": {"compress_level": 9, "optimize": false, "interlace": 0, "metadata": "none"}
+  },
+  "panels": [
+    {
+      "artifact_id": "ASSET_CHARACTER_LEAD",
+      "file_path": "sources/ASSET_CHARACTER_LEAD.png",
+      "file_sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+      "control_roles": ["identity"],
+      "control_role": "identity",
+      "source_codec": "PNG",
+      "source_mode": "RGB",
+      "source_width": 256,
+      "source_height": 256,
+      "exif_orientation": 1,
+      "normalized_width": 256,
+      "normalized_height": 256,
+      "icc_profile_sha256": null,
+      "alpha_composited": false,
+      "decoded_rgb_sha256": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+      "decoder_backend": {"backend": "zlib", "backend_version": "1.3.1"},
+      "x": 0,
+      "y": 0,
+      "width": 256,
+      "height": 256
+      ,"cell_x": 0
+      ,"cell_y": 0
+      ,"cell_width": 256
+      ,"cell_height": 256
+    },
+    {
+      "artifact_id": "ASSET_SCENE_CANON",
+      "file_path": "sources/ASSET_SCENE_CANON.webp",
+      "file_sha256": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+      "control_roles": ["scene_canon"],
+      "control_role": "scene_canon",
+      "source_codec": "WEBP",
+      "source_mode": "RGB",
+      "source_width": 256,
+      "source_height": 256,
+      "exif_orientation": 1,
+      "normalized_width": 256,
+      "normalized_height": 256,
+      "icc_profile_sha256": null,
+      "alpha_composited": false,
+      "decoded_rgb_sha256": "dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd",
+      "decoder_backend": {"backend": "libwebp", "backend_version": "1.5.0"},
+      "x": 256,
+      "y": 0,
+      "width": 256,
+      "height": 256
+      ,"cell_x": 256
+      ,"cell_y": 0
+      ,"cell_width": 256
+      ,"cell_height": 256
+    }
+  ],
+  "atlas_file_sha256": "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee"
+}

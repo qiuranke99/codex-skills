@@ -130,3 +130,37 @@ Keep human or production approval separate from assistant QA. Validator success 
 ## Minimal Invocation
 
 `Use $scene-canon-asset-pack to turn these scene references into a neutral, consistent scene asset package and include one bound 4K regeneration prompt per approved image.`
+
+## Optional AI-Video Project Canon Export
+
+This downstream integration does not change scene canonization, independent
+plate generation, neutral appearance, package QA, or one-to-one 4K prompt
+mapping. Export one approved machine asset only after the package is
+`packaged`, its assistant QA passed, its primary file hash and finalized
+`four_k_regeneration_prompt` bytes are verified, and production approval is
+explicitly `user_granted` or `external_pipeline_granted`.
+
+The scene owner writes approval evidence conforming to
+`../ai-video-shot-script-director/references/ai_video_owner_asset_approval.schema.json`,
+binding this fixed owner, an asset key, the selected primary plate hash, its
+exact finalized 4K regeneration prompt hash, affected canonical Shot UIDs, QA
+pass, and approval decision. Invoke only
+`scripts/export_ai_video_canon.py` with project-relative locked files; the
+wrapper exposes no owner argument and verifies that it lives in this package.
+It exports only `authority_mode: scene_canon` with
+`control_roles_authorized: [scene_canon]`.
+Pillow is required to verify and fully load the selected primary PNG/JPEG/WebP
+scene plate and lock decoder-observed dimensions of at least 64×64. Missing
+Pillow, corrupt pixels, or format/extension mismatch fails closed before Canon
+mutation.
+
+Success creates the owner-produced `ai-video-artifact-v1` sidecar, independent
+binary primary/JSON-record four locks, immutable base snapshot, entry delta,
+receipt, and validated pre/post Canon transition. The Prompt Director must use
+the real `scene-canon-asset-pack` owner for feedback and may not synthesize an
+authority projection. Export failure leaves the Scene Canon package unchanged.
+
+Approval and export records must also bind
+`authority_stage: terminal_scene_canon` and
+`terminal_route_decision: not_applicable`. Install the pinned decoder with
+`python3 -m pip install -r ../ai-video-shot-script-director/requirements.txt`.

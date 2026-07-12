@@ -1,0 +1,52 @@
+{
+  "contract_version": "ai-video-artifact-v1",
+  "artifact_id": "PREVIS_MANIFEST",
+  "owner_skill": "ai-video-timed-animatic-previs-director",
+  "version": "1.0.0",
+  "sha256": null,
+  "approval_status": "draft",
+  "dependencies": [],
+  "affected_shot_uids": ["SHT_001"],
+  "stale_reason": null,
+  "schema_version": "ai-video-timed-animatic-previs.v1",
+  "project_id": "PROJECT_EXAMPLE",
+  "package_status": "draft",
+  "delivery_stage": "timing_animatic_v1",
+  "execution_mode": "active",
+  "shot_count": 1,
+  "total_duration_seconds": 5.0,
+  "source_authorities": {
+    "shot_contract": {
+      "artifact_id": "SHOT_CONTRACT",
+      "owner_skill": "ai-video-shot-script-director",
+      "version": "1.0.0",
+      "sha256": "0000000000000000000000000000000000000000000000000000000000000000",
+      "approval_status": "assistant_validated",
+      "snapshot_path": "00_manifest/source_snapshots/SHOT_CONTRACT.json",
+      "snapshot_file_sha256": "0000000000000000000000000000000000000000000000000000000000000000"
+    },
+    "storyboard": {
+      "artifact_id": "STORYBOARD_MANIFEST",
+      "owner_skill": "ai-video-modular-storyboard",
+      "version": "1.0.0",
+      "sha256": "0000000000000000000000000000000000000000000000000000000000000000",
+      "approval_status": "assistant_validated",
+      "snapshot_path": "00_manifest/source_snapshots/STORYBOARD_MANIFEST.json",
+      "snapshot_file_sha256": "0000000000000000000000000000000000000000000000000000000000000000"
+    },
+    "keyframe_pack": null,
+    "keyframe_boundary_supplement": null,
+    "provider_preflight": null,
+    "provider_capability": null
+  },
+  "input_file_evidence": [],
+  "skip_record": null,
+  "timing_animatic_v1": null,
+  "control_previs_v2_units": [],
+  "motion_physics_tracks": [],
+  "generation_modes_used": [],
+  "forbidden_generation_modes": [
+    "text_to_video", "first_last_frame", "standalone_single_image_to_video"
+  ],
+  "downstream_invalidations": []
+}

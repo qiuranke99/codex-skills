@@ -1,0 +1,40 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "ai-video-asset-canon-pending-transaction.schema.json",
+  "title": "AI Video Asset Canon Pending Transaction Journal",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version", "status", "profile_id", "updated_by_skill",
+    "artifact_id", "package_root_locator", "base_snapshot_locator",
+    "delta_locator", "artifact_record_locator", "receipt_locator",
+    "base_manifest_sha256", "resulting_manifest_sha256",
+    "registered_artifact_ids", "sha256"
+  ],
+  "properties": {
+    "schema_version": {"const": "ai-video-asset-canon-pending-transaction.v1"},
+    "status": {"const": "prepared_or_committed_receipt_pending"},
+    "profile_id": {"type": "string", "minLength": 1},
+    "updated_by_skill": {"type": "string", "minLength": 1},
+    "artifact_id": {"type": "string", "minLength": 1},
+    "package_root_locator": {"$ref": "#/$defs/safeLocator"},
+    "base_snapshot_locator": {"$ref": "#/$defs/safeLocator"},
+    "delta_locator": {"$ref": "#/$defs/safeLocator"},
+    "artifact_record_locator": {"$ref": "#/$defs/safeLocator"},
+    "receipt_locator": {"$ref": "#/$defs/safeLocator"},
+    "base_manifest_sha256": {"$ref": "#/$defs/sha"},
+    "resulting_manifest_sha256": {"$ref": "#/$defs/sha"},
+    "registered_artifact_ids": {
+      "type": "array", "minItems": 1, "uniqueItems": true,
+      "items": {"type": "string", "minLength": 1}
+    },
+    "sha256": {"$ref": "#/$defs/sha"}
+  },
+  "$defs": {
+    "sha": {"type": "string", "pattern": "^[a-f0-9]{64}$"},
+    "safeLocator": {
+      "type": "string", "minLength": 1,
+      "not": {"pattern": "(^/|(^|/)\\.\\.(/|$))"}
+    }
+  }
+}

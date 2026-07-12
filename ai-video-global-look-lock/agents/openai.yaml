@@ -1,0 +1,6 @@
+interface:
+  display_name: "AI Video Global Look Lock"
+  short_description: "Freeze global look core, states, deltas, and visual references."
+  default_prompt: "Use $ai-video-global-look-lock to build a production-wide look contract. Lock the textual prompt, independent visual references, and downstream inheritance together while preserving intrinsic product, material, packaging, and skin identity."
+policy:
+  allow_implicit_invocation: true

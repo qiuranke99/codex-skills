@@ -387,3 +387,35 @@ In the later inspection step, report:
 Keep the handoff concise, then publish the complete prompt pair in the final-channel main result exactly as required above. After external return, append provider/surface/profile/dimension evidence and external 4K QA. A prompt-only request routes outside this Skill and is not a successful run.
 
 The image-generation turn may end only as `stage_complete` with `task_finalization_status: awaiting_post_generation_continuation`. The task completes only when material/content QA is classified, the source-bound exact-16:9/4K handoff is ready or honestly runtime-blocked, and `task_finalization_status: final_main_result_published` proves the final channel displayed both complete prompts and both verified hashes. Source, capability, persistence, or prompt-integrity failures may end the run without a completion claim. Any returned external artifact remains externally generated and is classified without being relabeled as native.
+
+## Optional AI-Video Project Canon Export
+
+This optional downstream step never changes the one-master-board rule,
+material/source gates, generation, inspection, external 4K classification, or
+complete prompt-pair publication. It is legal only after assistant QA passes,
+the `generation_prompt` and `four_k_enhancement_prompt` files pass exact
+readback, and production approval is explicitly `user_granted` or
+`external_pipeline_granted`.
+
+The owner records that decision under
+`../ai-video-shot-script-director/references/ai_video_owner_asset_approval.schema.json`,
+binding this fixed owner, asset key, primary board hash, both prompt hashes,
+affected canonical Shot UIDs, QA pass, and decision. Use only
+`scripts/export_ai_video_canon.py` with project-relative locators and hashes;
+the wrapper accepts no owner override. Its fixed authority mode is
+`geometry_and_material`, authorizing exactly
+`[product_geometry, material_behavior]`; it never grants `label_copy`.
+Pillow must be available for the optional export and must verify and fully load
+the primary PNG/JPEG/WebP master board at 64×64 or larger. A missing decoder,
+corrupt image, arbitrary blob, or extension mismatch fails before Canon writes.
+
+Success writes the true owner `ai-video-artifact-v1` record, binary-compatible
+primary/record four locks, immutable base snapshot, entry delta, receipt, and
+validated Canon transition. Prompt Director must preserve this material owner
+and cannot manufacture a substitute projection. Export failure changes no
+material QA or existing board state.
+
+Approval and export records must also bind
+`authority_stage: terminal_material_canon` and
+`terminal_route_decision: not_applicable`. Install the pinned decoder with
+`python3 -m pip install -r ../ai-video-shot-script-director/requirements.txt`.

@@ -1,0 +1,248 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "canonical_ir.schema.json",
+  "title": "AI Video Final Canonical Generation IR",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "contract_version", "artifact_id", "owner_skill", "version", "sha256",
+    "approval_status", "dependencies", "affected_shot_uids", "stale_reason",
+    "schema_version", "ir_stage", "package_mode", "project_id", "package_id", "package_status",
+    "generation_mode", "generation_unit_boundary_policy", "revision_anchor", "project_canon_read_receipt", "preflight_plan_ref",
+    "boundary_supplement_ref", "target_profile_id", "compatible_backend_profile_ids",
+    "source_artifact_inventory", "global_directing_prompt_full", "global_look",
+    "ordered_shot_uids", "shots", "generation_units", "claim_boundary",
+    "forbidden_fallbacks", "inferred_prompt_decisions", "upstream_change_requests"
+  ],
+  "properties": {
+    "contract_version": {"const": "ai-video-artifact-v1"},
+    "artifact_id": {"type": "string", "minLength": 1},
+    "owner_skill": {"const": "ai-video-omni-reference-prompt-director"},
+    "version": {"$ref": "#/$defs/semver"},
+    "sha256": {"oneOf": [{"type": "null"}, {"$ref": "#/$defs/sha"}]},
+    "approval_status": {"enum": ["draft", "assistant_validated", "user_approved", "stale", "blocked"]},
+    "dependencies": {"type": "array", "items": {"$ref": "#/$defs/artifactRef"}},
+    "affected_shot_uids": {"type": "array", "uniqueItems": true, "items": {"type": "string", "minLength": 1}},
+    "stale_reason": {"type": ["string", "null"]},
+    "schema_version": {"const": "ai-video-canonical-ir.v2"},
+    "ir_stage": {"enum": ["final_compile", "revision_compile"]},
+    "package_mode": {"enum": ["compile", "revise"]},
+    "project_id": {"type": "string", "minLength": 1},
+    "package_id": {"type": "string", "minLength": 1},
+    "package_status": {"enum": ["compiled", "revision_required", "blocked"]},
+    "generation_mode": {"const": "omni_reference_to_video"},
+    "generation_unit_boundary_policy": {"const": "whole_shot_uids_only"},
+    "revision_anchor": {"oneOf": [{"type": "null"}, {"$ref": "#/$defs/revisionAnchor"}]},
+    "project_canon_read_receipt": {"$ref": "#/$defs/manifestReadReceipt"},
+    "preflight_plan_ref": {"$ref": "#/$defs/artifactRef"},
+    "boundary_supplement_ref": {"$ref": "#/$defs/artifactRef"},
+    "target_profile_id": {"const": "seedance_2_5_forward_compatible"},
+    "compatible_backend_profile_ids": {"type": "array", "minItems": 1, "uniqueItems": true, "items": {"type": "string", "minLength": 1}},
+    "source_artifact_inventory": {"type": "array", "minItems": 1, "items": {"$ref": "#/$defs/sourceArtifact"}},
+    "global_directing_prompt_full": {"type": "string", "minLength": 40},
+    "global_look": {"$ref": "#/$defs/globalLook"},
+    "ordered_shot_uids": {"type": "array", "minItems": 1, "uniqueItems": true, "items": {"type": "string", "minLength": 1}},
+    "shots": {"type": "array", "minItems": 1, "items": {"$ref": "#/$defs/shot"}},
+    "generation_units": {"type": "array", "minItems": 1, "items": {"$ref": "#/$defs/generationUnit"}},
+    "claim_boundary": {"$ref": "#/$defs/claimBoundary"},
+    "forbidden_fallbacks": {
+      "type": "array", "minItems": 2, "uniqueItems": true,
+      "items": {"enum": ["text_only_generation", "endpoint_frame_generation"]}
+    },
+    "inferred_prompt_decisions": {"type": "array", "items": {"type": "string", "minLength": 1}},
+    "upstream_change_requests": {"type": "array", "items": {"$ref": "#/$defs/changeRequest"}}
+  },
+  "$defs": {
+    "semver": {"type": "string", "pattern": "^[0-9]+\\.[0-9]+\\.[0-9]+$"},
+    "sha": {"type": "string", "pattern": "^[a-f0-9]{64}$"},
+    "artifactRef": {
+      "type": "object", "additionalProperties": false,
+      "required": ["artifact_id", "owner_skill", "version", "sha256"],
+      "properties": {
+        "artifact_id": {"type": "string", "minLength": 1},
+        "owner_skill": {"type": "string", "minLength": 1},
+        "version": {"$ref": "#/$defs/semver"},
+        "sha256": {"$ref": "#/$defs/sha"}
+      }
+    },
+    "manifestReadReceipt": {
+      "type": "object", "additionalProperties": false,
+      "required": ["manifest_artifact_id", "manifest_version", "manifest_sha256", "snapshot_path", "snapshot_file_sha256"],
+      "properties": {
+        "manifest_artifact_id": {"type": "string", "minLength": 1},
+        "manifest_version": {"$ref": "#/$defs/semver"},
+        "manifest_sha256": {"$ref": "#/$defs/sha"},
+        "snapshot_path": {"const": "00_manifest/PROJECT_CANON_COMPILE_INPUT_SNAPSHOT.json"},
+        "snapshot_file_sha256": {"$ref": "#/$defs/sha"}
+      }
+    },
+    "artifactEnvelope": {
+      "type": "object", "additionalProperties": false,
+      "required": ["contract_version", "artifact_id", "owner_skill", "version", "sha256", "approval_status", "dependencies", "affected_shot_uids", "stale_reason"],
+      "properties": {
+        "contract_version": {"const": "ai-video-artifact-v1"},
+        "artifact_id": {"type": "string", "minLength": 1},
+        "owner_skill": {"type": "string", "minLength": 1},
+        "version": {"$ref": "#/$defs/semver"},
+        "sha256": {"oneOf": [{"type": "null"}, {"$ref": "#/$defs/sha"}]},
+        "approval_status": {"enum": ["draft", "assistant_validated", "user_approved", "stale", "blocked"]},
+        "dependencies": {"type": "array", "items": {"$ref": "#/$defs/artifactRef"}},
+        "affected_shot_uids": {"type": "array", "uniqueItems": true, "items": {"type": "string", "minLength": 1}},
+        "stale_reason": {"type": ["string", "null"]}
+      }
+    },
+    "sourceArtifact": {
+      "type": "object", "additionalProperties": false,
+      "required": ["artifact", "artifact_slot", "artifact_type", "control_roles", "control_role", "approval_status", "eligible_for_downstream", "file_path", "file_sha256", "artifact_record_locator", "artifact_record_file_sha256"],
+      "properties": {
+        "artifact": {"$ref": "#/$defs/artifactEnvelope"},
+        "artifact_slot": {"type": "string", "minLength": 1},
+        "artifact_type": {"type": "string", "minLength": 1},
+        "control_roles": {"type": "array", "minItems": 1, "uniqueItems": true, "items": {"type": "string", "minLength": 1}},
+        "control_role": {"type": "string", "minLength": 1},
+        "approval_status": {"enum": ["draft", "assistant_validated", "user_approved", "stale", "blocked"]},
+        "eligible_for_downstream": {"type": "boolean"},
+        "file_path": {"type": ["string", "null"]},
+        "file_sha256": {"oneOf": [{"type": "null"}, {"$ref": "#/$defs/sha"}]},
+        "artifact_record_locator": {"type": "string", "minLength": 1, "not": {"pattern": "(^/|(^|/)\\.\\.(/|$))"}},
+        "artifact_record_file_sha256": {"$ref": "#/$defs/sha"}
+      }
+    },
+    "globalLook": {
+      "type": "object", "additionalProperties": false,
+      "required": ["artifact_id", "exact_prompt_block", "reference_asset_ids", "look_state_matrix_id"],
+      "properties": {
+        "artifact_id": {"type": "string", "minLength": 1},
+        "exact_prompt_block": {"type": "string", "minLength": 200},
+        "reference_asset_ids": {"type": "array", "minItems": 1, "uniqueItems": true, "items": {"type": "string", "minLength": 1}},
+        "look_state_matrix_id": {"type": "string", "pattern": "^LOOK_STATE_MATRIX_[A-Z0-9_-]+$"}
+      }
+    },
+    "copyItem": {
+      "type": "object", "additionalProperties": false,
+      "required": ["text", "copy_status", "source_reference_ids", "claim_ids", "delivery_mode"],
+      "properties": {
+        "text": {"type": "string"},
+        "copy_status": {"enum": ["not_used", "supplied_exact", "supplied_provisional", "unsourced_prohibited"]},
+        "source_reference_ids": {"type": "array", "uniqueItems": true, "items": {"type": "string"}},
+        "claim_ids": {"type": "array", "uniqueItems": true, "items": {"type": "string"}},
+        "delivery_mode": {"enum": ["model_spoken", "external_overlay_handoff", "prohibited_model_text"]}
+      }
+    },
+    "shotDelta": {
+      "type": "object", "additionalProperties": false,
+      "required": ["active", "scope", "description", "reason", "preserves_look_core", "prompt_full"],
+      "properties": {
+        "active": {"type": "boolean"},
+        "scope": {"type": "array", "uniqueItems": true, "items": {"type": "string"}},
+        "description": {"type": "string"}, "reason": {"type": "string"},
+        "preserves_look_core": {"const": true},
+        "prompt_full": {"type": "string", "minLength": 1}
+      }
+    },
+    "shot": {
+      "type": "object", "additionalProperties": false,
+      "required": [
+        "shot_uid", "target_start_seconds", "target_end_seconds", "advertising_function",
+        "subjects", "scene_initial_state", "visible_action_expression", "camera_composition",
+        "blocking_spatial_change", "product_material_change", "ending_continuity_state",
+        "look_state_id", "look_state_prompt_full", "look_state_reference_asset_ids",
+        "shot_look_delta", "storyboard_artifact_id", "storyboard_stage",
+        "storyboard_model_input_eligible", "keyframe_artifact_ids",
+        "control_previs_artifact_id", "spoken_content", "on_screen_copy",
+        "claim_provenance", "required_control_artifact_ids", "must_preserve", "must_avoid"
+      ],
+      "properties": {
+        "shot_uid": {"type": "string", "minLength": 1},
+        "target_start_seconds": {"type": "number", "minimum": 0},
+        "target_end_seconds": {"type": "number", "exclusiveMinimum": 0},
+        "advertising_function": {"type": "string", "minLength": 1},
+        "subjects": {"type": "array", "minItems": 1, "items": {"type": "string", "minLength": 1}},
+        "scene_initial_state": {"type": "string", "minLength": 1},
+        "visible_action_expression": {"type": "string", "minLength": 1},
+        "camera_composition": {"type": "string", "minLength": 1},
+        "blocking_spatial_change": {"type": "string", "minLength": 1},
+        "product_material_change": {"type": "string", "minLength": 1},
+        "ending_continuity_state": {"type": "string", "minLength": 1},
+        "look_state_id": {"type": "string", "pattern": "^LOOK_STATE_[A-Z0-9_-]+$"},
+        "look_state_prompt_full": {"type": "string", "minLength": 80},
+        "look_state_reference_asset_ids": {"type": "array", "minItems": 1, "uniqueItems": true, "items": {"type": "string", "minLength": 1}},
+        "shot_look_delta": {"$ref": "#/$defs/shotDelta"},
+        "storyboard_artifact_id": {"type": "string", "minLength": 1},
+        "storyboard_stage": {"const": "look_applied_final"},
+        "storyboard_model_input_eligible": {"const": true},
+        "keyframe_artifact_ids": {"type": "array", "minItems": 1, "uniqueItems": true, "items": {"type": "string", "minLength": 1}},
+        "control_previs_artifact_id": {"type": ["string", "null"]},
+        "spoken_content": {"$ref": "#/$defs/copyItem"},
+        "on_screen_copy": {"type": "array", "items": {"$ref": "#/$defs/copyItem"}},
+        "claim_provenance": {"type": "array", "items": {"$ref": "#/$defs/claimRecord"}},
+        "required_control_artifact_ids": {"type": "array", "minItems": 1, "uniqueItems": true, "items": {"type": "string", "minLength": 1}},
+        "must_preserve": {"type": "array", "items": {"type": "string"}},
+        "must_avoid": {"type": "array", "items": {"type": "string"}}
+      }
+    },
+    "generationUnit": {
+      "type": "object", "additionalProperties": false,
+      "required": [
+        "generation_unit_id", "ordered_shot_uids", "target_duration_seconds",
+        "continuity_boundary_in", "continuity_boundary_out", "timing_sensitive",
+        "control_previs_requirement", "control_previs_artifact_id",
+        "boundary_supplement_artifact_id", "required_modalities", "preflight_status"
+      ],
+      "properties": {
+        "generation_unit_id": {"type": "string", "minLength": 1},
+        "ordered_shot_uids": {"type": "array", "minItems": 1, "uniqueItems": true, "items": {"type": "string", "minLength": 1}},
+        "target_duration_seconds": {"type": "number", "exclusiveMinimum": 0},
+        "continuity_boundary_in": {"type": "string"}, "continuity_boundary_out": {"type": "string"},
+        "timing_sensitive": {"type": "boolean"},
+        "control_previs_requirement": {"enum": ["required", "exempt_single_static_shot"]},
+        "control_previs_artifact_id": {"type": ["string", "null"]},
+        "boundary_supplement_artifact_id": {"type": "string", "minLength": 1},
+        "required_modalities": {"type": "array", "minItems": 1, "uniqueItems": true, "items": {"enum": ["text", "image", "video", "audio"]}},
+        "preflight_status": {"enum": ["ready", "blocked_conflict", "blocked_capacity", "blocked_unsupported_required_modality"]}
+      }
+    },
+    "claimRecord": {
+      "type": "object", "additionalProperties": false,
+      "required": ["claim_id", "text", "source_reference_ids", "usage"],
+      "properties": {
+        "claim_id": {"type": "string"}, "text": {"type": "string"},
+        "source_reference_ids": {"type": "array", "minItems": 1, "items": {"type": "string"}},
+        "usage": {"enum": ["used_source_supported", "prohibited_unsourced", "compliance_unknown"]}
+      }
+    },
+    "claimBoundary": {
+      "type": "object", "additionalProperties": false,
+      "required": ["claims", "prohibited_unsourced_claims", "compliance_unknowns"],
+      "properties": {
+        "claims": {"type": "array", "items": {"$ref": "#/$defs/claimRecord"}},
+        "prohibited_unsourced_claims": {"type": "array", "items": {"type": "string"}},
+        "compliance_unknowns": {"type": "array", "items": {"type": "string"}}
+      }
+    },
+    "changeRequest": {
+      "type": "object", "additionalProperties": false,
+      "required": ["request_id", "target_owner_skill", "affected_shot_uids", "conflict", "required_resolution"],
+      "properties": {
+        "request_id": {"type": "string"}, "target_owner_skill": {"type": "string"},
+        "affected_shot_uids": {"type": "array", "items": {"type": "string"}},
+        "conflict": {"type": "string"}, "required_resolution": {"type": "string"}
+      }
+    },
+    "revisionAnchor": {
+      "type": "object", "additionalProperties": false,
+      "required": ["previous_package_ref", "previous_ir_path", "previous_ir_file_sha256", "previous_lockfile_path", "previous_lockfile_file_sha256", "revision_diff_path", "revision_diff_file_sha256", "changed_output_paths", "unchanged_output_paths"],
+      "properties": {
+        "previous_package_ref": {"$ref": "#/$defs/artifactRef"},
+        "previous_ir_path": {"type": "string", "minLength": 1},
+        "previous_ir_file_sha256": {"$ref": "#/$defs/sha"},
+        "previous_lockfile_path": {"type": "string", "minLength": 1},
+        "previous_lockfile_file_sha256": {"$ref": "#/$defs/sha"},
+        "revision_diff_path": {"const": "04_reports/PROMPT_REVISION_DIFF.md"},
+        "revision_diff_file_sha256": {"$ref": "#/$defs/sha"},
+        "changed_output_paths": {"type": "array", "minItems": 1, "uniqueItems": true, "items": {"type": "string", "minLength": 1}},
+        "unchanged_output_paths": {"type": "array", "minItems": 1, "uniqueItems": true, "items": {"type": "string", "minLength": 1}}
+      }
+    }
+  }
+}

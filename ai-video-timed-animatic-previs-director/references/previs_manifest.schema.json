@@ -1,0 +1,312 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://local.invalid/ai-video-timed-animatic-previs-director/previs_manifest.schema.json",
+  "title": "AI Video Timed Animatic And Control Previs Package",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "contract_version", "artifact_id", "owner_skill", "version", "sha256", "approval_status",
+    "dependencies", "affected_shot_uids", "stale_reason", "schema_version", "project_id",
+    "package_status", "delivery_stage", "execution_mode", "shot_count", "total_duration_seconds",
+    "source_authorities", "input_file_evidence", "skip_record", "timing_animatic_v1",
+    "control_previs_v2_units", "motion_physics_tracks", "generation_modes_used",
+    "forbidden_generation_modes", "downstream_invalidations"
+  ],
+  "properties": {
+    "contract_version": {"const": "ai-video-artifact-v1"},
+    "artifact_id": {"type": "string", "minLength": 1},
+    "owner_skill": {"const": "ai-video-timed-animatic-previs-director"},
+    "version": {"$ref": "#/$defs/semver"},
+    "sha256": {"oneOf": [{"$ref": "#/$defs/sha"}, {"type": "null"}]},
+    "approval_status": {"enum": ["draft", "assistant_validated", "user_approved", "stale", "blocked"]},
+    "dependencies": {"type": "array", "items": {"$ref": "#/$defs/dependency"}, "uniqueItems": true},
+    "affected_shot_uids": {"$ref": "#/$defs/shotUidList"},
+    "stale_reason": {"type": ["string", "null"]},
+    "schema_version": {"const": "ai-video-timed-animatic-previs.v1"},
+    "project_id": {"type": "string", "minLength": 1},
+    "package_status": {"enum": ["draft", "generating", "assistant_validated", "user_approved", "repair_required", "stale", "blocked"]},
+    "delivery_stage": {"enum": ["timing_animatic_v1", "control_previs_v2", "skipped_simple_single_shot"]},
+    "execution_mode": {"enum": ["active", "skipped_simple_single_shot"]},
+    "shot_count": {"type": "integer", "minimum": 1},
+    "total_duration_seconds": {"type": "number", "exclusiveMinimum": 0},
+    "source_authorities": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["shot_contract", "storyboard", "keyframe_pack", "keyframe_boundary_supplement", "provider_preflight", "provider_capability"],
+      "properties": {
+        "shot_contract": {"$ref": "#/$defs/externalAuthority"},
+        "storyboard": {"$ref": "#/$defs/externalAuthority"},
+        "keyframe_pack": {"oneOf": [{"type": "null"}, {"$ref": "#/$defs/externalAuthority"}]},
+        "keyframe_boundary_supplement": {"oneOf": [{"type": "null"}, {"$ref": "#/$defs/externalAuthority"}]},
+        "provider_preflight": {"oneOf": [{"type": "null"}, {"$ref": "#/$defs/externalAuthority"}]},
+        "provider_capability": {"oneOf": [{"type": "null"}, {"$ref": "#/$defs/externalAuthority"}]}
+      }
+    },
+    "input_file_evidence": {"type": "array", "items": {"$ref": "#/$defs/inputEvidence"}, "uniqueItems": true},
+    "skip_record": {"oneOf": [{"type": "null"}, {"$ref": "#/$defs/skipRecord"}]},
+    "timing_animatic_v1": {"oneOf": [{"type": "null"}, {"$ref": "#/$defs/timingV1"}]},
+    "control_previs_v2_units": {"type": "array", "items": {"$ref": "#/$defs/controlV2"}},
+    "motion_physics_tracks": {"type": "array", "items": {"$ref": "#/$defs/motionTrack"}},
+    "generation_modes_used": {
+      "type": "array",
+      "items": {"enum": ["deterministic_animatic", "neutral_2d_blocking", "neutral_3d_blocking"]},
+      "uniqueItems": true
+    },
+    "forbidden_generation_modes": {
+      "type": "array",
+      "items": {"type": "string", "minLength": 1},
+      "allOf": [
+        {"contains": {"const": "text_to_video"}},
+        {"contains": {"const": "first_last_frame"}},
+        {"contains": {"const": "standalone_single_image_to_video"}}
+      ],
+      "uniqueItems": true
+    },
+    "downstream_invalidations": {"type": "array", "items": {"$ref": "#/$defs/invalidation"}, "uniqueItems": true}
+  },
+  "$defs": {
+    "sha": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+    "semver": {"type": "string", "pattern": "^[0-9]+\\.[0-9]+\\.[0-9]+$"},
+    "approval": {"enum": ["draft", "assistant_validated", "user_approved", "stale", "blocked"]},
+    "shotUidList": {"type": "array", "items": {"type": "string", "minLength": 1}, "uniqueItems": true},
+    "dependency": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["artifact_id", "owner_skill", "version", "sha256"],
+      "properties": {
+        "artifact_id": {"type": "string", "minLength": 1},
+        "owner_skill": {"type": "string", "minLength": 1},
+        "version": {"$ref": "#/$defs/semver"},
+        "sha256": {"$ref": "#/$defs/sha"}
+      }
+    },
+    "envelope": {
+      "type": "object",
+      "required": ["contract_version", "artifact_id", "owner_skill", "version", "sha256", "approval_status", "dependencies", "affected_shot_uids", "stale_reason"],
+      "properties": {
+        "contract_version": {"const": "ai-video-artifact-v1"},
+        "artifact_id": {"type": "string", "minLength": 1},
+        "owner_skill": {"const": "ai-video-timed-animatic-previs-director"},
+        "version": {"$ref": "#/$defs/semver"},
+        "sha256": {"oneOf": [{"$ref": "#/$defs/sha"}, {"type": "null"}]},
+        "approval_status": {"$ref": "#/$defs/approval"},
+        "dependencies": {"type": "array", "items": {"$ref": "#/$defs/dependency"}, "uniqueItems": true},
+        "affected_shot_uids": {"$ref": "#/$defs/shotUidList"},
+        "stale_reason": {"type": ["string", "null"]}
+      }
+    },
+    "externalAuthority": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["artifact_id", "owner_skill", "version", "sha256", "approval_status", "snapshot_path", "snapshot_file_sha256"],
+      "properties": {
+        "artifact_id": {"type": "string", "minLength": 1},
+        "owner_skill": {"type": "string", "minLength": 1},
+        "version": {"$ref": "#/$defs/semver"},
+        "sha256": {"$ref": "#/$defs/sha"},
+        "approval_status": {"enum": ["assistant_validated", "user_approved"]},
+        "snapshot_path": {"type": "string", "minLength": 1},
+        "snapshot_file_sha256": {"$ref": "#/$defs/sha"}
+      }
+    },
+    "inputEvidence": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["input_id", "source_artifact_id", "role", "shot_uids", "copied_file_path", "file_sha256", "upstream_declared_path", "upstream_declared_file_sha256"],
+      "properties": {
+        "input_id": {"type": "string", "minLength": 1},
+        "source_artifact_id": {"type": "string", "minLength": 1},
+        "role": {"enum": ["storyboard_frame", "storyboard_generation_prompt", "keyframe_image", "keyframe_generation_prompt", "provider_schema_snapshot"]},
+        "shot_uids": {"$ref": "#/$defs/shotUidList"},
+        "copied_file_path": {"type": "string", "minLength": 1},
+        "file_sha256": {"$ref": "#/$defs/sha"},
+        "upstream_declared_path": {"type": "string", "minLength": 1},
+        "upstream_declared_file_sha256": {"$ref": "#/$defs/sha"}
+      }
+    },
+    "motionAnchor": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["time_seconds", "state"],
+      "properties": {
+        "time_seconds": {"type": "number", "minimum": 0},
+        "state": {"type": "string", "minLength": 1}
+      }
+    },
+    "timelineEntry": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["shot_uid", "display_order", "start_seconds", "end_seconds", "duration_seconds", "cut_motivation", "rough_camera_path", "rough_blocking", "motion_anchors"],
+      "properties": {
+        "shot_uid": {"type": "string", "minLength": 1},
+        "display_order": {"type": "integer", "minimum": 1},
+        "start_seconds": {"type": "number", "minimum": 0},
+        "end_seconds": {"type": "number", "exclusiveMinimum": 0},
+        "duration_seconds": {"type": "number", "exclusiveMinimum": 0},
+        "cut_motivation": {"type": "string", "minLength": 1},
+        "rough_camera_path": {"type": "string", "minLength": 1},
+        "rough_blocking": {"type": "string", "minLength": 1},
+        "motion_anchors": {"type": "array", "items": {"$ref": "#/$defs/motionAnchor"}}
+      }
+    },
+    "mediaChapter": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["shot_uid", "start_seconds", "end_seconds"],
+      "properties": {
+        "shot_uid": {"type": "string", "minLength": 1},
+        "start_seconds": {"type": "number", "minimum": 0},
+        "end_seconds": {"type": "number", "exclusiveMinimum": 0}
+      }
+    },
+    "mediaProbe": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["probe_contract_version", "container_format", "media_type", "video_codec", "duration_seconds", "width_pixels", "height_pixels", "frame_rate", "decoded_video_frame_count", "decoded_video_packet_count", "video_stream_count", "audio_stream_count", "shot_chapters"],
+      "properties": {
+        "probe_contract_version": {"const": "ffprobe-media-evidence.v1"},
+        "container_format": {"type": "string", "minLength": 1},
+        "media_type": {"enum": ["video/mp4", "video/webm", "video/quicktime", "video/x-matroska"]},
+        "video_codec": {"type": "string", "minLength": 1},
+        "duration_seconds": {"type": "number", "exclusiveMinimum": 0},
+        "width_pixels": {"type": "integer", "minimum": 2},
+        "height_pixels": {"type": "integer", "minimum": 2},
+        "frame_rate": {"type": "string", "pattern": "^[1-9][0-9]*/[1-9][0-9]*$"},
+        "decoded_video_frame_count": {"type": "integer", "minimum": 1},
+        "decoded_video_packet_count": {"type": "integer", "minimum": 1},
+        "video_stream_count": {"const": 1},
+        "audio_stream_count": {"const": 0},
+        "shot_chapters": {"type": "array", "minItems": 1, "items": {"$ref": "#/$defs/mediaChapter"}}
+      }
+    },
+    "timingV1": {
+      "allOf": [
+        {"$ref": "#/$defs/envelope"},
+        {
+          "type": "object",
+          "required": ["phase", "provider_neutral", "uses_keyframes", "model_input_role", "is_model_input", "final_edit_asset", "silent", "render_style", "file_path", "file_sha256", "actual_duration_seconds", "media_probe", "timeline", "control_dimensions", "forbidden_dimensions"],
+          "properties": {
+            "phase": {"const": "timing_animatic_v1"},
+            "provider_neutral": {"const": true},
+            "uses_keyframes": {"const": false},
+            "model_input_role": {"const": "timing_review_only"},
+            "is_model_input": {"const": false},
+            "final_edit_asset": {"const": false},
+            "silent": {"const": true},
+            "render_style": {"enum": ["storyboard_cut_animatic", "neutral_2d_blocking", "neutral_3d_blocking"]},
+            "file_path": {"type": "string", "minLength": 1},
+            "file_sha256": {"$ref": "#/$defs/sha"},
+            "actual_duration_seconds": {"type": "number", "exclusiveMinimum": 0},
+            "media_probe": {"$ref": "#/$defs/mediaProbe"},
+            "timeline": {"type": "array", "minItems": 1, "items": {"$ref": "#/$defs/timelineEntry"}},
+            "control_dimensions": {"$ref": "#/$defs/stringSet"},
+            "forbidden_dimensions": {"$ref": "#/$defs/stringSet"}
+          }
+        }
+      ],
+      "unevaluatedProperties": false
+    },
+    "controlV2": {
+      "allOf": [
+        {"$ref": "#/$defs/envelope"},
+        {
+          "type": "object",
+          "required": ["phase", "generation_unit_id", "shot_uids", "target_duration_seconds", "provider_max_duration_seconds", "multimodal_reference_video_supported", "local_timeline", "file_path", "file_sha256", "actual_duration_seconds", "media_probe", "model_input_role", "is_model_input", "final_edit_asset", "silent", "render_style", "identity_authority", "look_authority", "control_dimensions", "forbidden_dimensions", "motion_track_ids"],
+          "properties": {
+            "phase": {"const": "control_previs_v2"},
+            "generation_unit_id": {"type": "string", "minLength": 1},
+            "shot_uids": {"$ref": "#/$defs/nonEmptyShotUidList"},
+            "target_duration_seconds": {"type": "number", "exclusiveMinimum": 0},
+            "provider_max_duration_seconds": {"type": "number", "exclusiveMinimum": 0},
+            "multimodal_reference_video_supported": {"const": true},
+            "local_timeline": {"type": "array", "minItems": 1, "items": {"$ref": "#/$defs/timelineEntry"}},
+            "file_path": {"type": "string", "minLength": 1},
+            "file_sha256": {"$ref": "#/$defs/sha"},
+            "actual_duration_seconds": {"type": "number", "exclusiveMinimum": 0},
+            "media_probe": {"$ref": "#/$defs/mediaProbe"},
+            "model_input_role": {"const": "control_reference_video"},
+            "is_model_input": {"const": true},
+            "final_edit_asset": {"const": false},
+            "silent": {"const": true},
+            "render_style": {"enum": ["neutral_diagrammatic_or_simple_3d", "neutral_2d_blocking", "neutral_3d_blocking"]},
+            "identity_authority": {"const": false},
+            "look_authority": {"const": false},
+            "control_dimensions": {"$ref": "#/$defs/stringSet"},
+            "forbidden_dimensions": {"$ref": "#/$defs/stringSet"},
+            "motion_track_ids": {"$ref": "#/$defs/stringSet"}
+          }
+        }
+      ],
+      "unevaluatedProperties": false
+    },
+    "skipRecord": {
+      "allOf": [
+        {"$ref": "#/$defs/envelope"},
+        {
+          "type": "object",
+          "required": ["reason", "previs_needed", "complexity_flags"],
+          "properties": {
+            "reason": {"const": "static_or_near_static_single_shot"},
+            "previs_needed": {"const": false},
+            "complexity_flags": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": ["complex_camera", "multi_subject_blocking", "consequential_object_motion", "liquid_motion", "cloth_motion", "hair_motion", "smoke_or_particles", "timing_sensitive_transition"],
+              "properties": {
+                "complex_camera": {"const": false},
+                "multi_subject_blocking": {"const": false},
+                "consequential_object_motion": {"const": false},
+                "liquid_motion": {"const": false},
+                "cloth_motion": {"const": false},
+                "hair_motion": {"const": false},
+                "smoke_or_particles": {"const": false},
+                "timing_sensitive_transition": {"const": false}
+              }
+            }
+          }
+        }
+      ],
+      "unevaluatedProperties": false
+    },
+    "motionTrack": {
+      "allOf": [
+        {"$ref": "#/$defs/envelope"},
+        {
+          "type": "object",
+          "required": ["track_id", "motion_class", "shot_uids", "generation_unit_ids", "source_basis", "confidence", "assumptions", "required_for_generation", "absolute_anchors", "local_anchors", "start_state", "end_state", "parameters"],
+          "properties": {
+            "track_id": {"type": "string", "minLength": 1},
+            "motion_class": {"enum": ["camera", "subject_blocking", "rigid_object", "liquid", "cloth", "hair", "smoke_or_particles"]},
+            "shot_uids": {"$ref": "#/$defs/nonEmptyShotUidList"},
+            "generation_unit_ids": {"$ref": "#/$defs/stringSet"},
+            "source_basis": {"type": "string", "minLength": 1},
+            "confidence": {"enum": ["high", "medium", "low"]},
+            "assumptions": {"type": "array", "items": {"type": "string"}},
+            "required_for_generation": {"type": "boolean"},
+            "absolute_anchors": {"type": "array", "items": {"$ref": "#/$defs/motionAnchor"}},
+            "local_anchors": {"type": "array", "items": {"$ref": "#/$defs/motionAnchor"}},
+            "start_state": {"type": "string", "minLength": 1},
+            "end_state": {"type": "string", "minLength": 1},
+            "parameters": {"type": "object"}
+          }
+        }
+      ],
+      "unevaluatedProperties": false
+    },
+    "stringSet": {"type": "array", "items": {"type": "string", "minLength": 1}, "uniqueItems": true},
+    "nonEmptyShotUidList": {"type": "array", "minItems": 1, "items": {"type": "string", "minLength": 1}, "uniqueItems": true},
+    "invalidation": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["artifact_id", "owner_skill", "version", "sha256", "reason", "affected_shot_uids"],
+      "properties": {
+        "artifact_id": {"type": "string", "minLength": 1},
+        "owner_skill": {"type": "string", "minLength": 1},
+        "version": {"$ref": "#/$defs/semver"},
+        "sha256": {"$ref": "#/$defs/sha"},
+        "reason": {"type": "string", "minLength": 1},
+        "affected_shot_uids": {"$ref": "#/$defs/shotUidList"}
+      }
+    }
+  }
+}

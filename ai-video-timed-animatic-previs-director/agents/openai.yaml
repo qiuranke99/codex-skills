@@ -1,0 +1,6 @@
+interface:
+  display_name: "AI Video Timed Animatic / Previs Director"
+  short_description: "Build timing animatics and provider-bound control previs."
+  default_prompt: "Use $ai-video-timed-animatic-previs-director to create provider-neutral V1 timing animatic and, after exact P1 generation-unit preflight plus K2 boundary supplement, V2 control previs for these generation units."
+policy:
+  allow_implicit_invocation: true

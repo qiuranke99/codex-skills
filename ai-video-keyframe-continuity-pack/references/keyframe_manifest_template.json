@@ -1,0 +1,201 @@
+{
+  "contract_version": "ai-video-artifact-v1",
+  "artifact_id": "KF_PACK_PROJECT01_V1",
+  "owner_skill": "ai-video-keyframe-continuity-pack",
+  "version": "1.0.0",
+  "sha256": null,
+  "approval_status": "draft",
+  "dependencies": [
+    {
+      "artifact_id": "SHOT_PROJECT01_V1",
+      "owner_skill": "ai-video-shot-script-director",
+      "version": "1.0.0",
+      "sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+    },
+    {
+      "artifact_id": "STORYBOARD_PROJECT01_V1",
+      "owner_skill": "ai-video-modular-storyboard",
+      "version": "1.0.0",
+      "sha256": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"
+    },
+    {
+      "artifact_id": "LOOK_PROJECT01_V1",
+      "owner_skill": "ai-video-global-look-lock",
+      "version": "1.0.0",
+      "sha256": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc"
+    },
+    {
+      "artifact_id": "LOOK_REFERENCE_ASSET_HERO_001",
+      "owner_skill": "ai-video-global-look-lock",
+      "version": "1.0.0",
+      "sha256": "4444444444444444444444444444444444444444444444444444444444444444"
+    }
+  ],
+  "affected_shot_uids": ["S001"],
+  "stale_reason": null,
+  "schema_version": "ai-video-keyframe-continuity-pack.v1",
+  "manifest_role": "core_keyframe_authority_before_generation_unit_preflight",
+  "project_id": "PROJECT01",
+  "package_id": "KF_PACK_PROJECT01_V1",
+  "package_status": "draft",
+  "assistant_qa_status": "not_reviewed",
+  "production_approval_status": "not_granted",
+  "forbidden_video_generation_modes": [
+    "text_to_video", "first_last_frame", "standalone_single_image_to_video"
+  ],
+  "timing_source": {
+    "mode": "single_static_shot_exemption",
+    "artifact_id": null,
+    "owner_skill": null,
+    "version": null,
+    "sha256": null
+  },
+  "authority_inventory": [
+    {
+      "artifact_id": "SHOT_PROJECT01_V1",
+      "owner_skill": "ai-video-shot-script-director",
+      "version": "1.0.0",
+      "sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+      "locator": "01_script/PROFESSIONAL_SHOT_CONTRACT.json",
+      "file_sha256": "1111111111111111111111111111111111111111111111111111111111111111",
+      "authority_type": "shot_contract",
+      "approval_status": "assistant_validated",
+      "affected_shot_uids": ["S001"]
+    },
+    {
+      "artifact_id": "STORYBOARD_PROJECT01_V1",
+      "owner_skill": "ai-video-modular-storyboard",
+      "version": "1.0.0",
+      "sha256": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+      "locator": "03_storyboard/00_manifest/STORYBOARD_MANIFEST.json",
+      "file_sha256": "2222222222222222222222222222222222222222222222222222222222222222",
+      "authority_type": "storyboard",
+      "approval_status": "assistant_validated",
+      "affected_shot_uids": ["S001"]
+    },
+    {
+      "artifact_id": "LOOK_PROJECT01_V1",
+      "owner_skill": "ai-video-global-look-lock",
+      "version": "1.0.0",
+      "sha256": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+      "locator": "02_global_look/GLOBAL_LOOK_CONTRACT.json",
+      "file_sha256": "3333333333333333333333333333333333333333333333333333333333333333",
+      "authority_type": "global_look",
+      "approval_status": "assistant_validated",
+      "affected_shot_uids": ["S001"]
+    },
+    {
+      "artifact_id": "LOOK_REFERENCE_ASSET_HERO_001",
+      "owner_skill": "ai-video-global-look-lock",
+      "version": "1.0.0",
+      "sha256": "4444444444444444444444444444444444444444444444444444444444444444",
+      "locator": "02_global_look/references/LOOK_REFERENCE_ASSET_HERO_001.png",
+      "file_sha256": "5555555555555555555555555555555555555555555555555555555555555555",
+      "authority_type": "global_look_reference",
+      "approval_status": "assistant_validated",
+      "affected_shot_uids": ["S001"]
+    }
+  ],
+  "scripted_shot_uids": ["S001"],
+  "shot_records": [
+    {
+      "shot_uid": "S001",
+      "storyboard_artifact_id": "SB_FRAME_S001",
+      "required_authority_artifact_ids": ["SHOT_PROJECT01_V1", "STORYBOARD_PROJECT01_V1", "LOOK_PROJECT01_V1", "LOOK_REFERENCE_ASSET_HERO_001"],
+      "global_directing_prompt_full": "GLOBAL DIRECTING: restrained camera grammar, one primary movement, motivated cuts, stable placement, observable performance, and no unsupported claims.",
+      "global_look_artifact_id": "LOOK_PROJECT01_V1",
+      "global_look_prompt_full": "GLOBAL LOOK CORE: warm natural-luxury light, protected skin identity, amber material transparency, controlled highlights, open blacks, fine organic grain, and consistent motivated light direction; warm natural-luxury light, protected skin identity, amber material transparency, controlled highlights, open blacks, fine organic grain, and consistent motivated light direction; preserve verified product and skin identity across every shot.",
+      "look_state_id": "LOOK_STATE_FIELD",
+      "look_state_prompt_full": "LOOK STATE FIELD: warm late-day side-backlight with protected complexion, readable amber liquid, controlled exposure relation, stable material edges, and no change to intrinsic product color.",
+      "shot_look_delta_prompt_full": "SHOT LOOK DELTA — FROZEN STRUCTURED AUTHORITY\nactive: false\nscope: []\ndescription: none\nreason: hero state already fits the shot\npreserves_look_core: true",
+      "look_reference_asset_ids": ["LOOK_REFERENCE_ASSET_HERO_001"],
+      "anchor_route": "independent_keyframe",
+      "keyframes": [
+        {
+          "artifact": {
+            "contract_version": "ai-video-artifact-v1",
+            "artifact_id": "KF_PROJECT01_S001_A",
+            "owner_skill": "ai-video-keyframe-continuity-pack",
+            "version": "0.1.0",
+            "sha256": null,
+            "approval_status": "draft",
+            "dependencies": [
+              {
+                "artifact_id": "SHOT_PROJECT01_V1",
+                "owner_skill": "ai-video-shot-script-director",
+                "version": "1.0.0",
+                "sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+              },
+              {
+                "artifact_id": "STORYBOARD_PROJECT01_V1",
+                "owner_skill": "ai-video-modular-storyboard",
+                "version": "1.0.0",
+                "sha256": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"
+              },
+              {
+                "artifact_id": "LOOK_PROJECT01_V1",
+                "owner_skill": "ai-video-global-look-lock",
+                "version": "1.0.0",
+                "sha256": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc"
+              },
+              {
+                "artifact_id": "LOOK_REFERENCE_ASSET_HERO_001",
+                "owner_skill": "ai-video-global-look-lock",
+                "version": "1.0.0",
+                "sha256": "4444444444444444444444444444444444444444444444444444444444444444"
+              }
+            ],
+            "affected_shot_uids": ["S001"],
+            "stale_reason": null
+          },
+          "keyframe_id": "KF_PROJECT01_S001_A",
+          "shot_uid": "S001",
+          "frame_role": "primary_anchor",
+          "usage_mode": "omni_reference_anchor",
+          "source_mode": "independent_keyframe",
+          "file_path": "01_keyframes/S001/KF_PROJECT01_S001_A.png",
+          "file_sha256": "dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd",
+          "prompt_path": "01_keyframes/S001/KF_PROJECT01_S001_A_generation_prompt.md",
+          "prompt_file_sha256": "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+          "time_anchor": {
+            "source": "shot_contract_static_state",
+            "timecode_seconds": null,
+            "relative_state": "primary_control_state"
+          },
+          "terminal_generation_call": "executed",
+          "generation_turn": 1,
+          "inspection_turn": 2,
+          "visual_qa_status": "passed",
+          "promotion_evidence": []
+        }
+      ],
+      "character_state_ledger": [],
+      "product_state_ledger": [],
+      "material_control_required": false,
+      "material_control_reason": "No dynamic material state is visible in this illustrative single static shot.",
+      "material_anchor_keyframe_ids": [],
+      "material_state_trajectory": [],
+      "dynamic_state_ladder": [
+        {
+          "state_id": "STATE_S001_A",
+          "order": 1,
+          "time_anchor": {
+            "source": "shot_contract_static_state",
+            "timecode_seconds": null,
+            "relative_state": "primary_control_state"
+          },
+          "subject_pose_state": "approved primary pose",
+          "object_material_state": "approved static object/material state",
+          "camera_blocking_state": "approved static framing",
+          "transition_intent": "hold"
+        }
+      ],
+      "continuity_in": "initial state",
+      "continuity_out": "hold approved state"
+    }
+  ],
+  "inferred_execution_decisions": [],
+  "upstream_change_requests": [],
+  "qa_report_path": "04_reports/QA_REPORT.md",
+  "invalidation_report_path": "04_reports/INVALIDATION_REPORT.md"
+}

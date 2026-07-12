@@ -1,0 +1,107 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "keyframe-boundary-supplement.schema.json",
+  "title": "AI Video Keyframe Boundary Supplement",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "contract_version", "artifact_id", "owner_skill", "version", "sha256",
+    "approval_status", "dependencies", "affected_shot_uids", "stale_reason",
+    "schema_version", "project_id", "core_keyframe_manifest", "prompt_preflight",
+    "scripted_shot_uids", "generation_units", "supplemental_keyframes",
+    "cross_generation_unit_boundaries", "exemption"
+  ],
+  "properties": {
+    "contract_version": {"const": "ai-video-artifact-v1"},
+    "artifact_id": {"type": "string", "minLength": 1},
+    "owner_skill": {"const": "ai-video-keyframe-continuity-pack"},
+    "version": {"type": "string", "pattern": "^[0-9]+\\.[0-9]+\\.[0-9]+$"},
+    "sha256": {"oneOf": [{"type": "null"}, {"type": "string", "pattern": "^[a-f0-9]{64}$"}]},
+    "approval_status": {"enum": ["draft", "assistant_validated", "user_approved", "stale", "blocked"]},
+    "dependencies": {"type": "array", "items": {"$ref": "#/$defs/artifactRef"}},
+    "affected_shot_uids": {"type": "array", "uniqueItems": true, "items": {"type": "string", "minLength": 1}},
+    "stale_reason": {"type": ["string", "null"]},
+    "schema_version": {"const": "ai-video-keyframe-boundary-supplement.v1"},
+    "project_id": {"type": "string", "minLength": 1},
+    "core_keyframe_manifest": {"$ref": "#/$defs/artifactRef"},
+    "prompt_preflight": {"$ref": "#/$defs/artifactRef"},
+    "scripted_shot_uids": {"type": "array", "minItems": 1, "uniqueItems": true, "items": {"type": "string", "minLength": 1}},
+    "generation_units": {"type": "array", "minItems": 1, "items": {"$ref": "#/$defs/generationUnit"}},
+    "supplemental_keyframes": {"type": "array", "items": {"$ref": "#/$defs/supplementalKeyframe"}},
+    "cross_generation_unit_boundaries": {"type": "array", "items": {"$ref": "#/$defs/boundary"}},
+    "exemption": {"enum": [null, "single_generation_unit"]}
+  },
+  "$defs": {
+    "artifactRef": {
+      "type": "object", "additionalProperties": false,
+      "required": ["artifact_id", "owner_skill", "version", "sha256"],
+      "properties": {
+        "artifact_id": {"type": "string", "minLength": 1},
+        "owner_skill": {"type": "string", "minLength": 1},
+        "version": {"type": "string", "pattern": "^[0-9]+\\.[0-9]+\\.[0-9]+$"},
+        "sha256": {"type": "string", "pattern": "^[a-f0-9]{64}$"}
+      }
+    },
+    "artifactEnvelope": {
+      "type": "object", "additionalProperties": false,
+      "required": ["contract_version", "artifact_id", "owner_skill", "version", "sha256", "approval_status", "dependencies", "affected_shot_uids", "stale_reason"],
+      "properties": {
+        "contract_version": {"const": "ai-video-artifact-v1"},
+        "artifact_id": {"type": "string"}, "owner_skill": {"const": "ai-video-keyframe-continuity-pack"},
+        "version": {"type": "string", "pattern": "^[0-9]+\\.[0-9]+\\.[0-9]+$"},
+        "sha256": {"type": "string", "pattern": "^[a-f0-9]{64}$"},
+        "approval_status": {"enum": ["assistant_validated", "user_approved"]},
+        "dependencies": {"type": "array", "items": {"$ref": "#/$defs/artifactRef"}},
+        "affected_shot_uids": {"type": "array", "uniqueItems": true, "items": {"type": "string"}},
+        "stale_reason": {"const": null}
+      }
+    },
+    "generationUnit": {
+      "type": "object", "additionalProperties": false,
+      "required": ["generation_unit_id", "ordered_shot_uids"],
+      "properties": {
+        "generation_unit_id": {"type": "string", "minLength": 1},
+        "ordered_shot_uids": {"type": "array", "minItems": 1, "uniqueItems": true, "items": {"type": "string", "minLength": 1}}
+      }
+    },
+    "timeAnchor": {
+      "type": "object", "additionalProperties": false,
+      "required": ["timecode_seconds", "relative_state"],
+      "properties": {
+        "timecode_seconds": {"type": "number", "minimum": 0},
+        "relative_state": {"const": "boundary_handoff"}
+      }
+    },
+    "supplementalKeyframe": {
+      "type": "object", "additionalProperties": false,
+      "required": ["artifact", "keyframe_id", "shot_uid", "usage_mode", "frame_role", "file_path", "file_sha256", "prompt_path", "prompt_file_sha256", "time_anchor"],
+      "properties": {
+        "artifact": {"$ref": "#/$defs/artifactEnvelope"},
+        "keyframe_id": {"type": "string", "minLength": 1},
+        "shot_uid": {"type": "string", "minLength": 1},
+        "usage_mode": {"const": "omni_reference_anchor"},
+        "frame_role": {"const": "boundary_handoff"},
+        "file_path": {"type": "string", "minLength": 1},
+        "file_sha256": {"type": "string", "pattern": "^[a-f0-9]{64}$"},
+        "prompt_path": {"type": "string", "minLength": 1},
+        "prompt_file_sha256": {"type": "string", "pattern": "^[a-f0-9]{64}$"},
+        "time_anchor": {"$ref": "#/$defs/timeAnchor"}
+      }
+    },
+    "boundary": {
+      "type": "object", "additionalProperties": false,
+      "required": ["boundary_id", "boundary_type", "from_generation_unit_id", "to_generation_unit_id", "from_shot_uid", "to_shot_uid", "from_keyframe_id", "to_keyframe_id", "locked_character_state", "locked_product_material_state", "locked_spatial_state", "locked_scene_look_state"],
+      "properties": {
+        "boundary_id": {"type": "string", "minLength": 1},
+        "boundary_type": {"const": "between_shots"},
+        "from_generation_unit_id": {"type": "string"}, "to_generation_unit_id": {"type": "string"},
+        "from_shot_uid": {"type": "string"}, "to_shot_uid": {"type": "string"},
+        "from_keyframe_id": {"type": "string"}, "to_keyframe_id": {"type": "string"},
+        "locked_character_state": {"type": "string", "minLength": 1},
+        "locked_product_material_state": {"type": "string", "minLength": 1},
+        "locked_spatial_state": {"type": "string", "minLength": 1},
+        "locked_scene_look_state": {"type": "string", "minLength": 1}
+      }
+    }
+  }
+}

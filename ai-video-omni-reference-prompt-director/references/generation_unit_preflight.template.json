@@ -1,0 +1,80 @@
+{
+  "contract_version": "ai-video-artifact-v1",
+  "artifact_id": "PREFLIGHT_PLAN_PROJECT01_V1",
+  "owner_skill": "ai-video-omni-reference-prompt-director",
+  "version": "1.0.0",
+  "sha256": null,
+  "approval_status": "draft",
+  "dependencies": [
+    {
+      "artifact_id": "STORYBOARD_PROJECT01_V1",
+      "owner_skill": "ai-video-modular-storyboard",
+      "version": "1.0.0",
+      "sha256": "1111111111111111111111111111111111111111111111111111111111111111"
+    }
+  ],
+  "affected_shot_uids": ["S001"],
+  "stale_reason": null,
+  "schema_version": "ai-video-generation-unit-preflight.v1",
+  "project_id": "PROJECT01",
+  "plan_status": "blocked_capacity",
+  "generation_mode": "omni_reference_to_video",
+  "project_canon_read_receipt": {
+    "manifest_artifact_id": "PROJECT_CANON_MANIFEST_PROJECT01",
+    "manifest_version": "1.0.0",
+    "manifest_sha256": "2222222222222222222222222222222222222222222222222222222222222222",
+    "snapshot_path": "00_manifest/PROJECT_CANON_PREFLIGHT_INPUT_SNAPSHOT.json",
+    "snapshot_file_sha256": "3333333333333333333333333333333333333333333333333333333333333333"
+  },
+  "target_profile_id": "seedance_2_5_forward_compatible",
+  "documented_backend_profile_id": "seedance_2_0_documented_omni",
+  "provider_profile_id": "provider_runtime_profile_id",
+  "generation_unit_boundary_policy": "whole_shot_uids_only",
+  "ordered_shot_uids": ["S001"],
+  "generation_units": [
+    {
+      "generation_unit_id": "GU001",
+      "ordered_shot_uids": ["S001"],
+      "target_duration_seconds": 5.0,
+      "timing_sensitive": false,
+      "control_previs_requirement": "exempt_single_static_shot",
+      "required_modalities": ["text", "image"],
+      "planned_reference_counts": {
+        "image": 1,
+        "video": 0,
+        "audio": 0,
+        "total_multimodal": 1
+      },
+      "planned_reference_artifact_ids": ["STORYBOARD_PROJECT01_V1"],
+      "artifact_decisions": [
+        {
+          "artifact": {
+            "artifact_id": "STORYBOARD_PROJECT01_V1",
+            "owner_skill": "ai-video-modular-storyboard",
+            "version": "1.0.0",
+            "sha256": "1111111111111111111111111111111111111111111111111111111111111111"
+          },
+          "artifact_slot": "storyboard_frame:S001",
+          "artifact_type": "STORYBOARD_FRAME_LOOK_APPLIED_FINAL",
+          "control_roles": ["storyboard"],
+          "control_role": "storyboard",
+          "decision": "selected_direct",
+          "transport_modality": "image",
+          "transport_group_id": null,
+          "controlled_shot_uids": ["S001"],
+          "reason": "The approved final storyboard frame is the direct static composition reference."
+        }
+      ],
+      "planned_atlas_groups": [],
+      "planned_future_inputs": [],
+      "split_reason": "One static canonical shot fits the verified provider limit.",
+      "continuity_boundary_in": "project start",
+      "continuity_boundary_out": "project end",
+      "preflight_status": "blocked_capacity"
+    }
+  ],
+  "reference_budget_decisions": [
+    "Resolve the provider capacity blocker before approving this draft plan."
+  ],
+  "blocked_reasons": ["Provider runtime evidence is not yet attached to this template."]
+}

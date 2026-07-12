@@ -1,0 +1,62 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "ai-video-owner-asset-approval.schema.json",
+  "title": "AI Video Owner Asset Explicit Approval Evidence",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version", "approval_event_id", "owner_skill", "asset_key",
+    "primary_asset_sha256", "prompt_evidence_sha256", "affected_shot_uids",
+    "authority_mode", "control_roles_authorized", "authority_stage",
+    "terminal_route_decision", "assistant_qa_status",
+    "production_approval_status"
+  ],
+  "properties": {
+    "schema_version": {"const": "ai-video-owner-asset-approval.v1"},
+    "approval_event_id": {"type": "string", "minLength": 1},
+    "owner_skill": {
+      "enum": [
+        "character-casting-lock-board",
+        "character-final-lock-board",
+        "single-face-character-lock-board",
+        "multi-angle-product-identity-lock-board",
+        "packaging-product-identity-label-lock-board",
+        "material-sensitive-product-master-asset-board",
+        "scene-canon-asset-pack"
+      ]
+    },
+    "asset_key": {"type": "string", "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]*$"},
+    "primary_asset_sha256": {"type": "string", "pattern": "^[a-f0-9]{64}$"},
+    "prompt_evidence_sha256": {
+      "type": "object", "minProperties": 1,
+      "additionalProperties": {"type": "string", "pattern": "^[a-f0-9]{64}$"}
+    },
+    "affected_shot_uids": {
+      "type": "array", "minItems": 1, "uniqueItems": true,
+      "items": {"type": "string", "minLength": 1}
+    },
+    "authority_mode": {
+      "enum": [
+        "identity_and_wardrobe", "geometry_only", "geometry_layout_only",
+        "geometry_layout_exact_copy_verified", "geometry_and_material", "scene_canon"
+      ]
+    },
+    "control_roles_authorized": {
+      "type": "array", "minItems": 1, "uniqueItems": true,
+      "items": {
+        "enum": ["identity", "wardrobe", "product_geometry", "label_copy", "material_behavior", "scene_canon"]
+      }
+    },
+    "authority_stage": {
+      "enum": [
+        "terminal_character_canon", "terminal_product_canon",
+        "terminal_packaging_canon", "terminal_material_canon", "terminal_scene_canon"
+      ]
+    },
+    "terminal_route_decision": {
+      "enum": ["casting_as_terminal", "character_final", "single_face_character", "not_applicable"]
+    },
+    "assistant_qa_status": {"const": "passed"},
+    "production_approval_status": {"enum": ["user_granted", "external_pipeline_granted"]}
+  }
+}

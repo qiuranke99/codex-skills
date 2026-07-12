@@ -1,0 +1,30 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "ai-video-asset-canon-delta.schema.json",
+  "title": "AI Video Owner Asset Canon Entry Delta",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version", "updated_by_skill", "base_snapshot_locator",
+    "base_snapshot_file_sha256", "base_manifest_sha256", "resulting_manifest_sha256", "operation",
+    "registered_artifact_id", "superseded_artifact_id", "stale_overlay_artifact_ids",
+    "artifact_entry", "sha256"
+  ],
+  "properties": {
+    "schema_version": {"const": "ai-video-asset-canon-delta.v1"},
+    "updated_by_skill": {"type": "string", "minLength": 1},
+    "base_snapshot_locator": {"const": "00_manifest/BASE_PROJECT_CANON_SNAPSHOT.json"},
+    "base_snapshot_file_sha256": {"type": "string", "pattern": "^[a-f0-9]{64}$"},
+    "base_manifest_sha256": {"type": "string", "pattern": "^[a-f0-9]{64}$"},
+    "resulting_manifest_sha256": {"type": "string", "pattern": "^[a-f0-9]{64}$"},
+    "operation": {"enum": ["add", "replace"]},
+    "registered_artifact_id": {"type": "string", "minLength": 1},
+    "superseded_artifact_id": {"type": ["string", "null"]},
+    "stale_overlay_artifact_ids": {
+      "type": "array", "uniqueItems": true,
+      "items": {"type": "string", "minLength": 1}
+    },
+    "artifact_entry": {"type": "object"},
+    "sha256": {"type": "string", "pattern": "^[a-f0-9]{64}$"}
+  }
+}

@@ -1,0 +1,139 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "feedback_route.schema.json",
+  "title": "User Review Feedback Route",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "contract_version", "artifact_id", "owner_skill", "version", "sha256",
+    "approval_status", "dependencies", "affected_shot_uids", "stale_reason",
+    "schema_version", "package_mode", "revision_anchor", "feedback_routes", "upstream_change_requests",
+    "independent_output_qc", "edit_action", "music_action"
+  ],
+  "properties": {
+    "contract_version": {"const": "ai-video-artifact-v1"},
+    "artifact_id": {"type": "string", "minLength": 1},
+    "owner_skill": {"const": "ai-video-omni-reference-prompt-director"},
+    "version": {"type": "string", "pattern": "^[0-9]+\\.[0-9]+\\.[0-9]+$"},
+    "sha256": {"oneOf": [{"type": "null"}, {"type": "string", "pattern": "^[a-f0-9]{64}$"}]},
+    "approval_status": {"enum": ["draft", "assistant_validated", "user_approved", "stale", "blocked"]},
+    "dependencies": {"type": "array", "items": {"$ref": "#/$defs/dependency"}},
+    "affected_shot_uids": {"type": "array", "uniqueItems": true, "items": {"type": "string"}},
+    "stale_reason": {"type": ["string", "null"]},
+    "schema_version": {"const": "ai-video-feedback-route.v1"},
+    "package_mode": {"enum": ["compile", "revise"]},
+    "revision_anchor": {"oneOf": [{"type": "null"}, {"$ref": "#/$defs/revisionAnchor"}]},
+    "feedback_routes": {"type": "array", "items": {"$ref": "#/$defs/route"}},
+    "upstream_change_requests": {"type": "array", "uniqueItems": true, "items": {"$ref": "#/$defs/changeRequest"}},
+    "independent_output_qc": {"const": false},
+    "edit_action": {"const": "none"},
+    "music_action": {"const": "none"}
+  },
+  "$defs": {
+    "dependency": {
+      "type": "object", "additionalProperties": false,
+      "required": ["artifact_id", "owner_skill", "version", "sha256"],
+      "properties": {
+        "artifact_id": {"type": "string"}, "owner_skill": {"type": "string"},
+        "version": {"type": "string", "pattern": "^[0-9]+\\.[0-9]+\\.[0-9]+$"},
+        "sha256": {"type": "string", "pattern": "^[a-f0-9]{64}$"}
+      }
+    },
+    "route": {
+      "type": "object", "additionalProperties": false,
+      "required": ["feedback_id", "user_feedback", "affected_shot_uids", "affected_artifact_ids", "affected_control_roles", "diagnosis_scope", "evidence_comparison", "owner_skill", "action", "owned_diff", "upstream_change_request", "invalidated_artifact_ids", "unaffected_artifact_hashes"],
+      "properties": {
+        "feedback_id": {"type": "string", "minLength": 1},
+        "user_feedback": {"type": "string", "minLength": 1},
+        "affected_shot_uids": {"type": "array", "minItems": 1, "uniqueItems": true, "items": {"type": "string"}},
+        "affected_artifact_ids": {"type": "array", "uniqueItems": true, "items": {"type": "string", "minLength": 1}},
+        "affected_control_roles": {"type": "array", "uniqueItems": true, "items": {"type": "string", "minLength": 1}},
+        "diagnosis_scope": {"enum": ["prompt_binding_or_serialization", "canon_camera_intent_change", "storyboard_static_realization_mismatch", "identity_product_material_scene_canon", "global_look", "keyframe_visual_state", "dynamic_camera_blocking_physics", "shot_story_timing_function", "stochastic_model_failure"]},
+        "evidence_comparison": {"type": "array", "minItems": 1, "items": {"type": "string", "minLength": 1}},
+        "owner_skill": {"type": "string", "minLength": 1},
+        "action": {"enum": ["revise_prompt_owned_surface", "issue_upstream_change_request", "retry_exact_package", "shorten_generation_unit_after_preflight_revision"]},
+        "owned_diff": {"oneOf": [{"type": "null"}, {"type": "object", "minProperties": 1}]},
+        "upstream_change_request": {"oneOf": [{"type": "null"}, {"$ref": "#/$defs/changeRequest"}]},
+        "invalidated_artifact_ids": {"type": "array", "uniqueItems": true, "items": {"type": "string"}},
+        "unaffected_artifact_hashes": {
+          "type": "object",
+          "additionalProperties": {"type": "string", "pattern": "^[a-f0-9]{64}$"}
+        }
+      },
+      "allOf": [
+        {
+          "if": {"properties": {"diagnosis_scope": {"enum": ["canon_camera_intent_change", "storyboard_static_realization_mismatch", "identity_product_material_scene_canon", "global_look", "keyframe_visual_state", "dynamic_camera_blocking_physics", "shot_story_timing_function"]}}},
+          "then": {
+            "properties": {
+              "action": {"const": "issue_upstream_change_request"},
+              "affected_artifact_ids": {"minItems": 1},
+              "affected_control_roles": {"minItems": 1},
+              "owned_diff": {"type": "null"},
+              "upstream_change_request": {"$ref": "#/$defs/changeRequest"}
+            }
+          }
+        },
+        {
+          "if": {"properties": {"diagnosis_scope": {"const": "prompt_binding_or_serialization"}}},
+          "then": {
+            "properties": {
+              "action": {"enum": ["revise_prompt_owned_surface", "shorten_generation_unit_after_preflight_revision"]},
+              "affected_artifact_ids": {"maxItems": 0},
+              "affected_control_roles": {"maxItems": 0},
+              "owned_diff": {"type": "object", "minProperties": 1},
+              "upstream_change_request": {"type": "null"}
+            }
+          }
+        },
+        {
+          "if": {"properties": {"diagnosis_scope": {"const": "stochastic_model_failure"}}},
+          "then": {
+            "properties": {
+              "action": {"const": "retry_exact_package"},
+              "affected_artifact_ids": {"maxItems": 0},
+              "affected_control_roles": {"maxItems": 0},
+              "owned_diff": {"type": "null"},
+              "upstream_change_request": {"type": "null"},
+              "invalidated_artifact_ids": {"maxItems": 0}
+            }
+          }
+        }
+      ]
+    },
+    "changeRequest": {
+      "type": "object", "additionalProperties": false,
+      "required": ["request_id", "target_owner_skill", "affected_shot_uids", "affected_artifact_ids", "affected_control_roles", "conflict", "required_resolution"],
+      "properties": {
+        "request_id": {"type": "string", "minLength": 1}, "target_owner_skill": {"type": "string", "minLength": 1},
+        "affected_shot_uids": {"type": "array", "minItems": 1, "uniqueItems": true, "items": {"type": "string", "minLength": 1}},
+        "affected_artifact_ids": {"type": "array", "minItems": 1, "uniqueItems": true, "items": {"type": "string", "minLength": 1}},
+        "affected_control_roles": {"type": "array", "minItems": 1, "uniqueItems": true, "items": {"type": "string", "minLength": 1}},
+        "conflict": {"type": "string", "minLength": 1}, "required_resolution": {"type": "string", "minLength": 1}
+      }
+    },
+    "artifactRef": {
+      "type": "object", "additionalProperties": false,
+      "required": ["artifact_id", "owner_skill", "version", "sha256"],
+      "properties": {
+        "artifact_id": {"type": "string", "minLength": 1}, "owner_skill": {"type": "string", "minLength": 1},
+        "version": {"type": "string", "pattern": "^[0-9]+\\.[0-9]+\\.[0-9]+$"},
+        "sha256": {"type": "string", "pattern": "^[a-f0-9]{64}$"}
+      }
+    },
+    "revisionAnchor": {
+      "type": "object", "additionalProperties": false,
+      "required": ["previous_package_ref", "previous_ir_path", "previous_ir_file_sha256", "previous_lockfile_path", "previous_lockfile_file_sha256", "revision_diff_path", "revision_diff_file_sha256", "changed_output_paths", "unchanged_output_paths"],
+      "properties": {
+        "previous_package_ref": {"$ref": "#/$defs/artifactRef"},
+        "previous_ir_path": {"type": "string", "minLength": 1},
+        "previous_ir_file_sha256": {"type": "string", "pattern": "^[a-f0-9]{64}$"},
+        "previous_lockfile_path": {"type": "string", "minLength": 1},
+        "previous_lockfile_file_sha256": {"type": "string", "pattern": "^[a-f0-9]{64}$"},
+        "revision_diff_path": {"const": "04_reports/PROMPT_REVISION_DIFF.md"},
+        "revision_diff_file_sha256": {"type": "string", "pattern": "^[a-f0-9]{64}$"},
+        "changed_output_paths": {"type": "array", "minItems": 1, "uniqueItems": true, "items": {"type": "string", "minLength": 1}},
+        "unchanged_output_paths": {"type": "array", "minItems": 1, "uniqueItems": true, "items": {"type": "string", "minLength": 1}}
+      }
+    }
+  }
+}

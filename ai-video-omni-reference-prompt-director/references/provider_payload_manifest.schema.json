@@ -1,0 +1,55 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "provider_payload_manifest.schema.json",
+  "title": "Omni Reference Provider Payload Manifest",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "contract_version", "artifact_id", "owner_skill", "version", "sha256",
+    "approval_status", "dependencies", "affected_shot_uids", "stale_reason",
+    "schema_version", "generation_mode", "payload_status", "provider_profile_id",
+    "documented_backend_profile_id", "provider_surface", "unit_payloads"
+  ],
+  "properties": {
+    "contract_version": {"const": "ai-video-artifact-v1"},
+    "artifact_id": {"type": "string", "minLength": 1},
+    "owner_skill": {"const": "ai-video-omni-reference-prompt-director"},
+    "version": {"type": "string", "pattern": "^[0-9]+\\.[0-9]+\\.[0-9]+$"},
+    "sha256": {"oneOf": [{"type": "null"}, {"type": "string", "pattern": "^[a-f0-9]{64}$"}]},
+    "approval_status": {"enum": ["draft", "assistant_validated", "user_approved", "stale", "blocked"]},
+    "dependencies": {"type": "array", "items": {"$ref": "#/$defs/dependency"}},
+    "affected_shot_uids": {"type": "array", "uniqueItems": true, "items": {"type": "string"}},
+    "stale_reason": {"type": ["string", "null"]},
+    "schema_version": {"const": "ai-video-provider-payload.v1"},
+    "generation_mode": {"const": "omni_reference_to_video"},
+    "payload_status": {"enum": ["executable", "blocked_unverified_provider", "blocked_unsupported_required_modality", "blocked_capacity", "blocked_conflict"]},
+    "provider_profile_id": {"type": "string", "minLength": 1},
+    "documented_backend_profile_id": {"type": "string", "minLength": 1},
+    "provider_surface": {"type": "string", "minLength": 1},
+    "unit_payloads": {"type": "array", "items": {"$ref": "#/$defs/unitPayload"}}
+  },
+  "$defs": {
+    "dependency": {
+      "type": "object", "additionalProperties": false,
+      "required": ["artifact_id", "owner_skill", "version", "sha256"],
+      "properties": {
+        "artifact_id": {"type": "string"}, "owner_skill": {"type": "string"},
+        "version": {"type": "string", "pattern": "^[0-9]+\\.[0-9]+\\.[0-9]+$"},
+        "sha256": {"type": "string", "pattern": "^[a-f0-9]{64}$"}
+      }
+    },
+    "unitPayload": {
+      "type": "object", "additionalProperties": false,
+      "required": ["generation_unit_id", "model_id", "generation_mode", "prompt_artifact_id", "binding_ids", "target_duration_seconds", "api_parameters"],
+      "properties": {
+        "generation_unit_id": {"type": "string", "minLength": 1},
+        "model_id": {"type": "string", "minLength": 1},
+        "generation_mode": {"const": "omni_reference_to_video"},
+        "prompt_artifact_id": {"type": "string", "minLength": 1},
+        "binding_ids": {"type": "array", "uniqueItems": true, "items": {"type": "string"}},
+        "target_duration_seconds": {"type": "number", "exclusiveMinimum": 0},
+        "api_parameters": {"type": "object"}
+      }
+    }
+  }
+}

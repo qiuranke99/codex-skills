@@ -1,0 +1,155 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "binding_manifest.schema.json",
+  "title": "Multimodal Binding Manifest",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "contract_version", "artifact_id", "owner_skill", "version", "sha256",
+    "approval_status", "dependencies", "affected_shot_uids", "stale_reason",
+    "schema_version", "project_id", "package_id", "generation_mode",
+    "asset_inventory", "generation_unit_bindings", "atlas_records", "conflict_graph"
+  ],
+  "properties": {
+    "contract_version": {"const": "ai-video-artifact-v1"},
+    "artifact_id": {"type": "string", "minLength": 1},
+    "owner_skill": {"const": "ai-video-omni-reference-prompt-director"},
+    "version": {"type": "string", "pattern": "^[0-9]+\\.[0-9]+\\.[0-9]+$"},
+    "sha256": {"oneOf": [{"type": "null"}, {"type": "string", "pattern": "^[a-f0-9]{64}$"}]},
+    "approval_status": {"enum": ["draft", "assistant_validated", "user_approved", "stale", "blocked"]},
+    "dependencies": {"type": "array", "items": {"$ref": "#/$defs/dependency"}},
+    "affected_shot_uids": {"type": "array", "uniqueItems": true, "items": {"type": "string"}},
+    "stale_reason": {"type": ["string", "null"]},
+    "schema_version": {"const": "ai-video-binding-manifest.v2"},
+    "project_id": {"type": "string", "minLength": 1}, "package_id": {"type": "string", "minLength": 1},
+    "generation_mode": {"const": "omni_reference_to_video"},
+    "asset_inventory": {"type": "array", "minItems": 1, "items": {"$ref": "#/$defs/inventoryItem"}},
+    "generation_unit_bindings": {"type": "array", "minItems": 1, "items": {"$ref": "#/$defs/unitBindings"}},
+    "atlas_records": {"type": "array", "items": {"$ref": "#/$defs/atlas"}},
+    "conflict_graph": {"type": "array", "items": {"$ref": "#/$defs/conflict"}}
+  },
+  "$defs": {
+    "dependency": {
+      "type": "object", "additionalProperties": false,
+      "required": ["artifact_id", "owner_skill", "version", "sha256"],
+      "properties": {
+        "artifact_id": {"type": "string"}, "owner_skill": {"type": "string"},
+        "version": {"type": "string", "pattern": "^[0-9]+\\.[0-9]+\\.[0-9]+$"},
+        "sha256": {"type": "string", "pattern": "^[a-f0-9]{64}$"}
+      }
+    },
+    "artifactRef": {
+      "type": "object", "additionalProperties": false,
+      "required": ["artifact_id", "owner_skill", "version", "sha256", "file_path", "file_sha256", "artifact_record_locator", "artifact_record_file_sha256"],
+      "properties": {
+        "artifact_id": {"type": "string", "minLength": 1}, "owner_skill": {"type": "string", "minLength": 1},
+        "version": {"type": "string", "pattern": "^[0-9]+\\.[0-9]+\\.[0-9]+$"},
+        "sha256": {"type": "string", "pattern": "^[a-f0-9]{64}$"},
+        "file_path": {"type": ["string", "null"]},
+        "file_sha256": {"oneOf": [{"type": "null"}, {"type": "string", "pattern": "^[a-f0-9]{64}$"}]},
+        "artifact_record_locator": {"type": "string", "minLength": 1, "not": {"pattern": "(^/|(^|/)\\.\\.(/|$))"}},
+        "artifact_record_file_sha256": {"type": "string", "pattern": "^[a-f0-9]{64}$"}
+      }
+    },
+    "classification": {
+      "type": "object", "additionalProperties": false,
+      "required": ["generation_unit_id", "status", "controlled_shot_uids", "preflight_planned_input_id", "reason"],
+      "properties": {
+        "generation_unit_id": {"type": "string"},
+        "status": {"enum": ["relevant_selected", "transported_via_atlas", "irrelevant_to_unit", "conflicting_blocked", "superseded_version", "unsupported_modality_blocked", "ineligible_upstream_blocked"]},
+        "controlled_shot_uids": {"type": "array", "uniqueItems": true, "items": {"type": "string", "minLength": 1}},
+        "preflight_planned_input_id": {"oneOf": [{"type": "null"}, {"type": "string", "minLength": 1}]},
+        "reason": {"type": "string", "minLength": 1}
+      }
+    },
+    "inventoryItem": {
+      "type": "object", "additionalProperties": false,
+      "required": [
+        "artifact", "artifact_slot", "artifact_type", "approval_status", "eligible_for_downstream",
+        "modality", "control_roles", "control_role", "scope", "controlled_shot_uids", "expected_influence",
+        "priority", "storyboard_stage", "storyboard_model_input_eligible", "unit_classification"
+      ],
+      "properties": {
+        "artifact": {"$ref": "#/$defs/artifactRef"},
+        "artifact_slot": {"type": "string", "minLength": 1}, "artifact_type": {"type": "string", "minLength": 1},
+        "approval_status": {"enum": ["draft", "assistant_validated", "user_approved", "stale", "blocked"]},
+        "eligible_for_downstream": {"type": "boolean"},
+        "modality": {"enum": ["text", "image", "video", "audio"]},
+        "control_roles": {"type": "array", "minItems": 1, "uniqueItems": true, "items": {"type": "string", "minLength": 1}},
+        "control_role": {"enum": ["shot_contract", "global_directing", "identity", "wardrobe", "product_geometry", "label_copy", "material_behavior", "scene_canon", "global_look", "storyboard", "keyframe_state", "keyframe_boundary", "timing_map", "control_previs", "camera_path", "blocking", "physical_motion", "dialogue_voice", "synchronous_sfx", "provider_preflight"]},
+        "scope": {"enum": ["project", "generation_unit", "shot"]},
+        "controlled_shot_uids": {"type": "array", "uniqueItems": true, "items": {"type": "string"}},
+        "expected_influence": {"type": "string"}, "priority": {"type": "integer", "minimum": 1},
+        "storyboard_stage": {"enum": [null, "structure_draft", "look_applied_final"]},
+        "storyboard_model_input_eligible": {"type": ["boolean", "null"]},
+        "unit_classification": {"type": "array", "minItems": 1, "items": {"$ref": "#/$defs/classification"}}
+      }
+    },
+    "binding": {
+      "type": "object", "additionalProperties": false,
+      "required": ["binding_id", "artifact_id", "provider_alias", "modality", "control_roles", "control_role", "scope", "controlled_shot_uids", "expected_influence", "priority", "conflict_exclusions"],
+      "properties": {
+        "binding_id": {"type": "string"}, "artifact_id": {"type": "string"},
+        "provider_alias": {"type": "string"}, "modality": {"enum": ["text", "image", "video", "audio"]},
+        "control_roles": {"type": "array", "minItems": 1, "uniqueItems": true, "items": {"type": "string", "minLength": 1}},
+        "control_role": {"type": "string"}, "scope": {"enum": ["project", "generation_unit", "shot"]},
+        "controlled_shot_uids": {"type": "array", "items": {"type": "string"}},
+        "expected_influence": {"type": "string"}, "priority": {"type": "integer", "minimum": 1},
+        "conflict_exclusions": {"type": "array", "items": {"type": "string"}}
+      }
+    },
+    "counts": {
+      "type": "object", "additionalProperties": false,
+      "required": ["image", "video", "audio", "total_multimodal"],
+      "properties": {
+        "image": {"type": "integer", "minimum": 0}, "video": {"type": "integer", "minimum": 0},
+        "audio": {"type": "integer", "minimum": 0}, "total_multimodal": {"type": "integer", "minimum": 0}
+      }
+    },
+    "unitBindings": {
+      "type": "object", "additionalProperties": false,
+      "required": ["generation_unit_id", "binding_status", "bindings", "selected_counts"],
+      "properties": {
+        "generation_unit_id": {"type": "string"},
+        "binding_status": {"enum": ["ready", "blocked_conflict", "blocked_capacity", "blocked_unsupported_required_modality", "blocked_ineligible_upstream"]},
+        "bindings": {"type": "array", "items": {"$ref": "#/$defs/binding"}},
+        "selected_counts": {"$ref": "#/$defs/counts"}
+      }
+    },
+    "atlas": {
+      "type": "object", "additionalProperties": false,
+      "required": ["atlas_id", "generation_unit_id", "preflight_transport_group_id", "file_path", "file_sha256", "file_bytes", "source_artifact_ids", "deterministic_composition", "generative_recomposition", "composition_spec_path", "composition_spec_file_sha256", "composition_receipt_path", "composition_receipt_file_sha256", "codec", "media_type", "width", "height", "minimum_panel_width_pixels", "minimum_panel_height_pixels", "legibility_policy", "layout_policy", "decoder_runtime", "encoder_runtime"],
+      "properties": {
+        "atlas_id": {"type": "string"}, "generation_unit_id": {"type": "string"},
+        "preflight_transport_group_id": {"type": "string", "minLength": 1},
+        "file_path": {"type": "string"}, "file_sha256": {"type": "string", "pattern": "^[a-f0-9]{64}$"},
+        "file_bytes": {"type": "integer", "minimum": 1},
+        "source_artifact_ids": {"type": "array", "minItems": 2, "uniqueItems": true, "items": {"type": "string"}},
+        "deterministic_composition": {"const": true}, "generative_recomposition": {"const": false},
+        "composition_spec_path": {"type": "string", "minLength": 1},
+        "composition_spec_file_sha256": {"type": "string", "pattern": "^[a-f0-9]{64}$"},
+        "composition_receipt_path": {"type": "string", "minLength": 1},
+        "composition_receipt_file_sha256": {"type": "string", "pattern": "^[a-f0-9]{64}$"},
+        "codec": {"const": "PNG_RGB8"},
+        "media_type": {"const": "image/png"},
+        "width": {"type": "integer", "minimum": 1}, "height": {"type": "integer", "minimum": 1},
+        "minimum_panel_width_pixels": {"type": "integer", "minimum": 256},
+        "minimum_panel_height_pixels": {"type": "integer", "minimum": 256},
+        "legibility_policy": {"const": "identity_geometry_look_only_no_microcopy"},
+        "layout_policy": {"const": "max_native_cell_center_floor_no_resize_v1"},
+        "decoder_runtime": {"type": "object", "minProperties": 1},
+        "encoder_runtime": {"type": "object", "minProperties": 1}
+      }
+    },
+    "conflict": {
+      "type": "object", "additionalProperties": false,
+      "required": ["conflict_id", "artifact_ids", "affected_generation_unit_ids", "owner_skill", "required_resolution"],
+      "properties": {
+        "conflict_id": {"type": "string"},
+        "artifact_ids": {"type": "array", "minItems": 2, "items": {"type": "string"}},
+        "affected_generation_unit_ids": {"type": "array", "minItems": 1, "items": {"type": "string"}},
+        "owner_skill": {"type": "string"}, "required_resolution": {"type": "string"}
+      }
+    }
+  }
+}

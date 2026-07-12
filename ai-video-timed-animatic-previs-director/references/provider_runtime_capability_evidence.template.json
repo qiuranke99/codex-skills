@@ -1,0 +1,36 @@
+{
+  "schema_version": "provider-runtime-capability-evidence.v1",
+  "profile_id": "vendor_seedance_runtime",
+  "provider": "provider-name",
+  "model_family": "Seedance",
+  "model_id": "provider/model-id",
+  "surface": "third-party-api",
+  "documented_backend_profile_id": "seedance_documented_backend",
+  "generation_mode": "omni_reference_to_video",
+  "surface_status": "provider_schema_verified",
+  "supported_modalities": ["text", "image", "video"],
+  "effective_limits": {
+    "max_duration_seconds": 15.0,
+    "max_image_inputs": 9,
+    "max_video_inputs": 3,
+    "max_audio_inputs": 3,
+    "max_total_multimodal_inputs": 15
+  },
+  "video_input_constraints": {
+    "accepted_media_types": ["video/mp4"],
+    "accepted_containers": ["mp4"],
+    "accepted_video_codecs": ["h264"],
+    "max_file_bytes": 52428800,
+    "min_duration_seconds": 0.1,
+    "max_duration_seconds": 15.0,
+    "min_width_px": 64,
+    "max_width_px": 4096,
+    "min_height_px": 64,
+    "max_height_px": 4096,
+    "min_aspect_ratio": 0.25,
+    "max_aspect_ratio": 4.0,
+    "min_fps": 1.0,
+    "max_fps": 120.0,
+    "audio_track_policy": "forbidden"
+  }
+}

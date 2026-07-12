@@ -1,0 +1,45 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "continuity_projection.schema.json",
+  "title": "Keyframe Continuity Ledger Projection",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "contract_version", "artifact_id", "owner_skill", "version", "sha256",
+    "approval_status", "dependencies", "affected_shot_uids", "stale_reason",
+    "schema_version", "projection_type", "records"
+  ],
+  "properties": {
+    "contract_version": {"const": "ai-video-artifact-v1"},
+    "artifact_id": {"type": "string"},
+    "owner_skill": {"const": "ai-video-keyframe-continuity-pack"},
+    "version": {"type": "string", "pattern": "^[0-9]+\\.[0-9]+\\.[0-9]+$"},
+    "sha256": {"type": ["string", "null"], "pattern": "^[a-f0-9]{64}$"},
+    "approval_status": {"enum": ["draft", "assistant_validated", "user_approved", "stale", "blocked"]},
+    "dependencies": {"type": "array", "items": {"$ref": "#/$defs/dependency"}},
+    "affected_shot_uids": {"type": "array", "uniqueItems": true, "items": {"type": "string"}},
+    "stale_reason": {"type": ["string", "null"]},
+    "schema_version": {"const": "ai-video-keyframe-continuity-projection.v1"},
+    "projection_type": {"enum": ["character_state_ledger", "product_state_ledger", "material_state_trajectory", "dynamic_state_ladder", "cross_generation_unit_boundaries"]},
+    "records": {"type": "array", "items": {"$ref": "#/$defs/projectionRecord"}}
+  },
+  "$defs": {
+    "dependency": {
+      "type": "object", "additionalProperties": false,
+      "required": ["artifact_id", "owner_skill", "version", "sha256"],
+      "properties": {
+        "artifact_id": {"type": "string"}, "owner_skill": {"type": "string"},
+        "version": {"type": "string", "pattern": "^[0-9]+\\.[0-9]+\\.[0-9]+$"},
+        "sha256": {"type": "string", "pattern": "^[a-f0-9]{64}$"}
+      }
+    },
+    "projectionRecord": {
+      "type": "object", "additionalProperties": false,
+      "required": ["shot_uid", "data"],
+      "properties": {
+        "shot_uid": {"type": ["string", "null"]},
+        "data": {}
+      }
+    }
+  }
+}

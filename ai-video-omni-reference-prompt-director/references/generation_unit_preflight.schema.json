@@ -1,0 +1,193 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "generation_unit_preflight.schema.json",
+  "title": "Prompt P1 Generation Unit Preflight Plan",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "contract_version", "artifact_id", "owner_skill", "version", "sha256",
+    "approval_status", "dependencies", "affected_shot_uids", "stale_reason",
+    "schema_version", "project_id", "plan_status", "generation_mode",
+    "project_canon_read_receipt", "target_profile_id", "documented_backend_profile_id",
+    "provider_profile_id", "generation_unit_boundary_policy", "ordered_shot_uids", "generation_units",
+    "reference_budget_decisions", "blocked_reasons"
+  ],
+  "properties": {
+    "contract_version": {"const": "ai-video-artifact-v1"},
+    "artifact_id": {"type": "string", "minLength": 1},
+    "owner_skill": {"const": "ai-video-omni-reference-prompt-director"},
+    "version": {"type": "string", "pattern": "^[0-9]+\\.[0-9]+\\.[0-9]+$"},
+    "sha256": {"oneOf": [{"type": "null"}, {"type": "string", "pattern": "^[a-f0-9]{64}$"}]},
+    "approval_status": {"enum": ["draft", "assistant_validated", "user_approved", "stale", "blocked"]},
+    "dependencies": {"type": "array", "items": {"$ref": "#/$defs/artifactRef"}},
+    "affected_shot_uids": {"type": "array", "uniqueItems": true, "items": {"type": "string", "minLength": 1}},
+    "stale_reason": {"type": ["string", "null"]},
+    "schema_version": {"const": "ai-video-generation-unit-preflight.v1"},
+    "project_id": {"type": "string", "minLength": 1},
+    "plan_status": {"enum": ["ready_for_boundary_supplement", "blocked_conflict", "blocked_capacity", "blocked_unsupported_required_modality", "stale"]},
+    "generation_mode": {"const": "omni_reference_to_video"},
+    "project_canon_read_receipt": {"$ref": "#/$defs/manifestReadReceipt"},
+    "target_profile_id": {"const": "seedance_2_5_forward_compatible"},
+    "documented_backend_profile_id": {"type": "string", "minLength": 1},
+    "provider_profile_id": {"type": "string", "minLength": 1},
+    "generation_unit_boundary_policy": {"const": "whole_shot_uids_only"},
+    "ordered_shot_uids": {"type": "array", "minItems": 1, "uniqueItems": true, "items": {"type": "string", "minLength": 1}},
+    "generation_units": {"type": "array", "minItems": 1, "items": {"$ref": "#/$defs/unit"}},
+    "reference_budget_decisions": {"type": "array", "items": {"type": "string"}},
+    "blocked_reasons": {"type": "array", "items": {"type": "string"}}
+  },
+  "$defs": {
+    "artifactRef": {
+      "type": "object", "additionalProperties": false,
+      "required": ["artifact_id", "owner_skill", "version", "sha256"],
+      "properties": {
+        "artifact_id": {"type": "string", "minLength": 1}, "owner_skill": {"type": "string", "minLength": 1},
+        "version": {"type": "string", "pattern": "^[0-9]+\\.[0-9]+\\.[0-9]+$"},
+        "sha256": {"type": "string", "pattern": "^[a-f0-9]{64}$"}
+      }
+    },
+    "manifestReadReceipt": {
+      "type": "object", "additionalProperties": false,
+      "required": ["manifest_artifact_id", "manifest_version", "manifest_sha256", "snapshot_path", "snapshot_file_sha256"],
+      "properties": {
+        "manifest_artifact_id": {"type": "string"},
+        "manifest_version": {"type": "string", "pattern": "^[0-9]+\\.[0-9]+\\.[0-9]+$"},
+        "manifest_sha256": {"type": "string", "pattern": "^[a-f0-9]{64}$"},
+        "snapshot_path": {"const": "00_manifest/PROJECT_CANON_PREFLIGHT_INPUT_SNAPSHOT.json"},
+        "snapshot_file_sha256": {"type": "string", "pattern": "^[a-f0-9]{64}$"}
+      }
+    },
+    "counts": {
+      "type": "object", "additionalProperties": false,
+      "required": ["image", "video", "audio", "total_multimodal"],
+      "properties": {
+        "image": {"type": "integer", "minimum": 0}, "video": {"type": "integer", "minimum": 0},
+        "audio": {"type": "integer", "minimum": 0}, "total_multimodal": {"type": "integer", "minimum": 0}
+      }
+    },
+    "unit": {
+      "type": "object", "additionalProperties": false,
+      "required": [
+        "generation_unit_id", "ordered_shot_uids", "target_duration_seconds", "timing_sensitive",
+        "control_previs_requirement", "required_modalities", "planned_reference_counts",
+        "planned_reference_artifact_ids", "artifact_decisions", "planned_atlas_groups", "planned_future_inputs",
+        "split_reason", "continuity_boundary_in", "continuity_boundary_out", "preflight_status"
+      ],
+      "properties": {
+        "generation_unit_id": {"type": "string", "minLength": 1},
+        "ordered_shot_uids": {"type": "array", "minItems": 1, "uniqueItems": true, "items": {"type": "string", "minLength": 1}},
+        "target_duration_seconds": {"type": "number", "exclusiveMinimum": 0},
+        "timing_sensitive": {"type": "boolean"},
+        "control_previs_requirement": {"enum": ["required", "exempt_single_static_shot"]},
+        "required_modalities": {"type": "array", "minItems": 1, "uniqueItems": true, "items": {"enum": ["text", "image", "video", "audio"]}},
+        "planned_reference_counts": {"$ref": "#/$defs/counts"},
+        "planned_reference_artifact_ids": {
+          "type": "array", "uniqueItems": true,
+          "items": {"type": "string", "minLength": 1}
+        },
+        "artifact_decisions": {
+          "type": "array", "minItems": 1,
+          "items": {"$ref": "#/$defs/artifactDecision"}
+        },
+        "planned_atlas_groups": {
+          "type": "array", "uniqueItems": true,
+          "items": {"$ref": "#/$defs/plannedAtlasGroup"}
+        },
+        "planned_future_inputs": {
+          "type": "array", "uniqueItems": true,
+          "items": {"$ref": "#/$defs/plannedFutureInput"}
+        },
+        "split_reason": {"type": "string", "minLength": 1},
+        "continuity_boundary_in": {"type": "string"}, "continuity_boundary_out": {"type": "string"},
+        "preflight_status": {"enum": ["ready", "blocked_conflict", "blocked_capacity", "blocked_unsupported_required_modality"]}
+      }
+    },
+    "plannedAtlasGroup": {
+      "type": "object", "additionalProperties": false,
+      "required": [
+        "transport_group_id", "planned_atlas_id", "source_artifact_ids", "layout_columns",
+        "background_rgb", "minimum_panel_width_pixels", "minimum_panel_height_pixels",
+        "legibility_policy", "source_decode_policy", "output_encode_policy", "layout_policy",
+        "output_codec", "preflight_build"
+      ],
+      "properties": {
+        "transport_group_id": {"type": "string", "minLength": 1},
+        "planned_atlas_id": {"type": "string", "minLength": 1},
+        "source_artifact_ids": {"type": "array", "minItems": 2, "uniqueItems": true, "items": {"type": "string", "minLength": 1}},
+        "layout_columns": {"type": "integer", "minimum": 1},
+        "background_rgb": {"type": "array", "minItems": 3, "maxItems": 3, "items": {"type": "integer", "minimum": 0, "maximum": 255}},
+        "minimum_panel_width_pixels": {"type": "integer", "minimum": 256},
+        "minimum_panel_height_pixels": {"type": "integer", "minimum": 256},
+        "legibility_policy": {"const": "identity_geometry_look_only_no_microcopy"},
+        "source_decode_policy": {"const": "pillow_common_raster_to_rgb8_no_resize_v1"},
+        "output_encode_policy": {"const": "pillow_png_rgb8_fixed_v1"},
+        "layout_policy": {"const": "max_native_cell_center_floor_no_resize_v1"},
+        "output_codec": {"const": "PNG_RGB8"},
+        "preflight_build": {
+          "type": "object", "additionalProperties": false,
+          "required": ["file_sha256", "file_bytes", "width", "height", "codec", "media_type", "decoder_runtime", "encoder_runtime"],
+          "properties": {
+            "file_sha256": {"type": "string", "pattern": "^[a-f0-9]{64}$"},
+            "file_bytes": {"type": "integer", "minimum": 1},
+            "width": {"type": "integer", "minimum": 1},
+            "height": {"type": "integer", "minimum": 1},
+            "codec": {"const": "PNG_RGB8"},
+            "media_type": {"const": "image/png"},
+            "decoder_runtime": {"type": "object", "minProperties": 1},
+            "encoder_runtime": {"type": "object", "minProperties": 1}
+          }
+        }
+      }
+    },
+    "artifactDecision": {
+      "type": "object", "additionalProperties": false,
+      "required": [
+        "artifact", "artifact_slot", "artifact_type", "control_roles", "control_role", "decision", "transport_modality",
+        "transport_group_id", "controlled_shot_uids", "reason"
+      ],
+      "properties": {
+        "artifact": {"$ref": "#/$defs/artifactRef"},
+        "artifact_slot": {"type": "string", "minLength": 1},
+        "artifact_type": {"type": "string", "minLength": 1},
+        "control_roles": {"type": "array", "minItems": 1, "uniqueItems": true, "items": {"type": "string", "minLength": 1}},
+        "control_role": {"type": "string", "minLength": 1},
+        "decision": {
+          "enum": [
+            "selected_direct", "transported_via_atlas_planned", "inline_text",
+            "irrelevant", "conflict_blocked", "superseded"
+          ]
+        },
+        "transport_modality": {"enum": ["text", "image", "video", "audio"]},
+        "transport_group_id": {
+          "oneOf": [
+            {"type": "null"},
+            {"type": "string", "minLength": 1}
+          ]
+        },
+        "controlled_shot_uids": {
+          "type": "array", "uniqueItems": true,
+          "items": {"type": "string", "minLength": 1}
+        },
+        "reason": {"type": "string", "minLength": 1}
+      }
+    },
+    "plannedFutureInput": {
+      "type": "object", "additionalProperties": false,
+      "required": [
+        "planned_input_id", "producer_skill", "control_role", "transport_modality",
+        "controlled_shot_uids", "reason"
+      ],
+      "properties": {
+        "planned_input_id": {"type": "string", "minLength": 1},
+        "producer_skill": {"type": "string", "minLength": 1},
+        "control_role": {"enum": ["control_previs_v2", "keyframe_boundary_supplement", "keyframe_boundary_anchor"]},
+        "transport_modality": {"enum": ["text", "image", "video", "audio"]},
+        "controlled_shot_uids": {
+          "type": "array", "minItems": 1, "uniqueItems": true,
+          "items": {"type": "string", "minLength": 1}
+        },
+        "reason": {"type": "string", "minLength": 1}
+      }
+    }
+  }
+}

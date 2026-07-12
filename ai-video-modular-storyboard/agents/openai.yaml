@@ -1,0 +1,6 @@
+interface:
+  display_name: "AI Video Modular Storyboard"
+  short_description: "Build one editable storyboard frame per scripted shot."
+  default_prompt: "Use $ai-video-modular-storyboard to create an N-shot, N-frame modular storyboard and deterministic human review board from this approved Shot Contract."
+policy:
+  allow_implicit_invocation: true

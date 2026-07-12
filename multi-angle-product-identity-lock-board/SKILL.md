@@ -299,3 +299,35 @@ In the later inspection continuation, report content QA, nonblocking built-in di
 ## End condition
 
 The image-generation turn may end only as `stage_complete` with `task_finalization_status: awaiting_post_generation_continuation`. The task completes only when board content QA is classified, the source-bound exact-16:9/4K handoff is ready or honestly runtime-blocked, and `task_finalization_status: final_main_result_published` proves the final channel displayed both complete prompts and both verified hashes. A real source, capability, persistence, or prompt-integrity blocker may end the run without a completion claim.
+
+## Optional AI-Video Project Canon Export
+
+This downstream branch does not change product routing, the six-view topology,
+generation, later inspection, external 4K evidence, or final prompt-pair rules.
+Use it only for an accepted product board with `assistant_qa_status: passed`,
+verified `generation_prompt` and `four_k_enhancement_prompt` sidecar bytes, and
+explicit `user_granted` or `external_pipeline_granted` production approval.
+
+The owner records that decision using
+`../ai-video-shot-script-director/references/ai_video_owner_asset_approval.schema.json`,
+binding this fixed owner, asset key, primary board hash, both prompt hashes,
+affected canonical Shot UIDs, QA pass, and approval. Then invoke only
+`scripts/export_ai_video_canon.py` with project-relative paths and exact hashes;
+there is no owner argument. This low-risk product owner exports only
+`authority_mode: geometry_only` and
+`control_roles_authorized: [product_geometry]`; it never grants label-copy or
+material-behavior authority.
+Pillow is required to verify and fully load the primary PNG/JPEG/WebP board and
+lock decoder-observed dimensions of at least 64×64. Missing Pillow, arbitrary
+binary bytes, or a format/extension mismatch fails closed before Canon update.
+
+The wrapper emits the owner-produced `ai-video-artifact-v1` record, independent
+primary/record four locks, base snapshot, entry delta, receipt, and validated
+Canon transition. Prompt Director must retain this actual product owner in
+feedback routing and cannot fabricate a projection. Export failure does not
+change the approved board or its existing handoff.
+
+Approval and export records must also bind
+`authority_stage: terminal_product_canon` and
+`terminal_route_decision: not_applicable`. Install the pinned decoder with
+`python3 -m pip install -r ../ai-video-shot-script-director/requirements.txt`.

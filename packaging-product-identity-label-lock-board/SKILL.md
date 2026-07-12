@@ -335,3 +335,42 @@ In the later inspection continuation, report both lock-layer statuses, field evi
 ## End condition
 
 The image-generation turn may end only as `stage_complete` with `task_finalization_status: awaiting_post_generation_continuation`. The task completes only when geometry/layout and exact-copy claims are independently classified, the source-bound exact-16:9/4K handoff is ready or honestly runtime-blocked, and `task_finalization_status: final_main_result_published` proves the final channel displayed both complete prompts and both verified hashes. Missing sources, capability, persistence, or prompt-integrity failures may end the run without a completion claim.
+
+## Optional AI-Video Project Canon Export
+
+This downstream integration never changes the geometry/layout and exact-copy
+separation, board composition, deterministic evidence rules, generation,
+inspection, 4K handoff, or prompt-pair publication. Export only a board whose
+assistant QA passed, whose `generation_prompt` and
+`four_k_enhancement_prompt` sidecars re-hash exactly, and whose production use
+has an explicit `user_granted` or `external_pipeline_granted` decision. Exact
+copy remains approved only under the evidence gates above; Canon export cannot
+upgrade it.
+
+The owner writes approval evidence conforming to
+`../ai-video-shot-script-director/references/ai_video_owner_asset_approval.schema.json`,
+binding this fixed owner, asset key, board hash, both prompt hashes, affected
+canonical Shot UIDs, QA pass, and decision. Invoke only
+`scripts/export_ai_video_canon.py` with project-relative locked files. It has no
+owner override. Default export uses `authority_mode: geometry_layout_only` and
+authorizes only `[product_geometry]`. Use
+`geometry_layout_exact_copy_verified` and
+`[product_geometry, label_copy]` only when every required exact field already
+has `exact_copy_lock_status: approved` under the deterministic/OCR/decode gates
+above; the owner approval JSON must bind that mode. `conditional_unverified`
+can never authorize `label_copy`.
+Pillow is a required export dependency and must verify plus fully load the
+primary PNG/JPEG/WebP board at 64×64 or larger. Missing decoder support,
+corruption, or extension mismatch fails closed and cannot be bypassed by exact
+copy approval.
+
+Success produces the true owner `ai-video-artifact-v1` record, primary/record
+four locks, immutable base snapshot, delta, receipt, and validated transition.
+Prompt Director must preserve this packaging owner when routing feedback and
+may not create an authority projection. Failure leaves all original packaging
+claims and asset state unchanged.
+
+Approval and export records must also bind
+`authority_stage: terminal_packaging_canon` and
+`terminal_route_decision: not_applicable`. Install the pinned decoder with
+`python3 -m pip install -r ../ai-video-shot-script-director/requirements.txt`.

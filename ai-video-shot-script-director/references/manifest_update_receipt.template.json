@@ -1,0 +1,9 @@
+{
+  "schema_version": "ai-video-manifest-update-receipt.v1",
+  "canonical_manifest_locator": "00_project_canon/PROJECT_CANON_MANIFEST.json",
+  "updated_by_skill": "PRODUCING_SKILL_NAME",
+  "base_manifest_sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+  "resulting_manifest_sha256": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+  "registered_artifact_ids": ["OWNED_ARTIFACT_ID"],
+  "delta_status": "applied"
+}

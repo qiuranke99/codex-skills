@@ -1,0 +1,23 @@
+{
+  "schema_version": "ai-video-acceptance-gap-report.v1",
+  "suite_version": "1.0.0",
+  "candidate_id": "CANDIDATE_ID",
+  "audit_round": 1,
+  "audit_roles": [
+    "boundary_and_ownership",
+    "contract_and_package",
+    "scenario_and_counterexample"
+  ],
+  "gaps": [],
+  "validation_commands": [
+    "python3 ai-video-omni-reference-prompt-director/scripts/validate_ai_video_suite.py --suite-root ."
+  ],
+  "exit_gate": {
+    "all_accepted_gaps_verified": false,
+    "zero_open_critical_high": false,
+    "all_validators_pass": false,
+    "discovery_verified": false,
+    "remote_readback_verified": false
+  },
+  "final_status": "open"
+}

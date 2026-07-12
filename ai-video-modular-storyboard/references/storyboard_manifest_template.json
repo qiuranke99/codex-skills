@@ -1,0 +1,86 @@
+{
+  "contract_version": "ai-video-artifact-v1",
+  "artifact_id": "STORYBOARD_MANIFEST",
+  "owner_skill": "ai-video-modular-storyboard",
+  "version": "1.0.0",
+  "sha256": null,
+  "approval_status": "draft",
+  "dependencies": [
+    {
+      "artifact_id": "SHOT_CONTRACT",
+      "owner_skill": "ai-video-shot-script-director",
+      "version": "1.0.0",
+      "sha256": "0000000000000000000000000000000000000000000000000000000000000000"
+    }
+  ],
+  "affected_shot_uids": ["SHT_001"],
+  "stale_reason": null,
+  "schema_version": "ai-video-modular-storyboard.v1",
+  "project_id": "PROJECT_EXAMPLE",
+  "package_status": "draft",
+  "storyboard_stage": "structure_draft",
+  "script_shot_count": 1,
+  "shot_contract": {
+    "artifact_id": "SHOT_CONTRACT",
+    "owner_skill": "ai-video-shot-script-director",
+    "version": "1.0.0",
+    "sha256": "0000000000000000000000000000000000000000000000000000000000000000",
+    "approval_status": "assistant_validated"
+  },
+  "global_look": null,
+  "frames": [
+    {
+      "contract_version": "ai-video-artifact-v1",
+      "artifact_id": "SB_FRAME_SHT_001",
+      "owner_skill": "ai-video-modular-storyboard",
+      "version": "0.1.0",
+      "sha256": null,
+      "approval_status": "draft",
+      "dependencies": [
+        {
+          "artifact_id": "SHOT_CONTRACT",
+          "owner_skill": "ai-video-shot-script-director",
+          "version": "1.0.0",
+          "sha256": "0000000000000000000000000000000000000000000000000000000000000000"
+        }
+      ],
+      "affected_shot_uids": ["SHT_001"],
+      "stale_reason": null,
+      "shot_uid": "SHT_001",
+      "display_order": 1,
+      "target_duration_seconds": 3.0,
+      "stage": "structure_draft",
+      "file_path": "01_frames/SHT_001/structure_draft_v01.png",
+      "file_sha256": "0000000000000000000000000000000000000000000000000000000000000000",
+      "generation_prompt_path": "01_frames/SHT_001/structure_draft_v01_generation_prompt.md",
+      "generation_prompt_file_sha256": "0000000000000000000000000000000000000000000000000000000000000000",
+      "global_directing_prompt_full": "GLOBAL DIRECTING: preserve the approved shot grammar, action, camera intent, continuity, and source-backed facts.",
+      "global_look_artifact_id": null,
+      "global_look_prompt_full": null,
+      "look_state_id": null,
+      "look_state_prompt_full": null,
+      "shot_look_delta_prompt_full": null,
+      "look_reference_asset_ids": [],
+      "actual_pixel_dimensions": {"width": 1920, "height": 1080},
+      "generation_mode": "independent_full_frame",
+      "independently_generated": true,
+      "derived_from_multipanel": false,
+      "is_model_input_eligible": false,
+      "content_cleanliness": {
+        "no_shot_number_overlay": true,
+        "no_duration_overlay": true,
+        "no_editorial_caption_overlay": true,
+        "no_arrow_overlay": true,
+        "no_grid": true,
+        "no_ui": true,
+        "no_watermark": true,
+        "no_layout_chrome": true,
+        "intrinsic_text_policy": "none_visible",
+        "intrinsic_text_source_refs": []
+      }
+    }
+  ],
+  "review_board": null,
+  "transactions": [],
+  "downstream_invalidations": []
+}

@@ -1,0 +1,3 @@
+# Deterministic full-raster verification for legacy owner assets entering Project Canon.
+# Keep this exact pin in parity with Prompt Director's atlas image runtime.
+Pillow==11.3.0

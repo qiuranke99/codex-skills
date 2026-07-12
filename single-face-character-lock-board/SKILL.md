@@ -306,3 +306,37 @@ The Skill task completes only after the later final main result contains the com
 Unselected multiple identities, prompt-only delivery, a missing image call, extra board views, a pre-generation draft presented as final, an external result with an unverified aspect ratio or size, or post-hoc prompt reconstruction is failure.
 
 For maintained acceptance scenarios, read [test_cases.md](test_cases.md).
+
+## Optional AI-Video Project Canon Export
+
+This is a downstream-only branch. It never changes the exactly-one-face
+three-component topology, terminal image call, later inspection, 4K handoff, or
+complete prompt-pair publication. Start it only when the accepted board has
+`assistant_qa_status: passed`, both prompt sidecars pass byte/hash readback, and
+production approval is explicitly `user_granted` or
+`external_pipeline_granted`.
+
+After that grant, this owner writes strict approval evidence under
+`../ai-video-shot-script-director/references/ai_video_owner_asset_approval.schema.json`,
+binding the fixed owner, asset key, primary board hash, exact
+`generation_prompt` and `four_k_enhancement_prompt` hashes, affected canonical
+Shot UIDs, QA pass, and decision. Run only
+`scripts/export_ai_video_canon.py`; it has no owner override and accepts only
+project-relative locked files. The fixed authority mode is
+`identity_and_wardrobe`, with exactly `[identity, wardrobe]` as authorized
+control roles; the approval file must bind both.
+Pillow is required for this optional export and must both verify and fully load
+the primary PNG/JPEG/WebP board at 64×64 or larger. Decoder absence, corrupt
+pixels, or an extension mismatch fails closed before Canon changes.
+
+The wrapper creates the real owner `ai-video-artifact-v1` record, primary and
+record four-lock Canon evidence, immutable base snapshot, entry delta, receipt,
+and validated pre/post transition. Prompt Director may consume this entry but
+may not synthesize or relabel its owner. Failure changes no visual asset state.
+
+This is one terminal character alternative. Approval and export records must
+bind `authority_stage: terminal_character_canon` and
+`terminal_route_decision: single_face_character`. For one `asset_key`, it is
+mutually exclusive with terminal casting and `character-final-lock-board`; a
+cross-owner replacement is forbidden. Install the pinned decoder with
+`python3 -m pip install -r ../ai-video-shot-script-director/requirements.txt`.

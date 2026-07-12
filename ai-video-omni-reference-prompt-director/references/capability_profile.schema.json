@@ -1,0 +1,134 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "capability_profile.schema.json",
+  "title": "AI Video Model Or Provider Capability Profile",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "contract_version", "artifact_id", "owner_skill", "version", "sha256",
+    "approval_status", "dependencies", "affected_shot_uids", "stale_reason",
+    "schema_version", "profiles"
+  ],
+  "properties": {
+    "contract_version": {"const": "ai-video-artifact-v1"},
+    "artifact_id": {"type": "string"},
+    "owner_skill": {"const": "ai-video-omni-reference-prompt-director"},
+    "version": {"type": "string", "pattern": "^[0-9]+\\.[0-9]+\\.[0-9]+$"},
+    "sha256": {"type": ["string", "null"], "pattern": "^[a-f0-9]{64}$"},
+    "approval_status": {"enum": ["draft", "assistant_validated", "user_approved", "stale", "blocked"]},
+    "dependencies": {"type": "array", "items": {"$ref": "#/$defs/dependency"}},
+    "affected_shot_uids": {"type": "array", "uniqueItems": true, "items": {"type": "string"}},
+    "stale_reason": {"type": ["string", "null"]},
+    "schema_version": {"const": "ai-video-capability-profile.v1"},
+    "profiles": {"type": "array", "minItems": 1, "items": {"$ref": "#/$defs/profile"}}
+  },
+  "$defs": {
+    "dependency": {
+      "type": "object", "additionalProperties": false,
+      "required": ["artifact_id", "owner_skill", "version", "sha256"],
+      "properties": {
+        "artifact_id": {"type": "string"}, "owner_skill": {"type": "string"},
+        "version": {"type": "string", "pattern": "^[0-9]+\\.[0-9]+\\.[0-9]+$"},
+        "sha256": {"type": "string", "pattern": "^[a-f0-9]{64}$"}
+      }
+    },
+    "profile": {
+      "type": "object", "additionalProperties": false,
+      "required": ["profile_type", "profile_id", "provider", "model_family", "model_id", "surface", "documented_backend_profile_id", "generation_mode", "surface_status", "supported_modalities", "effective_limits", "input_constraints", "capability_claims", "evidence"],
+      "properties": {
+        "profile_type": {"enum": ["model_target", "model_documented", "provider_runtime"]},
+        "profile_id": {"type": "string"}, "provider": {"type": ["string", "null"]},
+        "model_family": {"type": "string"}, "model_id": {"type": ["string", "null"]},
+        "surface": {"type": ["string", "null"]},
+        "documented_backend_profile_id": {"type": ["string", "null"]},
+        "generation_mode": {"const": "omni_reference_to_video"},
+        "surface_status": {"enum": ["forward_target_only", "first_party_documented", "provider_schema_verified", "not_available", "unknown"]},
+        "supported_modalities": {"type": "array", "uniqueItems": true, "items": {"enum": ["text", "image", "video", "audio"]}},
+        "effective_limits": {"$ref": "#/$defs/limits"},
+        "input_constraints": {"$ref": "#/$defs/inputConstraints"},
+        "capability_claims": {"type": "array", "items": {"$ref": "#/$defs/claim"}},
+        "evidence": {"type": "array", "items": {"$ref": "#/$defs/evidence"}}
+      }
+    },
+    "inputConstraints": {
+      "type": "object", "additionalProperties": false,
+      "required": ["image", "video", "audio"],
+      "properties": {
+        "image": {"oneOf": [{"type": "null"}, {"$ref": "#/$defs/imageConstraints"}]},
+        "video": {"oneOf": [{"type": "null"}, {"$ref": "#/$defs/videoConstraints"}]},
+        "audio": {"oneOf": [{"type": "null"}, {"$ref": "#/$defs/audioConstraints"}]}
+      }
+    },
+    "imageConstraints": {
+      "type": "object", "additionalProperties": false,
+      "required": ["accepted_media_types", "max_file_bytes", "min_width_px", "max_width_px", "min_height_px", "max_height_px", "min_aspect_ratio", "max_aspect_ratio"],
+      "properties": {
+        "accepted_media_types": {"type": "array", "minItems": 1, "uniqueItems": true, "items": {"enum": ["image/png", "image/jpeg", "image/webp"]}},
+        "max_file_bytes": {"type": "integer", "minimum": 1},
+        "min_width_px": {"type": "integer", "minimum": 1}, "max_width_px": {"type": "integer", "minimum": 1},
+        "min_height_px": {"type": "integer", "minimum": 1}, "max_height_px": {"type": "integer", "minimum": 1},
+        "min_aspect_ratio": {"type": "number", "exclusiveMinimum": 0},
+        "max_aspect_ratio": {"type": "number", "exclusiveMinimum": 0}
+      }
+    },
+    "videoConstraints": {
+      "type": "object", "additionalProperties": false,
+      "required": ["accepted_media_types", "accepted_containers", "accepted_video_codecs", "max_file_bytes", "min_duration_seconds", "max_duration_seconds", "min_width_px", "max_width_px", "min_height_px", "max_height_px", "min_aspect_ratio", "max_aspect_ratio", "min_fps", "max_fps", "audio_track_policy"],
+      "properties": {
+        "accepted_media_types": {"type": "array", "minItems": 1, "uniqueItems": true, "items": {"type": "string", "minLength": 1}},
+        "accepted_containers": {"type": "array", "minItems": 1, "uniqueItems": true, "items": {"type": "string", "minLength": 1}},
+        "accepted_video_codecs": {"type": "array", "minItems": 1, "uniqueItems": true, "items": {"type": "string", "minLength": 1}},
+        "max_file_bytes": {"type": "integer", "minimum": 1},
+        "min_duration_seconds": {"type": "number", "exclusiveMinimum": 0}, "max_duration_seconds": {"type": "number", "exclusiveMinimum": 0},
+        "min_width_px": {"type": "integer", "minimum": 1}, "max_width_px": {"type": "integer", "minimum": 1},
+        "min_height_px": {"type": "integer", "minimum": 1}, "max_height_px": {"type": "integer", "minimum": 1},
+        "min_aspect_ratio": {"type": "number", "exclusiveMinimum": 0}, "max_aspect_ratio": {"type": "number", "exclusiveMinimum": 0},
+        "min_fps": {"type": "number", "exclusiveMinimum": 0}, "max_fps": {"type": "number", "exclusiveMinimum": 0},
+        "audio_track_policy": {"enum": ["forbidden", "optional", "required"]}
+      }
+    },
+    "audioConstraints": {
+      "type": "object", "additionalProperties": false,
+      "required": ["accepted_media_types", "accepted_audio_codecs", "max_file_bytes", "max_duration_seconds", "min_channels", "max_channels", "min_sample_rate_hz", "max_sample_rate_hz"],
+      "properties": {
+        "accepted_media_types": {"type": "array", "minItems": 1, "uniqueItems": true, "items": {"type": "string", "minLength": 1}},
+        "accepted_audio_codecs": {"type": "array", "minItems": 1, "uniqueItems": true, "items": {"type": "string", "minLength": 1}},
+        "max_file_bytes": {"type": "integer", "minimum": 1},
+        "max_duration_seconds": {"type": "number", "exclusiveMinimum": 0},
+        "min_channels": {"type": "integer", "minimum": 1}, "max_channels": {"type": "integer", "minimum": 1},
+        "min_sample_rate_hz": {"type": "integer", "minimum": 1}, "max_sample_rate_hz": {"type": "integer", "minimum": 1}
+      }
+    },
+    "limits": {
+      "type": "object", "additionalProperties": false,
+      "required": ["max_duration_seconds", "max_image_inputs", "max_video_inputs", "max_audio_inputs", "max_total_multimodal_inputs"],
+      "properties": {
+        "max_duration_seconds": {"type": ["number", "null"], "exclusiveMinimum": 0},
+        "max_image_inputs": {"type": ["integer", "null"], "minimum": 0},
+        "max_video_inputs": {"type": ["integer", "null"], "minimum": 0},
+        "max_audio_inputs": {"type": ["integer", "null"], "minimum": 0},
+        "max_total_multimodal_inputs": {"type": ["integer", "null"], "minimum": 0}
+      }
+    },
+    "claim": {
+      "type": "object", "additionalProperties": false,
+      "required": ["claim", "evidence_tier", "runtime_verified", "usable_for_payload_budget"],
+      "properties": {
+        "claim": {"type": "string"},
+        "evidence_tier": {"enum": ["provider_schema_verified", "first_party_documented", "preview_or_user_supplied_claim", "third_party_marketing_claim", "unknown"]},
+        "runtime_verified": {"type": "boolean"},
+        "usable_for_payload_budget": {"type": "boolean"}
+      }
+    },
+    "evidence": {
+      "type": "object", "additionalProperties": false,
+      "required": ["evidence_tier", "retrieved_at", "locator", "supports", "snapshot_path", "snapshot_file_sha256"],
+      "properties": {
+        "evidence_tier": {"enum": ["provider_schema_verified", "first_party_documented", "preview_or_user_supplied_claim", "third_party_marketing_claim", "unknown"]},
+        "retrieved_at": {"type": "string"}, "locator": {"type": "string"}, "supports": {"type": "string"},
+        "snapshot_path": {"type": ["string", "null"]},
+        "snapshot_file_sha256": {"oneOf": [{"type": "null"}, {"type": "string", "pattern": "^[a-f0-9]{64}$"}]}
+      }
+    }
+  }
+}

@@ -1,0 +1,130 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "reference_atlas_receipt.schema.json",
+  "title": "Deterministic Reference Atlas Receipt",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version", "atlas_id", "generation_unit_id", "codec", "media_type", "width", "height",
+    "layout_columns", "background_rgb", "minimum_panel_width_pixels", "minimum_panel_height_pixels",
+    "legibility_policy", "layout_policy", "decoder_runtime", "encoder_runtime", "panels", "atlas_file_sha256"
+  ],
+  "properties": {
+    "schema_version": {"const": "ai-video-deterministic-atlas-receipt.v2"},
+    "atlas_id": {"type": "string", "minLength": 1},
+    "generation_unit_id": {"type": "string", "minLength": 1},
+    "codec": {"const": "PNG_RGB8"},
+    "media_type": {"const": "image/png"},
+    "width": {"type": "integer", "minimum": 1},
+    "height": {"type": "integer", "minimum": 1},
+    "layout_columns": {"type": "integer", "minimum": 1},
+    "background_rgb": {
+      "type": "array", "minItems": 3, "maxItems": 3,
+      "items": {"type": "integer", "minimum": 0, "maximum": 255}
+    },
+    "minimum_panel_width_pixels": {"type": "integer", "minimum": 256},
+    "minimum_panel_height_pixels": {"type": "integer", "minimum": 256},
+    "legibility_policy": {"const": "identity_geometry_look_only_no_microcopy"},
+    "layout_policy": {"const": "max_native_cell_center_floor_no_resize_v1"},
+    "decoder_runtime": {"$ref": "#/$defs/decoderRuntime"},
+    "encoder_runtime": {"$ref": "#/$defs/encoderRuntime"},
+    "panels": {"type": "array", "minItems": 2, "items": {"$ref": "#/$defs/panel"}},
+    "atlas_file_sha256": {"type": "string", "pattern": "^[a-f0-9]{64}$"}
+  },
+  "$defs": {
+    "backend": {
+      "type": "object", "additionalProperties": false,
+      "required": ["backend", "backend_version"],
+      "properties": {
+        "backend": {"type": "string", "minLength": 1},
+        "backend_version": {"type": "string", "minLength": 1}
+      }
+    },
+    "codecBackend": {
+      "type": "object", "additionalProperties": false,
+      "required": ["source_codec", "backend", "backend_version"],
+      "properties": {
+        "source_codec": {"enum": ["PNG", "JPEG", "WEBP"]},
+        "backend": {"type": "string", "minLength": 1},
+        "backend_version": {"type": "string", "minLength": 1}
+      }
+    },
+    "decoderRuntime": {
+      "type": "object", "additionalProperties": false,
+      "required": [
+        "implementation", "implementation_version", "policy", "codec_backends",
+        "exif_orientation_policy", "alpha_policy", "color_profile_policy", "color_management_backend"
+      ],
+      "properties": {
+        "implementation": {"const": "Pillow"},
+        "implementation_version": {"type": "string", "minLength": 1},
+        "policy": {"const": "pillow_common_raster_to_rgb8_no_resize_v1"},
+        "codec_backends": {"type": "array", "minItems": 1, "items": {"$ref": "#/$defs/codecBackend"}},
+        "exif_orientation_policy": {"const": "lossless_transpose_before_dimension_check"},
+        "alpha_policy": {"const": "composite_over_spec_background_rgb"},
+        "color_profile_policy": {"const": "embedded_icc_to_srgb_else_raw_samples_as_srgb"},
+        "color_management_backend": {
+          "oneOf": [{"type": "null"}, {"$ref": "#/$defs/backend"}]
+        }
+      }
+    },
+    "encoderRuntime": {
+      "type": "object", "additionalProperties": false,
+      "required": ["implementation", "implementation_version", "policy", "backend", "backend_version", "parameters"],
+      "properties": {
+        "implementation": {"const": "Pillow"},
+        "implementation_version": {"type": "string", "minLength": 1},
+        "policy": {"const": "pillow_png_rgb8_fixed_v1"},
+        "backend": {"const": "zlib"},
+        "backend_version": {"type": "string", "minLength": 1},
+        "parameters": {
+          "type": "object", "additionalProperties": false,
+          "required": ["compress_level", "optimize", "interlace", "metadata"],
+          "properties": {
+            "compress_level": {"const": 9},
+            "optimize": {"const": false},
+            "interlace": {"const": 0},
+            "metadata": {"const": "none"}
+          }
+        }
+      }
+    },
+    "panel": {
+      "type": "object", "additionalProperties": false,
+      "required": [
+        "artifact_id", "file_path", "file_sha256", "control_roles", "control_role", "source_codec", "source_mode",
+        "source_width", "source_height", "exif_orientation", "normalized_width", "normalized_height",
+        "icc_profile_sha256", "alpha_composited", "decoded_rgb_sha256", "decoder_backend",
+        "x", "y", "width", "height", "cell_x", "cell_y", "cell_width", "cell_height"
+      ],
+      "properties": {
+        "artifact_id": {"type": "string", "minLength": 1},
+        "file_path": {"type": "string", "minLength": 1},
+        "file_sha256": {"type": "string", "pattern": "^[a-f0-9]{64}$"},
+        "control_roles": {"type": "array", "minItems": 1, "uniqueItems": true, "items": {"type": "string", "minLength": 1}},
+        "control_role": {"type": "string", "minLength": 1},
+        "source_codec": {"enum": ["PNG", "JPEG", "WEBP"]},
+        "source_mode": {"type": "string", "minLength": 1},
+        "source_width": {"type": "integer", "minimum": 1},
+        "source_height": {"type": "integer", "minimum": 1},
+        "exif_orientation": {"type": "integer", "minimum": 1, "maximum": 8},
+        "normalized_width": {"type": "integer", "minimum": 1},
+        "normalized_height": {"type": "integer", "minimum": 1},
+        "icc_profile_sha256": {
+          "oneOf": [{"type": "null"}, {"type": "string", "pattern": "^[a-f0-9]{64}$"}]
+        },
+        "alpha_composited": {"type": "boolean"},
+        "decoded_rgb_sha256": {"type": "string", "pattern": "^[a-f0-9]{64}$"},
+        "decoder_backend": {"$ref": "#/$defs/backend"},
+        "x": {"type": "integer", "minimum": 0},
+        "y": {"type": "integer", "minimum": 0},
+        "width": {"type": "integer", "minimum": 1},
+        "height": {"type": "integer", "minimum": 1}
+        ,"cell_x": {"type": "integer", "minimum": 0}
+        ,"cell_y": {"type": "integer", "minimum": 0}
+        ,"cell_width": {"type": "integer", "minimum": 1}
+        ,"cell_height": {"type": "integer", "minimum": 1}
+      }
+    }
+  }
+}

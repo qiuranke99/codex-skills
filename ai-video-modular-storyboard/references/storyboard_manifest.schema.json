@@ -1,0 +1,192 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "ai-video-modular-storyboard-manifest.schema.json",
+  "title": "AI Video Modular Storyboard Package",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "contract_version", "artifact_id", "owner_skill", "version", "sha256",
+    "approval_status", "dependencies", "affected_shot_uids", "stale_reason",
+    "schema_version", "project_id", "package_status", "storyboard_stage",
+    "script_shot_count", "shot_contract", "global_look", "frames",
+    "review_board", "transactions", "downstream_invalidations"
+  ],
+  "properties": {
+    "contract_version": {"const": "ai-video-artifact-v1"},
+    "artifact_id": {"type": "string", "minLength": 1},
+    "owner_skill": {"const": "ai-video-modular-storyboard"},
+    "version": {"type": "string", "pattern": "^[0-9]+\\.[0-9]+\\.[0-9]+$"},
+    "sha256": {"oneOf": [{"$ref": "#/$defs/sha"}, {"type": "null"}]},
+    "approval_status": {"enum": ["draft", "assistant_validated", "user_approved", "stale", "blocked"]},
+    "dependencies": {"type": "array", "items": {"$ref": "#/$defs/dependency"}},
+    "affected_shot_uids": {"type": "array", "uniqueItems": true, "items": {"type": "string", "minLength": 1}},
+    "stale_reason": {"type": ["string", "null"]},
+    "schema_version": {"const": "ai-video-modular-storyboard.v1"},
+    "project_id": {"type": "string", "minLength": 1},
+    "package_status": {"enum": ["draft", "generating", "assistant_validated", "user_approved", "repair_required", "stale", "blocked"]},
+    "storyboard_stage": {"enum": ["structure_draft", "look_applied_final"]},
+    "script_shot_count": {"type": "integer", "minimum": 1},
+    "shot_contract": {"$ref": "#/$defs/externalAuthority"},
+    "global_look": {"oneOf": [{"type": "null"}, {"$ref": "#/$defs/externalAuthority"}]},
+    "frames": {"type": "array", "items": {"$ref": "#/$defs/frame"}},
+    "review_board": {"oneOf": [{"type": "null"}, {"$ref": "#/$defs/reviewBoard"}]},
+    "transactions": {"type": "array", "items": {"type": "object"}},
+    "downstream_invalidations": {"type": "array"}
+  },
+  "$defs": {
+    "sha": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+    "dependency": {
+      "type": "object", "additionalProperties": false,
+      "required": ["artifact_id", "owner_skill", "version", "sha256"],
+      "properties": {
+        "artifact_id": {"type": "string", "minLength": 1},
+        "owner_skill": {"type": "string", "minLength": 1},
+        "version": {"type": "string", "pattern": "^[0-9]+\\.[0-9]+\\.[0-9]+$"},
+        "sha256": {"$ref": "#/$defs/sha"}
+      }
+    },
+    "envelope": {
+      "type": "object",
+      "required": ["contract_version", "artifact_id", "owner_skill", "version", "sha256", "approval_status", "dependencies", "affected_shot_uids", "stale_reason"],
+      "properties": {
+        "contract_version": {"const": "ai-video-artifact-v1"},
+        "artifact_id": {"type": "string", "minLength": 1},
+        "owner_skill": {"const": "ai-video-modular-storyboard"},
+        "version": {"type": "string", "pattern": "^[0-9]+\\.[0-9]+\\.[0-9]+$"},
+        "sha256": {"oneOf": [{"$ref": "#/$defs/sha"}, {"type": "null"}]},
+        "approval_status": {"enum": ["draft", "assistant_validated", "user_approved", "stale", "blocked"]},
+        "dependencies": {"type": "array", "items": {"$ref": "#/$defs/dependency"}},
+        "affected_shot_uids": {"type": "array", "items": {"type": "string", "minLength": 1}, "uniqueItems": true},
+        "stale_reason": {"type": ["string", "null"]}
+      }
+    },
+    "externalAuthority": {
+      "type": "object", "additionalProperties": false,
+      "required": ["artifact_id", "owner_skill", "version", "sha256", "approval_status"],
+      "properties": {
+        "artifact_id": {"type": "string", "minLength": 1},
+        "owner_skill": {"type": "string", "minLength": 1},
+        "version": {"type": "string", "pattern": "^[0-9]+\\.[0-9]+\\.[0-9]+$"},
+        "sha256": {"$ref": "#/$defs/sha"},
+        "approval_status": {"enum": ["assistant_validated", "user_approved"]}
+      }
+    },
+    "frame": {
+      "allOf": [
+        {"$ref": "#/$defs/envelope"},
+        {
+          "type": "object",
+          "required": ["shot_uid", "display_order", "target_duration_seconds", "stage", "file_path", "file_sha256", "generation_prompt_path", "generation_prompt_file_sha256", "global_directing_prompt_full", "global_look_artifact_id", "global_look_prompt_full", "look_state_id", "look_state_prompt_full", "shot_look_delta_prompt_full", "look_reference_asset_ids", "actual_pixel_dimensions", "generation_mode", "independently_generated", "derived_from_multipanel", "is_model_input_eligible", "content_cleanliness"],
+          "properties": {
+            "shot_uid": {"type": "string", "minLength": 1},
+            "display_order": {"type": "integer", "minimum": 1},
+            "target_duration_seconds": {"type": "number", "exclusiveMinimum": 0},
+            "stage": {"enum": ["structure_draft", "look_applied_final"]},
+            "file_path": {"type": "string", "minLength": 1},
+            "file_sha256": {"$ref": "#/$defs/sha"},
+            "generation_prompt_path": {"type": "string", "minLength": 1},
+            "generation_prompt_file_sha256": {"$ref": "#/$defs/sha"},
+            "global_directing_prompt_full": {"type": "string", "minLength": 40},
+            "global_look_artifact_id": {"type": ["string", "null"]},
+            "global_look_prompt_full": {"type": ["string", "null"]},
+            "look_state_id": {"type": ["string", "null"]},
+            "look_state_prompt_full": {"type": ["string", "null"]},
+            "shot_look_delta_prompt_full": {"type": ["string", "null"]},
+            "look_reference_asset_ids": {"type": "array", "uniqueItems": true, "items": {"type": "string", "minLength": 1}},
+            "actual_pixel_dimensions": {
+              "type": "object", "additionalProperties": false,
+              "required": ["width", "height"],
+              "properties": {"width": {"type": "integer", "minimum": 1}, "height": {"type": "integer", "minimum": 1}}
+            },
+            "generation_mode": {"const": "independent_full_frame"},
+            "independently_generated": {"const": true},
+            "derived_from_multipanel": {"const": false},
+            "is_model_input_eligible": {"type": "boolean"},
+            "content_cleanliness": {
+              "type": "object", "additionalProperties": false,
+              "required": [
+                "no_shot_number_overlay", "no_duration_overlay", "no_editorial_caption_overlay",
+                "no_arrow_overlay", "no_grid", "no_ui", "no_watermark", "no_layout_chrome",
+                "intrinsic_text_policy", "intrinsic_text_source_refs"
+              ],
+              "properties": {
+                "no_shot_number_overlay": {"const": true},
+                "no_duration_overlay": {"const": true},
+                "no_editorial_caption_overlay": {"const": true},
+                "no_arrow_overlay": {"const": true},
+                "no_grid": {"const": true},
+                "no_ui": {"const": true},
+                "no_watermark": {"const": true},
+                "no_layout_chrome": {"const": true},
+                "intrinsic_text_policy": {"enum": ["none_visible", "source_authorized_only"]},
+                "intrinsic_text_source_refs": {
+                  "type": "array", "uniqueItems": true, "items": {"$ref": "#/$defs/dependency"}
+                }
+              },
+              "allOf": [{
+                "if": {"properties": {"intrinsic_text_policy": {"const": "none_visible"}}, "required": ["intrinsic_text_policy"]},
+                "then": {"properties": {"intrinsic_text_source_refs": {"maxItems": 0}}},
+                "else": {"properties": {"intrinsic_text_source_refs": {"minItems": 1}}}
+              }]
+            }
+          },
+          "allOf": [
+            {
+              "if": {"properties": {"stage": {"const": "structure_draft"}}, "required": ["stage"]},
+              "then": {
+                "properties": {
+                  "is_model_input_eligible": {"const": false},
+                  "global_look_artifact_id": {"type": "null"},
+                  "global_look_prompt_full": {"type": "null"},
+                  "look_state_id": {"type": "null"},
+                  "look_state_prompt_full": {"type": "null"},
+                  "shot_look_delta_prompt_full": {"type": "null"},
+                  "look_reference_asset_ids": {"maxItems": 0}
+                }
+              },
+              "else": {
+                "properties": {
+                  "is_model_input_eligible": {"const": true},
+                  "global_look_artifact_id": {"type": "string", "minLength": 1},
+                  "global_look_prompt_full": {"type": "string", "minLength": 200},
+                  "look_state_id": {"type": "string", "minLength": 1},
+                  "look_state_prompt_full": {"type": "string", "minLength": 80},
+                  "shot_look_delta_prompt_full": {"type": "string", "minLength": 1},
+                  "look_reference_asset_ids": {"minItems": 1}
+                }
+              }
+            }
+          ]
+        }
+      ]
+    },
+    "reviewBoard": {
+      "allOf": [
+        {"$ref": "#/$defs/envelope"},
+        {
+          "type": "object",
+          "required": ["board_type", "is_model_input", "deterministic", "file_path", "file_sha256", "valid_cell_count", "cell_shot_uids", "source_frame_hashes", "layout"],
+          "properties": {
+            "board_type": {"const": "deterministic_human_review_composite"},
+            "is_model_input": {"const": false},
+            "deterministic": {"const": true},
+            "file_path": {"type": "string", "minLength": 1},
+            "file_sha256": {"$ref": "#/$defs/sha"},
+            "valid_cell_count": {"type": "integer", "minimum": 1},
+            "cell_shot_uids": {"type": "array", "items": {"type": "string"}, "uniqueItems": true},
+            "source_frame_hashes": {"type": "object"},
+            "layout": {
+              "type": "object", "additionalProperties": false,
+              "required": ["columns", "rows", "cell_width", "image_height", "label_height", "padding"],
+              "properties": {
+                "columns": {"type": "integer", "minimum": 1}, "rows": {"type": "integer", "minimum": 1},
+                "cell_width": {"type": "integer", "minimum": 1}, "image_height": {"type": "integer", "minimum": 1},
+                "label_height": {"type": "integer", "minimum": 1}, "padding": {"type": "integer", "minimum": 0}
+              }
+            }
+          }
+        }
+      ]
+    }
+  }
+}

@@ -338,3 +338,42 @@ Never treat declarative prompt compliance, a preflight check, or assistant visua
 A pre-generation draft presented as final, a reused cross-board prompt or hash, incomplete prompt coverage, or an external result with unverified aspect ratio or size is failure.
 
 For maintained acceptance scenarios, read [test_cases.md](test_cases.md).
+
+## Optional AI-Video Project Canon Export
+
+This is a downstream-only integration and changes none of the board topology,
+terminal generation, later-turn inspection, 4K handoff, or complete prompt-pair
+publication rules above. Use it only when the current accepted board has
+`assistant_qa_status: passed`, both accepted prompt sidecars have passed byte
+readback, and production approval is explicitly `user_granted` or
+`external_pipeline_granted`.
+
+After that explicit decision, this owner may write a strict approval JSON
+conforming to
+`../ai-video-shot-script-director/references/ai_video_owner_asset_approval.schema.json`.
+It must bind this Skill name, asset key, primary board SHA-256, the exact
+`generation_prompt` and `four_k_enhancement_prompt` hashes, approved Shot UIDs,
+QA pass, and production decision. Then run only this package's fixed-owner
+`scripts/export_ai_video_canon.py`; it has no owner override. Supply
+project-relative primary/prompt/approval locators and their exact hashes plus
+every affected Shot UID. This owner exports only
+`authority_mode: identity_and_wardrobe` with
+`control_roles_authorized: [identity, wardrobe]`; the hashed approval evidence
+must bind the same values.
+The export runtime requires Pillow to `verify()` and fully `load()` the primary
+PNG/JPEG/WebP board; missing Pillow, decode failure, mismatched extension, or a
+board below 64×64 fails closed before Canon mutation.
+
+The wrapper writes the owner-produced `ai-video-artifact-v1` record, four-lock
+Canon entry, immutable base snapshot, entry delta, receipt, and validated
+pre/post transition. Prompt Director must consume this real Canon owner record;
+it may not manufacture an authority projection. Export failure does not alter
+or demote the accepted visual asset.
+
+This casting board remains pre-Canon by default. Export is forbidden unless it
+is deliberately selected as the terminal character route and the wrapper is
+invoked with `--casting-as-terminal`. Approval and export records must bind
+`authority_stage: terminal_character_canon` and
+`terminal_route_decision: casting_as_terminal`. For one `asset_key`, this route
+is mutually exclusive with both final-character owners. Install the pinned
+decoder with `python3 -m pip install -r ../ai-video-shot-script-director/requirements.txt`.
