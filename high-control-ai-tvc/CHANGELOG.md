@@ -15,6 +15,8 @@
   文本、提示词证据与机器收据固定为 UTF-8/LF，确保 Windows/Mac 可迁移；
 - 六 Skill 集成验证器固定以 UTF-8 启动并解码子验证器，避免 Windows
   legacy console codec 在报告中文路径或合同术语时中断；
+- CI 使用 Node 24 代际的 checkout/setup-python Action，移除已弃用
+  Node 20 Action runtime；
 - 固定来源提交
   `cd72953b283b52b83e144e3e82d40e59d3275bdd`；
 - 保持实际视频 API 提交、音乐、剪辑、调色和独立 QC 在系统范围之外。
