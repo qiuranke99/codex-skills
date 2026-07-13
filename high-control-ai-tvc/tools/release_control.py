@@ -168,7 +168,15 @@ def _assert_canonical_manifest(manifest: Dict[str, Any]) -> None:
 
 
 def _release_state_paths(target: Path, suite_id: str) -> Dict[str, Path]:
-    root = target / f".{suite_id}-releases"
+    target = target.expanduser().absolute()
+    official, legacy = discovery_roots()
+    known = {
+        os.path.normcase(str(official.expanduser().resolve(strict=False))),
+        os.path.normcase(str(legacy.expanduser().resolve(strict=False))),
+    }
+    identity = os.path.normcase(str(target.resolve(strict=False)))
+    suffix = "" if identity in known else "-" + hashlib.sha256(identity.encode("utf-8")).hexdigest()[:8]
+    root = target.parent / f".ai-tvc-releases{suffix}"
     return {
         "root": root,
         "marker": root / "release-state.json",
@@ -423,6 +431,16 @@ def _read_git_blob(cache: Path, oid: str) -> bytes:
 def _materialize_git_tree(cache: Path, commit: str, destination: Path) -> None:
     destination.mkdir(parents=True)
     destination_resolved = destination.resolve()
+    if os.name == "nt":
+        longest = max(
+            (len(str((destination / Path(relative)).resolve(strict=False))), relative)
+            for relative in _git_tree_records(cache, commit)
+        )
+        if longest[0] >= 248:
+            raise ReleaseControlError(
+                f"WINDOWS_PATH_BUDGET: snapshot path length {longest[0]} is unsafe for {longest[1]!r}; "
+                f"use a shorter discovery parent than {destination.parent}"
+            )
     for relative, (mode, _kind, oid) in _git_tree_records(cache, commit).items():
         if relative.startswith("/") or ".." in Path(relative).parts:
             raise ReleaseControlError(f"unsafe path in Git tree: {relative!r}")
@@ -500,6 +518,16 @@ def verify_snapshot_against_git(cache: Path, commit: str, snapshot: Path) -> Dic
 def _materialize_snapshot(cache: Path, releases: Path, commit: str) -> Path:
     final_root = releases / commit
     final_repo = final_root / "repo"
+    if os.name == "nt":
+        longest_final = max(
+            (len(str((final_repo / Path(relative)).resolve(strict=False))), relative)
+            for relative in _git_tree_records(cache, commit)
+        )
+        if longest_final[0] >= 248:
+            raise ReleaseControlError(
+                f"WINDOWS_PATH_BUDGET: final snapshot path length {longest_final[0]} is unsafe for "
+                f"{longest_final[1]!r}; use a shorter discovery parent than {releases.parent}"
+            )
     if final_repo.is_dir():
         try:
             verify_snapshot_against_git(cache, commit, final_repo)
@@ -508,7 +536,7 @@ def _materialize_snapshot(cache: Path, releases: Path, commit: str) -> Path:
             final_root.rename(quarantine)
         else:
             return final_repo
-    stage_root = releases / f".{commit}.stage-{uuid.uuid4().hex}"
+    stage_root = releases / f".stage-{commit[:12]}-{uuid.uuid4().hex[:8]}"
     repo = stage_root / "repo"
     stage_root.mkdir()
     try:

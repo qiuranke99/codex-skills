@@ -18,7 +18,7 @@
 Windows 示例：
 
 ```text
-<SYSTEM_ROOT> = C:\Users\you\.codex\skills\.high-control-ai-tvc-production-system-releases\releases\<GITHUB_OID>\repo\high-control-ai-tvc
+<SYSTEM_ROOT> = C:\Users\you\.codex\.ai-tvc-releases\releases\<GITHUB_OID>\repo\high-control-ai-tvc
 <PROJECT_ROOT> = C:\AI-TVC\bath-oil
 <SOURCE_SCRIPT> = C:\AI-TVC\bath-oil\01_sources\script\original\rough-shot-script.docx
 ```
@@ -26,7 +26,7 @@ Windows 示例：
 macOS 示例：
 
 ```text
-<SYSTEM_ROOT> = /Users/your-name/.agents/skills/.high-control-ai-tvc-production-system-releases/releases/<GITHUB_OID>/repo/high-control-ai-tvc
+<SYSTEM_ROOT> = /Users/your-name/.agents/.ai-tvc-releases/releases/<GITHUB_OID>/repo/high-control-ai-tvc
 <PROJECT_ROOT> = /Users/your-name/AI-TVC-Projects/bath-oil
 <SOURCE_SCRIPT> = /Users/your-name/AI-TVC-Projects/bath-oil/01_sources/script/original/rough-shot-script.docx
 ```

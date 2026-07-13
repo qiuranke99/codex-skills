@@ -88,6 +88,11 @@ def main() -> int:
         "CANONICAL_REPOSITORY_ID": release.CANONICAL_REPOSITORY_ID,
     }
     original_thread = os.environ.get("CODEX_THREAD_ID")
+    official, legacy = release.discovery_roots()
+    for discovery in (official, legacy):
+        state_root = release._release_state_paths(discovery, release.DEFAULT_SUITE_ID)["root"]
+        if state_root != discovery.parent / ".ai-tvc-releases":
+            raise AssertionError(f"known discovery root did not use the short release-state path: {state_root}")
     with tempfile.TemporaryDirectory(prefix="ai-tvc-release-test-") as temporary:
         root = Path(temporary)
         author = root / "author"
