@@ -11,7 +11,8 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any, Dict, List
 
-from suite_common import REPO_ROOT, SuiteConfigurationError, load_distribution, suite_id_from_manifest
+from release_control import production_check
+from suite_common import SuiteConfigurationError, load_distribution, suite_id_from_manifest
 
 
 SKELETON_VERSION = "1.1.0"
@@ -50,7 +51,7 @@ def _read_marker(path: Path, suite_id: str) -> Dict[str, Any] | None:
     return value
 
 
-def _project_readme(name: str) -> str:
+def _project_readme(name: str, system_root: str, release_commit: str) -> str:
     return f"""# {name}
 
 这是 High-Control AI TVC Production System 的项目工作区，不是 Skill 安装目录。
@@ -59,7 +60,7 @@ def _project_readme(name: str) -> str:
 
 1. 把客户原始脚本放入 `01_sources/script/original/`，其他已获授权参考放入 `01_sources/` 的对应分类目录；保留原文件，不要覆盖。
 2. 在 Codex 中打开本项目目录。
-3. 设置 `<SYSTEM_ROOT>` 为当前 `codex-skills/high-control-ai-tvc` 的绝对路径，使用其 `docs/CODEX_PROMPTS.md` Master Prompt，要求 Codex 从粗脚本开始执行完整 SOP。
+3. 本项目已绑定 GitHub 验证 release `{release_commit}`。设置 `<SYSTEM_ROOT>` 为 `{system_root}`，使用其 `docs/CODEX_PROMPTS.md` Master Prompt；每个生产阶段开始前必须重新通过 release gate。
 4. 第一阶段由 `ai-video-shot-script-director` 创建真实的 `00_project_canon/PROJECT_CANON_MANIFEST.json`。本骨架不会伪造 Canon。
 
 ## 目录职责
@@ -81,13 +82,21 @@ def _project_readme(name: str) -> str:
 """
 
 
-def create_project(destination: Path, project_name: str) -> Dict[str, Any]:
-    manifest, _requirements, _skills, errors = load_distribution(REPO_ROOT)
+def create_project(destination: Path, project_name: str, target: Path | None = None) -> Dict[str, Any]:
+    release_state = production_check(target, profile="all", cwd=destination.parent)
+    if not release_state["ready_latest"]:
+        raise RuntimeError(
+            "GitHub-latest validated release is required before project creation: "
+            + "; ".join(release_state.get("errors", ["release authority check failed"]))
+        )
+    active_system_root = Path(release_state["active_system_root"])
+    active_repo_root = active_system_root.parent
+    manifest, _requirements, _skills, errors = load_distribution(active_repo_root)
     if errors:
         raise SuiteConfigurationError("; ".join(errors))
     suite_id = suite_id_from_manifest(manifest)
     destination = destination.expanduser().absolute()
-    repo_root = REPO_ROOT.resolve()
+    repo_root = active_repo_root.resolve()
     destination_resolved = destination.resolve(strict=False)
     if _is_within(destination_resolved, repo_root) or _is_within(repo_root, destination_resolved):
         raise RuntimeError("project directory must be outside the suite repository")
@@ -114,7 +123,13 @@ def create_project(destination: Path, project_name: str) -> Dict[str, Any]:
 
     readme = destination / "README.md"
     if not readme.exists():
-        readme.write_bytes(_project_readme(project_name).encode("utf-8"))
+        readme.write_bytes(
+            _project_readme(
+                project_name,
+                str(active_system_root),
+                str(release_state["release_commit"]),
+            ).encode("utf-8")
+        )
         created.append("README.md")
     elif not readme.is_file():
         raise RuntimeError(f"project README collision: {readme}")
@@ -129,6 +144,8 @@ def create_project(destination: Path, project_name: str) -> Dict[str, Any]:
             "project_name": project_name,
             "created_at": datetime.now(timezone.utc).replace(microsecond=0).isoformat().replace("+00:00", "Z"),
             "canon_initialized": False,
+            "skill_release_commit": release_state["release_commit"],
+            "active_system_root": str(active_system_root),
             "note": "This marker is not Project Canon and carries no production authority.",
         }
         marker_path.write_bytes(
@@ -137,6 +154,18 @@ def create_project(destination: Path, project_name: str) -> Dict[str, Any]:
         created.append(MARKER_NAME)
     else:
         existing.append(MARKER_NAME)
+
+    final_release_state = production_check(
+        target,
+        profile="all",
+        cwd=destination,
+        project_root=destination,
+    )
+    if not final_release_state["ready_latest"]:
+        raise RuntimeError(
+            "project skeleton exists but its GitHub-latest runtime lock was not committed: "
+            + "; ".join(final_release_state.get("errors", ["release authority check failed"]))
+        )
 
     return {
         "schema_version": "1.0.0",
@@ -148,6 +177,8 @@ def create_project(destination: Path, project_name: str) -> Dict[str, Any]:
         "existing_preserved": existing,
         "canon_created": False,
         "customer_assets_copied": False,
+        "skill_release_commit": release_state["release_commit"],
+        "active_system_root": str(active_system_root),
     }
 
 
@@ -155,6 +186,7 @@ def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("destination", type=Path)
     parser.add_argument("--name", help="human-readable project name; defaults to the destination folder name")
+    parser.add_argument("--target", type=Path, help="Codex discovery root; auto-detected when omitted")
     parser.add_argument("--format", choices=("text", "json"), default="text")
     args = parser.parse_args()
     name = args.name or args.destination.expanduser().name
@@ -162,7 +194,7 @@ def main() -> int:
         print("ERROR: project name cannot be empty", file=sys.stderr)
         return 2
     try:
-        result = create_project(args.destination, name.strip())
+        result = create_project(args.destination, name.strip(), args.target)
     except (OSError, RuntimeError, SuiteConfigurationError) as exc:
         if args.format == "json":
             print(json.dumps({"success": False, "error": str(exc)}, ensure_ascii=False, indent=2))

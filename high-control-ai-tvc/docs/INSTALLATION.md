@@ -1,16 +1,30 @@
 # Installation, update, audit, and removal
 
+## Production authority
+
+GitHub repository id `1264973746`, `qiuranke99/codex-skills`, branch `main` is
+the only cross-machine publication authority. A company Windows checkout and a
+home Mac checkout are authoring workspaces only. Production discovery must
+point to an immutable `releases/<GitHub OID>/repo` snapshot produced by
+`release_control.py sync`.
+
+`install`, `adopt`, and `status` remain safety/migration tools. They do not
+prove GitHub-latest and cannot make preflight production-ready. Only `sync`
+followed by a new Codex task and passing `check` can do that. Offline or an
+advanced/unstable remote is `NOT_READY_LATEST`; no silent fallback is allowed.
+
 ## What “installed” means
 
 The `high-control-ai-tvc/` subsystem inside `qiuranke99/codex-skills` is the
-installation/control surface, while the 15 Skill directories remain its sibling
-packages at repository root. Installation exposes those Skill directories to
+installation/control surface, while the 15 suite Skill directories plus any
+manifest-declared independent publication Skill remain sibling packages at
+repository root. Installation exposes those Skill directories to
 Codex under the user discovery root. It does not copy
 customer assets, initialize Project Canon, call a paid video API, or claim that
 the machine is production-ready.
 
 - Default discovery root: `$HOME/.agents/skills`
-- Default profile: all 15 Skills (13 core + 2 optional explorers)
+- Default production release: 16 publication Skills (15 suite members: 13 core + 2 optional explorers; plus 1 manifest-declared independent production Skill)
 - Single inventory SSOT: [`../SUITE_MANIFEST.json`](../SUITE_MANIFEST.json)
 - Runtime SSOT: [`../config/runtime-requirements.json`](../config/runtime-requirements.json)
 
@@ -78,31 +92,35 @@ writing a receipt.
    This creates `high-control-ai-tvc/.venv` and installs exactly
    `Pillow==11.3.0`. It does not modify system Python. `.venv` is local runtime
    state and must not be committed.
-4. Install every Skill:
+4. Fetch GitHub `main`, validate its exact Git object snapshot, and atomically
+   activate every Skill:
 
    macOS:
 
    ```bash
-   ./tools/install.sh install
+   ./tools/install.sh sync
    ```
 
    Windows PowerShell:
 
    ```powershell
-   .\tools\install.ps1 install
+   .\tools\install.ps1 sync
    ```
 
-5. Run the automatic audit:
+5. Start a new Codex task, prove the active snapshot is still GitHub latest,
+   then run the automatic audit:
 
    macOS:
 
    ```bash
+   ./tools/install.sh check
    ./tools/install.sh audit --automatic-only
    ```
 
    Windows PowerShell:
 
    ```powershell
+   .\tools\install.ps1 check
    .\tools\install.ps1 audit -AutomaticOnly
    ```
 
@@ -125,8 +143,9 @@ writing a receipt.
      -Confirm codex_image_generation,control_previs_path,provider_platform_access
    ```
 
-7. Restart Codex or open a new Codex task. Confirm that
-   `$ai-video-shot-script-director` resolves before starting a customer project.
+7. Confirm in a real fresh Codex task—not only a debug catalog—that
+   `$ai-video-shot-script-director` resolves from the receipt's snapshot before
+   starting a customer project.
 
 The audit is fail-closed. `NOT_READY` or `NEEDS_MANUAL_CONFIRMATION` is not a
 successful production preflight.
@@ -135,8 +154,8 @@ successful production preflight.
 
 | Mode | Default | Behavior | Use when |
 |---|---|---|---|
-| `symlink` | macOS | Skills always read the current checkout | The repository stays at a stable path |
-| `junction` | Windows | Directory junctions expose the sibling Skill layout without copying | Repository and discovery root are on a local filesystem that supports junctions |
+| `symlink` | macOS | Skills read the accepted immutable GitHub snapshot | Discovery root supports symlinks |
+| `junction` | Windows | Junctions expose the accepted immutable GitHub snapshot without copying | Discovery root is on local NTFS |
 | `copy` | fallback | Creates suite-marked managed copies | Junction/symlink creation is prohibited or the repository is on an incompatible filesystem |
 
 Windows `symlink` is available explicitly but may require Developer Mode or
@@ -144,50 +163,51 @@ elevated policy. The installer never silently falls back to another mode. If a
 junction fails, rerun explicitly with copy mode:
 
 ```powershell
-.\tools\install.ps1 install -Mode copy
+.\tools\install.ps1 sync -Mode copy
 ```
 
 On macOS, an explicit managed-copy installation is:
 
 ```bash
-./tools/install.sh install --mode copy
+./tools/install.sh sync --mode copy
 ```
 
 Paths containing spaces are supported when quoted:
 
 ```bash
-./tools/install.sh install --target "$HOME/My Codex/skills"
+./tools/install.sh sync --target "$HOME/My Codex/skills"
 ```
 
 ```powershell
-.\tools\install.ps1 install -Target "$HOME\My Codex\skills"
+.\tools\install.ps1 sync -Target "$HOME\My Codex\skills"
 ```
 
-The default installs all 15 Skills. `--profile core` / `-Profile core` installs
-only the 13 production Skills; it does not remove optional Skills installed by a
+The production `sync` command activates all 16 publication Skills. Legacy
+`--profile core` / `-Profile core` installs only the 13 suite core Skills and is
+never production-ready; it does not remove optional/independent Skills from a
 previous all-profile run.
 
 ## Status and machine-readable evidence
 
-Human-readable status:
+Human-readable GitHub-latest status:
 
 ```bash
-./tools/install.sh status
+./tools/install.sh check
 ```
 
 ```powershell
-.\tools\install.ps1 status
+.\tools\install.ps1 check
 ```
 
 JSON status or audit evidence:
 
 ```bash
-./tools/install.sh status --format json
+./tools/install.sh check --format json
 ./tools/preflight.sh --automatic-only --format json
 ```
 
 ```powershell
-.\tools\install.ps1 status -Format json
+.\tools\install.ps1 check -Format json
 .\tools\preflight.ps1 -AutomaticOnly -Format json
 ```
 
@@ -216,11 +236,12 @@ prompts in [`CODEX_PROMPTS.md`](CODEX_PROMPTS.md).
 ## Safe update
 
 1. Stop active mutations to a customer Project Canon.
-2. Update the `codex-skills` checkout with Git.
-3. Re-run `setup-runtime` so the pinned Python dependency matches the checkout.
-4. Re-run `install`; this is the idempotent update operation.
-5. Run automatic and full preflight again.
-6. Restart Codex or open a new task and verify one Skill trigger.
+2. Run `sync`. It queries canonical GitHub directly and never resets, stashes,
+   rebases, or overwrites either machine's authoring checkout.
+3. `sync` validates the exact new snapshot and activates only if the remote
+   remains stable before and after validation.
+4. Restart Codex or open a new task; run `check`, automatic/full preflight, and
+   verify one real Skill trigger.
 
 The updater refuses to overwrite:
 
@@ -229,8 +250,9 @@ The updater refuses to overwrite:
 - a managed copy that contains local edits;
 - a same-name entry in the other known discovery root.
 
-Do not edit installed copies. Make source changes in a controlled repository
-change and reinstall.
+Do not edit installed copies or release snapshots. Make source changes in an
+authoring checkout, commit and push them to GitHub `main`, then run `sync` on
+each machine.
 
 ## Safe migration from legacy discovery
 
@@ -240,10 +262,11 @@ There is no silent one-command migration. Use an auditable two-step move:
    legacy root contains the historical 9-Skill subset, use `--allow-missing`
    and then run `install` against that same legacy root to add the six missing
    workflow Skills under the new receipt.
-2. Run `status` against that legacy target and require all 15 entries `READY`.
+2. Run `status` against that legacy target, then use `sync` to converge on all
+   16 current publication entries. Legacy `READY` is not production readiness.
 3. Run suite `uninstall` against the legacy target. It removes only the links
    proven by the new receipt.
-4. Run `install` with the default `$HOME/.agents/skills` target.
+4. Run `sync` with the default `$HOME/.agents/skills` target.
 5. Run the full audit, restart Codex, and trigger one Skill explicitly.
 
 macOS:
@@ -252,7 +275,7 @@ macOS:
 ./tools/install.sh adopt --target "$HOME/.codex/skills"
 ./tools/install.sh status --target "$HOME/.codex/skills"
 ./tools/install.sh uninstall --target "$HOME/.codex/skills"
-./tools/install.sh install
+./tools/install.sh sync
 ```
 
 For the historical 9-entry legacy root, replace the first two commands with:
@@ -269,7 +292,7 @@ Windows PowerShell:
 .\tools\install.ps1 adopt -Target "$HOME\.codex\skills"
 .\tools\install.ps1 status -Target "$HOME\.codex\skills"
 .\tools\install.ps1 uninstall -Target "$HOME\.codex\skills"
-.\tools\install.ps1 install
+.\tools\install.ps1 sync
 ```
 
 For the historical 9-entry legacy root, replace the first two commands with:
@@ -306,7 +329,8 @@ If an organization blocks shell or PowerShell scripts, the same guarded tools
 can be called with the repository-local Python executable:
 
 ```text
-<repo>/high-control-ai-tvc/.venv/.../python tools/manage_skills.py install
+<repo>/high-control-ai-tvc/.venv/.../python tools/release_control.py sync
+<repo>/high-control-ai-tvc/.venv/.../python tools/release_control.py check --format json
 <repo>/high-control-ai-tvc/.venv/.../python tools/preflight.py --automatic-only --format json
 ```
 
@@ -314,7 +338,7 @@ Use `.venv/bin/python` on macOS and `.venv\Scripts\python.exe` on Windows.
 
 ## Production boundary
 
-Installation plus a passing preflight makes the local SOP tooling ready. It
+GitHub-latest release activation plus a passing preflight makes the local SOP tooling ready. It
 does not verify a future provider claim, submit video generations, or replace
 human approvals. Each run still needs source-backed identities/claims, an
 actual provider capability snapshot, and the approval gates defined in the six

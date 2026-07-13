@@ -16,6 +16,10 @@
   },
   "executables": [
     {
+      "name": "git",
+      "required": true
+    },
+    {
       "name": "ffmpeg",
       "required": true
     },

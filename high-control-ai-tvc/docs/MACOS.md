@@ -9,8 +9,10 @@
 - A real V2 Control Previs production path
 - Access to the selected third-party video platform
 
-Use a stable local checkout of `qiuranke99/codex-skills`. Do not install
-symlinks from a temporary Downloads checkout that will later move.
+The local checkout is an authoring/bootstrap workspace, not production
+authority. Production symlinks point to a GitHub-commit-addressed immutable
+snapshot under the discovery root, so moving an authoring checkout cannot
+silently change the active release.
 
 ## Bootstrap
 
@@ -25,15 +27,15 @@ From `<codex-skills>/high-control-ai-tvc`:
 
 ```bash
 ./tools/setup-runtime.sh
-./tools/install.sh install
-./tools/install.sh status
+./tools/install.sh sync
+./tools/install.sh check
 ./tools/install.sh audit --automatic-only
 ```
 
 Default macOS mode is symlink. If a managed copy is required:
 
 ```bash
-./tools/install.sh install --mode copy
+./tools/install.sh sync --mode copy
 ```
 
 After independently checking the three real capabilities:
@@ -45,7 +47,8 @@ After independently checking the three real capabilities:
   --confirm provider_platform_access
 ```
 
-The final audit must print `READY`. Restart Codex or open a new task, then test
+`sync` must print `READY_LATEST`. Restart Codex or open a new task; the final
+audit must print `READY_LATEST`, then test
 `$ai-video-shot-script-director`.
 
 ## Python runtime
@@ -67,8 +70,8 @@ home Mac and company Windows. Conversion must preserve the original content.
 
 ## macOS-specific failure interpretation
 
-- **Symlink points to a different checkout:** rerun the suite installer from the
-  checkout that should be authoritative. It updates only receipt-owned links.
+- **Symlink points to a different snapshot:** rerun `sync`; no local checkout is
+  allowed to become production authority.
 - **Duplicate `.codex/skills` entry:** migrate or remove it through its owning
   installer before using `.agents/skills`; never keep both live.
 - **Pillow mismatch:** rerun `setup-runtime.sh`.
@@ -76,6 +79,10 @@ home Mac and company Windows. Conversion must preserve the original content.
   process and reopen the app.
 - **Managed copy contains edits:** the installer preserves it rather than
   overwriting or deleting it.
+- **`UPDATE_REQUIRED`:** GitHub `main` advanced; stop, rerun `sync`, and use a
+  new Codex task.
+- **`REMOTE_UNVERIFIED`:** latest cannot be proved; offline fallback is not
+  production-ready.
 
 ## New project
 

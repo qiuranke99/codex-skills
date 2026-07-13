@@ -5,6 +5,10 @@ description: "Create and freeze a production-wide visual look contract for AI vi
 
 # AI Video Global Look Lock
 
+## HIGH_CONTROL_RELEASE_GATE_V2
+
+Before any action or production output, resolve this `SKILL.md` directory and run its sibling `../high-control-ai-tvc/tools/release_control.py check --format json`. Proceed only when `ready_latest=true`. On any failure, stop: run `sync`, then start a new Codex task. Bind the returned `release_commit` to this stage; never substitute a mutable Windows/Mac authoring checkout.
+
 中文名：AI 视频全局影调锁定
 
 Create one versioned visual-language authority that every look-applied storyboard frame, generation-ready keyframe, and video-generation prompt must inherit. A color card or one attractive reference image is not a complete lock. The Skill freezes a textual contract, a visual reference set, and a downstream inheritance rule together.

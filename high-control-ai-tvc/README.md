@@ -1,7 +1,8 @@
 # High-Control AI TVC Production System
 
-`codex-skills` 内的高控制全能参考 AI TVC 生产子系统。15 个唯一 Skill
-仍位于仓库根目录；本目录只保存统一清单、SOP、流程图、安装器和预检，
+`codex-skills` 内的高控制全能参考 AI TVC 生产子系统。15 个 suite Skill
+仍位于仓库根目录；同一 release 还管理 manifest 声明的 1 个独立 production
+Skill。本目录只保存统一清单、SOP、流程图、安装器和预检，
 不复制 Skill，也不保存客户项目。
 
 ![完整生产 SOP](assets/high-control-ai-tvc-sop.svg)
@@ -33,7 +34,8 @@ macOS：
 
 ```bash
 ./tools/setup-runtime.sh
-./tools/install.sh install
+./tools/install.sh sync
+./tools/install.sh check
 ./tools/install.sh audit --automatic-only
 ```
 
@@ -41,13 +43,15 @@ Windows PowerShell：
 
 ```powershell
 .\tools\setup-runtime.ps1
-.\tools\install.ps1 install
+.\tools\install.ps1 sync
+.\tools\install.ps1 check
 .\tools\install.ps1 audit -AutomaticOnly
 ```
 
-如果旧版安装已经通过 `.codex/skills` 精确链接到当前 checkout，先运行
-显式 `adopt`，不要手工复制或双挂到 `.agents/skills`。完整的 adopt、
-migrate、update 和 uninstall 规则见 [安装文档](docs/INSTALLATION.md)。
+GitHub `qiuranke99/codex-skills` 的 `main` 是公司 Windows 与家用 Mac 的
+唯一跨机发布权威。`sync` 直接从该远端精确提交创建不可变 release、完成
+全量验证后再原子激活；本机 checkout 只用于创作，不得作为生产发现源。
+旧版 `adopt/install` 仅用于安全迁移或开发，不能产生生产就绪状态。
 
 ## 从项目开始
 
@@ -85,6 +89,7 @@ migrate、update 和 uninstall 规则见 [安装文档](docs/INSTALLATION.md)。
 python high-control-ai-tvc/tools/validate_distribution.py
 python high-control-ai-tvc/tools/preflight.py --repository-only --format json
 python high-control-ai-tvc/tools/test_install_lifecycle.py
+python high-control-ai-tvc/tools/test_release_control.py
 python ai-video-omni-reference-prompt-director/scripts/validate_ai_video_suite.py --suite-root .
 ```
 

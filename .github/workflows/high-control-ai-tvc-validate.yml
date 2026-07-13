@@ -54,7 +54,9 @@ jobs:
           python -m compileall -q high-control-ai-tvc/tools
 
       - name: Exercise guarded install lifecycle in paths with spaces
-        run: python high-control-ai-tvc/tools/test_install_lifecycle.py
+        run: |
+          python high-control-ai-tvc/tools/test_install_lifecycle.py
+          python high-control-ai-tvc/tools/test_release_control.py
 
       - name: Run six-Skill integration and 13-package contract suite
         run: python ai-video-omni-reference-prompt-director/scripts/validate_ai_video_suite.py --suite-root .
@@ -89,14 +91,12 @@ jobs:
           target="$RUNNER_TEMP/Codex Skills"
           high-control-ai-tvc/tools/install.sh install --target "$target" --mode symlink --format json
           high-control-ai-tvc/tools/install.sh status --target "$target" --format json
-          high-control-ai-tvc/tools/install.sh audit --target "$target" --automatic-only --format json
           python ai-video-omni-reference-prompt-director/scripts/validate_ai_video_suite.py --suite-root . --skip-tests --require-discovery --discovery-root "$target"
           project="$RUNNER_TEMP/Client Project"
-          high-control-ai-tvc/tools/new-project.sh "$project" --name "Client Project" --format json
-          test -d "$project/01_sources"
-          test -d "$project/outputs"
-          test ! -e "$project/00_project_canon/PROJECT_CANON_MANIFEST.json"
-          python -c "import json, pathlib; assert json.loads((pathlib.Path(r'$project') / '.ai-tvc-project.json').read_text())['project_name'] == 'Client Project'"
+          if high-control-ai-tvc/tools/new-project.sh "$project" --name "Client Project" --format json; then
+            echo "legacy install bypassed the GitHub release gate" >&2
+            exit 1
+          fi
           high-control-ai-tvc/tools/install.sh uninstall --target "$target" --format json
 
       - name: Exercise Windows PowerShell wrappers
@@ -108,15 +108,7 @@ jobs:
           $target = Join-Path $env:RUNNER_TEMP 'Codex Skills'
           .\high-control-ai-tvc\tools\install.ps1 install -Target $target -Mode junction -Format json
           .\high-control-ai-tvc\tools\install.ps1 status -Target $target -Format json
-          .\high-control-ai-tvc\tools\install.ps1 audit -Target $target -AutomaticOnly -Format json
           python .\ai-video-omni-reference-prompt-director\scripts\validate_ai_video_suite.py --suite-root . --skip-tests --require-discovery --discovery-root $target
-          $project = Join-Path $env:RUNNER_TEMP 'Client Project'
-          .\high-control-ai-tvc\tools\new-project.ps1 -Destination $project -Name 'Client Project' -Format json
-          if (-not (Test-Path -LiteralPath (Join-Path $project '01_sources') -PathType Container)) { throw 'missing 01_sources' }
-          if (-not (Test-Path -LiteralPath (Join-Path $project 'outputs') -PathType Container)) { throw 'missing outputs' }
-          if (Test-Path -LiteralPath (Join-Path $project '00_project_canon\PROJECT_CANON_MANIFEST.json')) { throw 'project helper fabricated Canon' }
-          $projectMarker = Get-Content -LiteralPath (Join-Path $project '.ai-tvc-project.json') -Raw | ConvertFrom-Json
-          if ($projectMarker.project_name -ne 'Client Project') { throw 'project name was not preserved' }
           .\high-control-ai-tvc\tools\install.ps1 uninstall -Target $target -Format json
 
       - name: Exercise Windows PowerShell 5.1 wrappers
@@ -128,7 +120,6 @@ jobs:
           $target = Join-Path $env:RUNNER_TEMP 'Codex Skills PS51'
           .\high-control-ai-tvc\tools\install.ps1 install -Target $target -Mode copy -Format json
           .\high-control-ai-tvc\tools\install.ps1 status -Target $target -Format json
-          .\high-control-ai-tvc\tools\install.ps1 audit -Target $target -AutomaticOnly -Format json
           .\high-control-ai-tvc\tools\install.ps1 uninstall -Target $target -Format json
 
       - name: Exercise POSIX runtime setup wrapper

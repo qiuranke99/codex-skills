@@ -4,20 +4,24 @@
 from __future__ import annotations
 
 import os
+import shutil
 import tempfile
 import sys
 from pathlib import Path
 
 import manage_skills as manager
+import new_project as project_manager
 import suite_common as common
 from manage_skills import InstallSafetyError, _create_link, adopt_exact_links, inspect_installation, install, uninstall
 from new_project import create_project
 from setup_runtime import validate_venv_identity
-from suite_common import REPO_ROOT, load_distribution
+from suite_common import REPO_ROOT, load_distribution, managed_inventory
 
 
 def main() -> int:
     manifest, _requirements, skills, errors = load_distribution(REPO_ROOT)
+    skills, inventory_errors = managed_inventory(manifest, skills, REPO_ROOT)
+    errors.extend(inventory_errors)
     if errors:
         raise AssertionError(errors)
     first_name = skills[0]["name"]
@@ -167,6 +171,78 @@ def main() -> int:
         if list(staging_failure_target.glob(".*.stage-*")):
             raise AssertionError("staging failure left a temporary staged entry")
 
+        alternate_repo = root / "Alternate Git Snapshot"
+        shutil.copytree(
+            REPO_ROOT,
+            alternate_repo,
+            ignore=shutil.ignore_patterns(".git", ".venv", "__pycache__", ".pytest_cache"),
+        )
+        alternate_skill = alternate_repo / first_name / "SKILL.md"
+        alternate_skill.write_bytes(alternate_skill.read_bytes() + b"\ntransaction generation B\n")
+
+        interrupted_target = root / "Interrupted Install Recovery"
+        manager.install(REPO_ROOT, interrupted_target, "all", linked_mode)
+        original_commit_stage = manager._commit_staged_entry
+        commit_calls = 0
+
+        def interrupt_after_first_commit(*args, **kwargs):
+            nonlocal commit_calls
+            result = original_commit_stage(*args, **kwargs)
+            commit_calls += 1
+            if commit_calls == 1:
+                raise KeyboardInterrupt("simulated process death after first visible generation switch")
+            return result
+
+        manager._commit_staged_entry = interrupt_after_first_commit
+        try:
+            try:
+                manager.install(alternate_repo, interrupted_target, "all", linked_mode)
+            except KeyboardInterrupt:
+                pass
+            else:
+                raise AssertionError("simulated process death did not interrupt install")
+        finally:
+            manager._commit_staged_entry = original_commit_stage
+        interrupted_status = manager.inspect_installation(REPO_ROOT, interrupted_target, "all")
+        if interrupted_status["ready"] or not any(
+            "incomplete install transaction" in error for error in interrupted_status["errors"]
+        ):
+            raise AssertionError("mixed-generation interrupted install was not fail-closed")
+        recovered_install = manager.install(alternate_repo, interrupted_target, "all", linked_mode)
+        if recovered_install["recovery"]["action"] != "rolled_back_uncommitted_transaction":
+            raise AssertionError("interrupted uncommitted install was not rolled back before retry")
+        if not manager.inspect_installation(alternate_repo, interrupted_target, "all")["ready"]:
+            raise AssertionError("recovered install did not converge on the complete new generation")
+        manager.uninstall(alternate_repo, interrupted_target, "all")
+
+        committed_cleanup_target = root / "Committed Cleanup Recovery"
+        manager.install(REPO_ROOT, committed_cleanup_target, "all", linked_mode)
+        original_remove_managed = manager._remove_managed_path
+        cleanup_failed = False
+
+        def fail_first_backup_cleanup(path, kind):
+            nonlocal cleanup_failed
+            if ".backup-" in path.name and not cleanup_failed:
+                cleanup_failed = True
+                raise OSError("simulated process death during committed backup cleanup")
+            return original_remove_managed(path, kind)
+
+        manager._remove_managed_path = fail_first_backup_cleanup
+        try:
+            committed_result = manager.install(alternate_repo, committed_cleanup_target, "all", linked_mode)
+        finally:
+            manager._remove_managed_path = original_remove_managed
+        if not committed_result["cleanup_warnings"]:
+            raise AssertionError("committed cleanup failure did not retain recovery evidence")
+        finalized_install = manager.install(alternate_repo, committed_cleanup_target, "all", linked_mode)
+        if finalized_install["recovery"]["action"] != "finalized_committed_transaction":
+            raise AssertionError("committed install cleanup was not finalized on retry")
+        if list(committed_cleanup_target.glob(".*.backup-*")) or list(
+            committed_cleanup_target.glob(".*.stage-*")
+        ):
+            raise AssertionError("committed transaction recovery left backup or stage residue")
+        manager.uninstall(alternate_repo, committed_cleanup_target, "all")
+
         post_commit_receipt_failure = root / "Post Commit Receipt Failure"
         original_write_json = manager._write_json_atomic
         install_receipt_failed = False
@@ -309,6 +385,13 @@ def main() -> int:
         if any(os.path.lexists(str(official_root / item["name"])) for item in skills):
             raise AssertionError("duplicate-protection test mutated the official discovery root")
 
+        original_production_check = project_manager.production_check
+        project_manager.production_check = lambda *_args, **_kwargs: {
+            "ready_latest": True,
+            "release_commit": "f" * 40,
+            "active_system_root": str(REPO_ROOT / "high-control-ai-tvc"),
+            "errors": [],
+        }
         project = root / "Client Projects" / "Example TVC"
         first_project = create_project(project, "Example TVC")
         second_project = create_project(project, "Example TVC")
@@ -324,11 +407,14 @@ def main() -> int:
         unrelated_sentinel = unrelated / "customer.txt"
         unrelated_sentinel.write_text("preserve", encoding="utf-8")
         try:
-            create_project(unrelated, "Should Fail")
-        except RuntimeError:
-            pass
-        else:
-            raise AssertionError("project helper adopted an unrelated non-empty directory")
+            try:
+                create_project(unrelated, "Should Fail")
+            except RuntimeError:
+                pass
+            else:
+                raise AssertionError("project helper adopted an unrelated non-empty directory")
+        finally:
+            project_manager.production_check = original_production_check
         if unrelated_sentinel.read_text(encoding="utf-8") != "preserve":
             raise AssertionError("project helper modified unrelated content")
 

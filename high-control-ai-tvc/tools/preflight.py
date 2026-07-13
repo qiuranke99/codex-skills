@@ -13,6 +13,7 @@ from pathlib import Path
 from typing import Any, Dict, List
 
 from manage_skills import inspect_installation
+from release_control import ReleaseControlError, production_check, resolve_target
 from suite_common import REPO_ROOT, SuiteConfigurationError, load_distribution, select_skills
 
 
@@ -36,15 +37,33 @@ def _command_output(command: List[str]) -> tuple[int, str]:
 
 
 def evaluate(
-    target: Path,
+    target: Path | None,
     profile: str,
     confirmations: List[str],
     repository_only: bool,
     automatic_only: bool,
 ) -> Dict[str, Any]:
     checks: List[Dict[str, Any]] = []
+    active_repo_root = REPO_ROOT
+    resolved_target = target
+    if not repository_only:
+        release_state = production_check(target, profile=profile)
+        _check(
+            checks,
+            "github_latest_release",
+            "pass" if release_state["ready_latest"] else "fail",
+            f"GitHub main release {release_state.get('release_commit')} is active"
+            if release_state["ready_latest"]
+            else "; ".join(release_state.get("errors", ["release authority check failed"])),
+        )
+        if release_state["ready_latest"]:
+            active_system_root = Path(release_state["active_system_root"])
+            active_repo_root = active_system_root.parent
+            resolved_target = Path(release_state["target_root"])
+        else:
+            resolved_target = resolve_target(target)
     try:
-        manifest, requirements, skills, errors = load_distribution(REPO_ROOT)
+        manifest, requirements, skills, errors = load_distribution(active_repo_root)
     except SuiteConfigurationError as exc:
         manifest, requirements, skills, errors = {}, {}, [], [str(exc)]
 
@@ -55,7 +74,7 @@ def evaluate(
         _check(checks, "distribution", "pass", f"manifest and all {len(skills)} skill directories are coherent")
 
     if not repository_only:
-        installation = inspect_installation(REPO_ROOT, target, profile)
+        installation = inspect_installation(active_repo_root, resolved_target, profile)
         _check(
             checks,
             "skill_installation",
@@ -143,7 +162,7 @@ def evaluate(
 
     failures = [item for item in checks if item["status"] == "fail"]
     pending = [item for item in checks if item["status"] == "needs_confirmation"]
-    ready = not failures and not pending
+    ready = not failures and not pending and not repository_only
     return {
         "schema_version": "1.0.0",
         "suite_id": manifest.get("suite_id", "high-control-ai-tvc-production-system"),
@@ -152,12 +171,17 @@ def evaluate(
             "release": platform.release(),
             "machine": platform.machine(),
         },
-        "target_root": str(target.expanduser().absolute()),
+        "target_root": str(resolved_target.expanduser().absolute()) if resolved_target is not None else None,
         "profile": profile,
         "repository_only": repository_only,
         "automatic_only": automatic_only,
         "ready": ready,
-        "result": "ready" if ready else ("needs_manual_confirmation" if not failures else "not_ready"),
+        "production_ready": ready,
+        "result": "ready_latest" if ready else (
+            "repository_valid" if repository_only and not failures else (
+                "needs_manual_confirmation" if not failures else "not_ready"
+            )
+        ),
         "checks": checks,
     }
 
@@ -171,7 +195,7 @@ def _print_text(result: Dict[str, Any]) -> None:
 
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--target", type=Path, default=Path.home() / ".agents" / "skills")
+    parser.add_argument("--target", type=Path)
     parser.add_argument("--profile", choices=("all", "core"), default="all")
     parser.add_argument("--confirm", action="append", default=[], metavar="GATE_ID")
     parser.add_argument("--automatic-only", action="store_true")
@@ -187,7 +211,7 @@ def main() -> int:
             args.repository_only,
             args.automatic_only,
         )
-    except (SuiteConfigurationError, OSError) as exc:
+    except (ReleaseControlError, SuiteConfigurationError, OSError) as exc:
         if args.format == "json":
             print(json.dumps({"ready": False, "result": "not_ready", "error": str(exc)}, ensure_ascii=False, indent=2))
         else:
@@ -197,7 +221,7 @@ def main() -> int:
         print(json.dumps(result, ensure_ascii=False, indent=2, sort_keys=True))
     else:
         _print_text(result)
-    return 0 if result["ready"] else 1
+    return 0 if result["ready"] or result["result"] == "repository_valid" else 1
 
 
 if __name__ == "__main__":

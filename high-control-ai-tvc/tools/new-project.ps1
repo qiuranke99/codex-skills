@@ -5,6 +5,8 @@ param(
 
     [string]$Name,
 
+    [string]$Target,
+
     [ValidateSet("text", "json")]
     [string]$Format = "text"
 )
@@ -43,5 +45,6 @@ if ($env:AI_TVC_PYTHON) {
 $arguments = @($argumentsPrefix)
 $arguments += @((Join-Path $ScriptDirectory "new_project.py"), $Destination, "--format", $Format)
 if ($Name) { $arguments += @("--name", $Name) }
+if ($Target) { $arguments += @("--target", $Target) }
 & $python @arguments
 exit $LASTEXITCODE

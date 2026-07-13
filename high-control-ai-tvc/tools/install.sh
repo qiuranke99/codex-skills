@@ -2,7 +2,7 @@
 set -euo pipefail
 
 SCRIPT_DIR="$(CDPATH= cd -- "$(dirname -- "$0")" && pwd -P)"
-ACTION="${1:-install}"
+ACTION="${1:-sync}"
 if [[ $# -gt 0 ]]; then
   shift
 fi
@@ -33,6 +33,9 @@ find_python() {
 
 PYTHON="$(find_python)"
 case "$ACTION" in
+  sync|check)
+    exec "$PYTHON" "$SCRIPT_DIR/release_control.py" "$ACTION" "$@"
+    ;;
   install|adopt|status|uninstall)
     exec "$PYTHON" "$SCRIPT_DIR/manage_skills.py" "$ACTION" "$@"
     ;;
@@ -40,7 +43,7 @@ case "$ACTION" in
     exec "$PYTHON" "$SCRIPT_DIR/preflight.py" "$@"
     ;;
   *)
-    printf '%s\n' "Usage: tools/install.sh [install|adopt|status|audit|uninstall] [options]" >&2
+    printf '%s\n' "Usage: tools/install.sh [sync|check|install|adopt|status|audit|uninstall] [options]" >&2
     exit 64
     ;;
 esac

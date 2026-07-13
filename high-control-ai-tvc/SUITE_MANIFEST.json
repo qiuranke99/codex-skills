@@ -5,7 +5,14 @@
   "repository": "qiuranke99/codex-skills",
   "subsystem_path": "high-control-ai-tvc",
   "source_repository": "qiuranke99/codex-skills",
-  "source_commit": "cd72953b283b52b83e144e3e82d40e59d3275bdd",
+  "provenance_base_commit": "cd72953b283b52b83e144e3e82d40e59d3275bdd",
+  "source_authority": {
+    "repository": "qiuranke99/codex-skills",
+    "remote_url": "https://github.com/qiuranke99/codex-skills.git",
+    "branch": "main",
+    "github_repository_id": 1264973746,
+    "revision_policy": "github_main_latest_validated_immutable_snapshot"
+  },
   "production_endpoint": "provider_ready_p2_package",
   "generation_mode": "omni_reference_to_video",
   "forbidden_generation_routes": [

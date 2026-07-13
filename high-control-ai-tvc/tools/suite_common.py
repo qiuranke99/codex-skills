@@ -112,6 +112,34 @@ def select_skills(skills: List[Dict[str, str]], profile: str) -> List[Dict[str, 
     raise SuiteConfigurationError(f"unsupported install profile: {profile}")
 
 
+def managed_inventory(
+    manifest: Dict[str, Any],
+    suite_skills: List[Dict[str, str]],
+    repo_root: Path = REPO_ROOT,
+) -> Tuple[List[Dict[str, str]], List[str]]:
+    """Return suite Skills plus manifest-declared independent publication Skills."""
+    inventory = list(suite_skills)
+    errors: List[str] = []
+    names = {item["name"] for item in inventory}
+    raw_independent = manifest.get("independent_skills", [])
+    if not isinstance(raw_independent, list):
+        return inventory, ["SUITE_MANIFEST.json independent_skills must be an array"]
+    for index, name in enumerate(raw_independent):
+        if not isinstance(name, str) or not re.fullmatch(r"[a-z0-9][a-z0-9_-]*", name):
+            errors.append(f"independent_skills[{index}] is not a valid skill directory name")
+            continue
+        if name in names:
+            errors.append(f"duplicate managed skill name: {name}")
+            continue
+        names.add(name)
+        skill_root = repo_root / name
+        if not skill_root.is_dir() or not (skill_root / "SKILL.md").is_file():
+            errors.append(f"{name}: independent Skill package is missing")
+            continue
+        inventory.append({"name": name, "tier": "independent"})
+    return inventory, errors
+
+
 def discovery_roots() -> Tuple[Path, Path]:
     """Return the official user root followed by the legacy Codex root."""
     return Path.home() / ".agents" / "skills", Path.home() / ".codex" / "skills"

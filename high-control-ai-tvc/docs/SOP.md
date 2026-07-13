@@ -17,6 +17,16 @@
 
 允许并鼓励把角色、产品、场景、影调图、故事板、关键帧和控制视频作为普通并行参考，统一送入 `omni_reference_to_video` / all-reference / multimodal reference-to-video 路径。
 
+## GitHub release 前置门
+
+GitHub `qiuranke99/codex-skills` 的 `main` 是 Windows/Mac 唯一跨机发布
+权威。新项目、恢复项目和每个 0–10 阶段开始前，都必须运行当前不可变
+snapshot 内的 `tools/release_control.py check` 并要求 `ready_latest=true`。
+本阶段把返回的 `release_commit` 写入 runtime/dependency lock；阶段内冻结该
+commit。GitHub 更新、离线、验证失败、receipt/snapshot/discovery 漂移或
+当前 Codex task 需要重启时必须停止，运行 `sync` 并从新 task 继续，绝不
+调用旧 Skill 或混用两个 revision。
+
 ## 2. 六条不可妥协规则
 
 1. **粗脚本不是缺陷。** 用户只需提供创意、写意画面、镜头表或部分时长。普通导演决策由系统推断并记录，不能退回给用户补专业术语。

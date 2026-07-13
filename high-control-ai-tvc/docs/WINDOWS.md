@@ -2,11 +2,11 @@
 
 ## Supported operating model
 
-Use a native Windows checkout of `qiuranke99/codex-skills` and native
-PowerShell when Codex is operating on Windows paths. Keep the repository on a
-stable local NTFS path. A network share, temporary download location, or
-removable drive can prevent junction creation; use managed-copy mode when
-necessary.
+Use native PowerShell when Codex is operating on Windows paths. The local
+checkout is an authoring/bootstrap workspace, never production authority.
+Production links point only to a GitHub-commit-addressed snapshot under the
+discovery root. Keep that discovery root on local NTFS; use managed-copy mode
+when junction creation is unavailable.
 
 Do not install the same suite once in native Windows and again in WSL unless the
 two Codex environments are intentionally separate. Native
@@ -39,8 +39,8 @@ From `<codex-skills>\high-control-ai-tvc`:
 
 ```powershell
 .\tools\setup-runtime.ps1
-.\tools\install.ps1 install
-.\tools\install.ps1 status
+.\tools\install.ps1 sync
+.\tools\install.ps1 check
 .\tools\install.ps1 audit -AutomaticOnly
 ```
 
@@ -48,7 +48,7 @@ Default Windows mode is a directory junction. If policy or filesystem behavior
 blocks it:
 
 ```powershell
-.\tools\install.ps1 install -Mode copy
+.\tools\install.ps1 sync -Mode copy
 ```
 
 After independently checking the three real capabilities:
@@ -58,8 +58,9 @@ After independently checking the three real capabilities:
   -Confirm codex_image_generation,control_previs_path,provider_platform_access
 ```
 
-A successful install is not sufficient; the final audit must print `READY`.
-Then restart Codex or open a new task and test
+A successful legacy `install` is never sufficient. `sync` must report
+`READY_LATEST`, then Codex must be restarted or a new task opened; the final
+audit must print `READY_LATEST`. Then test
 `$ai-video-shot-script-director`.
 
 ## Company PowerShell policy
@@ -68,7 +69,8 @@ If `.ps1` execution is blocked, do not change machine policy without IT
 authorization. Use the direct Python form instead:
 
 ```powershell
-.\.venv\Scripts\python.exe tools\manage_skills.py install
+.\.venv\Scripts\python.exe tools\release_control.py sync
+.\.venv\Scripts\python.exe tools\release_control.py check --format json
 .\.venv\Scripts\python.exe tools\preflight.py --automatic-only --format json
 ```
 
@@ -88,7 +90,7 @@ camera, blocking, timing, and product-use decisions without refusing the job.
 
 ## Windows-specific failure interpretation
 
-- **Junction creation failed:** repository or target filesystem/policy does not
+- **Junction creation failed:** release snapshot or target filesystem/policy does not
   support the chosen method; use explicit copy mode.
 - **Duplicate discovery entry:** the same Skill name already exists under
   `.codex\skills` or `.agents\skills`; remove it through the installer/repository
@@ -100,8 +102,12 @@ camera, blocking, timing, and product-use decisions without refusing the job.
 - **FFmpeg/ffprobe missing:** repair system PATH and reopen Codex.
 - **`libx264` missing:** replace the FFmpeg build with one that includes the
   required encoder.
-- **Managed copy contains changes:** the installer preserves it. Review the
-  local edits rather than forcing an overwrite or uninstall.
+- **`UPDATE_REQUIRED`:** GitHub `main` advanced; stop the production stage,
+  rerun `sync`, then open a new Codex task.
+- **`REMOTE_UNVERIFIED`:** network/GitHub cannot prove latest; production stays
+  blocked and must not fall back to the previous snapshot.
+- **Managed copy contains changes:** the installer preserves it. Treat this as
+  integrity failure; review it rather than forcing an overwrite or uninstall.
 
 ## New project
 

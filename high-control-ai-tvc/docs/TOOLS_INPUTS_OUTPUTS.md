@@ -2,7 +2,16 @@
 
 ## 1. 系统组成
 
-仓库包含 15 个 Skill，其中 13 个构成生产核心，2 个只用于前期探索。
+High-Control suite 包含 15 个 Skill，其中 13 个构成生产核心，2 个只用于
+前期探索；同一 GitHub release 还发布 1 个 manifest 声明的独立复杂产品
+production Skill。
+
+所有 16 个 publication Skill 的共同前置输入是 GitHub-latest release attestation。
+`release_control.py check --project-root <PROJECT_ROOT>` 必须返回
+`ready_latest=true`，并生成/更新 `00_project_canon/SYSTEM_RUNTIME_LOCK.json`；
+该锁绑定 repository id、`main` commit、Git tree、manifest/runtime hashes、
+16 个 Skill tree、release receipt 和新 Codex task。任何旧、离线、漂移或
+混代状态都不得进入下列 Owner 合同。
 
 ### 六个新增流程 Owner
 
@@ -73,7 +82,7 @@ Previs 工具不绑定品牌。可以使用确定性 2D animatic、中性 3D blo
 在真实项目开始前，Codex 应验证：
 
 ```text
-[ ] 15 个 Skill 中至少 13 个核心 Skill 可发现
+[ ] 16 个 publication Skill 全部来自同一 release；其中 13 个 suite 核心 Skill 可发现
 [ ] Python 可运行
 [ ] Pillow 精确版本可导入
 [ ] ffmpeg 和 ffprobe 可运行

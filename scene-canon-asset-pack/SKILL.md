@@ -5,6 +5,10 @@ description: "Create a reusable Scene Canon Asset Pack from one or more user-sup
 
 # Scene Canon Asset Pack
 
+## HIGH_CONTROL_RELEASE_GATE_V2
+
+Before any action or production output, resolve this `SKILL.md` directory and run its sibling `../high-control-ai-tvc/tools/release_control.py check --format json`. Proceed only when `ready_latest=true`. On any failure, stop: run `sync`, then start a new Codex task. Bind the returned `release_commit` to this stage; never substitute a mutable Windows/Mac authoring checkout.
+
 中文名：场景本体资产包
 
 Build one minimum-complete, internally consistent scene canon from visible evidence, then generate a clean reusable asset package. Preserve observed facts, freeze one constrained completion for unseen regions, and prevent the source image's final look from becoming the scene identity.

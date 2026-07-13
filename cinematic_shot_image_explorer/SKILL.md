@@ -5,6 +5,10 @@ description: Use when the user wants cinematic shot exploration that turns an id
 
 # Cinematic Shot Image Explorer / 电影镜头探索与生图器
 
+## HIGH_CONTROL_RELEASE_GATE_V2
+
+Before any action or production output, resolve this `SKILL.md` directory and run its sibling `../high-control-ai-tvc/tools/release_control.py check --format json`. Proceed only when `ready_latest=true`. On any failure, stop: run `sync`, then start a new Codex task. Bind the returned `release_commit` to this stage; never substitute a mutable Windows/Mac authoring checkout.
+
 ## Purpose
 
 将任意用户输入转化为 10 个不同的电影剧照级图像提示，并直接调用 Codex 内置 /image gen 生成 10 张对应图像。每个提示围绕同一个核心主题展开，但必须通过不同的电影化构图、镜头位置、景别、机位、空间层次、光线、氛围和叙事瞬间进行视觉探索。

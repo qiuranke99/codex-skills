@@ -4,7 +4,10 @@
 
 ### Skill 安装根
 
-这是本仓库安装后 Codex 发现 Skill 的位置。15 个 Skill 必须保持为同一父目录下的兄弟目录，尤其是七个 Canon asset Owner 的 fixed-owner bridge 会调用相邻的 `ai-video-shot-script-director` 共享合同。
+这是 `release_control.py sync` 从 GitHub `main` 精确 OID 建立并验证后，
+Codex 发现 Skill 的位置。15 个 suite Skill 与 manifest 声明的独立
+production Skill 必须保持为同一不可变 release 下的兄弟目录；Windows/Mac
+authoring checkout 不是生产安装根。
 
 ```text
 <SKILL_ROOT>/
@@ -22,7 +25,8 @@
 ├── material-sensitive-product-master-asset-board/
 ├── scene-canon-asset-pack/
 ├── cinematic_shot_image_explorer/          # optional
-└── cinematic_world_builder/                 # optional
+├── cinematic_world_builder/                 # optional
+└── complex-product-identity-reconstruction-asset-locking/ # independent publication Skill
 ```
 
 不要把同名 Skill 同时复制到多个 Codex discovery root。不要只安装七个 asset Owner 而漏掉共享的 Shot Director，也不要让各 Skill 散落到不相邻的位置。
@@ -51,6 +55,7 @@ macOS 建议：
 <PROJECT_ROOT>/
 ├── 00_project_canon/
 │   ├── PROJECT_CANON_MANIFEST.json
+│   ├── SYSTEM_RUNTIME_LOCK.json                  # 当前阶段 GitHub release OID/trees/receipt/Codex task
 │   ├── PENDING_PROJECT_CANON_TRANSACTION.json       # 仅 transaction 未收口时存在
 │   └── .canon.lock                                  # runtime lock
 │
@@ -122,6 +127,10 @@ macOS 建议：
 └── 99_archive/
     └── exported_readonly_snapshots/                 # 可选，不能冒充当前 Canon
 ```
+
+每个阶段入口由 `release_control.py check --project-root <PROJECT_ROOT>` 原子
+更新 `SYSTEM_RUNTIME_LOCK.json`。存在 pending Canon transaction 时不得迁移
+release；GitHub `main` 前进后必须先 `sync`、启动新 Codex task，再写入新锁。
 
 各 Skill 的实际 schema 与 package tree 优先于这个便于人类理解的总览。不要为了匹配示意图而重命名 Skill 合同要求的文件。
 

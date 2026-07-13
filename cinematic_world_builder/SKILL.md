@@ -5,6 +5,10 @@ description: Use when the user wants a cinematic world builder that turns an ide
 
 # cinematic_world_builder
 
+## HIGH_CONTROL_RELEASE_GATE_V2
+
+Before any action or production output, resolve this `SKILL.md` directory and run its sibling `../high-control-ai-tvc/tools/release_control.py check --format json`. Proceed only when `ready_latest=true`. On any failure, stop: run `sync`, then start a new Codex task. Bind the returned `release_commit` to this stage; never substitute a mutable Windows/Mac authoring checkout.
+
 ## 名称
 
 电影世界生成器

@@ -5,6 +5,10 @@ description: "Upgrade a user's rough idea, structured creative shot draft, or pa
 
 # AI Video Shot Script Director
 
+## HIGH_CONTROL_RELEASE_GATE_V2
+
+Before any action or production output, resolve this `SKILL.md` directory and run its sibling `../high-control-ai-tvc/tools/release_control.py check --format json`. Proceed only when `ready_latest=true`. On any failure, stop: run `sync`, then start a new Codex task. Bind the returned `release_commit` to this stage; never substitute a mutable Windows/Mac authoring checkout.
+
 中文名：AI 视频广告专业分镜脚本导演
 
 把用户现实中能够提供的创意、粗脚本或结构化视觉分镜稿，升级为后续资产、故事板、关键帧、Previs 和视频提示词都能读取的唯一导演事实源。用户提供类似“15 镜、30 秒的写意产品广告，每镜有画面/光影/景别/转场”的稿件时，输入已经充分；本 Skill 不得把普通导演工作退回给用户。

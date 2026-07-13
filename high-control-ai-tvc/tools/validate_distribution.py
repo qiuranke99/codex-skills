@@ -44,8 +44,11 @@ REQUIRED_SUBSYSTEM_FILES = (
     "docs/SOURCE_PROVENANCE.md",
     "docs/TOOLS_INPUTS_OUTPUTS.md",
     "tools/manage_skills.py",
+    "tools/release_control.py",
     "tools/preflight.py",
     "tools/new_project.py",
+    "tools/test_install_lifecycle.py",
+    "tools/test_release_control.py",
     "tools/install.sh",
     "tools/install.ps1",
 )
@@ -69,6 +72,18 @@ def validate() -> List[str]:
     except SuiteConfigurationError as exc:
         return [str(exc)]
     errors.extend(common_errors)
+    authority = manifest.get("source_authority")
+    expected_authority = {
+        "repository": "qiuranke99/codex-skills",
+        "remote_url": "https://github.com/qiuranke99/codex-skills.git",
+        "branch": "main",
+        "github_repository_id": 1264973746,
+        "revision_policy": "github_main_latest_validated_immutable_snapshot",
+    }
+    if authority != expected_authority:
+        errors.append(f"source_authority is {authority!r}, expected {expected_authority!r}")
+    if "source_commit" in manifest:
+        errors.append("source_commit is self-referential and forbidden; runtime receipts own release commits")
     names = {item["name"] for item in skills}
 
     raw_independent = manifest.get("independent_skills", [])
@@ -109,6 +124,9 @@ def validate() -> List[str]:
             else:
                 if frontmatter != name:
                     errors.append(f"{name}: frontmatter name is {frontmatter!r}")
+                text = skill_md.read_text(encoding="utf-8")
+                if "HIGH_CONTROL_RELEASE_GATE_V2" not in text:
+                    errors.append(f"{name}: mandatory GitHub release gate marker is missing")
 
     for name in sorted(independent):
         skill_md = REPO_ROOT / name / "SKILL.md"
@@ -122,6 +140,9 @@ def validate() -> List[str]:
         else:
             if frontmatter != name:
                 errors.append(f"{name}: independent frontmatter name is {frontmatter!r}")
+            text = skill_md.read_text(encoding="utf-8")
+            if "HIGH_CONTROL_RELEASE_GATE_V2" not in text:
+                errors.append(f"{name}: independent publication Skill lacks the GitHub release gate")
 
     raw_skills = manifest.get("skills", [])
     origin_counts: Dict[str, int] = {}
@@ -241,6 +262,14 @@ def main() -> int:
         )
         if result.returncode != 0:
             errors.append(f"six-Skill suite validator failed with exit {result.returncode}")
+        for label, script_name in (
+            ("install lifecycle", "test_install_lifecycle.py"),
+            ("release control", "test_release_control.py"),
+        ):
+            script = SUBSYSTEM_ROOT / "tools" / script_name
+            test_result = subprocess.run([sys.executable, str(script)], text=True, check=False)
+            if test_result.returncode != 0:
+                errors.append(f"{label} regression test failed with exit {test_result.returncode}")
     if errors:
         for error in errors:
             print(f"ERROR: {error}")

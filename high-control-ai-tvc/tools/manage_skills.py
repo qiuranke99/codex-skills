@@ -12,6 +12,7 @@ import shutil
 import subprocess
 import sys
 import tempfile
+import uuid
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any, Dict, Iterable, List, Tuple
@@ -21,6 +22,7 @@ from suite_common import (
     REPO_ROOT,
     SuiteConfigurationError,
     load_distribution,
+    managed_inventory,
     other_known_discovery_root,
     select_skills,
     suite_id_from_manifest,
@@ -28,7 +30,9 @@ from suite_common import (
 
 
 OWNER_MARKER = ".high-control-ai-tvc-owner.json"
-RECEIPT_SCHEMA_VERSION = "1.0.0"
+RECEIPT_SCHEMA_VERSION = "2.0.0"
+TRANSACTION_SCHEMA_VERSION = "high-control-ai-tvc-install-transaction.v1"
+TRANSACTION_NAME = "install-transaction.json"
 
 
 class InstallSafetyError(RuntimeError):
@@ -122,7 +126,7 @@ def _validate_receipt_storage(receipt_path: Path) -> None:
             unexpected = [item.name for item in state_root.iterdir()]
         except OSError as exc:
             raise InstallSafetyError(f"cannot inspect suite state root {state_root}: {exc}") from exc
-        if unexpected:
+        if unexpected and unexpected != [TRANSACTION_NAME]:
             raise InstallSafetyError(
                 f"suite state root exists without a receipt and is not empty; refusing to adopt it: {state_root}"
             )
@@ -348,6 +352,121 @@ def _rollback_install_commits(committed: List[Tuple[Path, str, Path | None]]) ->
     return errors
 
 
+def _transaction_path(target: Path, suite_id: str) -> Path:
+    state_root, _receipt_path = _state_paths(target, suite_id)
+    return state_root / TRANSACTION_NAME
+
+
+def _read_json_object(path: Path, label: str) -> Dict[str, Any]:
+    if path.is_symlink() or _is_windows_junction(path) or not path.is_file():
+        raise InstallSafetyError(f"{label} must be a real regular file: {path}")
+    try:
+        value = json.loads(path.read_text(encoding="utf-8"))
+    except (OSError, UnicodeDecodeError, json.JSONDecodeError) as exc:
+        raise InstallSafetyError(f"{label} is unreadable: {path}: {exc}") from exc
+    if not isinstance(value, dict):
+        raise InstallSafetyError(f"{label} must contain a JSON object: {path}")
+    return value
+
+
+def _assert_transaction_child(path: Path, target: Path, label: str) -> None:
+    if path.parent.resolve(strict=False) != target.resolve(strict=False):
+        raise InstallSafetyError(f"install transaction {label} escapes the discovery root: {path}")
+
+
+def _verify_recovery_entry(path: Path, entry: Dict[str, Any], suite_id: str, name: str) -> None:
+    safe, detail = _managed_entry_is_safe(path, entry, suite_id, name, require_unchanged_copy=True)
+    if not safe:
+        raise InstallSafetyError(f"install transaction recovery cannot prove {path}: {detail}")
+
+
+def _recover_install_transaction(target: Path, suite_id: str) -> Dict[str, Any] | None:
+    """Recover a process/power interruption without accepting a mixed release."""
+    target = target.expanduser().absolute()
+    journal_path = _transaction_path(target, suite_id)
+    if not _lexists(journal_path):
+        return None
+    state_root, receipt_path = _state_paths(target, suite_id)
+    if _entry_kind(state_root) != "copy" or not state_root.is_dir():
+        raise InstallSafetyError(f"install transaction state root is redirected or invalid: {state_root}")
+    journal = _read_json_object(journal_path, "install transaction journal")
+    if (
+        journal.get("schema_version") != TRANSACTION_SCHEMA_VERSION
+        or journal.get("suite_id") != suite_id
+        or journal.get("target_root") != str(target)
+    ):
+        raise InstallSafetyError(f"install transaction journal has the wrong identity: {journal_path}")
+    transaction_id = journal.get("transaction_id")
+    raw_entries = journal.get("entries")
+    if not isinstance(transaction_id, str) or not isinstance(raw_entries, list):
+        raise InstallSafetyError(f"install transaction journal is structurally invalid: {journal_path}")
+    committed_receipt = False
+    if receipt_path.is_file():
+        receipt_value = _read_json_object(receipt_path, "install receipt")
+        committed_receipt = receipt_value.get("transaction_id") == transaction_id
+
+    entries: List[Dict[str, Any]] = []
+    for item in raw_entries:
+        if not isinstance(item, dict) or not isinstance(item.get("name"), str):
+            raise InstallSafetyError(f"install transaction entry is invalid: {journal_path}")
+        normalized = dict(item)
+        for field in ("destination", "stage", "backup"):
+            value = normalized.get(field)
+            if not isinstance(value, str):
+                raise InstallSafetyError(f"install transaction {field} is invalid: {journal_path}")
+            path = Path(value)
+            _assert_transaction_child(path, target, field)
+            normalized[field] = path
+        prior_entry = normalized.get("prior_entry")
+        if prior_entry is not None and not isinstance(prior_entry, dict):
+            raise InstallSafetyError(f"install transaction prior_entry is invalid: {journal_path}")
+        new_entry = normalized.get("new_entry")
+        if not isinstance(new_entry, dict):
+            raise InstallSafetyError(f"install transaction new_entry is invalid: {journal_path}")
+        entries.append(normalized)
+
+    if committed_receipt:
+        for item in entries:
+            stage = item["stage"]
+            backup = item["backup"]
+            if _lexists(stage):
+                _verify_recovery_entry(stage, item["new_entry"], suite_id, item["name"])
+                _remove_managed_path(stage, _entry_kind(stage))
+            if _lexists(backup):
+                prior_entry = item.get("prior_entry")
+                if not isinstance(prior_entry, dict):
+                    raise InstallSafetyError(f"unexpected backup for initially missing entry: {backup}")
+                _verify_recovery_entry(backup, prior_entry, suite_id, item["name"])
+                _remove_managed_path(backup, _entry_kind(backup))
+        journal_path.unlink()
+        return {"action": "finalized_committed_transaction", "transaction_id": transaction_id}
+
+    for item in reversed(entries):
+        destination = item["destination"]
+        stage = item["stage"]
+        backup = item["backup"]
+        prior_entry = item.get("prior_entry")
+        if _lexists(backup):
+            if _lexists(destination):
+                _verify_recovery_entry(destination, item["new_entry"], suite_id, item["name"])
+                _remove_managed_path(destination, _entry_kind(destination))
+            _verify_recovery_entry(backup, prior_entry, suite_id, item["name"])
+            backup.rename(destination)
+        elif prior_entry is None:
+            if _lexists(destination):
+                _verify_recovery_entry(destination, item["new_entry"], suite_id, item["name"])
+                _remove_managed_path(destination, _entry_kind(destination))
+        else:
+            if not _lexists(destination):
+                raise InstallSafetyError(f"prior managed entry disappeared during interrupted install: {destination}")
+            _verify_recovery_entry(destination, prior_entry, suite_id, item["name"])
+        if _lexists(stage):
+            _verify_recovery_entry(stage, item["new_entry"], suite_id, item["name"])
+            _remove_managed_path(stage, _entry_kind(stage))
+    journal_path.unlink()
+    return {"action": "rolled_back_uncommitted_transaction", "transaction_id": transaction_id}
+
+
 def _default_mode(requested: str) -> str:
     if requested != "auto":
         return requested
@@ -367,10 +486,17 @@ def inspect_installation(
     profile: str,
 ) -> Dict[str, Any]:
     manifest, _requirements, skills, distribution_errors = load_distribution(repo_root)
+    skills, inventory_errors = managed_inventory(manifest, skills, repo_root)
+    distribution_errors.extend(inventory_errors)
     suite_id = suite_id_from_manifest(manifest)
     selected = select_skills(skills, profile)
     _state_root, receipt_path = _state_paths(target, suite_id)
     errors = list(distribution_errors)
+    journal_path = _transaction_path(target.expanduser().absolute(), suite_id)
+    if _lexists(journal_path):
+        errors.append(
+            f"incomplete install transaction requires recovery by rerunning install: {journal_path}"
+        )
     try:
         receipt = _load_receipt(receipt_path, suite_id)
     except InstallSafetyError as exc:
@@ -408,6 +534,9 @@ def inspect_installation(
                 if _resolved(destination) != current_source:
                     state = "out_of_date"
                     detail = "managed link points to another checkout"
+                elif entry.get("installed_digest") != _tree_digest(repo_root / name):
+                    state = "source_tree_drift"
+                    detail = "linked source content differs from the recorded installed digest"
                 else:
                     state = "installed"
         results.append(
@@ -442,6 +571,8 @@ def inspect_installation(
 
 def install(repo_root: Path, target: Path, profile: str, requested_mode: str) -> Dict[str, Any]:
     manifest, _requirements, skills, errors = load_distribution(repo_root)
+    skills, inventory_errors = managed_inventory(manifest, skills, repo_root)
+    errors.extend(inventory_errors)
     if errors:
         raise SuiteConfigurationError("; ".join(errors))
     suite_id = suite_id_from_manifest(manifest)
@@ -458,6 +589,7 @@ def install(repo_root: Path, target: Path, profile: str, requested_mode: str) ->
 
     target.mkdir(parents=True, exist_ok=True)
     state_root, receipt_path = _state_paths(target, suite_id)
+    recovery = _recover_install_transaction(target, suite_id)
     receipt = _load_receipt(receipt_path, suite_id)
     entries = receipt["entries"]
 
@@ -479,6 +611,7 @@ def install(repo_root: Path, target: Path, profile: str, requested_mode: str) ->
     changed = []
     unchanged = []
     staged: List[Tuple[Dict[str, Any], Path, Path, str, Path, str]] = []
+    receipt_refreshes: List[Tuple[Dict[str, Any], Path, Path, str, str]] = []
     for skill in selected:
         name = skill["name"]
         source = (repo_root / name).resolve()
@@ -486,11 +619,15 @@ def install(repo_root: Path, target: Path, profile: str, requested_mode: str) ->
         existing = entries.get(name)
 
         if isinstance(existing, dict) and _entry_kind(destination) == mode:
-            if mode in {"symlink", "junction"} and _resolved(destination) == str(source):
-                unchanged.append(name)
-                continue
-            if mode == "copy" and _tree_digest(destination, True) == _tree_digest(source):
-                unchanged.append(name)
+            source_digest = _tree_digest(source)
+            exact_link = mode in {"symlink", "junction"} and _resolved(destination) == str(source)
+            exact_copy = mode == "copy" and _tree_digest(destination, True) == source_digest
+            if exact_link or exact_copy:
+                if existing.get("installed_digest") == source_digest:
+                    unchanged.append(name)
+                else:
+                    receipt_refreshes.append((skill, source, destination, mode, source_digest))
+                    changed.append(name)
                 continue
 
         old_kind = _entry_kind(destination)
@@ -516,6 +653,16 @@ def install(repo_root: Path, target: Path, profile: str, requested_mode: str) ->
 
     # Do not mutate the prior receipt until every selected Skill has staged.
     new_entries = dict(entries)
+    for skill, source, destination, refreshed_mode, installed_digest in receipt_refreshes:
+        name = skill["name"]
+        new_entries[name] = {
+            "skill_name": name,
+            "tier": skill["tier"],
+            "method": refreshed_mode,
+            "source": str(source),
+            "destination": str(destination),
+            "installed_digest": installed_digest,
+        }
     for skill, source, destination, _old_kind, _stage, installed_digest in staged:
         name = skill["name"]
         new_entries[name] = {
@@ -528,6 +675,7 @@ def install(repo_root: Path, target: Path, profile: str, requested_mode: str) ->
         }
 
     now = _utc_now()
+    transaction_id = uuid.uuid4().hex
     new_receipt = dict(receipt)
     if new_receipt.get("installed_at") is None:
         new_receipt["installed_at"] = now
@@ -536,6 +684,53 @@ def install(repo_root: Path, target: Path, profile: str, requested_mode: str) ->
     new_receipt["suite_id"] = suite_id
     new_receipt["repo_root"] = str(repo_root.resolve())
     new_receipt["entries"] = new_entries
+    new_receipt["transaction_id"] = transaction_id
+
+    journal_path = _transaction_path(target, suite_id)
+    journal_entries = []
+    for skill, source, destination, old_kind, stage, installed_digest in staged:
+        name = skill["name"]
+        prior_entry = entries.get(name)
+        backup = destination.parent / f".{destination.name}.backup-{os.getpid()}"
+        journal_entries.append({
+            "name": name,
+            "destination": str(destination),
+            "stage": str(stage),
+            "backup": str(backup),
+            "old_kind": old_kind,
+            "prior_entry": prior_entry if isinstance(prior_entry, dict) else None,
+            "new_entry": {
+                "skill_name": name,
+                "tier": skill["tier"],
+                "method": mode,
+                "source": str(source),
+                "destination": str(destination),
+                "installed_digest": installed_digest,
+            },
+        })
+    journal = {
+        "schema_version": TRANSACTION_SCHEMA_VERSION,
+        "suite_id": suite_id,
+        "transaction_id": transaction_id,
+        "target_root": str(target),
+        "created_at": now,
+        "entries": journal_entries,
+    }
+    try:
+        _write_json_atomic(journal_path, journal)
+    except Exception:
+        cleanup_errors = []
+        for _skill, _source, _destination, _old_kind, stage, _digest in staged:
+            try:
+                _cleanup_staged_entry(stage)
+            except Exception as cleanup_exc:
+                cleanup_errors.append(f"{stage}: {cleanup_exc}")
+        if cleanup_errors:
+            raise InstallSafetyError(
+                "install journal could not be written and staged entries could not be fully cleaned: "
+                + "; ".join(cleanup_errors)
+            )
+        raise
 
     committed: List[Tuple[Path, str, Path | None]] = []
     try:
@@ -558,6 +753,7 @@ def install(repo_root: Path, target: Path, profile: str, requested_mode: str) ->
                 f"install transaction failed ({exc}) and automatic rollback was incomplete: "
                 + "; ".join(details)
             ) from exc
+        journal_path.unlink(missing_ok=True)
         raise InstallSafetyError(f"install transaction failed and was fully rolled back: {exc}") from exc
 
     cleanup_warnings = []
@@ -568,6 +764,8 @@ def install(repo_root: Path, target: Path, profile: str, requested_mode: str) ->
             _remove_managed_path(backup, old_kind)
         except Exception as exc:
             cleanup_warnings.append(f"committed prior-entry backup preserved at {backup}: {exc}")
+    if not cleanup_warnings:
+        journal_path.unlink(missing_ok=True)
 
     return {
         "schema_version": "1.0.0",
@@ -580,6 +778,8 @@ def install(repo_root: Path, target: Path, profile: str, requested_mode: str) ->
         "unchanged": unchanged,
         "receipt": str(receipt_path),
         "cleanup_warnings": cleanup_warnings,
+        "recovery": recovery,
+        "transaction_id": transaction_id,
         "success": True,
         "next_required_action": "run the audit/preflight command before production use",
     }
@@ -599,6 +799,8 @@ def adopt_exact_links(
     link to this checkout before the receipt is written.
     """
     manifest, _requirements, skills, errors = load_distribution(repo_root)
+    skills, inventory_errors = managed_inventory(manifest, skills, repo_root)
+    errors.extend(inventory_errors)
     if errors:
         raise SuiteConfigurationError("; ".join(errors))
     suite_id = suite_id_from_manifest(manifest)
@@ -632,6 +834,16 @@ def adopt_exact_links(
             )
             if not safe:
                 raise InstallSafetyError(f"cannot retain existing receipt for {destination}: {detail}")
+            if kind not in {"symlink", "junction"} or _resolved(destination) != str(source):
+                raise InstallSafetyError(f"cannot retain existing receipt for {destination}: link is not exact")
+            existing.update({
+                "skill_name": name,
+                "tier": skill["tier"],
+                "method": kind,
+                "source": str(source),
+                "destination": str(destination),
+                "installed_digest": _tree_digest(source),
+            })
             unchanged.append(name)
             continue
         if kind == "missing" and allow_missing:
@@ -689,8 +901,95 @@ def adopt_exact_links(
     }
 
 
+def adopt_content_equivalent_links(
+    repo_root: Path,
+    target: Path,
+    profile: str,
+) -> Dict[str, Any]:
+    """Receipt only unowned links whose bytes exactly equal a validated release.
+
+    This is a narrow migration bridge for a newly managed Skill that predates
+    suite ownership. Ordinary directories, copies, changed links, and wrong
+    content remain collisions and are never adopted.
+    """
+    manifest, _requirements, skills, errors = load_distribution(repo_root)
+    skills, inventory_errors = managed_inventory(manifest, skills, repo_root)
+    errors.extend(inventory_errors)
+    if errors:
+        raise SuiteConfigurationError("; ".join(errors))
+    suite_id = suite_id_from_manifest(manifest)
+    selected = select_skills(skills, profile)
+    target = target.expanduser().absolute()
+    duplicates = _check_parallel_discovery(target, [skill["name"] for skill in selected])
+    if duplicates:
+        raise InstallSafetyError(
+            "content-equivalent migration would preserve duplicate discovery entries: "
+            + ", ".join(duplicates)
+        )
+    _state_root, receipt_path = _state_paths(target, suite_id)
+    _recover_install_transaction(target, suite_id)
+    receipt = _load_receipt(receipt_path, suite_id)
+    entries = receipt["entries"]
+    planned = []
+    for skill in selected:
+        name = skill["name"]
+        if isinstance(entries.get(name), dict):
+            continue
+        destination = target / name
+        kind = _entry_kind(destination)
+        if kind == "missing":
+            continue
+        if kind not in {"symlink", "junction"}:
+            raise InstallSafetyError(
+                f"cannot migrate unowned {destination}: expected a content-equivalent link, found {kind}"
+            )
+        source = Path(_resolved(destination))
+        release_source = (repo_root / name).resolve()
+        actual_digest = _tree_digest(destination)
+        release_digest = _tree_digest(release_source)
+        if actual_digest != release_digest:
+            raise InstallSafetyError(
+                f"cannot migrate unowned {destination}: linked content differs from validated release"
+            )
+        planned.append((skill, source, destination, kind, actual_digest))
+
+    if not planned:
+        return {"schema_version": "1.0.0", "action": "adopt-content-equivalent", "adopted": []}
+    for skill, source, destination, kind, digest in planned:
+        name = skill["name"]
+        entries[name] = {
+            "skill_name": name,
+            "tier": skill["tier"],
+            "method": kind,
+            "source": str(source),
+            "destination": str(destination),
+            "installed_digest": digest,
+            "content_equivalent_release_migration": True,
+        }
+    now = _utc_now()
+    if receipt.get("installed_at") is None:
+        receipt["installed_at"] = now
+    receipt.update({
+        "schema_version": RECEIPT_SCHEMA_VERSION,
+        "suite_id": suite_id,
+        "updated_at": now,
+        "entries": entries,
+        "migration_id": uuid.uuid4().hex,
+    })
+    _validate_receipt_storage(receipt_path)
+    _write_json_atomic(receipt_path, receipt)
+    return {
+        "schema_version": "1.0.0",
+        "action": "adopt-content-equivalent",
+        "adopted": [item[0]["name"] for item in planned],
+        "receipt": str(receipt_path),
+    }
+
+
 def uninstall(repo_root: Path, target: Path, profile: str) -> Dict[str, Any]:
     manifest, _requirements, skills, errors = load_distribution(repo_root)
+    skills, inventory_errors = managed_inventory(manifest, skills, repo_root)
+    errors.extend(inventory_errors)
     if errors:
         raise SuiteConfigurationError("; ".join(errors))
     suite_id = suite_id_from_manifest(manifest)

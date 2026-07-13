@@ -1,7 +1,7 @@
 [CmdletBinding()]
 param(
-    [ValidateSet("install", "adopt", "status", "audit", "uninstall")]
-    [string]$Action = "install",
+    [ValidateSet("sync", "check", "install", "adopt", "status", "audit", "uninstall")]
+    [string]$Action = "sync",
 
     [ValidateSet("auto", "junction", "symlink", "copy")]
     [string]$Mode = "auto",
@@ -56,7 +56,12 @@ function Resolve-SuitePython {
 
 $python = Resolve-SuitePython
 $arguments = @($python.Prefix)
-if ($Action -eq "audit") {
+if ($Action -in @("sync", "check")) {
+    $arguments += (Join-Path $ScriptDirectory "release_control.py")
+    $arguments += @($Action, "--format", $Format)
+    if ($Target) { $arguments += @("--target", $Target) }
+    if ($Action -eq "sync") { $arguments += @("--mode", $Mode) }
+} elseif ($Action -eq "audit") {
     $arguments += (Join-Path $ScriptDirectory "preflight.py")
     $arguments += @("--profile", $Profile, "--format", $Format)
     if ($Target) { $arguments += @("--target", $Target) }

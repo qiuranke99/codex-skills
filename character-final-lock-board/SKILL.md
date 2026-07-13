@@ -5,6 +5,10 @@ description: "Use when the user provides one or more person/model references, op
 
 # Character Final Lock Board
 
+## HIGH_CONTROL_RELEASE_GATE_V2
+
+Before any action or production output, resolve this `SKILL.md` directory and run its sibling `../high-control-ai-tvc/tools/release_control.py check --format json`. Proceed only when `ready_latest=true`. On any failure, stop: run `sync`, then start a new Codex task. Bind the returned `release_commit` to this stage; never substitute a mutable Windows/Mac authoring checkout.
+
 Contract version: `asset_board_contract_version: built_in_nonblocking_prompt_pair_v2`.
 
 Generate one comprehensive final character lock board. Keep one selected identity and one coherent wardrobe system across every panel. This is not a candidate sheet, fashion layout, scene image, or prompt-only workflow.
