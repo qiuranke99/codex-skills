@@ -4,10 +4,13 @@
 from __future__ import annotations
 
 import copy
+import atexit
 import hashlib
 import importlib.util
 import json
+import os
 import shutil
+import stat
 import struct
 import subprocess
 import sys
@@ -26,14 +29,18 @@ assert SPEC and SPEC.loader
 validator = importlib.util.module_from_spec(SPEC)
 SPEC.loader.exec_module(validator)
 
-# The Prompt Director suite exercises the same immutable packaging owner export
-# across many unrelated mutation cases.  Validate one byte-identical packaging
-# run fully, then reuse that result only when a root-independent hash of every
-# run member is unchanged.  A changed nested receipt/master gets a new key and
-# is live-validated again, so this removes repeated work without weakening a
-# packaging mutation test.
+# Prompt cases reuse one ordinary project fixture.  A process audit barrier
+# blocks writes to the complete Packaging authority closure before the OS can
+# mutate it; only non-Packaging dirty paths are restored between cases.  The
+# production owner validator still runs once for every isolated harness.  A
+# real Packaging mutation must use an independent, non-cached byte copy.
 _ORIGINAL_VALIDATE_OWNER_ASSET_EXPORT = validator.validate_owner_asset_export
 _PACKAGING_OWNER_VALIDATION_CACHE: dict[str, tuple[str, ...]] = {}
+_PACKAGING_FIXTURE_CACHE: dict[str, Path] = {}
+_PACKAGING_FIXTURE_TEMP_DIRS: list[tempfile.TemporaryDirectory[str]] = []
+_PACKAGING_FIXTURE_MODULE: Any | None = None
+_CASE_HARNESSES: list["CaseHarness"] = []
+_FROZEN_PROJECTS: dict[Path, "CaseHarness"] = {}
 
 
 def _resolve_non_symlink_project_path(project_root: Path, locator: str) -> Path | None:
@@ -61,6 +68,16 @@ def _packaging_tree_fingerprint(record: dict[str, Any], project_root: Path) -> s
         or record.get("authority_mode") != "geometry_layout_exact_copy_verified"
     ):
         return None
+    frozen = _FROZEN_PROJECTS.get(project_root.resolve())
+    if frozen is not None and frozen.active:
+        record_digest = hashlib.sha256(
+            json.dumps(record, ensure_ascii=False, sort_keys=True, separators=(",", ":")).encode("utf-8")
+        ).hexdigest()
+        if record_digest == frozen.packaging_record_digest:
+            return (
+                f"frozen:{frozen.fixture_id}:{record_digest}:"
+                f"{frozen.packaging_tree_digest}"
+            )
     authority = record.get("authority_evidence")
     if not isinstance(authority, dict) or not isinstance(authority.get("locator"), str):
         return None
@@ -111,9 +128,6 @@ def _cached_validate_owner_asset_export(record: Any, project_root: Path | None =
 
 
 validator.validate_owner_asset_export = _cached_validate_owner_asset_export
-
-_PACKAGING_FIXTURE_CACHE: dict[str, Path] = {}
-_PACKAGING_FIXTURE_MODULE: Any | None = None
 
 SHOTS = [f"S{index:03d}" for index in range(1, 7)]
 DURATIONS = [1.0, 2.0, 3.0, 2.0, 4.0, 3.0]
@@ -444,11 +458,10 @@ def make_packaging_exact_copy_authority_evidence(
     run_root = project_root / f"sources/{artifact_id}_complete_packaging_run"
     cache_root = _PACKAGING_FIXTURE_CACHE.get(artifact_id)
     if cache_root is None:
-        cache_root = Path(tempfile.mkdtemp(prefix="omni-packaging-fixture-")) / "complete_run"
+        fixture_temp = tempfile.TemporaryDirectory(prefix="omni-packaging-fixture-")
+        _PACKAGING_FIXTURE_TEMP_DIRS.append(fixture_temp)
+        cache_root = Path(fixture_temp.name) / "complete_run"
         module.create_complete_run(cache_root)
-        run_errors = module.validate_run(cache_root)
-        if run_errors:
-            raise AssertionError(f"packaging exact-copy fixture invalid: {run_errors}")
         _PACKAGING_FIXTURE_CACHE[artifact_id] = cache_root
     shutil.copytree(cache_root, run_root)
     manifest_path = run_root / "00_manifest/run_manifest.json"
@@ -1721,24 +1734,310 @@ def retarget_compile_locator(
     write_json(ir_path, ir)
 
 
+def _canonical_audit_path(value: Any) -> Path | None:
+    if isinstance(value, int):
+        return None
+    try:
+        raw = os.fsdecode(value)
+    except TypeError:
+        return None
+    path = Path(raw)
+    if not path.is_absolute():
+        path = Path.cwd() / path
+    return Path(os.path.normcase(str(path.resolve(strict=False))))
+
+
+def _path_is_within(path: Path, root: Path) -> bool:
+    try:
+        path.relative_to(root)
+        return True
+    except ValueError:
+        return False
+
+
+class CaseHarness:
+    """Reuse one isolated project while blocking writes to Packaging authority."""
+
+    def __init__(
+        self,
+        fixture_id: str,
+        builder: Callable[[Path, Path], None],
+        package_name: str = "prompt_package",
+    ) -> None:
+        self.fixture_id = fixture_id
+        self._temp = tempfile.TemporaryDirectory(prefix=f"omni-{fixture_id}-")
+        self.project_root = Path(self._temp.name).resolve()
+        self.root = self.project_root / package_name
+        self.active = False
+        self.capturing = False
+        self.restoring = False
+        self.dirty: set[Path] = set()
+        builder(self.root, self.project_root)
+        symlink = next((path for path in self.project_root.rglob("*") if path.is_symlink()), None)
+        if symlink is not None:
+            raise AssertionError(f"case harness baseline must not contain symlinks: {symlink}")
+
+        snapshot = json.loads((self.root / validator.PREFLIGHT_SNAPSHOT).read_text(encoding="utf-8"))
+        entry = next(
+            item for item in snapshot["active_artifacts"]
+            if item["owner_skill"] == "packaging-product-identity-label-lock-board"
+        )
+        record_path = (self.project_root / entry["artifact_record_locator"]).resolve()
+        record = json.loads(record_path.read_text(encoding="utf-8"))
+        authority_path = (self.project_root / record["authority_evidence"]["locator"]).resolve()
+        authority = json.loads(authority_path.read_text(encoding="utf-8"))
+        self.packaging_root = (
+            self.project_root / authority["packaging_run"]["run_root_locator"]
+        ).resolve()
+        self.protected_files = {
+            record_path,
+            authority_path,
+            (self.project_root / record["production_approval"]["evidence_locator"]).resolve(),
+            *((self.project_root / item["locator"]).resolve() for item in record["prompt_evidence"]),
+        }
+        self.packaging_record_digest = hashlib.sha256(
+            json.dumps(record, ensure_ascii=False, sort_keys=True, separators=(",", ":")).encode("utf-8")
+        ).hexdigest()
+        self.packaging_tree_digest = _packaging_tree_content_digest_full(self.packaging_root)
+        self.baseline_files, self.baseline_dirs = self._capture_mutable_baseline()
+        self.active = True
+        _CASE_HARNESSES.append(self)
+        _FROZEN_PROJECTS[self.project_root] = self
+
+    def _inside_project(self, path: Path) -> bool:
+        return _path_is_within(path, self.project_root)
+
+    def _touches_protected(self, path: Path) -> bool:
+        if _path_is_within(path, self.packaging_root) or _path_is_within(self.packaging_root, path):
+            return True
+        return any(path == item or _path_is_within(item, path) for item in self.protected_files)
+
+    def _is_protected_member(self, path: Path) -> bool:
+        return _path_is_within(path, self.packaging_root) or path in self.protected_files
+
+    def _capture_mutable_baseline(
+        self,
+    ) -> tuple[
+        dict[Path, tuple[bytes, int, int, int]],
+        dict[Path, tuple[int, int, int]],
+    ]:
+        files: dict[Path, tuple[bytes, int, int, int]] = {}
+        dirs: dict[Path, tuple[int, int, int]] = {}
+        for current, names, filenames in os.walk(self.project_root, topdown=True):
+            current_path = Path(current).resolve()
+            names[:] = [
+                name for name in names
+                if not _path_is_within((current_path / name).resolve(), self.packaging_root)
+            ]
+            for name in names:
+                path = (current_path / name).resolve()
+                if not self._touches_protected(path):
+                    metadata = path.stat()
+                    dirs[path.relative_to(self.project_root)] = (
+                        stat.S_IMODE(metadata.st_mode), metadata.st_atime_ns, metadata.st_mtime_ns
+                    )
+            for name in filenames:
+                path = (current_path / name).resolve()
+                if not self._is_protected_member(path):
+                    payload = path.read_bytes()
+                    metadata = path.stat()
+                    files[path.relative_to(self.project_root)] = (
+                        payload, stat.S_IMODE(metadata.st_mode),
+                        metadata.st_atime_ns, metadata.st_mtime_ns,
+                    )
+        return files, dirs
+
+    def audit(self, event: str, args: tuple[Any, ...]) -> None:
+        if not self.active:
+            return
+        candidates: list[Any] = []
+        if event == "open":
+            mode = args[1] if len(args) > 1 else None
+            flags = args[2] if len(args) > 2 else 0
+            write_mode = isinstance(mode, str) and any(marker in mode for marker in "wax+")
+            write_flags = isinstance(flags, int) and bool(
+                flags & (os.O_WRONLY | os.O_RDWR | os.O_CREAT | os.O_TRUNC | os.O_APPEND)
+            )
+            if write_mode or write_flags:
+                candidates = [args[0]]
+        elif event == "os.mkdir":
+            path = _canonical_audit_path(args[0])
+            if path is not None and path.is_dir():
+                return
+            candidates = [args[0]]
+        elif event in {"os.remove", "os.rmdir", "os.truncate", "os.chmod", "os.utime", "os.chdir"}:
+            candidates = [args[0]]
+        elif event in {"os.rename", "os.link"}:
+            candidates = [args[0], args[1]]
+        elif event == "os.symlink":
+            candidates = [args[1]]
+        else:
+            return
+        if event == "os.chdir":
+            raise PermissionError("case harness blocked cwd mutation during an active case")
+        for value in candidates:
+            if isinstance(value, int):
+                raise PermissionError(
+                    "case harness blocked mutation through an unresolved file descriptor"
+                )
+            try:
+                raw_path = Path(os.fsdecode(value))
+            except TypeError:
+                continue
+            if not raw_path.is_absolute():
+                raise PermissionError(
+                    "case harness blocked relative-path mutation while Packaging authority is frozen"
+                )
+            path = _canonical_audit_path(value)
+            if path is None or not self._inside_project(path):
+                continue
+            if self._touches_protected(path):
+                raise PermissionError(
+                    f"case harness blocked mutation of frozen Packaging authority: {path}"
+                )
+            if self.capturing and not self.restoring:
+                self.dirty.add(path)
+
+    def _restore_dirty(self) -> None:
+        if not self.dirty:
+            return
+        self.restoring = True
+        try:
+            dirty = sorted(self.dirty, key=lambda item: len(item.parts))
+            minimal: list[Path] = []
+            for path in dirty:
+                if not any(_path_is_within(path, parent) for parent in minimal):
+                    minimal.append(path)
+            for path in sorted(minimal, key=lambda item: len(item.parts), reverse=True):
+                rel = path.relative_to(self.project_root)
+                if path.is_symlink() or path.is_file():
+                    path.unlink()
+                elif path.is_dir():
+                    shutil.rmtree(path)
+                subtree_dirs = sorted(
+                    (item for item in self.baseline_dirs if item == rel or _path_is_within(item, rel)),
+                    key=lambda item: len(item.parts),
+                )
+                for item in subtree_dirs:
+                    (self.project_root / item).mkdir(parents=True, exist_ok=True)
+                subtree_files = {
+                    item: payload for item, payload in self.baseline_files.items()
+                    if item == rel or _path_is_within(item, rel)
+                }
+                for item, (payload, mode, atime_ns, mtime_ns) in subtree_files.items():
+                    target = self.project_root / item
+                    target.parent.mkdir(parents=True, exist_ok=True)
+                    target.write_bytes(payload)
+                    target.chmod(mode)
+                    os.utime(target, ns=(atime_ns, mtime_ns))
+            for item in sorted(self.baseline_dirs, key=lambda value: len(value.parts), reverse=True):
+                target = self.project_root / item
+                if target.is_dir():
+                    mode, atime_ns, mtime_ns = self.baseline_dirs[item]
+                    target.chmod(mode)
+                    os.utime(target, ns=(atime_ns, mtime_ns))
+        finally:
+            self.dirty.clear()
+            self.restoring = False
+
+    def execute(
+        self,
+        mutator: Callable[[Path], None] | None,
+        operation: Callable[[Path, Path], Any],
+    ) -> Any:
+        self._restore_dirty()
+        self.capturing = True
+        try:
+            if mutator is not None:
+                mutator(self.root)
+            return operation(self.root, self.project_root)
+        finally:
+            self.capturing = False
+            self._restore_dirty()
+
+    def assert_packaging_unchanged(self) -> None:
+        if _packaging_tree_content_digest_full(self.packaging_root) != self.packaging_tree_digest:
+            raise AssertionError("case harness Packaging authority bytes changed")
+
+    def cleanup(self) -> None:
+        self.active = False
+        _FROZEN_PROJECTS.pop(self.project_root, None)
+        self._temp.cleanup()
+
+
+def _packaging_tree_content_digest_full(root: Path) -> str:
+    digest = hashlib.sha256()
+    for path in sorted(
+        (item for item in root.rglob("*") if item.is_file()),
+        key=lambda item: item.relative_to(root).as_posix(),
+    ):
+        digest.update(path.relative_to(root).as_posix().encode("utf-8"))
+        digest.update(b"\0")
+        digest.update(hashlib.sha256(path.read_bytes()).digest())
+    return digest.hexdigest()
+
+
+def _case_harness_audit(event: str, args: tuple[Any, ...]) -> None:
+    for harness in tuple(_CASE_HARNESSES):
+        harness.audit(event, args)
+
+
+sys.addaudithook(_case_harness_audit)
+
+
+def cleanup_case_harnesses() -> None:
+    global _STANDARD_HARNESS, _REVISE_HARNESS
+    for harness in reversed(_CASE_HARNESSES):
+        if harness.active:
+            harness.cleanup()
+    _CASE_HARNESSES.clear()
+    for fixture_temp in _PACKAGING_FIXTURE_TEMP_DIRS:
+        fixture_temp.cleanup()
+    _PACKAGING_FIXTURE_TEMP_DIRS.clear()
+    _PACKAGING_FIXTURE_CACHE.clear()
+    _PACKAGING_OWNER_VALIDATION_CACHE.clear()
+    _FROZEN_PROJECTS.clear()
+    _STANDARD_HARNESS = None
+    _REVISE_HARNESS = None
+
+
+atexit.register(cleanup_case_harnesses)
+
+
+_STANDARD_HARNESS: CaseHarness | None = None
+_REVISE_HARNESS: CaseHarness | None = None
+
+
+def _standard_harness() -> CaseHarness:
+    global _STANDARD_HARNESS
+    if _STANDARD_HARNESS is None or not _STANDARD_HARNESS.active:
+        _STANDARD_HARNESS = CaseHarness("standard", create_package)
+    return _STANDARD_HARNESS
+
+
+def _revise_harness() -> CaseHarness:
+    global _REVISE_HARNESS
+    if _REVISE_HARNESS is None or not _REVISE_HARNESS.active:
+        _REVISE_HARNESS = CaseHarness("revise", create_revise_package)
+    return _REVISE_HARNESS
+
+
 def run_case(mutator: Callable[[Path], None] | None = None) -> list[str]:
-    with tempfile.TemporaryDirectory() as temp:
-        project_root = Path(temp)
-        root = project_root / "prompt_package"
-        create_package(root, project_root)
-        if mutator:
-            mutator(root)
-        return validator.validate_package(root, project_root, project_root / validator.DEFAULT_POST_CANON)
+    return _standard_harness().execute(
+        mutator,
+        lambda root, project_root: validator.validate_package(
+            root, project_root, project_root / validator.DEFAULT_POST_CANON
+        ),
+    )
 
 
 def run_revise_case(mutator: Callable[[Path], None] | None = None) -> list[str]:
-    with tempfile.TemporaryDirectory() as temp:
-        project_root = Path(temp)
-        root = project_root / "prompt_package"
-        create_revise_package(root, project_root)
-        if mutator:
-            mutator(root)
-        return validator.validate_package(root, project_root, project_root / validator.DEFAULT_POST_CANON)
+    return _revise_harness().execute(
+        mutator,
+        lambda root, project_root: validator.validate_package(
+            root, project_root, project_root / validator.DEFAULT_POST_CANON
+        ),
+    )
 
 
 def run_provider_constraint_case(
@@ -1747,10 +2046,7 @@ def run_provider_constraint_case(
     package_mutator: Callable[[Path, dict[str, Any], dict[str, dict[str, Any]], dict[str, Any]], None] | None = None,
 ) -> list[str]:
     """Exercise provider file constraints without unrelated Canon resealing noise."""
-    with tempfile.TemporaryDirectory() as temp:
-        project_root = Path(temp)
-        root = project_root / "prompt_package"
-        create_package(root, project_root)
+    def operation(root: Path, project_root: Path) -> list[str]:
         provider_doc = json.loads((root / validator.PROVIDER_CAPS).read_text(encoding="utf-8"))
         provider = next(item for item in provider_doc["profiles"] if item["profile_type"] == "provider_runtime")
         if provider_mutator is not None:
@@ -1774,6 +2070,7 @@ def run_provider_constraint_case(
             provider, provider["effective_limits"],
         )
         return errors
+    return _standard_harness().execute(None, operation)
 
 
 def expect_error(name: str, mutator: Callable[[Path], None], needle: str) -> None:
@@ -1830,20 +2127,96 @@ def main() -> int:
     errors = run_case()
     if errors:
         raise AssertionError(f"positive six-shot fixture failed: {errors}")
+
+    def protected_packaging_write_canary(_root: Path) -> None:
+        harness = _standard_harness()
+        target = next(
+            path for path in sorted(harness.packaging_root.rglob("*"))
+            if path.is_file()
+        )
+        original = target.read_bytes()
+        original_stat = target.stat()
+        changed = bytes([original[0] ^ 1]) + original[1:]
+        try:
+            target.write_bytes(changed)
+        except PermissionError as exc:
+            if "blocked mutation of frozen Packaging authority" not in str(exc):
+                raise
+        else:
+            raise AssertionError("same-size Packaging overwrite escaped the pre-write barrier")
+        try:
+            os.utime(target, ns=(original_stat.st_atime_ns, original_stat.st_mtime_ns))
+        except PermissionError as exc:
+            if "blocked mutation of frozen Packaging authority" not in str(exc):
+                raise
+        else:
+            raise AssertionError("Packaging timestamp restoration escaped the pre-write barrier")
+        if os.name != "nt" and os.open in os.supports_dir_fd and os.unlink in os.supports_dir_fd:
+            directory_fd = os.open(harness.packaging_root, os.O_RDONLY)
+            try:
+                try:
+                    os.open(target.name, os.O_WRONLY, dir_fd=directory_fd)
+                except PermissionError as exc:
+                    if "blocked relative-path mutation" not in str(exc):
+                        raise
+                else:
+                    raise AssertionError("dir_fd relative overwrite escaped the pre-write barrier")
+                try:
+                    os.unlink(target.name, dir_fd=directory_fd)
+                except PermissionError as exc:
+                    if "blocked relative-path mutation" not in str(exc):
+                        raise
+                else:
+                    raise AssertionError("dir_fd relative unlink escaped the pre-write barrier")
+            finally:
+                os.close(directory_fd)
+        if target.read_bytes() != original or target.stat().st_mtime_ns != original_stat.st_mtime_ns:
+            raise AssertionError("Packaging write barrier allowed baseline drift")
+
+    _standard_harness().execute(protected_packaging_write_canary, lambda _root, _project: None)
+
+    mutable_path = _standard_harness().root / validator.PROVIDER_CAPS
+    mutable_before = mutable_path.stat()
+    _standard_harness().execute(
+        lambda _root: os.utime(
+            mutable_path,
+            ns=(mutable_before.st_atime_ns, max(1, mutable_before.st_mtime_ns - 1_000_000_000)),
+        ),
+        lambda _root, _project: None,
+    )
+    mutable_after = mutable_path.stat()
+    if (
+        stat.S_IMODE(mutable_after.st_mode) != stat.S_IMODE(mutable_before.st_mode)
+        or mutable_after.st_mtime_ns != mutable_before.st_mtime_ns
+    ):
+        raise AssertionError("case harness failed to restore mutable file metadata")
+
+    cwd_before = Path.cwd()
+    def cwd_mutation_canary(root: Path) -> None:
+        try:
+            os.chdir(root)
+        except PermissionError as exc:
+            if "blocked cwd mutation" not in str(exc):
+                raise
+        else:
+            raise AssertionError("case harness allowed cwd leakage")
+    _standard_harness().execute(cwd_mutation_canary, lambda _root, _project: None)
+    if Path.cwd() != cwd_before:
+        raise AssertionError("case harness changed the process cwd")
     revision_errors = run_revise_case()
     if revision_errors:
         raise AssertionError(f"positive anchored revision fixture failed: {revision_errors}")
 
-    with tempfile.TemporaryDirectory() as temp:
-        project_root = Path(temp)
-        package_root = project_root / "prompt_package"
-        create_package(package_root, project_root)
+    def root_boundary_checks(package_root: Path, project_root: Path) -> None:
         missing_actual = validator.validate_package(package_root, project_root, None)
         if not any("--project-canon-manifest is required" in error for error in missing_actual):
             raise AssertionError(f"final package passed without actual post Canon: {missing_actual}")
-        wrong_root = validator.validate_package(package_root, package_root, project_root / validator.DEFAULT_POST_CANON)
+        wrong_root = validator.validate_package(
+            package_root, package_root, project_root / validator.DEFAULT_POST_CANON
+        )
         if not any("manifest path must be inside --project-root" in error for error in wrong_root):
             raise AssertionError(f"wrong project root was accepted: {wrong_root}")
+    _standard_harness().execute(None, root_boundary_checks)
 
     def suppress_required_images(root: Path) -> None:
         def mutate(value: dict[str, Any]) -> None:
@@ -2525,6 +2898,24 @@ def main() -> int:
     if not validator.validate_envelope(malformed, "malformed"):
         raise AssertionError("malformed envelope was not rejected")
 
+    final_errors = run_case()
+    if final_errors:
+        raise AssertionError(f"post-mutation positive sentinel failed: {final_errors}")
+    final_revision_errors = run_revise_case()
+    if final_revision_errors:
+        raise AssertionError(
+            f"post-mutation revision sentinel failed: {final_revision_errors}"
+        )
+    for harness in _CASE_HARNESSES:
+        harness.assert_packaging_unchanged()
+    cleanup_case_harnesses()
+    if _PACKAGING_FIXTURE_CACHE or _PACKAGING_OWNER_VALIDATION_CACHE or _FROZEN_PROJECTS:
+        raise AssertionError("case harness cleanup left stale fixture or validation cache state")
+    reentry_errors = run_case()
+    if reentry_errors:
+        raise AssertionError(f"case harness cleanup/re-entry failed: {reentry_errors}")
+    _standard_harness().assert_packaging_unchanged()
+
     print(
         "PASS: prompt validator covers owner-schema-valid authorities, project/package roots, binary/record locks, "
         "actual post-Canon ancestry, exact P1->P2 artifact identities and multi-role bindings, provider snapshot and "
@@ -2536,4 +2927,8 @@ def main() -> int:
 
 
 if __name__ == "__main__":
-    raise SystemExit(main())
+    try:
+        exit_code = main()
+    finally:
+        cleanup_case_harnesses()
+    raise SystemExit(exit_code)

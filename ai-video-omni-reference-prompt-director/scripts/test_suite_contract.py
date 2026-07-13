@@ -3,11 +3,16 @@
 
 from __future__ import annotations
 
+import os
+import re
 import shutil
+import subprocess
+import sys
 import tempfile
+import time
 from pathlib import Path
 
-from validate_ai_video_suite import PUBLISH_SURFACE, validate_suite
+from validate_ai_video_suite import PUBLISH_SURFACE, _run, validate_suite
 from validate_schema_parity import validate_instance
 
 
@@ -19,7 +24,71 @@ def assert_has(errors: list[str], needle: str) -> None:
         raise AssertionError(f"expected {needle!r}, got {errors}")
 
 
+def process_is_alive(pid: int) -> bool:
+    if os.name == "nt":
+        import ctypes
+        from ctypes import wintypes
+
+        kernel32 = ctypes.WinDLL("kernel32", use_last_error=True)
+        kernel32.OpenProcess.argtypes = [wintypes.DWORD, wintypes.BOOL, wintypes.DWORD]
+        kernel32.OpenProcess.restype = wintypes.HANDLE
+        kernel32.GetExitCodeProcess.argtypes = [wintypes.HANDLE, ctypes.POINTER(wintypes.DWORD)]
+        kernel32.GetExitCodeProcess.restype = wintypes.BOOL
+        kernel32.CloseHandle.argtypes = [wintypes.HANDLE]
+        handle = kernel32.OpenProcess(0x1000, False, pid)
+        if not handle:
+            return False
+        try:
+            exit_code = wintypes.DWORD()
+            return bool(kernel32.GetExitCodeProcess(handle, ctypes.byref(exit_code))) and exit_code.value == 259
+        finally:
+            kernel32.CloseHandle(handle)
+    try:
+        os.kill(pid, 0)
+    except ProcessLookupError:
+        return False
+    except PermissionError:
+        return True
+    return True
+
+
+def assert_timeout_kills_orphan_tree() -> None:
+    with tempfile.TemporaryDirectory() as temp:
+        root = Path(temp)
+        helper = root / "orphan_pipe.py"
+        helper.write_text(
+            "import subprocess, sys\n"
+            "child = subprocess.Popen([sys.executable, '-c', "
+            "'import time; time.sleep(30)'], stdout=sys.stdout, stderr=sys.stderr)\n"
+            "print(f'CHILD_PID={child.pid}', flush=True)\n",
+            encoding="utf-8",
+        )
+        started = time.monotonic()
+        try:
+            _run(
+                [sys.executable, str(helper)], root,
+                timeout_seconds=0.5, cleanup_timeout_seconds=3,
+            )
+        except subprocess.TimeoutExpired as exc:
+            elapsed = time.monotonic() - started
+            output = exc.output.decode("utf-8", errors="replace") if isinstance(exc.output, bytes) else str(exc.output or "")
+            match = re.search(r"CHILD_PID=(\d+)", output)
+            if match is None:
+                raise AssertionError(f"timeout result lost child PID evidence: {output!r}")
+            child_pid = int(match.group(1))
+            deadline = time.monotonic() + 2
+            while process_is_alive(child_pid) and time.monotonic() < deadline:
+                time.sleep(0.05)
+            if process_is_alive(child_pid):
+                raise AssertionError(f"timeout left orphan child process {child_pid}")
+            if elapsed > 6:
+                raise AssertionError(f"timeout cleanup was not bounded: {elapsed:.3f}s")
+        else:
+            raise AssertionError("orphan-pipe helper did not time out")
+
+
 def main() -> int:
+    assert_timeout_kills_orphan_tree()
     errors = validate_suite(SUITE_ROOT, run_tests=False, require_discovery=False)
     if errors:
         raise AssertionError(f"valid suite rejected: {errors}")
@@ -196,7 +265,8 @@ def main() -> int:
         "six/owner frontmatter drift, suite-wide generation-route marker drift, "
         "owner wrapper/appendix drift, private paths, secrets, invalid Python/JSON, "
         "Swift leaks, expanded secrets, unsupported binaries, run/temp artifacts, "
-        "oversized files, symlinks, Pillow-pin drift, metadata drift, and owner caches"
+        "oversized files, symlinks, Pillow-pin drift, metadata drift, owner caches, "
+        "and bounded orphan-safe child-test timeout cleanup"
     )
     return 0
 

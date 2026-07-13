@@ -8,8 +8,10 @@ import hashlib
 import json
 import os
 import re
+import signal
 import subprocess
 import sys
+import time
 from pathlib import Path
 from typing import Any, Iterable
 
@@ -235,7 +237,138 @@ def _frontmatter_name(text: str) -> str | None:
     return match.group(1) if match else None
 
 
-def _run(command: list[str], cwd: Path) -> tuple[int, str]:
+class _WindowsJob:
+    """Best-effort Windows process tree ownership with kill-on-close semantics."""
+
+    def __init__(self) -> None:
+        self.handle: Any | None = None
+        self.kernel32: Any | None = None
+        self.assigned = False
+        if os.name != "nt":
+            return
+        import ctypes
+        from ctypes import wintypes
+
+        class IO_COUNTERS(ctypes.Structure):
+            _fields_ = [
+                ("ReadOperationCount", ctypes.c_ulonglong),
+                ("WriteOperationCount", ctypes.c_ulonglong),
+                ("OtherOperationCount", ctypes.c_ulonglong),
+                ("ReadTransferCount", ctypes.c_ulonglong),
+                ("WriteTransferCount", ctypes.c_ulonglong),
+                ("OtherTransferCount", ctypes.c_ulonglong),
+            ]
+
+        class BASIC_LIMIT_INFORMATION(ctypes.Structure):
+            _fields_ = [
+                ("PerProcessUserTimeLimit", ctypes.c_longlong),
+                ("PerJobUserTimeLimit", ctypes.c_longlong),
+                ("LimitFlags", wintypes.DWORD),
+                ("MinimumWorkingSetSize", ctypes.c_size_t),
+                ("MaximumWorkingSetSize", ctypes.c_size_t),
+                ("ActiveProcessLimit", wintypes.DWORD),
+                ("Affinity", ctypes.c_size_t),
+                ("PriorityClass", wintypes.DWORD),
+                ("SchedulingClass", wintypes.DWORD),
+            ]
+
+        class EXTENDED_LIMIT_INFORMATION(ctypes.Structure):
+            _fields_ = [
+                ("BasicLimitInformation", BASIC_LIMIT_INFORMATION),
+                ("IoInfo", IO_COUNTERS),
+                ("ProcessMemoryLimit", ctypes.c_size_t),
+                ("JobMemoryLimit", ctypes.c_size_t),
+                ("PeakProcessMemoryUsed", ctypes.c_size_t),
+                ("PeakJobMemoryUsed", ctypes.c_size_t),
+            ]
+
+        kernel32 = ctypes.WinDLL("kernel32", use_last_error=True)
+        kernel32.CreateJobObjectW.argtypes = [ctypes.c_void_p, wintypes.LPCWSTR]
+        kernel32.CreateJobObjectW.restype = wintypes.HANDLE
+        kernel32.SetInformationJobObject.argtypes = [
+            wintypes.HANDLE, ctypes.c_int, ctypes.c_void_p, wintypes.DWORD
+        ]
+        kernel32.SetInformationJobObject.restype = wintypes.BOOL
+        kernel32.AssignProcessToJobObject.argtypes = [wintypes.HANDLE, wintypes.HANDLE]
+        kernel32.AssignProcessToJobObject.restype = wintypes.BOOL
+        kernel32.TerminateJobObject.argtypes = [wintypes.HANDLE, wintypes.UINT]
+        kernel32.TerminateJobObject.restype = wintypes.BOOL
+        kernel32.CloseHandle.argtypes = [wintypes.HANDLE]
+        kernel32.CloseHandle.restype = wintypes.BOOL
+
+        handle = kernel32.CreateJobObjectW(None, None)
+        if not handle:
+            return
+        information = EXTENDED_LIMIT_INFORMATION()
+        information.BasicLimitInformation.LimitFlags = 0x00002000
+        if not kernel32.SetInformationJobObject(
+            handle, 9, ctypes.byref(information), ctypes.sizeof(information)
+        ):
+            kernel32.CloseHandle(handle)
+            return
+        self.handle = handle
+        self.kernel32 = kernel32
+
+    def assign(self, process: subprocess.Popen[str]) -> bool:
+        if self.handle is None or self.kernel32 is None:
+            return False
+        if not self.kernel32.AssignProcessToJobObject(self.handle, int(process._handle)):
+            self.close()
+            return False
+        self.assigned = True
+        return True
+
+    def terminate(self) -> bool:
+        if self.handle is not None and self.kernel32 is not None:
+            return bool(self.kernel32.TerminateJobObject(self.handle, 1))
+        return False
+
+    def close(self) -> None:
+        if self.handle is not None and self.kernel32 is not None:
+            self.kernel32.CloseHandle(self.handle)
+        self.handle = None
+        self.kernel32 = None
+        self.assigned = False
+
+
+def _terminate_process_tree(
+    process: subprocess.Popen[str], windows_job: _WindowsJob | None = None
+) -> bool:
+    termination_confirmed = False
+    if os.name == "nt":
+        if windows_job is not None:
+            termination_confirmed = windows_job.terminate()
+        taskkill = subprocess.run(
+            ["taskkill", "/PID", str(process.pid), "/T", "/F"],
+            stdout=subprocess.DEVNULL,
+            stderr=subprocess.DEVNULL,
+            check=False,
+        )
+        termination_confirmed = termination_confirmed or taskkill.returncode == 0
+    else:
+        try:
+            os.killpg(process.pid, signal.SIGKILL)
+            termination_confirmed = True
+        except ProcessLookupError:
+            termination_confirmed = True
+    if process.poll() is None:
+        try:
+            process.wait(timeout=10)
+        except subprocess.TimeoutExpired:
+            process.kill()
+            try:
+                process.wait(timeout=10)
+            except subprocess.TimeoutExpired:
+                pass
+    return termination_confirmed
+
+
+def _run(
+    command: list[str],
+    cwd: Path,
+    timeout_seconds: float = 180,
+    cleanup_timeout_seconds: float = 10,
+) -> tuple[int, str, float]:
     env = dict(os.environ)
     env["PYTHONDONTWRITEBYTECODE"] = "1"
     # Windows can otherwise launch child validators with a legacy console
@@ -244,19 +377,60 @@ def _run(command: list[str], cwd: Path) -> tuple[int, str]:
     # deterministic transport and decode it explicitly in the parent.
     env["PYTHONUTF8"] = "1"
     env["PYTHONIOENCODING"] = "utf-8"
-    result = subprocess.run(
-        command,
-        cwd=cwd,
-        env=env,
-        text=True,
-        encoding="utf-8",
-        errors="backslashreplace",
-        stdout=subprocess.PIPE,
-        stderr=subprocess.STDOUT,
-        timeout=180,
-        check=False,
-    )
-    return result.returncode, result.stdout
+    popen_options: dict[str, Any] = {}
+    if os.name == "nt":
+        popen_options["creationflags"] = subprocess.CREATE_NEW_PROCESS_GROUP
+    else:
+        popen_options["start_new_session"] = True
+    started = time.monotonic()
+    windows_job = _WindowsJob() if os.name == "nt" else None
+    try:
+        process = subprocess.Popen(
+            command,
+            cwd=cwd,
+            env=env,
+            text=True,
+            encoding="utf-8",
+            errors="backslashreplace",
+            stdout=subprocess.PIPE,
+            stderr=subprocess.STDOUT,
+            **popen_options,
+        )
+    except Exception:
+        if windows_job is not None:
+            windows_job.close()
+        raise
+    if windows_job is not None and not windows_job.assign(process):
+        _terminate_process_tree(process)
+        windows_job.close()
+        raise RuntimeError(
+            "Windows Job Object assignment failed; refusing to run a child test without tree ownership"
+        )
+    try:
+        output, _unused = process.communicate(timeout=timeout_seconds)
+    except subprocess.TimeoutExpired as exc:
+        termination_confirmed = _terminate_process_tree(process, windows_job)
+        try:
+            output, _unused = process.communicate(timeout=cleanup_timeout_seconds)
+        except subprocess.TimeoutExpired as cleanup_exc:
+            output = cleanup_exc.output or exc.output or ""
+            if process.stdout is not None:
+                process.stdout.close()
+            if process.poll() is None:
+                process.kill()
+            try:
+                process.wait(timeout=cleanup_timeout_seconds)
+            except subprocess.TimeoutExpired:
+                pass
+        if isinstance(output, bytes):
+            output = output.decode("utf-8", errors="backslashreplace")
+        timeout_error = subprocess.TimeoutExpired(command, timeout_seconds, output=output)
+        timeout_error.process_tree_terminated = termination_confirmed  # type: ignore[attr-defined]
+        raise timeout_error from exc
+    finally:
+        if windows_job is not None:
+            windows_job.close()
+    return process.returncode, output, time.monotonic() - started
 
 
 def _validate_publication_surface(root: Path, skill: str, errors: list[str]) -> None:
@@ -494,9 +668,29 @@ def validate_suite(
 
     if run_tests:
         for label, skill, rel in TEST_COMMANDS:
-            code, output = _run([sys.executable, rel], root / skill)
+            print(f"RUN: {label} self-test", flush=True)
+            try:
+                code, output, elapsed = _run([sys.executable, rel], root / skill)
+            except subprocess.TimeoutExpired as exc:
+                timeout_output = exc.output if isinstance(exc.output, str) else ""
+                termination = (
+                    "process tree termination confirmed"
+                    if getattr(exc, "process_tree_terminated", False)
+                    else "process tree termination could not be confirmed"
+                )
+                errors.append(
+                    f"{label} self-test timed out after 180 seconds; {termination}: "
+                    f"{timeout_output[-1500:].strip()}"
+                )
+                continue
+            except RuntimeError as exc:
+                errors.append(f"{label} self-test could not start safely: {exc}")
+                continue
             if code != 0:
+                print(f"FAIL: {label} self-test ({elapsed:.3f}s)", flush=True)
                 errors.append(f"{label} self-test failed (exit {code}): {output[-1500:].strip()}")
+            else:
+                print(f"PASS: {label} self-test ({elapsed:.3f}s)", flush=True)
 
     if require_discovery:
         discovery_root = (discovery_root or (Path.home() / ".agents" / "skills")).expanduser().absolute()

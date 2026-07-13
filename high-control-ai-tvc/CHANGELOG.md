@@ -11,6 +11,9 @@
   安全恢复，并拒绝 state/discovery 重定向与非隔离 Python 运行时；
 - GitHub Actions 覆盖 Ubuntu、macOS、Windows 与 Python 3.11/3.12，动态
   验证安装、完整 automatic audit、项目骨架、runtime 和卸载生命周期；
+- Prompt/P1 合同负例改为顺序隔离夹具：Packaging 权威闭包由预写审计门
+  冻结，非 Packaging 变更按 byte/path/stat 回滚；保留 180 秒单测上限，
+  POSIX 进程组与 Windows Job Object 确保超时后无孤儿子进程；
 - 所有 Canon/package locator 统一序列化为 POSIX project-relative 路径，
   文本、提示词证据与机器收据固定为 UTF-8/LF，确保 Windows/Mac 可迁移；
 - 六 Skill 集成验证器固定以 UTF-8 启动并解码子验证器，避免 Windows

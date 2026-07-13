@@ -61,13 +61,36 @@ def prepare_case(project_root: Path, remove_p2: bool = True) -> tuple[Path, Path
     return root, canon
 
 
+_PREFLIGHT_HARNESS: fixture.CaseHarness | None = None
+
+
+def _build_preflight_fixture(root: Path, project_root: Path) -> None:
+    fixture.create_package(root, project_root)
+    canon = project_root / preflight.DEFAULT_CANON
+    canon.parent.mkdir(parents=True, exist_ok=True)
+    shutil.copy2(root / shared.PREFLIGHT_SNAPSHOT, canon)
+    for relative in P2_ONLY_FILES:
+        path = root / relative
+        if path.is_file():
+            path.unlink()
+
+
+def _preflight_harness() -> fixture.CaseHarness:
+    global _PREFLIGHT_HARNESS
+    if _PREFLIGHT_HARNESS is None or not _PREFLIGHT_HARNESS.active:
+        _PREFLIGHT_HARNESS = fixture.CaseHarness(
+            "preflight", _build_preflight_fixture, "prompt_preflight_package"
+        )
+    return _PREFLIGHT_HARNESS
+
+
 def run_case(mutator: Callable[[Path, Path, Path], None] | None = None) -> list[str]:
-    with tempfile.TemporaryDirectory() as temp:
-        project_root = Path(temp)
-        root, canon = prepare_case(project_root)
+    def operation(root: Path, project_root: Path) -> list[str]:
+        canon = project_root / preflight.DEFAULT_CANON
         if mutator is not None:
             mutator(root, project_root, canon)
         return preflight.validate_preflight_package(root, project_root, canon)
+    return _preflight_harness().execute(None, operation)
 
 
 def expect_error(name: str, mutator: Callable[[Path, Path, Path], None], needle: str) -> None:
@@ -108,7 +131,7 @@ def assert_packaging_cache_fingerprint_tamper() -> None:
         prompt_path = project_root / record["prompt_evidence"][0]["locator"]
         prompt_target = prompt_path.with_name(prompt_path.name + ".cache-target")
         prompt_path.rename(prompt_target)
-        prompt_path.symlink_to(prompt_target.name)
+        prompt_path.symlink_to(prompt_target)
         if fixture._packaging_tree_fingerprint(record, project_root) is not None:
             raise AssertionError("packaging owner cache accepted an external locked-file symlink")
         prompt_path.unlink()
@@ -118,7 +141,7 @@ def assert_packaging_cache_fingerprint_tamper() -> None:
         run_root = project_root / evidence["packaging_run"]["run_root_locator"]
         run_target = run_root.with_name(run_root.name + ".cache-target")
         run_root.rename(run_target)
-        run_root.symlink_to(run_target.name, target_is_directory=True)
+        run_root.symlink_to(run_target, target_is_directory=True)
         if fixture._packaging_tree_fingerprint(record, project_root) is not None:
             raise AssertionError("packaging owner cache accepted a symlinked packaging run root")
         run_root.unlink()
@@ -131,6 +154,11 @@ def assert_packaging_cache_fingerprint_tamper() -> None:
         after = fixture._packaging_tree_fingerprint(record, project_root)
         if not before or not after or before == after:
             raise AssertionError("packaging owner cache fingerprint ignored a nested run-byte mutation")
+        tamper_errors = fixture._ORIGINAL_VALIDATE_OWNER_ASSET_EXPORT(record, project_root)
+        if not tamper_errors or not any("packaging" in error.lower() for error in tamper_errors):
+            raise AssertionError(
+                f"independent Packaging tamper escaped the production owner validator: {tamper_errors}"
+            )
 
 
 def build_unit_decisions(root: Path, unit_id: str, unit_shots: list[str]) -> dict[str, Any]:
@@ -610,6 +638,12 @@ def main() -> int:
     if len(fixture._PACKAGING_OWNER_VALIDATION_CACHE) != cache_size_after_positive:
         raise AssertionError("byte-identical packaging fixtures produced unstable validation-cache keys")
 
+    final_errors = run_case()
+    if final_errors:
+        raise AssertionError(f"post-mutation P1 positive sentinel failed: {final_errors}")
+    for harness in fixture._CASE_HARNESSES:
+        harness.assert_packaging_unchanged()
+
     print(
         "PASS: standalone P1 accepts a no-P2 package and rejects omitted Canon assets, narrowed or "
         "out-of-scope controls, all seven registered visual owners as inline text, packaging-atlas "
@@ -621,4 +655,8 @@ def main() -> int:
 
 
 if __name__ == "__main__":
-    raise SystemExit(main())
+    try:
+        exit_code = main()
+    finally:
+        fixture.cleanup_case_harnesses()
+    raise SystemExit(exit_code)
