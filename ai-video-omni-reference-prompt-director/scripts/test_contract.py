@@ -1755,6 +1755,41 @@ def _path_is_within(path: Path, root: Path) -> bool:
         return False
 
 
+def _remove_tree_with_absolute_paths(root: Path) -> None:
+    """Delete one mutable harness subtree without shutil's dir_fd mutations.
+
+    The audit barrier intentionally rejects every relative write, including
+    otherwise-safe dir_fd operations.  CPython's POSIX shutil.rmtree uses
+    relative dir_fd unlinks internally, so restoration owns this small,
+    explicit absolute-path remover instead of weakening the barrier.
+    """
+    if not root.is_absolute():
+        raise AssertionError(f"absolute harness cleanup path required: {root}")
+    if root.is_symlink() or root.is_file():
+        root.unlink()
+        return
+    if not root.is_dir():
+        return
+    root.chmod(stat.S_IMODE(root.stat().st_mode) | 0o700)
+    with os.scandir(root) as iterator:
+        entries = list(iterator)
+    for entry in entries:
+        path = Path(entry.path)
+        if not path.is_absolute():
+            raise AssertionError(f"scandir returned a relative cleanup path: {path}")
+        if entry.is_symlink():
+            path.unlink()
+        elif entry.is_dir(follow_symlinks=False):
+            _remove_tree_with_absolute_paths(path)
+        else:
+            try:
+                path.chmod(stat.S_IMODE(path.stat().st_mode) | 0o600)
+            except FileNotFoundError:
+                continue
+            path.unlink()
+    root.rmdir()
+
+
 class CaseHarness:
     """Reuse one isolated project while blocking writes to Packaging authority."""
 
@@ -1913,7 +1948,7 @@ class CaseHarness:
                 if path.is_symlink() or path.is_file():
                     path.unlink()
                 elif path.is_dir():
-                    shutil.rmtree(path)
+                    _remove_tree_with_absolute_paths(path)
                 subtree_dirs = sorted(
                     (item for item in self.baseline_dirs if item == rel or _path_is_within(item, rel)),
                     key=lambda item: len(item.parts),
