@@ -175,6 +175,11 @@ TEST_COMMANDS = (
     ("prompt", "ai-video-omni-reference-prompt-director", "scripts/test_contract.py"),
     ("suite contract", "ai-video-omni-reference-prompt-director", "scripts/test_suite_contract.py"),
     ("schema parity", "ai-video-omni-reference-prompt-director", "scripts/validate_schema_parity.py"),
+    (
+        "macOS Vision result protocol",
+        "packaging-product-identity-label-lock-board",
+        "scripts/test_macos_vision_adapter.py",
+    ),
 )
 
 SHARED_APPROVALS = ["draft", "assistant_validated", "user_approved", "stale", "blocked"]

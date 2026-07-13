@@ -3683,6 +3683,15 @@ def validate_complete(
                                 submitted = receipt.get("submitted_reference_bindings")
                                 expected_submitted: list[dict[str, Any]] = []
                                 source_ids = coverage_views.get(view_id, {}).get("source_refs") or []
+                                submitted_shape_valid = (
+                                    isinstance(submitted, list)
+                                    and len(submitted) == len(source_ids)
+                                    and all(isinstance(item, dict) for item in submitted)
+                                )
+                                if not submitted_shape_valid:
+                                    errors.append(
+                                        f"asset_qa {view_id}: submitted frozen references do not match manifest bytes"
+                                    )
                                 manifest_payload = json.dumps(
                                     entries,
                                     ensure_ascii=False,
@@ -3729,7 +3738,7 @@ def validate_complete(
                                             )
                                 if len(entries) != len(source_ids) or [item.get("alias") for item in entries] != source_ids:
                                     errors.append(f"asset_qa {view_id}: frozen references do not preserve coverage order")
-                                if submitted != expected_submitted:
+                                if submitted_shape_valid and submitted != expected_submitted:
                                     errors.append(f"asset_qa {view_id}: submitted frozen references do not match manifest bytes")
                                 binding_payload = json.dumps(
                                     expected_submitted,
@@ -4229,6 +4238,11 @@ def validate_complete(
 
 
 def validate_run(root: Path) -> list[str]:
+    # Establish one physical-path identity for the entire validator.  Windows
+    # runners can expose the same temp tree through an 8.3 alias and a long
+    # path; macOS can expose /var through /private/var.  Downstream containment
+    # checks must never compare a resolved child to an unresolved root alias.
+    root = root.resolve(strict=False)
     errors: list[str] = []
     manifest_path = root / "00_manifest/run_manifest.json"
     if not manifest_path.is_file():

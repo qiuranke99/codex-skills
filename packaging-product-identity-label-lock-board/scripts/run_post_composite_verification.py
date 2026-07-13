@@ -29,6 +29,11 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Any, Iterable
 
+SCRIPT_DIR = Path(__file__).resolve().parent
+if str(SCRIPT_DIR) not in sys.path:
+    sys.path.insert(0, str(SCRIPT_DIR))
+from macos_vision_adapter import VisionAdapterError, run_macos_vision as run_strict_macos_vision
+
 try:
     from PIL import Image
 except ImportError:  # pragma: no cover - capability failure on an invalid host
@@ -372,30 +377,10 @@ def decoded_payload_integrity(symbology: str, payload: str) -> tuple[bool, str]:
 
 
 def run_bundled_vision(paths: list[Path], languages: list[str]) -> tuple[list[dict[str, Any]], str]:
-    if platform.system() != "Darwin":
-        raise VerificationError("blocked_ocr_capability: bundled macOS Vision OCR requires macOS")
-    swift = shutil.which("swift")
-    if not swift or not VISION_SCRIPT.is_file():
-        raise VerificationError("blocked_ocr_capability: bundled macOS Vision OCR adapter is unavailable")
-    env = dict(os.environ)
-    env["PACKAGING_OCR_LANGUAGES"] = ",".join(languages)
-    result = subprocess.run(
-        [swift, str(VISION_SCRIPT), *[str(path) for path in paths]],
-        check=False, capture_output=True, text=True, env=env,
-    )
-    if result.returncode != 0:
-        raise VerificationError(
-            f"bundled macOS Vision OCR failed ({result.returncode}): {result.stderr.strip()}"
-        )
     try:
-        value = json.loads(result.stdout)
-    except json.JSONDecodeError as exc:
-        raise VerificationError(f"bundled macOS Vision OCR returned invalid JSON: {exc}") from exc
-    if not isinstance(value, list) or len(value) != len(paths):
-        raise VerificationError("bundled macOS Vision OCR result count does not match scan count")
-    if not all(isinstance(item, dict) for item in value):
-        raise VerificationError("bundled macOS Vision OCR returned a malformed result record")
-    return value, platform.mac_ver()[0] or "unknown-macos"
+        return run_strict_macos_vision(VISION_SCRIPT, paths, languages)
+    except VisionAdapterError as exc:
+        raise VerificationError(str(exc)) from exc
 
 
 def make_scan_specs(

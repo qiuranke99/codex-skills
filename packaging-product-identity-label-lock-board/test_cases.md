@@ -179,6 +179,13 @@ These cases define the expected semantics.
 
 ## Exact-copy composition and final QA
 
+0. Swift/AppKit/Vision emits arbitrary stdout diagnostics around a successful
+   OCR call, or a result file contains trailing JSON, a stale nonce, reordered
+   paths, wrong count, or was written by a nonzero process.
+   - Ignore stdout only as a data source; accept one strictly bound atomic
+     result file in the diagnostic-noise case and fail every result-file or
+     process-integrity mismatch.
+
 1. The raw generated base contains model pseudo-copy in protected regions.
    - Fail `generated_text_pollution_status` unless a deterministic mask proves
      complete pixel replacement.

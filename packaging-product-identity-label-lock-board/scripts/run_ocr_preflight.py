@@ -21,6 +21,11 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
 
+SCRIPT_DIR = Path(__file__).resolve().parent
+if str(SCRIPT_DIR) not in sys.path:
+    sys.path.insert(0, str(SCRIPT_DIR))
+from macos_vision_adapter import VisionAdapterError, run_macos_vision as run_strict_macos_vision
+
 try:
     from PIL import Image
 except ImportError:  # pragma: no cover - exercised by capability gate
@@ -109,31 +114,10 @@ def select_engine(requested: str) -> str:
 
 
 def run_macos_vision(paths: list[Path], languages: list[str]) -> tuple[list[dict[str, Any]], str]:
-    swift = shutil.which("swift")
-    if platform.system() != "Darwin" or not swift or not VISION_SCRIPT.is_file():
-        raise PreflightError("blocked_ocr_capability: macOS Vision adapter is unavailable", 4)
-    env = dict(os.environ)
-    env["PACKAGING_OCR_LANGUAGES"] = ",".join(languages)
-    result = subprocess.run(
-        [swift, str(VISION_SCRIPT), *[str(path) for path in paths]],
-        check=False,
-        capture_output=True,
-        text=True,
-        env=env,
-    )
-    if result.returncode != 0:
-        raise PreflightError(
-            f"macOS Vision OCR failed ({result.returncode}): {result.stderr.strip()}",
-            4,
-        )
     try:
-        payload = json.loads(result.stdout)
-    except json.JSONDecodeError as exc:
-        raise PreflightError(f"macOS Vision returned invalid JSON: {exc}", 4) from exc
-    if not isinstance(payload, list) or len(payload) != len(paths):
-        raise PreflightError("macOS Vision result count does not match source count", 4)
-    version = platform.mac_ver()[0] or "unknown-macos"
-    return payload, version
+        return run_strict_macos_vision(VISION_SCRIPT, paths, languages)
+    except VisionAdapterError as exc:
+        raise PreflightError(str(exc), 4) from exc
 
 
 def tesseract_languages_available(executable: str) -> set[str]:

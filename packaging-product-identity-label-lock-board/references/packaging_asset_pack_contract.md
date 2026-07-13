@@ -673,6 +673,12 @@ graphic comparison, layer/show-through QA, geometry QA, and continuity QA.
 
 The bundled v3 post-composite OCR/decode implementation is macOS-only and
 requires Darwin, Swift, the installed `macos_vision_ocr.swift`, and Pillow.
+Python and Swift exchange authority through one unique atomic result file, not
+stdout. The result envelope binds a fresh invocation nonce, ordered canonical
+input paths, one observation per input, and schema version
+`packaging-macos-vision-result.v1`; stdout/stderr are diagnostic-only byte
+streams. A missing/trailing result document, nonzero process exit, stale nonce,
+or path/count/order mismatch fails closed.
 Tesseract remains valid for source discovery/region review but does not supply
 the final barcode/QR path. A run without a callable Mac final-verification route
 is not executable exact-copy production and must stop before prompt compilation.

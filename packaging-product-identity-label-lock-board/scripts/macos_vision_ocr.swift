@@ -32,6 +32,13 @@ struct ImageObservation: Codable {
     let code_observations: [CodeObservation]
 }
 
+struct ResultEnvelope: Codable {
+    let schema_version: String
+    let invocation_id: String
+    let input_paths: [String]
+    let observations: [ImageObservation]
+}
+
 func box(_ rect: CGRect) -> Box {
     return Box(
         x: Double(rect.origin.x),
@@ -41,9 +48,23 @@ func box(_ rect: CGRect) -> Box {
     )
 }
 
-let paths = Array(CommandLine.arguments.dropFirst())
-if paths.isEmpty {
-    FileHandle.standardError.write(Data("usage: macos_vision_ocr.swift IMAGE [IMAGE ...]\n".utf8))
+let arguments = Array(CommandLine.arguments.dropFirst())
+guard arguments.count >= 6,
+      arguments[0] == "--result-file",
+      arguments[2] == "--invocation-id",
+      arguments[4] == "--" else {
+    FileHandle.standardError.write(Data("usage: macos_vision_ocr.swift --result-file PATH --invocation-id HEX32 -- IMAGE [IMAGE ...]\n".utf8))
+    exit(2)
+}
+let resultPath = arguments[1]
+let invocationID = arguments[3]
+let paths = Array(arguments.dropFirst(5))
+let hexCharacters = CharacterSet(charactersIn: "0123456789abcdef")
+guard !resultPath.isEmpty,
+      invocationID.count == 32,
+      invocationID.unicodeScalars.allSatisfy({ hexCharacters.contains($0) }),
+      !paths.isEmpty else {
+    FileHandle.standardError.write(Data("invalid result path, invocation id, or image list\n".utf8))
     exit(2)
 }
 
@@ -116,10 +137,15 @@ for path in paths {
 let encoder = JSONEncoder()
 encoder.outputFormatting = [.sortedKeys]
 do {
-    let data = try encoder.encode(results)
-    FileHandle.standardOutput.write(data)
-    FileHandle.standardOutput.write(Data("\n".utf8))
+    let envelope = ResultEnvelope(
+        schema_version: "packaging-macos-vision-result.v1",
+        invocation_id: invocationID,
+        input_paths: paths,
+        observations: results
+    )
+    let data = try encoder.encode(envelope)
+    try data.write(to: URL(fileURLWithPath: resultPath), options: .atomic)
 } catch {
-    FileHandle.standardError.write(Data("JSON encode failed: \(error)\n".utf8))
+    FileHandle.standardError.write(Data("result-file encode/write failed: \(error)\n".utf8))
     exit(5)
 }

@@ -387,21 +387,6 @@ def validate_packaging_exact_copy_evidence(
     validator_sha = _sha(validator_path.read_bytes())
     if value.get("validator_file_sha256") != validator_sha:
         errors.append("packaging evidence validator_file_sha256 is stale")
-    try:
-        spec = importlib.util.spec_from_file_location(
-            "_packaging_exact_copy_canon_validator", validator_path
-        )
-        if spec is None or spec.loader is None:
-            raise ImportError("validator module spec unavailable")
-        validator_module = importlib.util.module_from_spec(spec)
-        spec.loader.exec_module(validator_module)
-        run_errors = validator_module.validate_run(run_root)
-    except Exception as exc:
-        errors.append(f"packaging COMPLETE run validator could not execute: {exc}")
-        return errors
-    if run_errors:
-        errors.append("packaging COMPLETE run failed live validation: " + "; ".join(run_errors))
-
     lock_roles = {
         "exact_copy_bundle": ("exact_copy_bundle", "exact_copy_bundle_file_sha256"),
         "coverage_matrix": ("coverage_matrix", "coverage_matrix_sha256"),
@@ -496,6 +481,26 @@ def validate_packaging_exact_copy_evidence(
             or primary_member.get("post_result_sha256") != _json_hash(result)
         ):
             errors.append("packaging primary post-result lock mismatch")
+    # Full live validation is the final authority gate, not the first parser.
+    # Reject cheap schema, lock, hash, and member mismatches before paying for a
+    # production-shaped COMPLETE run validation.  The success path still runs
+    # the complete validator exactly once and cannot bypass it.
+    if errors:
+        return errors
+    try:
+        spec = importlib.util.spec_from_file_location(
+            "_packaging_exact_copy_canon_validator", validator_path
+        )
+        if spec is None or spec.loader is None:
+            raise ImportError("validator module spec unavailable")
+        validator_module = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(validator_module)
+        run_errors = validator_module.validate_run(run_root)
+    except Exception as exc:
+        errors.append(f"packaging COMPLETE run validator could not execute: {exc}")
+        return errors
+    if run_errors:
+        errors.append("packaging COMPLETE run failed live validation: " + "; ".join(run_errors))
     return errors
 
 

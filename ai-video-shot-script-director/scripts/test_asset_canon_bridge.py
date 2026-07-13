@@ -603,6 +603,16 @@ def main() -> int:
             arbitrary_command,
             "primary_asset_sha256 mismatch",
         )
+        exact_bundle = root / exact_values["exact_copy_bundle_locator"]
+        exact_bundle_bytes = exact_bundle.read_bytes()
+        exact_bundle.write_bytes(exact_bundle_bytes + b"\n")
+        expect_failure_without_manifest_mutation(
+            root,
+            "exact packaging with drifted bundle",
+            exact_command,
+            "sha-256 mismatch",
+        )
+        exact_bundle.write_bytes(exact_bundle_bytes)
         exact_result = run(exact_command)
         if exact_result.returncode != 0:
             raise AssertionError(f"exact-copy-verified packaging export failed: {exact_result.stdout}")
@@ -612,21 +622,6 @@ def main() -> int:
             raise AssertionError("exact-copy-verified packaging export did not lock label_copy authority")
         if exact_record.get("authority_evidence", {}).get("role") != "packaging_exact_copy":
             raise AssertionError("exact-copy packaging export did not bind authority evidence")
-
-        stale_exact_values = create_inputs(
-            root,
-            "packaging_product",
-            "staleexact",
-            authority_mode="geometry_layout_exact_copy_verified",
-        )
-        stale_bundle = root / stale_exact_values["exact_copy_bundle_locator"]
-        stale_bundle.write_bytes(stale_bundle.read_bytes() + b"\n")
-        expect_failure_without_manifest_mutation(
-            root,
-            "exact packaging with drifted bundle",
-            command(root, "packaging_product", "staleexact", stale_exact_values),
-            "sha-256 mismatch",
-        )
 
         # Wrapper CLI has no owner field, so an attempted owner override is rejected.
         values = create_inputs(root, "character_final", "spoofcli")

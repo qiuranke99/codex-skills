@@ -4143,7 +4143,7 @@ def main() -> int:
     print("PASS source-feature-derived continuity gate contract")
     assert_final_runtime_gate_contract()
     with tempfile.TemporaryDirectory(prefix="packaging-contract-") as temporary:
-        base = Path(temporary).resolve()
+        base = Path(temporary)
         ready = base / "ready"
         create_ready_run(ready)
         ready_errors = validate_run(ready)
