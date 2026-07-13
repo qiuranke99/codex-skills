@@ -1,4 +1,6 @@
 interface:
   display_name: "Multi-Angle Product Identity Lock Board"
-  short_description: "Six-view product lock with final prompt-pair handoff."
-  default_prompt: "Use $multi-angle-product-identity-lock-board to request one horizontal 16:9 six-view board, then in the later continuation inspect it and publish one final main result that visibly contains the complete exact final_generation_prompt plus generation_prompt_sha256 and the complete image-specific final_4k_enhancement_prompt plus 4k_enhancement_prompt_sha256."
+  short_description: "Six-view product board with an automatic verified prompt pair."
+  default_prompt: "Use $multi-angle-product-identity-lock-board with my product references to request one horizontal 16:9 six-view board; delegate the terminal image call to exactly one non-decision worker, inspect the bound board in the main agent, and publish the complete exact final_generation_prompt plus generation_prompt_sha256 and the complete image-specific final_4k_enhancement_prompt plus 4k_enhancement_prompt_sha256 in the same task's final main result."
+policy:
+  allow_implicit_invocation: false

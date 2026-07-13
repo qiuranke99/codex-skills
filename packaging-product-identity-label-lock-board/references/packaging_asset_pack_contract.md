@@ -563,6 +563,44 @@ canonical set hash must match the coverage source refs and every declared
 parent anchor. A prompt that names a reference is insufficient when that exact
 file was not submitted.
 
+### Delegated per-master worker transport
+
+`runtime_contract_version: delegated_master_worker_transport_v1` applies to
+every actual image-generation attempt. Explicit Skill invocation authorizes
+exactly one fresh non-decision worker for one unit attempt. The main agent owns
+the source, prompt, inspection, repair, acceptance, composition, validation,
+and publication decisions; it must never make the terminal imagegen call.
+
+Before spawning, freeze the current unit's unique ordered source files with
+`scripts/freeze_reference_bundle.py`. Use the coverage `source_refs` as aliases
+in their frozen order. Record the exact parent thread, a full random
+32-lowercase-hex nonce, a pre-spawn millisecond checkpoint, prompt path/hash,
+reference-manifest path/hash, view ID, and attempt ID. The worker task name and
+canonical agent path must end with the full nonce.
+
+The worker may read the frozen prompt and references, transport those exact
+bytes to one built-in imagegen call, and end empty. It may not interpret,
+rewrite, inspect, repair, approve, select files, or publish. Resolve the result
+with `scripts/resolve_worker_image.py`; newest-file selection, a non-empty
+worker final, multiple completed image events, wrong parent/thread/call,
+prompt-byte drift, reference reorder/mutation, or a saved path unrelated to the
+worker thread plus image-call ID blocks the unit.
+
+Promote only a main-agent-inspected accepted attempt to the canonical
+`05_masters_raw/<family>/<view_id>.png` path. Build its receipt with
+`scripts/build_generation_receipt.py`. `packaging-generation-receipt.v2`
+hash-binds the resolver result, worker thread/turn/call, full nonce-bearing
+agent path, prompt bytes, ordered frozen-reference bundle, raw image bytes,
+dimensions, semantic source/parent bindings, and accepted view. Durable
+receipt locators are run-relative POSIX paths even when the run-scoped worker
+transport manifest contains machine-local absolute paths.
+
+Receipt v1 is `legacy_untrusted_generation_provenance`. It may document a
+historical asset but cannot make a v3 run `COMPLETE`, authorize Project Canon,
+or grant `label_copy`. A v3 COMPLETE run requires one unique v2 worker
+provenance chain per approved master; one worker thread/turn/call cannot be
+reused across views.
+
 If a raw base contains pseudo-copy in protected regions, reject it or prove the
 deterministic mask fully replaces those pixels before composition.
 

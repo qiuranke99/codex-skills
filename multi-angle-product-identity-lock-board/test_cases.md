@@ -1,39 +1,42 @@
-# Contract test cases
+# Multi-Angle Product Identity Lock Board Test Cases
 
-Use these fixtures for static or forward validation. Passing requires the exact expected state; visual plausibility cannot override a state failure.
+## Green Scenarios
 
-## Built-in dimensions are nonblocking
+1. **One-request completion**: one explicit `$multi-angle-product-identity-lock-board` request spawns one fresh terminal image worker; the main agent continues without a second user message and publishes a non-empty final result.
+2. **Exact worker binding**: the resolver binds one fresh worker thread, one completed `image_generation_end`, and one PNG using the exact agent path, checkpoint, thread ID, and call ID.
+3. **Prompt integrity**: the worker's imagegen prompt is byte-identical to the UTF-8/LF generation sidecar and has the same SHA-256.
+4. **Parseable worker call**: prompt and references are JSON literals in the imagegen argument object.
+5. **Reference integrity**: the worker contains exactly the ordered run-scoped `referenced_image_paths`; manifest bytes, order, source hashes, and bundle hash all match.
+6. **Main-agent inspection**: the main agent opens the copied run-scoped PNG before creating `final_4k_enhancement_prompt`.
+7. **Six-view topology**: exactly six distinct complete views show the same product with no repeated angle, crop, overlap, invented structure, or non-product text.
+8. **Built-in dimensions**: a source-faithful 1672x941 board is recorded under `built_in_dimensions_policy: evidence_only_nonblocking` and can pass content QA.
+9. **Source-bound 4K**: the final 4K prompt uses the Codex board plus original references and names defects observed in the bound board.
+10. **Sidecar integrity**: publication rereads both prompt sidecars and recomputes both hashes; exact bytes appear inline.
+11. **Final main result**: `scripts/build_final_result.py` proves the accepted-attempt, worker, inspection, board, manifest, prompt, and handoff chain before the board, both complete prompts, both hashes, and both published states appear together in one non-empty `final` response.
+12. **Repair isolation**: one repair uses a fresh worker and a newly frozen attempt prompt; the main agent never calls imagegen.
+13. **Optional native 4K**: the native branch is off by default and never borrows evidence from an external enhancement.
 
-1. A built-in board returns `1672x941`, and all six views, geometry, seams, interfaces, and source identity pass.
-   - Expect `built_in_dimensions_policy: evidence_only_nonblocking`.
-   - Expect `codex_board_role: content_qa_reference` and content QA `passed`.
-   - Forbid ratio-triggered repair, demotion, conditional QA, or 4K-handoff blocking.
-2. Repeat with `1536x1024`; expect the same state behavior.
-3. `native_4k_branch: off`; forbid any native-resolution field from affecting default completion.
+## Red Scenarios
 
-## Terminal generation and continuation
+- The main agent calls imagegen, produces one image, emits an empty final, and assumes a later continuation: fail.
+- The generation prompt appears only in commentary: fail.
+- Implicit invocation is disabled; a non-explicit route must not spawn a worker.
+- A self-reported continuation boolean exists without a bound worker trace: fail.
+- The worker thread is missing, stale, or ambiguous: fail with `blocked_worker_thread_*`.
+- More than one imagegen call or image-end event exists: fail.
+- The tool prompt differs by one byte from the frozen sidecar: fail.
+- Ordered reference paths differ from the frozen manifest: fail.
+- Two references are swapped or a frozen source byte changes after the manifest is written: fail.
+- The canonical worker path omits the exact 32-hex nonce suffix, adds a follow-up turn, emits non-empty final text, or makes a post-image tool call: fail.
+- The newest PNG is selected by timestamp instead of thread ID plus call ID: fail.
+- The board is not copied into the run directory or not visually inspected: fail.
+- Any of the six views is missing, repeated, cropped, or shows conflicting product geometry: fail QA or repair.
+- A repair overwrites an earlier attempt or publishes a non-accepted attempt's generation prompt: fail.
+- The 4K prompt or handoff sidecar is missing: fail.
+- The final claims `published` but omits the board, either complete prompt, either hash, or either published state: fail.
+- A prompt is reconstructed after a sidecar or hash mismatch: fail.
+- A 1672x941 board is repaired only because its pixels are not exact 16:9: fail.
 
-1. Before generation, persist exact `final_generation_prompt` bytes, re-read them, verify `generation_prompt_sha256`, then call image generation as the turn's final action.
-2. After the call, expect `task_finalization_status: awaiting_post_generation_continuation` and `main_result_prompt_pair_status: pending`; forbid a task-complete claim.
-3. In the next continuation, inspect the actual board, finalize the board-specific 4K prompt, persist and re-read it, then verify both hashes.
+## Required Runtime Proof
 
-## Final main result
-
-The final channel must contain the complete unabridged values of all four fields in one main result:
-
-- `final_generation_prompt`
-- `generation_prompt_sha256`
-- `final_4k_enhancement_prompt`
-- `4k_enhancement_prompt_sha256`
-
-Fail when either prompt appears only in commentary, an earlier turn, a path, a sidecar, an excerpt, or a summary. On success expect `main_result_prompt_pair_status: published` and `task_finalization_status: final_main_result_published`.
-
-If output capacity cannot hold both complete prompts, expect `blocked_final_output_capacity`; forbid truncation, splitting, or a published claim.
-
-## Integrity and external 4K
-
-1. Mutate one byte in the generation sidecar after generation. Expect `blocked_prompt_pair_integrity`; forbid reconstruction.
-2. Omit either the original product references or Codex board from the external bundle. Expect handoff not ready.
-   - Even when both prompt hashes pass, `prompt_pair_ready` must not set `external_4k_status: handoff_ready`.
-3. Omit exact external `aspect_ratio: "16:9"` or `image_size: "4K"` controls. Expect `blocked_runtime_controls`.
-4. Return an external 4K board with a repeated view, moved seam, new port, or geometry drift. Expect external QA `failed` and `external_4k_status: rejected`.
+Static checks prove contract shape only. Before claiming this architecture works on a Codex surface, run an isolated worker smoke test and prove: worker imagegen completed; the worker final was empty as required; the parent continued; the resolver bound the exact PNG using worker thread ID plus call ID; the parent inspected that PNG; and a non-empty complete prompt-pair final trace passes while captured Oran failure thread `019f4b5a-e57c-7e60-a3f8-fdbec4babcb3` fails with main-agent imagegen, empty final, missing worker binding, missing inspection, and missing 4K sidecar violations.

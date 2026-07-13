@@ -1,34 +1,32 @@
 ---
 name: single-face-character-lock-board
-description: "Use when the user provides character references and needs exactly one text-free horizontal 16:9-requested single-face asset board: one bust portrait containing the board's only visible face, one headless front full-body outfit view, and one headless back full-body outfit view. Resolve one target identity before generation; freeze the generation prompt before the terminal image call, then inspect the result and publish the complete generation and image-specific 4K prompt pair in the later final main result. Do not use for ordinary turnarounds, expression sheets, casting contact boards, or prompt-only delivery."
+description: "Use when the user provides materializable character references for one selected identity and needs exactly one text-free horizontal 16:9-requested board with one visible-face bust plus headless front and back full-body wardrobe views. When the local Codex Desktop evidence gate passes, freeze the source bytes and exact generation prompt, delegate the terminal built-in image call to one non-decision image worker, bind and inspect that worker's actual board, then publish the complete generation and image-specific 4K prompt pair with both SHA-256 values in the same task's final main result. Do not use for ordinary turnarounds, expression sheets, casting boards, posters, scenes, or prompt-only delivery."
 ---
 
 # Single-Face Character Lock Board
 
-Contract version: `asset_board_contract_version: built_in_nonblocking_prompt_pair_v2`.
-
 中文名称：单脸角色资产锁定板
 
-Generate exactly one board with exactly three visual components:
+`asset_board_contract_version: delegated_image_worker_prompt_pair_v3`
+
+Generate one board with exactly three visual components:
 
 1. one bust portrait containing the only complete visible face;
-2. one headless front full-body view from neck to feet;
-3. one headless back full-body view from neck to feet.
+2. one headless front full-body view from neck to complete feet;
+3. one headless back full-body view from neck to complete feet.
 
-This deliberately unusual topology separates identity evidence from front/back wardrobe evidence to reduce multi-face drift. Do not convert it into a standard turnaround, expression board, casting sheet, poster, or scene.
+The main agent owns identity resolution, prompt truth, visual QA, repair decisions, and the final main result. Exactly one non-decision image worker owns each terminal built-in imagegen call. This separation lets the worker obey the terminal image-call rule while the main agent continues the same user task and publishes both prompts without requiring a second user message.
 
 ## 1. Identity Selection Gate
 
 Require at least one usable character reference and resolve one `target_identity` before generation.
 
-For multiple references:
-
-- Combine identity evidence only when the images clearly show the same person.
-- Respect explicit user assignments for face, hair, skin, outfit, shoes, and accessories.
-- An outfit reference may show another person, but it contributes wardrobe evidence only; never import that person's face, body identity, age, or skin.
-- If references show two or more plausible target people and the user has not selected one, return `selection_pending`. Ask the user to identify the target person or assign one attachment as `identity_source`.
+- Combine identity evidence only when the references clearly show the same person.
+- Respect user assignments for identity, hair, skin, body, outfit, shoes, and accessories.
+- Treat a different person's outfit image as wardrobe evidence only.
+- If two or more identities remain plausible, return `selection_pending` and ask the user to select `identity_source`.
 - Do not average, blend, or infer a preferred face from different people.
-- If a user explicitly requests a new composite identity, route outside this lock skill rather than disguising synthesis as identity preservation.
+- Route an explicitly requested composite identity outside this Skill.
 
 Input status must be exactly one of:
 
@@ -37,230 +35,203 @@ Input status must be exactly one of:
 - `hard_blocked_no_character_reference`
 - `policy_blocked`
 
-Only `ready` permits image generation.
+Only `ready` permits generation.
 
-## 2. Source Ledger
+Privately bind `identity_source`, `hair_source`, `skin_source`, `body_source`, `outfit_source`, `shoe_source`, and `accessory_source` as `user_locked`, `source_supported`, `safe_inferred`, or `missing_or_conflicting`. User assignments outrank inference. Keep local paths, private notes, and hidden reasoning outside the generation prompt.
 
-Privately map:
+## 2. Enforce The Fixed Board
 
-- `identity_source`
-- `hair_source`
-- `skin_source`
-- `body_source`
-- `outfit_source`
-- `shoe_source`
-- `accessory_source`
-
-Use `user_locked`, `source_supported`, `safe_inferred`, or `missing_or_conflicting` for each role. User assignments outrank inference. Never claim an inferred back garment, shoe detail, or body feature is verified.
-
-Do not expose the private source ledger unless the user asks for diagnostics. Never copy local paths, hidden reasoning, secrets, or private notes into the generation prompt.
-
-## 3. Fixed Board Topology
-
-Request one horizontal 16:9, clean, neutral-gray studio board with realistic photographic texture, soft even light, minimal shadow, and production-reference clarity. The built-in prompt must request horizontal 16:9 and no alternate ratio, but the returned pixel dimensions are observational evidence only. Record the original file dimensions and ratio without downgrading a source-faithful board, failing content QA, triggering repair, or blocking the 4K handoff when the built-in runtime returns a nearby or different ratio.
+Request one clean, text-free, horizontal 16:9 neutral-gray studio board with realistic photographic texture, soft even light, minimal shadow, and production-reference clarity.
 
 ### Bust portrait
 
 - chest-up or upper-body, frontal or near-frontal;
 - neutral natural expression;
-- clear hairline, facial structure, skin texture, facial hair, marks, and visible identity-critical jewelry;
+- source-faithful hairline, facial geometry, skin, marks, facial hair, and visible identity-critical jewelry;
 - exactly one complete visible face and the only face anywhere on the board.
 
 ### Headless front full-body
 
-- neck or upper-neck downward to complete feet;
-- same target body's proportion and same outfit system;
-- clear front garment structure, sleeves, waist, hem, pockets, shoes, and accessories;
-- no head, face, partial face, printed face, or reflected face.
+- neck downward to complete feet;
+- the same body proportion, outfit, shoes, and accessories;
+- readable front garment construction, waist, pockets, hems, and footwear;
+- no head, face, partial face, reflected face, or printed face.
 
 ### Headless back full-body
 
-- neck or upper-neck downward to complete feet;
-- same proportion, outfit, shoes, and accessories as the front view;
-- clear back collar, seams, garment structure, pockets, hems, and shoe backs;
+- neck downward to complete feet;
+- the same body proportion, outfit, shoes, and accessories;
+- readable back collar, seams, pockets, hems, and shoe backs;
 - no head, turned head, profile, or partial face.
 
-Inside the image, forbid extra panels, expression tiles, side portraits, heads on body views, mirrors, people, printed faces, text, labels, arrows, numbers, measurements, watermarks, UI, poster styling, fashion editorial, cinematic scenes, illustration, anime, CGI, and decorative typography.
+Forbid additional panels, people, heads, faces in reflections or prints, mirrors, expression tiles, labels, arrows, measurements, watermarks, UI, poster styling, editorial scenes, illustration, anime, CGI, and decorative typography.
 
-## 4. Freeze The Prompt Before Generation
+Set:
 
-Call the available built-in image-generation capability directly. Do not ask the user to copy a prompt elsewhere. Do not claim a generator model, seed, exact raster size, or native-resolution provenance unless the runtime exposes it.
+```yaml
+built_in_prompt_aspect_ratio_request: "horizontal 16:9"
+built_in_prompt_alternate_aspect_ratios_allowed: false
+built_in_dimensions_policy: evidence_only_nonblocking
+```
 
-Before the image-generation call:
+Returned dimensions are observational evidence. A nearby or different built-in raster ratio cannot by itself fail content QA, trigger repair, block prompt-pair finalization, or block the external 4K handoff.
 
-1. Capture `runtime_capability_snapshot`: callable image tool, exposed model choice, exposed size controls, usable reference count, and known output/provenance limits. Leave unknown values `unknown`.
-2. Build the complete `final_generation_prompt` with attachment aliases, selected identity, source-role bindings, exact three-panel topology, style, and strict negatives.
-   `final_generation_prompt` remains the single source of truth for generating or repairing the Codex board; do not create a rewritten second generation prompt for the external handoff.
-3. Keep `final_4k_enhancement_prompt` unset. An optional private `draft_4k_enhancement_prompt` may capture invariant 16:9, exactly-one-face, headless-body, source-reference, and skin-fidelity requirements, but it is not a deliverable, has no final hash, and cannot claim to diagnose an image that does not yet exist. Set `4k_enhancement_prompt_status: draft_pre_generation`.
-4. Normalize the exact generation prompt as UTF-8 with LF line endings.
-5. Compute `generation_prompt_sha256` from those exact bytes.
-6. Persist `<asset_id>_generation_prompt.md` and write the prompt state to `asset_record.yaml` before generation. The sidecar bytes must be exactly the normalized prompt text with no BOM, heading, fence, frontmatter, or metadata wrapper. This sidecar is mandatory because later publication must reread its original bytes. If persistence or readback is unavailable, return `blocked_generation_prompt_persistence` before image generation.
-7. Present the exact generation prompt and its hash. Set `prompt_disclosed_before_generation: true`; state that the inspected-board-specific 4K prompt will be delivered only after later visual inspection with the original references available.
-8. Set `terminal_generation_call: pending`, `assistant_qa_status: pending_post_generation_inspection`, `built_in_dimensions_policy: evidence_only_nonblocking`, `task_finalization_status: generation_terminal_pending`, `main_result_prompt_pair_status: pending`, `external_4k_status: not_ready`, and `production_approval_status: not_granted`.
-9. Call image generation as the final action of the turn.
+## 3. Pass The Automatic Runtime Gate
 
-Do not send text, call another tool, inspect the output, reconstruct the prompt, or claim visual success after the image-generation call in that turn. The returned image is the terminal result.
+Before composing a production prompt, verify all of the following:
 
-On the next continuation, when the tool trace proves `terminal_generation_call: executed` and the board is available but not yet inspected, promote `task_finalization_status` from `generation_terminal_pending` to `awaiting_post_generation_continuation` and set `4k_enhancement_prompt_status: awaiting_post_generation_inspection`. Advance to `finalized_post_inspection` only after the actual board passes the later-turn inspection gate. If the host does not automatically continue after the terminal image call, the executed tool trace leaves the task at `awaiting_post_generation_continuation`; the next continuation must resume inspection and prompt-pair finalization. The generation turn is stage-complete, never task-complete. A failed or missing call never enters the awaiting state.
+- the main agent can create and wait for one isolated subagent;
+- current authorization permits exactly one non-decision image-execution worker;
+- one collaboration slot is available or can be freed without interrupting required work;
+- the built-in image tool is callable by that worker;
+- the main agent can read the local Codex state DB, the worker rollout, `$CODEX_HOME/generated_images`, and the generated PNG;
+- the current main thread ID is exposed and can be frozen before worker spawn;
+- every required source reference has a readable local file path that can be copied into the run directory;
+- `scripts/freeze_reference_bundle.py` is readable and executable;
+- `scripts/resolve_worker_image.py` is readable and executable;
+- the run directory can be created, written, and reread;
+- the main agent can inspect a local image and return a non-empty `final` response.
 
-If no image tool is callable or the prompt cannot be frozen exactly, return `hard_blocked_generation_runtime`. Do not present prompt-only output as success.
+This delegated branch is proven for local Codex Desktop, not for every host. If the current thread ID is unavailable, return `blocked_parent_thread_identity`. If a conversation image cannot be materialized to a local file, return `blocked_reference_materialization`; a recent-image count is not byte identity. If any other condition fails, return `blocked_automatic_prompt_pair_runtime` before generation. Do not fall back to a main-agent imagegen call: that would make the main turn terminal and recreate the image-only failure. Do not claim that an untriggered host continuation will happen.
 
-Use this disclosure shape before the terminal call:
+## 4. Freeze Prompt Truth
 
-```text
-Image generation prompt:
-<exact final_generation_prompt>
+Use `outputs/character-locks/<asset_id>/` as the run directory.
 
-generation_prompt_sha256: <sha256>
-prompt_disclosed_before_generation: true
-terminal_generation_call: pending
+Before spawning the worker:
+
+1. Capture `runtime_capability_snapshot`, including collaboration, imagegen, reference transport, state/rollout access, image inspection, and known output limits. Leave unknown values `unknown`.
+2. Deduplicate the physical source files while preserving first-use order. Map multiple source roles to one alias instead of passing one file more than once.
+3. Run `scripts/freeze_reference_bundle.py` with one ordered `alias=path` argument per unique source. It copies the bytes to `references/` under the run directory and writes `<asset_id>_reference_manifest.json` with ordered aliases, absolute frozen paths, byte sizes, per-file SHA-256 values, and one ordered-bundle hash. Worker and resolver use only these frozen copies. No process writes them after freeze.
+4. Reopen the reference manifest and every frozen copy. If a file, size, order, or hash differs, return the exact `blocked_reference_*` code before spawn.
+5. Build the complete `final_generation_prompt` with attachment aliases, one selected identity, source-role bindings, the exact three-component topology, horizontal 16:9 request, realistic studio style, and strict negatives.
+6. Normalize the prompt as UTF-8 with LF line endings and no BOM. Save exactly those bytes as `<asset_id>_generation_prompt.md`; add no heading, fence, frontmatter, or metadata wrapper.
+7. Reopen the sidecar, compute `generation_prompt_sha256`, and require byte equality. If persistence or readback fails, return `blocked_generation_prompt_persistence`.
+8. Keep `final_4k_enhancement_prompt` unset. A private `draft_4k_enhancement_prompt` may contain invariant topology and fidelity requirements, but it is not deliverable and has no final hash.
+9. Create `asset_record.yaml`; record the current `parent_thread_id`, reference-manifest path/hash, and prompt hash before spawning.
+
+Use these pre-worker states:
+
+```yaml
+image_worker_status: not_started
+terminal_generation_call: worker_pending
 assistant_qa_status: pending_post_generation_inspection
 4k_enhancement_prompt_status: draft_pre_generation
-built_in_dimensions_policy: evidence_only_nonblocking
-task_finalization_status: generation_terminal_pending
+task_finalization_status: worker_generation_pending
 main_result_prompt_pair_status: pending
 external_4k_status: not_ready
 production_approval_status: not_granted
 ```
 
-## 5. Prompt Content
+The frozen sidecar is the single source of truth. Commentary, chat memory, `asset_record.yaml`, summaries, and reconstructed strings cannot replace it.
 
-The frozen prompt must require:
+## 5. Delegate One Terminal Image Worker
 
-- exactly one 16:9 board and exactly three panels, with no alternate aspect-ratio branch;
-- exactly one visible face, only in the bust portrait;
-- headless front and back body views with complete feet;
-- one selected identity, body proportion, outfit, shoes, and accessories across all panels;
-- clean gray studio background, soft neutral light, realistic asset-board rendering;
-- no additional panels, faces, heads, text, scene, or editorial styling;
-- attachment aliases rather than local paths;
-- all prompt text outside the generated image.
+Generate a cryptographically unpredictable 32-character lowercase hexadecimal `worker_run_nonce`. Create a fresh, unique worker task named exactly `single_face_image_<normalized_asset_id>_<full_worker_run_nonce>` and record `worker_spawn_not_before_ms` immediately before spawning. Normalize the asset ID so the complete task name contains only lowercase letters, digits, and underscores. The full nonce must remain visible in the task-name suffix because Codex encrypts inter-agent task bodies in worker rollouts. Use the canonical agent path returned by `spawn_agent`; never infer it later.
 
-## 6. Artifacts And Approval States
+Give the worker the minimum complete execution contract:
 
-Use this mandatory output directory:
+- use the available imagegen Skill and built-in image tool;
+- use the exact frozen prompt text without changing one character;
+- receive the ordered frozen paths from `<asset_id>_reference_manifest.json` through one exact `referenced_image_paths` list;
+- pass `prompt` as one JSON double-quoted string literal and `referenced_image_paths` as one ordered JSON string-array literal inside the imagegen argument object; use no prompt variable, template literal, concatenation, or rewritten wrapper text;
+- call imagegen exactly once;
+- make no creative, identity, QA, repair, approval, or publication decisions;
+- after imagegen, emit no text and call no unrelated tool.
 
-`outputs/character-locks/<asset_id>/`
+Use `fork_turns="none"` and provide the complete prompt and frozen paths in the worker task; the worker needs no other conversation history. Treat the task body as encrypted transport, not as a source of plaintext provenance. The main agent remains the active finalizer and waits for the worker to reach a completed state. An empty worker final is expected and is not the deliverable.
 
-Treat it as the writable run-scoped location for prompt truth and handoff state. If it cannot be created, written, and reread, stop before generation with `blocked_generation_prompt_persistence`.
+For a repair, create a new uniquely named worker and a new frozen attempt prompt. Never reuse an ambiguous worker thread and never switch the repair call back to the main agent.
 
-Pre-generation artifacts:
+## 6. Bind The Exact Worker Result
 
-- `<asset_id>_generation_prompt.md`
-- `asset_record.yaml`
+After worker completion, run the bundled resolver with the recorded checkpoint, exact returned agent path, frozen prompt sidecar, exact reference contract, run image destination, and result-record path. The resolver reads the current parent rollout from local Codex state and binds the parent's `spawn_agent` call to the worker's encrypted task-delivery bytes. Use the bundled Python runtime when plain `python` is unavailable.
 
-Generation result:
+Example shape:
 
-- `<asset_id>_single_face_lock_board.png` or the native image result.
-
-Later-turn 4K handoff artifacts:
-
-- `<asset_id>_4k_enhancement_prompt.md`
-- `<asset_id>_4k_handoff.yaml`
-
-Recommended record fields:
-
-```yaml
-asset_id:
-asset_type: single_face_character_lock_board
-status: generation_pending
-runtime_capability_snapshot:
-built_in_prompt_aspect_ratio_request: "horizontal 16:9"
-built_in_prompt_alternate_aspect_ratios_allowed: false
-built_in_dimensions_policy: evidence_only_nonblocking
-built_in_dimensions_observation:
-  source_file:
-  width_px: unknown
-  height_px: unknown
-  observed_aspect_ratio: unknown
-  exact_16_9: unknown
-identity_source:
-body_source:
-outfit_source:
-shoe_source:
-accessory_source:
-final_generation_prompt:
-generation_prompt_path:
-generation_prompt_sha256:
-draft_4k_enhancement_prompt:
-final_4k_enhancement_prompt:
-4k_enhancement_prompt_path:
-4k_enhancement_prompt_sha256:
-4k_enhancement_prompt_status: draft_pre_generation | awaiting_post_generation_inspection | finalized_post_inspection
-codex_board_role: continuity_reference
-external_reference_bundle:
-  codex_asset_board: required
-  original_source_references: required
-source_fidelity_status: pending | passed | failed | unverified | blocked_missing_original_sources
-third_party_model_target: nano_banana_pro | nano_banana_2 | model_agnostic
-external_runtime_request:
-  provider:
-  model_profile: nano_banana_pro | nano_banana_2 | model_agnostic
-  aspect_ratio: "16:9"
-  image_size: "4K"
-  alternate_aspect_ratios_allowed: false
-external_4k_status: not_ready | handoff_ready | blocked_runtime_controls | pending_external_generation | returned_unverified | verified | rejected
-external_runtime_observation:
-  provider: unknown
-  model: unknown
-  surface: unknown
-  model_profile: unknown
-  observed_pixel_dimensions: unknown
-  provider_declared_aspect_ratio_profile: unknown
-  observed_file_aspect_ratio: unknown
-  aspect_ratio_evidence: unknown
-  four_k_evidence: unknown
-external_4k_qa_status: pending | passed | failed
-task_finalization_status: generation_terminal_pending | awaiting_post_generation_continuation | prompt_pair_ready | final_main_result_published
-main_result_prompt_pair_status: pending | published
-prompt_disclosed_before_generation: true
-terminal_generation_call: pending
-assistant_qa_status: pending_post_generation_inspection
-production_approval_status: not_granted
+```text
+python scripts/resolve_worker_image.py
+  --agent-path <canonical worker path>
+  --not-before-ms <checkpoint>
+  --parent-thread-id <exact current main thread id>
+  --worker-run-nonce <32 lowercase hex characters>
+  --expected-prompt <asset_id>_generation_prompt.md
+  --reference-manifest <asset_id>_reference_manifest.json
+  --copy-to <asset_id>_single_face_lock_board.png
+  --result-json <asset_id>_image_worker_result.json
 ```
 
-`terminal_generation_call` stays `pending` until a tool/runtime trace proves `executed` on a later turn. `assistant_qa_status` and `production_approval_status` are separate. Without an independent later visual review, assistant QA remains `pending_post_generation_inspection`; production approval remains `not_granted` until the user or an authorized external pipeline explicitly sets `user_granted` or `external_pipeline_granted`.
+The resolver must prove all of the following before the board can be inspected:
 
-## 7. Later-Turn Visual Review And Repair
+- exactly one fresh thread matches the exact worker agent path, checkpoint, and parent thread ID;
+- its leading rollout session metadata equals the worker thread, agent path, and parent thread;
+- the visible worker task-name suffix equals the complete 32-character nonce;
+- the latest worker task contains exactly one `trigger_turn` envelope and one encrypted inter-agent delivery whose header names the exact task and parent agent; that delivery plus `task_started` / `turn_context` / `task_complete` share one turn ID;
+- after the recorded checkpoint, the parent rollout contains one matching `spawn_agent` call, one started activity, and one spawn result in one parent turn; its encrypted message bytes equal the worker delivery bytes and all records bind the same worker thread and agent path;
+- exactly one imagegen call and one `image_generation_end` exist in that latest task, in call-before-end order;
+- the image event is `completed`;
+- both worker final records are empty and occur after image completion but before task completion;
+- the prompt sent to imagegen is byte-identical to the frozen sidecar;
+- the `referenced_image_paths` list equals the frozen manifest in order and multiplicity;
+- every frozen reference still matches its manifest size and SHA-256;
+- `worker_thread_id + image_generation_call_id` maps to the reported PNG path;
+- the PNG header, dimensions, copied bytes, and SHA-256 are valid.
 
-On a later turn with the generated image available, inspect:
+Selecting the newest PNG by timestamp is forbidden because concurrent tasks can generate unrelated images. Resolver failure sets its exact `blocked_worker_*` code, keeps `main_result_prompt_pair_status: pending`, and prevents QA or publication.
 
-- exactly one complete visible face exists, with no other complete or partial face;
-- the bust clearly preserves the selected identity;
-- front and back body views are headless and complete to the feet;
-- body, outfit, shoes, and accessories remain consistent;
-- no text, additional panels, scenic background, or editorial style appears.
+On success, set:
 
-Read the original built-in result file header and record its width, height, observed ratio, and exact-16:9 boolean. This is provenance evidence under `built_in_dimensions_policy: evidence_only_nonblocking`; it never changes content QA, one-face topology QA, board role, repair eligibility, prompt-pair finalization, or 4K handoff readiness.
+```yaml
+image_worker_status: bound
+worker_binding_mode: parent_spawn_cipher_chain_v1
+terminal_generation_call: worker_executed
+task_finalization_status: worker_result_bound
+4k_enhancement_prompt_status: awaiting_post_generation_inspection
+codex_board_role: continuity_reference
+```
 
-If all structural checks pass, set `assistant_qa_status: passed`; use `conditional` for a useful but source-limited board and `failed` for a critical topology or fidelity failure. Keep `production_approval_status` unchanged.
+Persist `<asset_id>_image_worker_result.json`; it is required provenance for final publication.
 
-If one repair is justified, freeze and disclose a new complete prompt and new hash before a new terminal generation call. Never output a failed draft prompt as the prompt for an accepted image.
+## 7. Inspect The Actual Board
 
-Do not finalize a 4K handoff when the board contains more or fewer than three components, more than one complete or partial face, a head on either body view, identity drift, missing feet, or invented content. Repair or reject the Codex board first. A source-faithful board with only resolution, noise, edge, or microtexture limitations may proceed to the 4K handoff.
+Open the run-scoped copied PNG with the available image-inspection tool. Record source path, width, height, observed ratio, exact-16:9 boolean, image SHA-256, worker thread ID, and generation call ID.
 
-## 8. Finalize The 4K Handoff
+Require:
 
-Only after later-turn visual inspection, replace the draft with one image-specific `final_4k_enhancement_prompt`. Treat the Codex board as the layout and topology reference, not as sufficient high-frequency evidence. The external reference bundle must contain both:
+- exactly one complete visible face, only in the bust;
+- no other complete or partial face in reflections, prints, shadows, or the background;
+- source-faithful identity in the bust;
+- headless front and back body views, both complete to the feet;
+- consistent body, outfit, shoes, and accessories;
+- exactly three components and no text, scene, or editorial styling.
 
-- the actual Codex-generated board;
-- the original identity, hair, skin, body, outfit, shoe, and accessory references used to create it.
+Set `assistant_qa_status: passed` when every structural and source-supported check passes, `conditional` only for a useful source-limited board, and `failed` for critical topology or identity drift. Keep `production_approval_status` independent.
+
+Persist `<asset_id>_inspection.json` with `inspected: true`, the absolute run-board path, image SHA-256, dimensions, topology findings, observed defects, source-fidelity status, and `assistant_qa_status`. The record's board path and hash must match `<asset_id>_image_worker_result.json`.
+
+One focused repair is allowed when a corrected prompt can plausibly close the failure. Preserve failed attempts as evidence, freeze a new exact prompt and hash, and repeat Sections 5–7 with a fresh worker. Reject the board when a repair cannot close the failure.
+
+## 8. Create The Image-Specific 4K Prompt
+
+Only after visual inspection, create `final_4k_enhancement_prompt`. The external reference bundle must contain both:
+
+- `codex_asset_board` for layout and topology;
+- `original_source_references` for identity, hair, skin, body, outfit, shoes, and accessories.
+
+If original sources are unavailable, set `source_fidelity_status: blocked_missing_original_sources` and do not claim handoff readiness.
 
 The final enhancement prompt must:
 
-- request source-bound enhancement or regeneration on one exact 16:9 canvas while preserving exactly three components and their positions;
-- name only defects observed in the actual board, such as noise, compression, soft facial detail, weak garment edges, or inconsistent fine texture;
-- keep exactly one complete visible face in the bust portrait and keep both front and back body views headless from the neck downward, including reflections, prints, shadows, and background details;
-- preserve exact facial geometry, age markers, skin tone, hairline, hairstyle, body proportion, outfit construction, shoes, accessories, and identity continuity;
-- recover natural skin and hair microtexture only where the original references support it; preserve natural asymmetry and use photographic texture without beauty retouching, face reshaping, eye or tooth alteration, age drift, or invented pores and skin marks;
-- keep the board text-free and introduce no new head, face, person, panel, garment detail, accessory, logo, label, background, crop, or decorative element;
-- state that runtime settings live in the handoff record, outside the image.
+- request one exact 16:9 canvas at the external runtime's 4K tier;
+- preserve the actual board's three components and positions;
+- name only defects observed in the actual board;
+- keep exactly one visible face and both body views headless, including reflections and prints;
+- preserve facial geometry, age markers, skin tone, hairline, hairstyle, body proportion, garment construction, shoes, and accessories;
+- recover only source-supported skin and hair microtexture;
+- preserve natural asymmetry and reject beauty retouching, face reshaping, age drift, invented pores, invented marks, or invented product/wardrobe details;
+- keep the board text-free and introduce no person, head, face, panel, crop, logo, label, background, or decorative element.
 
-Normalize the final prompt as UTF-8 with LF line endings, compute `4k_enhancement_prompt_sha256`, and save exactly those bytes as `<asset_id>_4k_enhancement_prompt.md` with no BOM, heading, fence, frontmatter, or metadata wrapper. Do not publish or reuse a draft hash.
-
-Before publication, reopen `<asset_id>_generation_prompt.md` and `<asset_id>_4k_enhancement_prompt.md` as their original UTF-8/LF bytes, recompute both SHA-256 values, and require exact equality with the frozen records. Never reconstruct either prompt from memory, chat, a summary, or `asset_record.yaml`. A missing sidecar or hash mismatch is `blocked_prompt_pair_integrity`; keep `main_result_prompt_pair_status: pending` and do not substitute a repaired string. After both byte checks pass, set `4k_enhancement_prompt_status: finalized_post_inspection`.
-
-Write `<asset_id>_4k_handoff.yaml` with the exact reference aliases and this only allowed request profile:
+Normalize and save exact UTF-8/LF bytes as `<asset_id>_4k_enhancement_prompt.md`, compute `4k_enhancement_prompt_sha256`, set `4k_enhancement_prompt_status: finalized_post_inspection`, and create `<asset_id>_4k_handoff.yaml` with:
 
 ```yaml
 external_runtime_request:
@@ -270,22 +241,32 @@ external_runtime_request:
   image_size: "4K"
 ```
 
-Record the same selection as `third_party_model_target`; the runtime-observed model remains separate evidence.
+Record the same model profile under `third_party_model_target`; keep a provider's runtime-observed model separate from the requested profile.
 
-Do not encode another size or aspect-ratio option. If the selected platform cannot expose both controls, set `external_4k_status: blocked_runtime_controls` and select no fallback size or ratio. Set `pending_external_generation` only when the complete handoff has actually been submitted.
+If exact external controls are unavailable, set `external_4k_status: blocked_runtime_controls`; choose no alternate ratio or size. Otherwise use `handoff_ready`, `pending_external_generation`, `returned_unverified`, `verified`, or `rejected` only as evidence warrants. Returned evidence records `observed_pixel_dimensions`, `provider_declared_aspect_ratio_profile`, `observed_file_aspect_ratio`, `aspect_ratio_evidence`, `four_k_evidence`, `source_fidelity_status`, and `external_4k_qa_status`.
 
-After both prompt sidecars and hashes pass byte verification, set `task_finalization_status: prompt_pair_ready`. Keep external readiness independent: set `external_4k_status: handoff_ready` only when the Codex board plus original-reference bundle, handoff sidecar, selected provider, and exposed exact 16:9 and 4K controls are all ready; otherwise retain `not_ready` or use `blocked_runtime_controls` as applicable. Preflight whether one final response can contain both complete prompts and hashes. If a real output ceiling prevents that, return `blocked_final_output_capacity`, keep `main_result_prompt_pair_status: pending`, and never truncate, summarize, link-only, or split the pair while claiming publication.
+`prompt_pair_ready` does not imply `external_4k_status: handoff_ready`; publication and external execution are independent gates.
 
-Publish the following block in the task's final main result using the `final` channel. Include both complete prompt texts inline; commentary, sidecars, paths, hashes alone, excerpts, or summaries cannot replace them.
+## 9. Verify And Publish The Final Main Result
+
+Reopen `<asset_id>_generation_prompt.md` and `<asset_id>_4k_enhancement_prompt.md` as their original bytes, recompute both hashes, and require exact equality with the recorded values. Reverify the reference manifest, worker-result JSON, board hash, inspection JSON, and 4K handoff. A missing sidecar or hash mismatch is `blocked_prompt_pair_integrity`. Never reconstruct either prompt from chat, memory, a summary, or YAML.
+
+Preflight final-response capacity. If one final response cannot contain the generated board plus both complete prompts and hashes, return `blocked_final_output_capacity`; do not truncate, abbreviate, summarize, link-only, or split the pair while claiming publication.
+
+Run `scripts/build_final_result.py` with the board, both prompt sidecars, worker result, inspection record, reference manifest, and 4K handoff. It must write `<asset_id>_final_main_result.md` in the run directory and return matching board/prompt/output hashes. Reopen that payload as UTF-8/LF bytes; use it verbatim as the `final` response. If the UI response cannot equal the payload, block publication.
+
+Before `final`, persist `task_finalization_status: prompt_pair_ready`. Then publish the run-scoped board and this complete inline block in the task's non-empty final main result:
 
 ```text
+![Single-Face Character Lock Board](<absolute run image path>)
+
 final_generation_prompt:
-<complete exact text reread from the frozen generation sidecar>
+<complete exact text reread from the generation sidecar>
 
 generation_prompt_sha256: <verified sha256>
 
 final_4k_enhancement_prompt:
-<complete exact image-specific text reread from the frozen 4K sidecar>
+<complete exact image-specific text reread from the 4K sidecar>
 
 4k_enhancement_prompt_sha256: <verified sha256>
 
@@ -293,19 +274,26 @@ main_result_prompt_pair_status: published
 task_finalization_status: final_main_result_published
 ```
 
-The complete final block is itself the publication transition evidence. Because a `final` response is terminal, require no status write or tool call after emission.
+Commentary, paths, sidecars, excerpts, summaries, or hashes alone cannot substitute for either complete prompt body. The final response is the publication transition evidence; call no tool afterward.
 
-When an external result returns, set `external_4k_status: returned_unverified`; record provider, model, surface, model profile, requested settings, `observed_pixel_dimensions`, provider-declared aspect-ratio profile, `observed_file_aspect_ratio`, `aspect_ratio_evidence`, and `four_k_evidence`. Inspect the final image against the Codex board and original references. Set `verified` only when runtime evidence proves the requested 16:9 provider profile and 4K tier, the board still contains exactly one visible face and two headless body views, every component remains source-faithful, `source_fidelity_status: passed`, and `external_4k_qa_status: passed`. Otherwise set `rejected` and record the failing gate. Provider or model claims without runtime evidence remain `unknown`.
+## 10. Completion Contract
 
-## 9. Completion Contract
+The Skill completes only when:
 
-A generation turn is stage-complete only when one target identity is resolved, the exact prompt and hash are disclosed before generation, image generation is the terminal action, and `task_finalization_status: awaiting_post_generation_continuation`. The generated image remains pending visual review, prompt-pair publication, 4K handoff finalization, and production approval.
+- one identity is resolved;
+- the frozen generation prompt exactly matches the worker tool prompt;
+- the worker result is uniquely bound and copied into the run directory;
+- the main agent has inspected the actual board;
+- the image-specific 4K prompt and handoff sidecars exist;
+- the inspection JSON binds an accepted visual review to the worker-bound board;
+- both sidecar hashes pass byte verification;
+- `<asset_id>_final_main_result.md` is built from the verified artifacts and is used verbatim;
+- the non-empty final main result displays the board and both complete prompts with both hashes;
+- `main_result_prompt_pair_status: published` and `task_finalization_status: final_main_result_published` appear in that final result.
 
-The Skill task completes only after the later final main result contains the complete verified prompt pair and `main_result_prompt_pair_status: published`. Built-in pixel dimensions remain non-blocking evidence; a ratio mismatch cannot cause content failure, repair, demotion, or handoff blocking. `external_4k_status: handoff_ready` still requires later inspection, the source-bound enhancement prompt, original references plus the Codex board, SHA-256 creation, and sidecar creation. Production-complete state additionally requires an external result with `external_4k_status: verified`; production approval remains a separate explicit grant.
+A main-agent terminal imagegen call, an assumed future continuation, an image-only result, commentary-only prompt disclosure, an empty final, ambiguous newest-file selection, a prompt mismatch, an uninspected board, prompt reconstruction, or a missing 4K sidecar is failure.
 
-Unselected multiple identities, prompt-only delivery, a missing image call, extra board views, a pre-generation draft presented as final, an external result with an unverified aspect ratio or size, or post-hoc prompt reconstruction is failure.
-
-For maintained acceptance scenarios, read [test_cases.md](test_cases.md).
+For maintained red/green scenarios, read [test_cases.md](test_cases.md).
 
 ## Optional AI-Video Project Canon Export
 

@@ -14,6 +14,9 @@
     "first_last_frame",
     "endpoint_frame_interpolation"
   ],
+  "independent_skills": [
+    "complex-product-identity-reconstruction-asset-locking"
+  ],
   "skills": [
     {
       "name": "ai-video-shot-script-director",

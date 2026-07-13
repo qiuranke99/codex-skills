@@ -1,0 +1,7 @@
+interface:
+  display_name: "Complex Product Identity Reconstruction & Asset Locking"
+  short_description: "Reconstruct and lock complex product identity assets"
+  default_prompt: "Use $complex-product-identity-reconstruction-asset-locking with my complex product references to build a source-evidenced, QA-validated product identity asset package."
+
+policy:
+  allow_implicit_invocation: true

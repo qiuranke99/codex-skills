@@ -329,6 +329,27 @@ def resolve_source_path(root: Path, locator: Any) -> Path | None:
     return path if path.is_absolute() else (root / path).resolve()
 
 
+def path_ends_with_run_locator(value: Any, locator: Any) -> bool:
+    """Bind historical worker evidence to a relocatable run-relative artifact.
+
+    The receipt builder verifies the exact absolute worker output path while the
+    run is being assembled.  COMPLETE packages may later be copied or archived,
+    so steady-state validation compares the immutable historical path's suffix
+    to the receipt-bound run locator instead of requiring the old absolute root.
+    Both Windows and POSIX separators are accepted for cross-machine review.
+    """
+    if not isinstance(value, str) or not value or not isinstance(locator, str) or not locator:
+        return False
+    value_parts = [part.casefold() for part in re.split(r"[\\/]+", value) if part not in ("", ".")]
+    locator_parts = [part.casefold() for part in re.split(r"[\\/]+", locator) if part not in ("", ".")]
+    return (
+        bool(locator_parts)
+        and ".." not in locator_parts
+        and len(value_parts) >= len(locator_parts)
+        and value_parts[-len(locator_parts):] == locator_parts
+    )
+
+
 def verify_image(path: Path) -> tuple[int, int]:
     if Image is None:
         raise ValueError("Pillow is required for image verification")
@@ -3429,6 +3450,9 @@ def validate_complete(
             asset_hashes: set[str] = set()
             raw_paths: set[str] = set()
             raw_hashes: set[str] = set()
+            worker_threads: set[str] = set()
+            worker_turns: set[str] = set()
+            worker_calls: set[str] = set()
             for index, asset in enumerate(assets):
                 label = f"asset_qa.assets[{index}]"
                 if not isinstance(asset, dict) or not isinstance(asset.get("view_id"), str):
@@ -3531,7 +3555,7 @@ def validate_complete(
                     errors,
                 )
                 if receipt:
-                    if receipt.get("schema_version") != "packaging-generation-receipt.v1":
+                    if receipt.get("schema_version") != "packaging-generation-receipt.v2":
                         errors.append(f"asset_qa {view_id}: invalid generation receipt schema")
                     receipt_dimensions_invalid = (
                         raw_dimensions is None
@@ -3546,6 +3570,7 @@ def validate_complete(
                         or receipt.get("output_file_sha256") != asset.get("raw_file_sha256")
                         or receipt.get("output_path") != asset.get("raw_file_path")
                         or receipt.get("generation_mode") != "independent_full_frame"
+                        or receipt.get("worker_transport_mode") != "delegated_single_image_worker"
                         or receipt_dimensions_invalid
                         or receipt.get("post_generation_resize_applied") is not False
                         or set(receipt.get("reference_ids") or []) != set(coverage_views.get(view_id, {}).get("source_refs") or [])
@@ -3579,7 +3604,7 @@ def validate_complete(
                             "locator": source.get("file_path"),
                             "file_sha256": source.get("file_sha256"),
                         })
-                    actual_bindings = receipt.get("submitted_reference_bindings")
+                    actual_bindings = receipt.get("source_reference_bindings")
                     binding_sort = lambda item: (
                         str(item.get("role")), str(item.get("reference_id")), str(item.get("source_id"))
                     )
@@ -3591,8 +3616,130 @@ def validate_complete(
                             expected_bindings, ensure_ascii=False, sort_keys=True,
                             separators=(",", ":"), allow_nan=False,
                         )
-                        if receipt.get("submitted_reference_set_sha256") != sha256_text(binding_payload):
-                            errors.append(f"asset_qa {view_id}: submitted reference set self-hash mismatch")
+                    provenance = receipt.get("worker_provenance")
+                    if not isinstance(provenance, dict):
+                        errors.append(f"asset_qa {view_id}: generation receipt lacks worker provenance")
+                    else:
+                        worker_result = load_evidence_json(
+                            root,
+                            provenance.get("result_path"),
+                            provenance.get("result_sha256"),
+                            f"asset_qa {view_id} worker result",
+                            errors,
+                        )
+                        required_worker_ids = {
+                            "worker_thread_id": worker_threads,
+                            "worker_turn_id": worker_turns,
+                            "image_generation_call_id": worker_calls,
+                        }
+                        for key, seen in required_worker_ids.items():
+                            value = provenance.get(key)
+                            if not isinstance(value, str) or not value:
+                                errors.append(f"asset_qa {view_id}: worker provenance missing {key}")
+                            elif value in seen:
+                                errors.append(f"asset_qa {view_id}: worker provenance reuses {key}")
+                            else:
+                                seen.add(value)
+                        agent_path = provenance.get("agent_path")
+                        if not isinstance(agent_path, str) or re.search(r"_[0-9a-f]{32}$", agent_path) is None:
+                            errors.append(f"asset_qa {view_id}: worker agent path lacks complete nonce suffix")
+                        reference_manifest = load_evidence_json(
+                            root,
+                            provenance.get("reference_manifest_path"),
+                            provenance.get("reference_manifest_sha256"),
+                            f"asset_qa {view_id} worker reference manifest",
+                            errors,
+                        )
+                        if worker_result:
+                            expected_worker_fields = {
+                                "contract": "delegated_image_worker_result.v1",
+                                "agent_path": provenance.get("agent_path"),
+                                "worker_thread_id": provenance.get("worker_thread_id"),
+                                "worker_turn_id": provenance.get("worker_turn_id"),
+                                "parent_thread_id": provenance.get("parent_thread_id"),
+                                "image_generation_call_id": provenance.get("image_generation_call_id"),
+                                "prompt_binding_mode": provenance.get("prompt_binding_mode"),
+                                "reference_manifest_sha256": provenance.get("reference_manifest_sha256"),
+                                "ordered_reference_bundle_sha256": provenance.get("ordered_reference_bundle_sha256"),
+                                "generation_prompt_sha256": prompt.get("prompt_sha256"),
+                                "tool_prompt_sha256": prompt.get("prompt_sha256"),
+                                "image_sha256": asset.get("raw_file_sha256"),
+                            }
+                            if worker_result.get("ok") is not True or any(
+                                worker_result.get(key) != value for key, value in expected_worker_fields.items()
+                            ):
+                                errors.append(f"asset_qa {view_id}: worker result does not bind provenance/prompt/image")
+                            if worker_result.get("prompt_sha_match") is not True:
+                                errors.append(f"asset_qa {view_id}: worker prompt-byte binding did not pass")
+                            if not path_ends_with_run_locator(worker_result.get("run_image_path"), raw_locator):
+                                errors.append(f"asset_qa {view_id}: worker result raw-master locator mismatch")
+                        if reference_manifest:
+                            if reference_manifest.get("schema_version") != "packaging_reference_bundle.v1":
+                                errors.append(f"asset_qa {view_id}: invalid worker reference manifest schema")
+                            entries = reference_manifest.get("ordered_references")
+                            if not isinstance(entries, list):
+                                errors.append(f"asset_qa {view_id}: worker reference manifest entries invalid")
+                            else:
+                                submitted = receipt.get("submitted_reference_bindings")
+                                expected_submitted: list[dict[str, Any]] = []
+                                source_ids = coverage_views.get(view_id, {}).get("source_refs") or []
+                                manifest_payload = json.dumps(
+                                    entries,
+                                    ensure_ascii=False,
+                                    sort_keys=True,
+                                    separators=(",", ":"),
+                                    allow_nan=False,
+                                )
+                                if reference_manifest.get("ordered_bundle_sha256") != sha256_text(manifest_payload):
+                                    errors.append(f"asset_qa {view_id}: worker reference manifest self-hash mismatch")
+                                for rank, (entry, source_id) in enumerate(zip(entries, source_ids), 1):
+                                    submitted_item = (
+                                        submitted[rank - 1]
+                                        if isinstance(submitted, list)
+                                        and len(submitted) >= rank
+                                        and isinstance(submitted[rank - 1], dict)
+                                        else {}
+                                    )
+                                    frozen_locator = submitted_item.get("frozen_path")
+                                    frozen_path, frozen_errors = safe_run_path(
+                                        root,
+                                        frozen_locator,
+                                        f"asset_qa {view_id} frozen worker reference {rank}",
+                                    )
+                                    errors.extend(frozen_errors)
+                                    if not path_ends_with_run_locator(entry.get("frozen_path"), frozen_locator):
+                                        errors.append(
+                                            f"asset_qa {view_id} frozen worker reference {rank}: historical locator mismatch"
+                                        )
+                                    if frozen_path is not None:
+                                        expected_submitted.append({
+                                            "rank": rank,
+                                            "reference_id": source_id,
+                                            "frozen_path": str(frozen_path.relative_to(root)).replace("\\", "/"),
+                                            "file_sha256": sha256_file(frozen_path),
+                                        })
+                                        if (
+                                            entry.get("index") != rank
+                                            or entry.get("alias") != source_id
+                                            or entry.get("size_bytes") != frozen_path.stat().st_size
+                                            or entry.get("sha256") != expected_submitted[-1]["file_sha256"]
+                                        ):
+                                            errors.append(
+                                                f"asset_qa {view_id} frozen worker reference {rank}: bytes/order metadata mismatch"
+                                            )
+                                if len(entries) != len(source_ids) or [item.get("alias") for item in entries] != source_ids:
+                                    errors.append(f"asset_qa {view_id}: frozen references do not preserve coverage order")
+                                if submitted != expected_submitted:
+                                    errors.append(f"asset_qa {view_id}: submitted frozen references do not match manifest bytes")
+                                binding_payload = json.dumps(
+                                    expected_submitted,
+                                    ensure_ascii=False,
+                                    sort_keys=True,
+                                    separators=(",", ":"),
+                                    allow_nan=False,
+                                )
+                                if receipt.get("submitted_reference_set_sha256") != sha256_text(binding_payload):
+                                    errors.append(f"asset_qa {view_id}: submitted reference set self-hash mismatch")
             if set(asset_by_view) != required_views:
                 errors.append("asset_qa: approved assets must exactly cover required views")
         boards = asset_qa.get("review_boards")

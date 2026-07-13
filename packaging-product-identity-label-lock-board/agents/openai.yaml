@@ -1,4 +1,6 @@
 interface:
   display_name: "Packaging Exact-Copy Rotation Asset Pack"
-  short_description: "OCR-first exact labels plus rotation-ready independent product masters."
-  default_prompt: "Use $packaging-product-identity-label-lock-board to OCR every supplied product image before generation, freeze the exact-copy SSOT and code/graphic evidence, derive the legal R profile plus high/low/top/bottom, four-way upper/lower bridge views, frozen detail semantics, and one exact-copy detail per physical region, generate one independent horizontal 16:9 master per view, apply product copy deterministically, verify final-pixel readability/OCR/decode/continuity, then build canonical ordered semantic review boards only from approved masters."
+  short_description: "OCR-first exact copy with worker-bound rotation masters."
+  default_prompt: "Use $packaging-product-identity-label-lock-board to OCR every supplied product image, freeze the exact-copy SSOT, derive the legal rotation/elevation/detail coverage, and use exactly one non-decision image worker per independent horizontal 16:9 master attempt. Bind and inspect each returned master, persist the complete exact final_generation_prompt plus generation_prompt_sha256 and the complete image-specific final_4k_enhancement_prompt plus 4k_enhancement_prompt_sha256 in its prompt-pair artifact, apply exact copy deterministically, verify final pixels and continuity, then publish a hash-bound final main result and ordered review boards made only from approved masters."
+policy:
+  allow_implicit_invocation: false

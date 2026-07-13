@@ -2554,19 +2554,103 @@ def create_complete_run(root: Path) -> None:
         binding_payload = json.dumps(
             submitted_bindings, ensure_ascii=False, sort_keys=True, separators=(",", ":"), allow_nan=False,
         )
+        attempt_root = root / f"07_qa/worker_attempts/{view_id}/A01"
+        frozen_entries: list[dict[str, Any]] = []
+        submitted_frozen: list[dict[str, Any]] = []
+        for rank, source_id in enumerate(view["source_refs"], 1):
+            source = sources_by_id[source_id]
+            source_path = root / source["file_path"]
+            frozen_path = attempt_root / "references" / f"{rank:02d}_{source_id.lower()}{source_path.suffix}"
+            frozen_path.parent.mkdir(parents=True, exist_ok=True)
+            shutil.copy2(source_path, frozen_path)
+            frozen_sha = sha256_file(frozen_path)
+            frozen_entries.append({
+                "index": rank,
+                "alias": source_id,
+                "frozen_path": str(frozen_path),
+                "size_bytes": frozen_path.stat().st_size,
+                "sha256": frozen_sha,
+            })
+            submitted_frozen.append({
+                "rank": rank,
+                "reference_id": source_id,
+                "frozen_path": str(frozen_path.relative_to(root)).replace("\\", "/"),
+                "file_sha256": frozen_sha,
+            })
+        frozen_payload = json.dumps(
+            frozen_entries, ensure_ascii=False, sort_keys=True, separators=(",", ":"), allow_nan=False,
+        )
+        reference_manifest_locator = f"07_qa/worker_attempts/{view_id}/A01/reference_manifest.json"
+        reference_manifest = {
+            "schema_version": "packaging_reference_bundle.v1",
+            "immutability_contract": "no_writes_after_freeze; resolver_rehash_required",
+            "ordered_references": frozen_entries,
+            "ordered_bundle_sha256": hashlib.sha256(frozen_payload.encode("utf-8")).hexdigest(),
+        }
+        write_json(root / reference_manifest_locator, reference_manifest)
+        worker_result_locator = f"07_qa/worker_attempts/{view_id}/A01/worker_result.json"
+        nonce = f"{index + 1:032x}"
+        worker_result = {
+            "ok": True,
+            "contract": "delegated_image_worker_result.v1",
+            "resolved_at_utc": "2026-07-13T00:00:00+00:00",
+            "agent_path": f"/root/packaging_{view_id}_A01_{nonce}",
+            "worker_thread_id": f"worker-thread-{view_id}",
+            "worker_turn_id": f"worker-turn-{view_id}",
+            "parent_thread_id": "contract-parent-thread",
+            "worker_rollout_path": str(attempt_root / "worker-rollout.jsonl"),
+            "image_generation_call_id": f"image-call-{view_id}",
+            "worker_saved_path": str(attempt_root / "generated.png"),
+            "run_image_path": str(raw_path),
+            "image_sha256": sha256_file(raw_path),
+            "width_px": MASTER_SIZE[0],
+            "height_px": MASTER_SIZE[1],
+            "observed_aspect_ratio": MASTER_SIZE[0] / MASTER_SIZE[1],
+            "exact_16_9": True,
+            "generation_prompt_sha256": prompt["prompt_sha256"],
+            "tool_prompt_sha256": prompt["prompt_sha256"],
+            "prompt_sha_match": True,
+            "prompt_binding_mode": "image_event_revised_prompt",
+            "image_wrapper_candidate_count": 1,
+            "reference_mode": "frozen_manifest",
+            "reference_manifest_path": str(root / reference_manifest_locator),
+            "reference_manifest_sha256": sha256_file(root / reference_manifest_locator),
+            "ordered_reference_bundle_sha256": reference_manifest["ordered_bundle_sha256"],
+            "reference_count": len(frozen_entries),
+        }
+        write_json(root / worker_result_locator, worker_result)
+        submitted_payload = json.dumps(
+            submitted_frozen, ensure_ascii=False, sort_keys=True, separators=(",", ":"), allow_nan=False,
+        )
         write_json(root / generation_receipt_locator, {
-            "schema_version": "packaging-generation-receipt.v1",
+            "schema_version": "packaging-generation-receipt.v2",
             "asset_id": asset_id,
             "view_id": view_id,
             "prompt_sha256": prompt["prompt_sha256"],
             "output_path": raw_locator,
             "output_file_sha256": sha256_file(raw_path),
             "generation_mode": "independent_full_frame",
+            "worker_transport_mode": "delegated_single_image_worker",
             "output_pixel_dimensions": {"width": MASTER_SIZE[0], "height": MASTER_SIZE[1]},
             "post_generation_resize_applied": False,
             "reference_ids": view["source_refs"],
-            "submitted_reference_bindings": submitted_bindings,
-            "submitted_reference_set_sha256": hashlib.sha256(binding_payload.encode("utf-8")).hexdigest(),
+            "source_reference_bindings": submitted_bindings,
+            "submitted_reference_bindings": submitted_frozen,
+            "submitted_reference_set_sha256": hashlib.sha256(submitted_payload.encode("utf-8")).hexdigest(),
+            "worker_provenance": {
+                "contract": worker_result["contract"],
+                "result_path": worker_result_locator,
+                "result_sha256": sha256_file(root / worker_result_locator),
+                "agent_path": worker_result["agent_path"],
+                "worker_thread_id": worker_result["worker_thread_id"],
+                "worker_turn_id": worker_result["worker_turn_id"],
+                "parent_thread_id": worker_result["parent_thread_id"],
+                "image_generation_call_id": worker_result["image_generation_call_id"],
+                "prompt_binding_mode": worker_result["prompt_binding_mode"],
+                "reference_manifest_path": reference_manifest_locator,
+                "reference_manifest_sha256": sha256_file(root / reference_manifest_locator),
+                "ordered_reference_bundle_sha256": reference_manifest["ordered_bundle_sha256"],
+            },
         })
 
         final_locator = f"05_masters/{view['family']}/{view_id}.png"
@@ -3542,6 +3626,66 @@ def mutate_missing_submitted_reference_binding(root: Path) -> None:
     write_json(qa_path, qa)
 
 
+def mutate_legacy_v1_generation_receipt(root: Path) -> None:
+    qa_path = root / "07_qa/asset_qa.json"
+    qa = json.loads(qa_path.read_text(encoding="utf-8"))
+    asset = next(item for item in qa["assets"] if item["view_id"] == "ROT_0000")
+    receipt_path = root / asset["generation_receipt_path"]
+    receipt = json.loads(receipt_path.read_text(encoding="utf-8"))
+    receipt["schema_version"] = "packaging-generation-receipt.v1"
+    write_json(receipt_path, receipt)
+    asset["generation_receipt_sha256"] = sha256_file(receipt_path)
+    write_json(qa_path, qa)
+
+
+def mutate_reused_worker_call(root: Path) -> None:
+    qa_path = root / "07_qa/asset_qa.json"
+    qa = json.loads(qa_path.read_text(encoding="utf-8"))
+    first = next(item for item in qa["assets"] if item["view_id"] == "ROT_0000")
+    second = next(item for item in qa["assets"] if item["view_id"] == "ROT_0450")
+    first_receipt = json.loads((root / first["generation_receipt_path"]).read_text(encoding="utf-8"))
+    second_path = root / second["generation_receipt_path"]
+    second_receipt = json.loads(second_path.read_text(encoding="utf-8"))
+    second_receipt["worker_provenance"]["image_generation_call_id"] = (
+        first_receipt["worker_provenance"]["image_generation_call_id"]
+    )
+    write_json(second_path, second_receipt)
+    second["generation_receipt_sha256"] = sha256_file(second_path)
+    write_json(qa_path, qa)
+
+
+def mutate_worker_prompt_binding(root: Path) -> None:
+    qa_path = root / "07_qa/asset_qa.json"
+    qa = json.loads(qa_path.read_text(encoding="utf-8"))
+    asset = next(item for item in qa["assets"] if item["view_id"] == "ROT_0000")
+    receipt_path = root / asset["generation_receipt_path"]
+    receipt = json.loads(receipt_path.read_text(encoding="utf-8"))
+    worker_path = root / receipt["worker_provenance"]["result_path"]
+    worker = json.loads(worker_path.read_text(encoding="utf-8"))
+    worker["tool_prompt_sha256"] = "f" * 64
+    write_json(worker_path, worker)
+    receipt["worker_provenance"]["result_sha256"] = sha256_file(worker_path)
+    write_json(receipt_path, receipt)
+    asset["generation_receipt_sha256"] = sha256_file(receipt_path)
+    write_json(qa_path, qa)
+
+
+def mutate_worker_raw_master_locator(root: Path) -> None:
+    qa_path = root / "07_qa/asset_qa.json"
+    qa = json.loads(qa_path.read_text(encoding="utf-8"))
+    asset = next(item for item in qa["assets"] if item["view_id"] == "ROT_0000")
+    receipt_path = root / asset["generation_receipt_path"]
+    receipt = json.loads(receipt_path.read_text(encoding="utf-8"))
+    worker_path = root / receipt["worker_provenance"]["result_path"]
+    worker = json.loads(worker_path.read_text(encoding="utf-8"))
+    worker["run_image_path"] = str(root / "05_masters_raw/rotation/WRONG.png")
+    write_json(worker_path, worker)
+    receipt["worker_provenance"]["result_sha256"] = sha256_file(worker_path)
+    write_json(receipt_path, receipt)
+    asset["generation_receipt_sha256"] = sha256_file(receipt_path)
+    write_json(qa_path, qa)
+
+
 def mutate_low_resolution_final_master(root: Path) -> None:
     """Downsample one approved master while leaving its locked metadata intact."""
     qa = json.loads((root / "07_qa/asset_qa.json").read_text(encoding="utf-8"))
@@ -4273,6 +4417,26 @@ def main() -> int:
 
         complete = base / "complete"
         create_complete_run(complete)
+        complete_asset_qa = json.loads((complete / "07_qa/asset_qa.json").read_text(encoding="utf-8"))
+        builder_asset = next(item for item in complete_asset_qa["assets"] if item["view_id"] == "ROT_0000")
+        builder_receipt = json.loads(
+            (complete / builder_asset["generation_receipt_path"]).read_text(encoding="utf-8")
+        )
+        builder_output = complete / "07_qa/generation_receipts/ROT_0000.builder-smoke.json"
+        builder_summary = run_command([
+            sys.executable,
+            str(SKILL_DIR / "scripts/build_generation_receipt.py"),
+            "--run-root", str(complete),
+            "--view-id", "ROT_0000",
+            "--worker-result", str(complete / builder_receipt["worker_provenance"]["result_path"]),
+            "--reference-manifest", str(
+                complete / builder_receipt["worker_provenance"]["reference_manifest_path"]
+            ),
+            "--output", str(builder_output),
+        ], "delegated per-master generation receipt builder")
+        if builder_summary.get("status") != "PASS" or not builder_output.is_file():
+            raise AssertionError("generation receipt builder did not publish v2 evidence")
+        print("PASS delegated per-master generation receipt builder")
         assert_integrated_code_bearing_complete(complete)
         assert_pose_conditioned_continuity_positive(complete)
         print("PASS pose-conditioned silhouette variation and local-frame continuity")
@@ -4282,6 +4446,12 @@ def main() -> int:
             raise AssertionError("COMPLETE positive run failed:\n" + "\n".join(complete_errors))
         print("PASS production-shaped COMPLETE run")
         print("PASS ordered-line aggregation COMPLETE positive")
+        relocated = base / "complete_relocated"
+        shutil.copytree(complete, relocated)
+        relocated_errors = validate_run(relocated)
+        if relocated_errors:
+            raise AssertionError("relocated COMPLETE run failed:\n" + "\n".join(relocated_errors))
+        print("PASS COMPLETE run remains valid after relocation")
         assert_invalid(
             complete, "low_resolution_master_cannot_be_promoted",
             mutate_low_resolution_final_master,
@@ -4339,7 +4509,23 @@ def main() -> int:
         )
         assert_invalid(
             complete, "missing_submitted_reference_binding", mutate_missing_submitted_reference_binding,
-            "does not bind actual submitted reference files",
+            "submitted frozen references do not match manifest bytes",
+        )
+        assert_invalid(
+            complete, "legacy_v1_generation_receipt", mutate_legacy_v1_generation_receipt,
+            "invalid generation receipt schema",
+        )
+        assert_invalid(
+            complete, "reused_worker_image_call", mutate_reused_worker_call,
+            "worker provenance reuses image_generation_call_id",
+        )
+        assert_invalid(
+            complete, "worker_prompt_binding_drift", mutate_worker_prompt_binding,
+            "worker result does not bind provenance/prompt/image",
+        )
+        assert_invalid(
+            complete, "worker_raw_master_locator_drift", mutate_worker_raw_master_locator,
+            "worker result raw-master locator mismatch",
         )
         assert_invalid(
             complete, "legacy_v1_continuity_receipt", mutate_legacy_v1_continuity_receipt,

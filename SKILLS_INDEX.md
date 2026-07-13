@@ -46,6 +46,15 @@ outside the distribution.
 | `ai-video-keyframe-continuity-pack` | `D:\AI\skill\ai-video-keyframe-continuity-pack` | Create K1 per-shot Omni-reference anchors and continuity ledgers, then an immutable P1-bound K2 boundary supplement; never endpoint-frame controls. | Created in place | Active |
 | `ai-video-omni-reference-prompt-director` | `D:\AI\skill\ai-video-omni-reference-prompt-director` | Preflight and compile complete all-reference packages with Seedance 2.5-first semantics, capability-verified Seedance 2.0/provider renders, exact asset bindings, payloads, locks, and owner-routed selective revisions. | Created in place | Active |
 
+## Additional Maintained Skill
+
+`complex-product-identity-reconstruction-asset-locking` remains an active,
+independently maintained package outside the 15-Skill High-Control distribution.
+Its canonical path is
+`complex-product-identity-reconstruction-asset-locking` relative to this
+checkout, and this workstation exposes it through the matching junction under
+`$HOME/.codex/skills`.
+
 ## Legacy workstation discovery snapshot
 
 As of 2026-07-10, the existing Windows workstation exposed the following

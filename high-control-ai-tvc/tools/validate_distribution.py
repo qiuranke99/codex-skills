@@ -4,6 +4,7 @@
 from __future__ import annotations
 
 import argparse
+import json
 import re
 import subprocess
 import sys
@@ -70,15 +71,31 @@ def validate() -> List[str]:
     errors.extend(common_errors)
     names = {item["name"] for item in skills}
 
+    raw_independent = manifest.get("independent_skills", [])
+    if not isinstance(raw_independent, list) or any(
+        not isinstance(name, str) or not name for name in raw_independent
+    ):
+        errors.append("independent_skills must be a list of non-empty skill names")
+        independent = set()
+    else:
+        independent = set(raw_independent)
+        if len(independent) != len(raw_independent):
+            errors.append("independent_skills contains duplicate names")
+        overlap = independent & names
+        if overlap:
+            errors.append(f"independent_skills overlaps suite membership: {sorted(overlap)}")
+
     actual = {
         path.parent.name
         for path in REPO_ROOT.glob("*/SKILL.md")
         if path.parent.name != "high-control-ai-tvc"
     }
-    if actual != names:
+    expected_top_level = names | independent
+    if actual != expected_top_level:
         errors.append(
-            "top-level SKILL.md set differs from manifest; "
-            f"missing={sorted(names - actual)}; extra={sorted(actual - names)}"
+            "top-level SKILL.md set differs from suite plus independent inventory; "
+            f"missing={sorted(expected_top_level - actual)}; "
+            f"extra={sorted(actual - expected_top_level)}"
         )
 
     for item in skills:
@@ -92,6 +109,19 @@ def validate() -> List[str]:
             else:
                 if frontmatter != name:
                     errors.append(f"{name}: frontmatter name is {frontmatter!r}")
+
+    for name in sorted(independent):
+        skill_md = REPO_ROOT / name / "SKILL.md"
+        if not skill_md.is_file():
+            errors.append(f"independent skill is missing SKILL.md: {name}")
+            continue
+        try:
+            frontmatter = _frontmatter_name(skill_md)
+        except (OSError, UnicodeDecodeError) as exc:
+            errors.append(f"{name}: cannot read independent UTF-8 SKILL.md: {exc}")
+        else:
+            if frontmatter != name:
+                errors.append(f"{name}: independent frontmatter name is {frontmatter!r}")
 
     raw_skills = manifest.get("skills", [])
     origin_counts: Dict[str, int] = {}
@@ -150,6 +180,50 @@ def validate() -> List[str]:
                 errors.append("workflow asset root element is not SVG")
         except (ET.ParseError, OSError) as exc:
             errors.append(f"workflow SVG is not valid XML: {exc}")
+
+    packaging_root = REPO_ROOT / "packaging-product-identity-label-lock-board"
+    packaging_required = (
+        "SKILL.md",
+        "agents/openai.yaml",
+        "references/packaging_asset_pack_contract.md",
+        "references/generation_receipt.template.json",
+        "scripts/freeze_reference_bundle.py",
+        "scripts/resolve_worker_image.py",
+        "scripts/build_generation_receipt.py",
+        "scripts/validate_packaging_run.py",
+        "scripts/test_contract.py",
+    )
+    for relative in packaging_required:
+        if not (packaging_root / relative).is_file():
+            errors.append(f"packaging worker-runtime closure is missing: {relative}")
+    packaging_skill = packaging_root / "SKILL.md"
+    if packaging_skill.is_file():
+        text = packaging_skill.read_text(encoding="utf-8")
+        for marker in (
+            "asset_pack_contract_version: whole_product_ocr_rotation_pack_v3",
+            "runtime_contract_version: delegated_master_worker_transport_v1",
+            "one non-decision image worker",
+            "packaging-generation-receipt.v2",
+            "scripts/build_generation_receipt.py",
+        ):
+            if marker not in text:
+                errors.append(f"packaging worker-runtime marker is missing: {marker}")
+        if len(text.splitlines()) > 500:
+            errors.append("packaging SKILL.md exceeds the 500-line progressive-disclosure limit")
+    packaging_ui = packaging_root / "agents/openai.yaml"
+    if packaging_ui.is_file() and "allow_implicit_invocation: false" not in packaging_ui.read_text(encoding="utf-8"):
+        errors.append("packaging worker runtime must disable implicit invocation")
+    receipt_template = packaging_root / "references/generation_receipt.template.json"
+    if receipt_template.is_file():
+        try:
+            receipt = json.loads(receipt_template.read_text(encoding="utf-8"))
+        except (OSError, UnicodeDecodeError, json.JSONDecodeError) as exc:
+            errors.append(f"packaging generation receipt template is invalid: {exc}")
+        else:
+            if receipt.get("schema_version") != "packaging-generation-receipt.v2":
+                errors.append("packaging generation receipt template is not v2")
+            if not isinstance(receipt.get("worker_provenance"), dict):
+                errors.append("packaging generation receipt v2 lacks worker_provenance")
     return errors
 
 

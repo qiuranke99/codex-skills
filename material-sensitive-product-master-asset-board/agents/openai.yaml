@@ -1,4 +1,6 @@
 interface:
   display_name: "Material-Sensitive Product Master Asset Board"
-  short_description: "Material master board with final prompt-pair handoff."
-  default_prompt: "Use $material-sensitive-product-master-asset-board to request one horizontal 16:9 material master board, then in the later continuation inspect it and publish one final main result that visibly contains the complete exact final_generation_prompt plus generation_prompt_sha256 and the complete image-specific final_4k_enhancement_prompt plus 4k_enhancement_prompt_sha256, with material-preservation QA."
+  short_description: "Material master board with an automatic verified prompt pair."
+  default_prompt: "Use $material-sensitive-product-master-asset-board with my product references to request one horizontal 16:9 material master board; delegate the terminal image call to exactly one non-decision worker per attempt, inspect the bound board in the main agent, and publish the complete exact final_generation_prompt plus generation_prompt_sha256 and the complete image-specific final_4k_enhancement_prompt plus 4k_enhancement_prompt_sha256 in the same task's final main result."
+policy:
+  allow_implicit_invocation: false

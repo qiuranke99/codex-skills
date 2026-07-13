@@ -3,6 +3,21 @@
 The executable acceptance suite is `python3 -B scripts/test_contract.py`.
 These cases define the expected semantics.
 
+## Delegated per-master worker transport
+
+1. One explicit invocation freezes one unit prompt and ordered source bundle, then one fresh nonce-suffixed worker makes one image call.
+   - Pass only when the resolver binds the exact parent/thread/turn/call, prompt bytes, reference bytes, and raw PNG.
+2. A main agent calls imagegen, or an implicit trigger tries to spawn a worker.
+   - Fail before generation with `blocked_worker_authorization` or `blocked_automatic_prompt_pair_runtime`.
+3. A v1 generation receipt is attached to a v3 COMPLETE run.
+   - Fail; v1 is `legacy_untrusted_generation_provenance`.
+4. Two accepted views reuse one worker thread, turn, or image-call ID.
+   - Fail; every master requires a unique provenance chain.
+5. The worker tool-event prompt differs by one byte, references are reordered or mutated, or newest-file selection is attempted.
+   - Fail the exact resolver/receipt binding.
+6. The worker result matches the prompt but its raw image hash, canonical view path, dimensions, or reference-manifest hash differs.
+   - Fail before composition and Canon export.
+
 ## OCR-first hard gates
 
 1. Every source image has a full-image OCR discovery pass before any region OCR.

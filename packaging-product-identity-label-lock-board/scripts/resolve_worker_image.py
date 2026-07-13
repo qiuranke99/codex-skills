@@ -1,0 +1,702 @@
+#!/usr/bin/env python3
+"""Bind one delegated Codex image worker to its exact generated PNG.
+
+The main agent uses this after a fresh, uniquely named subagent has made one
+terminal built-in image-generation call.  The script rejects newest-file
+guessing: it resolves the worker thread from Codex state, validates the worker
+rollout, binds the full run nonce through the exact worker path, checks that the
+exact frozen prompt reached imagegen, and copies the bound PNG into the run
+directory.
+"""
+
+from __future__ import annotations
+
+import argparse
+import hashlib
+import json
+import os
+import re
+import shutil
+import sqlite3
+import struct
+import sys
+from datetime import datetime, timezone
+from pathlib import Path
+from typing import Any
+
+
+PNG_SIGNATURE = b"\x89PNG\r\n\x1a\n"
+JSON_DECODER = json.JSONDecoder()
+
+
+class ContractError(RuntimeError):
+    def __init__(self, code: str, detail: str) -> None:
+        super().__init__(detail)
+        self.code = code
+        self.detail = detail
+
+
+def sha256_bytes(data: bytes) -> str:
+    return hashlib.sha256(data).hexdigest()
+
+
+def normalized_path(path: Path) -> str:
+    return os.path.normcase(os.path.abspath(os.fspath(path)))
+
+
+def source_agent_path(source: str) -> tuple[str | None, str | None]:
+    try:
+        data = json.loads(source)
+        spawn = data["subagent"]["thread_spawn"]
+    except (json.JSONDecodeError, KeyError, TypeError):
+        return None, None
+    return spawn.get("agent_path"), spawn.get("parent_thread_id")
+
+
+def resolve_worker_thread(
+    state_db: Path,
+    agent_path: str,
+    not_before_ms: int,
+    parent_thread_id: str | None,
+) -> dict[str, Any]:
+    if not state_db.is_file():
+        raise ContractError("blocked_worker_state_unavailable", f"state DB not found: {state_db}")
+
+    uri = f"file:{state_db.as_posix()}?mode=ro"
+    try:
+        connection = sqlite3.connect(uri, uri=True)
+        rows = connection.execute(
+            """
+            SELECT id, rollout_path, created_at, created_at_ms, source
+            FROM threads
+            WHERE source LIKE ?
+            """,
+            (f"%{agent_path}%",),
+        ).fetchall()
+    except sqlite3.Error as exc:
+        raise ContractError("blocked_worker_state_unavailable", str(exc)) from exc
+    finally:
+        try:
+            connection.close()
+        except UnboundLocalError:
+            pass
+
+    matches: list[dict[str, Any]] = []
+    for thread_id, rollout_path, created_at, created_at_ms, source in rows:
+        exact_path, actual_parent = source_agent_path(source)
+        created_ms = created_at_ms if created_at_ms is not None else int(created_at) * 1000
+        if exact_path != agent_path or created_ms < not_before_ms:
+            continue
+        if parent_thread_id is not None and actual_parent != parent_thread_id:
+            continue
+        matches.append(
+            {
+                "thread_id": thread_id,
+                "rollout_path": rollout_path,
+                "created_at_ms": created_ms,
+                "parent_thread_id": actual_parent,
+            }
+        )
+
+    if not matches:
+        raise ContractError(
+            "blocked_worker_thread_not_found",
+            f"no fresh worker thread matched agent_path={agent_path!r}",
+        )
+    if len(matches) != 1:
+        ids = ", ".join(sorted(row["thread_id"] for row in matches))
+        raise ContractError(
+            "blocked_worker_thread_ambiguous",
+            f"expected one fresh worker thread, found {len(matches)}: {ids}",
+        )
+    return matches[0]
+
+
+def extract_js_json_value(source: str, key: str) -> Any:
+    match = re.search(
+        rf"(?<![A-Za-z0-9_])[\"']?{re.escape(key)}[\"']?\s*:\s*",
+        source,
+    )
+    if match is None:
+        raise ContractError("blocked_worker_call_unparseable", f"missing imagegen argument: {key}")
+    try:
+        value, _ = JSON_DECODER.raw_decode(source[match.end() :])
+    except json.JSONDecodeError as exc:
+        raise ContractError(
+            "blocked_worker_call_unparseable",
+            f"imagegen argument {key} is not a JSON literal: {exc}",
+        ) from exc
+    return value
+
+
+def extract_js_string_bindings(source: str) -> dict[str, str]:
+    """Statically read simple const/let string literals without executing JS."""
+    bindings: dict[str, str] = {}
+    pattern = re.compile(r"(?:^|[;\n])\s*(?:const|let)\s+([A-Za-z_$][A-Za-z0-9_$]*)\s*=\s*", re.MULTILINE)
+    for match in pattern.finditer(source):
+        try:
+            value, _ = JSON_DECODER.raw_decode(source[match.end() :])
+        except json.JSONDecodeError:
+            continue
+        if isinstance(value, str):
+            bindings[match.group(1)] = value
+    return bindings
+
+
+def extract_js_string_array_value(source: str, key: str) -> list[str]:
+    """Read a JSON string array or an array of locally bound string names."""
+    match = re.search(
+        rf"(?<![A-Za-z0-9_])[\"']?{re.escape(key)}[\"']?\s*:\s*",
+        source,
+    )
+    if match is None:
+        raise ContractError("blocked_worker_call_unparseable", f"missing imagegen argument: {key}")
+    tail = source[match.end() :].lstrip()
+    if not tail.startswith("["):
+        raise ContractError(
+            "blocked_worker_call_unparseable",
+            f"imagegen argument {key} is not an array expression",
+        )
+    close = tail.find("]")
+    if close < 0:
+        raise ContractError(
+            "blocked_worker_call_unparseable",
+            f"imagegen argument {key} has no closing bracket",
+        )
+    expression = tail[: close + 1]
+    try:
+        value = json.loads(expression)
+    except json.JSONDecodeError:
+        bindings = extract_js_string_bindings(source)
+        inner = expression[1:-1].strip()
+        if not inner:
+            return []
+        values: list[str] = []
+        for token in inner.split(","):
+            name = token.strip()
+            if not re.fullmatch(r"[A-Za-z_$][A-Za-z0-9_$]*", name) or name not in bindings:
+                raise ContractError(
+                    "blocked_worker_call_unparseable",
+                    f"imagegen argument {key} contains an unbound or non-string expression: {name!r}",
+                )
+            values.append(bindings[name])
+        return values
+    if not isinstance(value, list) or not all(isinstance(item, str) for item in value):
+        raise ContractError(
+            "blocked_worker_call_unparseable",
+            f"imagegen argument {key} is not a string list",
+        )
+    return value
+
+
+def read_rollout(rollout_path: Path) -> list[dict[str, Any]]:
+    if not rollout_path.is_file():
+        raise ContractError("blocked_worker_rollout_unavailable", f"rollout not found: {rollout_path}")
+    events: list[dict[str, Any]] = []
+    try:
+        with rollout_path.open("r", encoding="utf-8") as handle:
+            for line_number, line in enumerate(handle, 1):
+                if not line.strip():
+                    continue
+                event = json.loads(line)
+                event["_line"] = line_number
+                events.append(event)
+    except (OSError, json.JSONDecodeError) as exc:
+        raise ContractError("blocked_worker_rollout_unavailable", str(exc)) from exc
+    return events
+
+
+def load_reference_manifest(manifest_path: Path) -> dict[str, Any]:
+    if not manifest_path.is_file():
+        raise ContractError(
+            "blocked_reference_manifest_missing",
+            f"reference manifest not found: {manifest_path}",
+        )
+    manifest_bytes = manifest_path.read_bytes()
+    if manifest_bytes.startswith(b"\xef\xbb\xbf") or b"\r" in manifest_bytes:
+        raise ContractError(
+            "blocked_reference_manifest_invalid",
+            "reference manifest must be UTF-8 without BOM and use LF line endings",
+        )
+    try:
+        manifest = json.loads(manifest_bytes.decode("utf-8"))
+    except (UnicodeDecodeError, json.JSONDecodeError) as exc:
+        raise ContractError("blocked_reference_manifest_invalid", str(exc)) from exc
+    if manifest.get("schema_version") != "packaging_reference_bundle.v1":
+        raise ContractError("blocked_reference_manifest_invalid", "unexpected reference manifest schema")
+    entries = manifest.get("ordered_references")
+    if not isinstance(entries, list) or not entries:
+        raise ContractError("blocked_reference_manifest_invalid", "ordered_references must be non-empty")
+
+    reference_root = manifest_path.parent.resolve() / "references"
+    normalized_root = normalized_path(reference_root)
+    aliases: list[str] = []
+    paths: list[Path] = []
+    verified_entries: list[dict[str, Any]] = []
+    for expected_index, entry in enumerate(entries, 1):
+        if not isinstance(entry, dict):
+            raise ContractError("blocked_reference_manifest_invalid", "reference entry is not an object")
+        alias = entry.get("alias")
+        frozen_path = entry.get("frozen_path")
+        size_bytes = entry.get("size_bytes")
+        expected_sha = entry.get("sha256")
+        if entry.get("index") != expected_index or not isinstance(alias, str):
+            raise ContractError("blocked_reference_manifest_invalid", "reference order/index is invalid")
+        if not isinstance(frozen_path, str) or not isinstance(size_bytes, int):
+            raise ContractError("blocked_reference_manifest_invalid", "reference path/size is invalid")
+        if not isinstance(expected_sha, str) or not re.fullmatch(r"[0-9a-f]{64}", expected_sha):
+            raise ContractError("blocked_reference_manifest_invalid", "reference SHA-256 is invalid")
+        path = Path(frozen_path)
+        if not path.is_absolute():
+            raise ContractError("blocked_reference_manifest_invalid", f"reference path is not absolute: {path}")
+        normalized_frozen = normalized_path(path)
+        try:
+            common = os.path.commonpath([normalized_root, normalized_frozen])
+        except ValueError as exc:
+            raise ContractError("blocked_reference_manifest_invalid", str(exc)) from exc
+        if common != normalized_root:
+            raise ContractError(
+                "blocked_reference_manifest_location",
+                f"frozen reference is outside the run-scoped references directory: {path}",
+            )
+        if not path.is_file():
+            raise ContractError("blocked_reference_bytes_changed", f"frozen reference missing: {path}")
+        data = path.read_bytes()
+        actual_sha = sha256_bytes(data)
+        if len(data) != size_bytes or actual_sha != expected_sha:
+            raise ContractError(
+                "blocked_reference_bytes_changed",
+                f"frozen reference bytes changed after materialization: {path}",
+            )
+        aliases.append(alias)
+        paths.append(path)
+        verified_entries.append(entry)
+
+    if len(set(aliases)) != len(aliases):
+        raise ContractError("blocked_reference_manifest_invalid", "reference aliases are not unique")
+    normalized_paths = [normalized_path(path) for path in paths]
+    if len(set(normalized_paths)) != len(normalized_paths):
+        raise ContractError("blocked_reference_manifest_invalid", "frozen reference paths are not unique")
+
+    digest_payload = json.dumps(
+        verified_entries,
+        ensure_ascii=False,
+        separators=(",", ":"),
+        sort_keys=True,
+    ).encode("utf-8")
+    actual_bundle_sha = sha256_bytes(digest_payload)
+    if manifest.get("ordered_bundle_sha256") != actual_bundle_sha:
+        raise ContractError(
+            "blocked_reference_manifest_hash_mismatch",
+            "ordered reference bundle hash does not match manifest entries",
+        )
+    return {
+        "paths": paths,
+        "manifest_sha256": sha256_bytes(manifest_bytes),
+        "ordered_bundle_sha256": actual_bundle_sha,
+        "reference_count": len(paths),
+    }
+
+
+def response_message_text(payload: dict[str, Any]) -> str:
+    content = payload.get("content", "")
+    if isinstance(content, str):
+        return content
+    if not isinstance(content, list):
+        return ""
+    parts: list[str] = []
+    for item in content:
+        if isinstance(item, dict) and isinstance(item.get("text"), str):
+            parts.append(item["text"])
+    return "".join(parts)
+
+
+def validate_worker_rollout(
+    events: list[dict[str, Any]],
+    thread_id: str,
+    agent_path: str,
+    parent_thread_id: str,
+    worker_run_nonce: str,
+    expected_prompt_bytes: bytes,
+    expected_references: list[Path],
+    allow_no_references: bool,
+) -> dict[str, Any]:
+    if not re.fullmatch(r"[0-9a-f]{32}", worker_run_nonce):
+        raise ContractError(
+            "blocked_worker_nonce_invalid",
+            "worker run nonce must be exactly 32 lowercase hexadecimal characters",
+        )
+    if not agent_path.endswith(f"_{worker_run_nonce}"):
+        raise ContractError(
+            "blocked_worker_nonce_mismatch",
+            "exact worker path must end with the complete run nonce",
+        )
+    if not events or events[0].get("type") != "session_meta":
+        raise ContractError("blocked_worker_session_mismatch", "worker rollout lacks leading session_meta")
+    session_payload = events[0].get("payload", {})
+    session_id = session_payload.get("id")
+    if session_id != thread_id:
+        raise ContractError(
+            "blocked_worker_session_mismatch",
+            f"leading rollout session id {session_id!r} does not equal worker thread {thread_id!r}",
+        )
+    if session_payload.get("agent_path") != agent_path:
+        raise ContractError("blocked_worker_session_mismatch", "leading session agent_path mismatch")
+    if session_payload.get("parent_thread_id") != parent_thread_id:
+        raise ContractError("blocked_worker_parent_mismatch", "leading session parent thread mismatch")
+
+    task_starts = [
+        index
+        for index, event in enumerate(events)
+        if event.get("type") == "event_msg"
+        and event.get("payload", {}).get("type") == "task_started"
+    ]
+    if not task_starts:
+        raise ContractError("blocked_worker_task_trace_missing", "worker rollout has no task_started event")
+    worker_events = events[task_starts[-1] :]
+    task_started = worker_events[0].get("payload", {})
+    worker_turn_id = task_started.get("turn_id")
+    if not isinstance(worker_turn_id, str) or not worker_turn_id:
+        raise ContractError("blocked_worker_task_trace_incomplete", "task_started lacks turn_id")
+
+    turn_contexts = [
+        (index, event.get("payload", {}))
+        for index, event in enumerate(worker_events)
+        if event.get("type") == "turn_context"
+    ]
+    task_completions = [
+        (index, event.get("payload", {}))
+        for index, event in enumerate(worker_events)
+        if event.get("type") == "event_msg"
+        and event.get("payload", {}).get("type") == "task_complete"
+    ]
+    if len(turn_contexts) != 1 or turn_contexts[0][1].get("turn_id") != worker_turn_id:
+        raise ContractError(
+            "blocked_worker_turn_mismatch",
+            "worker task_started and turn_context do not identify one identical turn",
+        )
+    if len(task_completions) != 1:
+        raise ContractError(
+            "blocked_worker_task_trace_incomplete",
+            f"expected one task_complete after the latest task_started, found {len(task_completions)}",
+        )
+    completion_index, completion_payload = task_completions[0]
+    if completion_payload.get("turn_id") != worker_turn_id:
+        raise ContractError("blocked_worker_turn_mismatch", "task_complete turn_id mismatch")
+    if completion_payload.get("last_agent_message") not in {None, ""}:
+        raise ContractError("blocked_worker_nonempty_final", "worker task_complete is not empty")
+
+    image_calls: list[tuple[int, dict[str, Any]]] = []
+    image_events: list[tuple[int, dict[str, Any]]] = []
+    final_agent_messages: list[tuple[int, dict[str, Any]]] = []
+    final_response_messages: list[tuple[int, dict[str, Any]]] = []
+    for index, event in enumerate(worker_events):
+        payload = event.get("payload", {})
+        if (
+            event.get("type") == "response_item"
+            and payload.get("type") == "custom_tool_call"
+            and "tools.image_gen__imagegen" in payload.get("input", "")
+        ):
+            image_calls.append((index, payload))
+        if event.get("type") == "event_msg" and payload.get("type") == "image_generation_end":
+            image_events.append((index, payload))
+        if (
+            event.get("type") == "event_msg"
+            and payload.get("type") == "agent_message"
+            and payload.get("phase") == "final_answer"
+        ):
+            final_agent_messages.append((index, payload))
+        if (
+            event.get("type") == "response_item"
+            and payload.get("type") == "message"
+            and payload.get("role") == "assistant"
+        ):
+            final_response_messages.append((index, payload))
+
+    if not image_calls:
+        raise ContractError(
+            "blocked_worker_image_call_count",
+            "worker trace has no imagegen wrapper call",
+        )
+    if len(image_events) != 1:
+        raise ContractError(
+            "blocked_worker_image_event_count",
+            f"expected exactly one image_generation_end event, found {len(image_events)}",
+        )
+    if len(final_agent_messages) != 1:
+        raise ContractError(
+            "blocked_worker_final_trace_incomplete",
+            "worker must contain one event_msg final",
+        )
+
+    image_end_index, image_event = image_events[0]
+    completed_image_calls = [item for item in image_calls if item[0] < image_end_index]
+    if not completed_image_calls or any(index > image_end_index for index, _ in image_calls):
+        raise ContractError(
+            "blocked_worker_event_order",
+            "imagegen wrapper calls must precede the only image-generation event",
+        )
+    # A wrapper can fail before imagegen is reached (for example while decoding
+    # prompt transport).  The only wrapper that can have produced the one
+    # completed image event is the nearest preceding wrapper.  Earlier wrappers
+    # have no image event and are not counted as image generations.
+    call_index, image_call = completed_image_calls[-1]
+    agent_final_index, agent_final = final_agent_messages[0]
+    response_final_candidates = [
+        (index, payload)
+        for index, payload in final_response_messages
+        if image_end_index < index < completion_index
+    ]
+    if len(response_final_candidates) != 1:
+        raise ContractError(
+            "blocked_worker_final_trace_incomplete",
+            "worker must contain one assistant response item after image generation and before completion",
+        )
+    response_final_index, response_final = response_final_candidates[0]
+    context_index = turn_contexts[0][0]
+    if not (
+        0 < context_index < call_index < image_end_index
+        and image_end_index < agent_final_index < completion_index
+        and image_end_index < response_final_index < completion_index
+    ):
+        raise ContractError(
+            "blocked_worker_event_order",
+            "worker events do not follow task/context/call/end/empty-final/complete order",
+        )
+    if agent_final.get("message") not in {None, ""} or response_message_text(response_final) != "":
+        raise ContractError("blocked_worker_nonempty_final", "worker emitted non-empty final text")
+
+    call_input = image_call.get("input", "")
+    revised_prompt = image_event.get("revised_prompt")
+    if not isinstance(revised_prompt, str):
+        raise ContractError(
+            "blocked_worker_image_event_incomplete",
+            "completed image event lacks revised_prompt evidence",
+        )
+    tool_prompt_bytes = revised_prompt.encode("utf-8")
+    if tool_prompt_bytes != expected_prompt_bytes:
+        raise ContractError(
+            "blocked_worker_prompt_mismatch",
+            "image-generation event prompt does not exactly match the frozen prompt sidecar",
+        )
+    prompt_binding_mode = "image_event_revised_prompt"
+    try:
+        inline_prompt = extract_js_json_value(call_input, "prompt")
+    except ContractError as exc:
+        if exc.code != "blocked_worker_call_unparseable":
+            raise
+    else:
+        if not isinstance(inline_prompt, str) or inline_prompt.encode("utf-8") != expected_prompt_bytes:
+            raise ContractError(
+                "blocked_worker_prompt_mismatch",
+                "inline imagegen prompt does not exactly match the frozen prompt sidecar",
+            )
+        prompt_binding_mode = "inline_literal_and_image_event"
+
+    if expected_references:
+        actual = extract_js_string_array_value(call_input, "referenced_image_paths")
+        expected_list = [normalized_path(path) for path in expected_references]
+        actual_list = [normalized_path(Path(path)) for path in actual]
+        if actual_list != expected_list:
+            raise ContractError(
+                "blocked_worker_reference_mismatch",
+                f"expected ordered references {expected_list!r}, received {actual_list!r}",
+            )
+    elif not allow_no_references:
+        raise ContractError(
+            "blocked_worker_reference_contract_missing",
+            "production resolution requires a frozen reference manifest",
+        )
+
+    if image_event.get("status") != "completed":
+        raise ContractError(
+            "blocked_worker_generation_failed",
+            f"image generation status is {image_event.get('status')!r}",
+        )
+    call_id = image_event.get("call_id")
+    saved_path = image_event.get("saved_path")
+    if not isinstance(call_id, str) or not call_id or not isinstance(saved_path, str) or not saved_path:
+        raise ContractError(
+            "blocked_worker_image_event_incomplete",
+            "completed image event lacks call_id or saved_path",
+        )
+    return {
+        "worker_turn_id": worker_turn_id,
+        "call_id": call_id,
+        "saved_path": saved_path,
+        "tool_prompt_sha256": sha256_bytes(tool_prompt_bytes),
+        "prompt_binding_mode": prompt_binding_mode,
+        "image_wrapper_candidate_count": len(completed_image_calls),
+        "reference_mode": "frozen_manifest" if expected_references else "none_test_only",
+    }
+
+
+def inspect_png(path: Path) -> tuple[int, int, str]:
+    if not path.is_file():
+        raise ContractError("blocked_worker_image_missing", f"generated PNG not found: {path}")
+    data = path.read_bytes()
+    if len(data) < 24 or data[:8] != PNG_SIGNATURE or data[12:16] != b"IHDR":
+        raise ContractError("blocked_worker_image_invalid", f"invalid PNG header: {path}")
+    width, height = struct.unpack(">II", data[16:24])
+    if width <= 0 or height <= 0:
+        raise ContractError("blocked_worker_image_invalid", f"invalid PNG dimensions: {width}x{height}")
+    return width, height, sha256_bytes(data)
+
+
+def copy_bound_image(source: Path, destination: Path, expected_sha256: str) -> None:
+    destination.parent.mkdir(parents=True, exist_ok=True)
+    if destination.exists():
+        existing_sha = sha256_bytes(destination.read_bytes())
+        if existing_sha != expected_sha256:
+            raise ContractError(
+                "blocked_worker_destination_conflict",
+                f"destination exists with different bytes: {destination}",
+            )
+        return
+    shutil.copy2(source, destination)
+    copied_sha = sha256_bytes(destination.read_bytes())
+    if copied_sha != expected_sha256:
+        raise ContractError("blocked_worker_copy_mismatch", "copied image hash does not match source")
+
+
+def write_json(path: Path, data: dict[str, Any]) -> None:
+    path.parent.mkdir(parents=True, exist_ok=True)
+    temporary = path.with_suffix(path.suffix + ".tmp")
+    temporary.write_text(
+        json.dumps(data, ensure_ascii=False, indent=2, sort_keys=True) + "\n",
+        encoding="utf-8",
+        newline="\n",
+    )
+    os.replace(temporary, path)
+
+
+def default_codex_home() -> Path:
+    return Path(os.environ.get("CODEX_HOME", Path.home() / ".codex"))
+
+
+def build_parser() -> argparse.ArgumentParser:
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("--agent-path", required=True, help="Exact canonical worker path returned by spawn_agent")
+    parser.add_argument("--not-before-ms", required=True, type=int, help="Checkpoint captured before worker spawn")
+    parser.add_argument("--parent-thread-id", required=True, help="Exact finalizing parent thread id")
+    parser.add_argument("--worker-run-nonce", required=True, help="Exact 32-character lowercase hex run nonce")
+    parser.add_argument("--expected-prompt", required=True, type=Path)
+    parser.add_argument("--reference-manifest", type=Path)
+    parser.add_argument("--allow-no-references", action="store_true", help="Test-only; forbidden in production")
+    parser.add_argument("--copy-to", required=True, type=Path)
+    parser.add_argument("--result-json", required=True, type=Path)
+    parser.add_argument("--state-db", type=Path)
+    parser.add_argument("--codex-home", type=Path)
+    return parser
+
+
+def main() -> int:
+    args = build_parser().parse_args()
+    if not re.fullmatch(r"[0-9a-f]{32}", args.worker_run_nonce):
+        raise ContractError(
+            "blocked_worker_nonce_invalid",
+            "worker run nonce must be exactly 32 lowercase hexadecimal characters",
+        )
+    if args.reference_manifest is None and not args.allow_no_references:
+        raise ContractError(
+            "blocked_reference_manifest_missing",
+            "production resolution requires --reference-manifest",
+        )
+
+    codex_home = args.codex_home or default_codex_home()
+    state_db = args.state_db or codex_home / "state_5.sqlite"
+    prompt_bytes = args.expected_prompt.read_bytes()
+    if prompt_bytes.startswith(b"\xef\xbb\xbf") or b"\r" in prompt_bytes:
+        raise ContractError(
+            "blocked_generation_prompt_persistence",
+            "frozen prompt sidecar must be UTF-8 without BOM and use LF line endings",
+        )
+    try:
+        prompt_bytes.decode("utf-8")
+    except UnicodeDecodeError as exc:
+        raise ContractError("blocked_generation_prompt_persistence", str(exc)) from exc
+
+    reference_evidence = (
+        load_reference_manifest(args.reference_manifest)
+        if args.reference_manifest is not None
+        else {
+            "paths": [],
+            "manifest_sha256": None,
+            "ordered_bundle_sha256": None,
+            "reference_count": 0,
+        }
+    )
+
+    worker = resolve_worker_thread(
+        state_db=state_db,
+        agent_path=args.agent_path,
+        not_before_ms=args.not_before_ms,
+        parent_thread_id=args.parent_thread_id,
+    )
+    rollout_path = Path(str(worker["rollout_path"]).removeprefix("\\\\?\\"))
+    evidence = validate_worker_rollout(
+        events=read_rollout(rollout_path),
+        thread_id=worker["thread_id"],
+        agent_path=args.agent_path,
+        parent_thread_id=args.parent_thread_id,
+        worker_run_nonce=args.worker_run_nonce,
+        expected_prompt_bytes=prompt_bytes,
+        expected_references=reference_evidence["paths"],
+        allow_no_references=args.allow_no_references,
+    )
+
+    source_path = Path(evidence["saved_path"])
+    expected_source = codex_home / "generated_images" / worker["thread_id"] / f"{evidence['call_id']}.png"
+    if normalized_path(source_path) != normalized_path(expected_source):
+        raise ContractError(
+            "blocked_worker_image_path_mismatch",
+            f"event path {source_path} does not equal bound path {expected_source}",
+        )
+    width, height, image_sha = inspect_png(source_path)
+    copy_bound_image(source_path, args.copy_to, image_sha)
+
+    result = {
+        "ok": True,
+        "contract": "delegated_image_worker_result.v1",
+        "resolved_at_utc": datetime.now(timezone.utc).isoformat(),
+        "agent_path": args.agent_path,
+        "worker_thread_id": worker["thread_id"],
+        "worker_turn_id": evidence["worker_turn_id"],
+        "parent_thread_id": worker["parent_thread_id"],
+        "worker_rollout_path": str(rollout_path),
+        "image_generation_call_id": evidence["call_id"],
+        "worker_saved_path": str(source_path),
+        "run_image_path": str(args.copy_to),
+        "image_sha256": image_sha,
+        "width_px": width,
+        "height_px": height,
+        "observed_aspect_ratio": width / height,
+        "exact_16_9": width * 9 == height * 16,
+        "generation_prompt_sha256": sha256_bytes(prompt_bytes),
+        "tool_prompt_sha256": evidence["tool_prompt_sha256"],
+        "prompt_sha_match": evidence["tool_prompt_sha256"] == sha256_bytes(prompt_bytes),
+        "prompt_binding_mode": evidence["prompt_binding_mode"],
+        "image_wrapper_candidate_count": evidence["image_wrapper_candidate_count"],
+        "reference_mode": evidence["reference_mode"],
+        "reference_manifest_path": str(args.reference_manifest) if args.reference_manifest else None,
+        "reference_manifest_sha256": reference_evidence["manifest_sha256"],
+        "ordered_reference_bundle_sha256": reference_evidence["ordered_bundle_sha256"],
+        "reference_count": reference_evidence["reference_count"],
+    }
+    write_json(args.result_json, result)
+    print(json.dumps(result, ensure_ascii=False, sort_keys=True))
+    return 0
+
+
+if __name__ == "__main__":
+    try:
+        raise SystemExit(main())
+    except ContractError as exc:
+        print(json.dumps({"ok": False, "error_code": exc.code, "detail": exc.detail}), file=sys.stderr)
+        raise SystemExit(2)
+    except OSError as exc:
+        print(
+            json.dumps({"ok": False, "error_code": "blocked_worker_filesystem", "detail": str(exc)}),
+            file=sys.stderr,
+        )
+        raise SystemExit(2)
