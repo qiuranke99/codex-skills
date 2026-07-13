@@ -920,7 +920,12 @@ def production_check(
         }
         if repository != expected_repository:
             raise ReleaseControlError("RECEIPT_STALE_OR_TAMPERED: canonical repository identity differs")
-        first = (remote_head_reader or query_remote_head)().lower()
+        # Runtime gates execute inside Codex sandboxes.  On Windows those sandboxes
+        # can deny Schannel credential acquisition even for a public Git
+        # ls-remote, while direct HTTPS remains available.  Use the GitHub API
+        # identity+ref check here; sync_release still cross-checks Git transport
+        # against the API before it fetches and activates Git objects.
+        first = (remote_head_reader or query_github_identity_and_head)().lower()
         commit = receipt.get("release_commit")
         if commit != first:
             raise ReleaseControlError(f"UPDATE_REQUIRED: active={commit}; GitHub main={first}")
@@ -1045,7 +1050,7 @@ def production_check(
         else:
             _add_check(checks, "process_generation", "pass", "activation self-check bypassed process age only")
 
-        second = (remote_head_reader or query_remote_head)().lower()
+        second = (remote_head_reader or query_github_identity_and_head)().lower()
         if second != first:
             raise ReleaseControlError(f"REMOTE_HEAD_CHANGED_DURING_CHECK: {first} -> {second}")
         _add_check(checks, "remote_stability", "pass", f"GitHub main remained {second}")

@@ -165,6 +165,22 @@ def main() -> int:
             if not current["ready_latest"]:
                 raise AssertionError(f"fresh task could not attest the release: {current}")
 
+            saved_transport_query = release.query_remote_head
+            saved_api_query = release.query_github_identity_and_head
+            try:
+                release.query_remote_head = lambda: (_ for _ in ()).throw(
+                    release.ReleaseControlError("Git transport is unavailable in the runtime sandbox")
+                )
+                release.query_github_identity_and_head = remote_head
+                api_runtime = release.production_check(target)
+            finally:
+                release.query_remote_head = saved_transport_query
+                release.query_github_identity_and_head = saved_api_query
+            if not api_runtime["ready_latest"]:
+                raise AssertionError(
+                    f"runtime gate depended on Git transport instead of GitHub API identity: {api_runtime}"
+                )
+
             (project / "00_project_canon").mkdir(parents=True)
             project_check = release.production_check(
                 target,
