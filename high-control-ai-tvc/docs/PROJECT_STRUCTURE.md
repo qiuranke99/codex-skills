@@ -128,7 +128,8 @@ macOS 建议：
     └── exported_readonly_snapshots/                 # 可选，不能冒充当前 Canon
 ```
 
-每个阶段入口由 `release_control.py check --project-root <PROJECT_ROOT>` 原子
+每个阶段入口由 OS-native `release-control.ps1` / `release-control.sh` 的
+`check --project-root <PROJECT_ROOT>` 原子
 更新 `SYSTEM_RUNTIME_LOCK.json`。存在 pending Canon transaction 时不得迁移
 release；GitHub `main` 前进后必须先 `sync`、启动新 Codex task，再写入新锁。
 

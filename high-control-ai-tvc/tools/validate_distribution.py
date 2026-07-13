@@ -5,6 +5,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import os
 import re
 import subprocess
 import sys
@@ -45,6 +46,8 @@ REQUIRED_SUBSYSTEM_FILES = (
     "docs/TOOLS_INPUTS_OUTPUTS.md",
     "tools/manage_skills.py",
     "tools/release_control.py",
+    "tools/release-control.sh",
+    "tools/release-control.ps1",
     "tools/preflight.py",
     "tools/new_project.py",
     "tools/test_install_lifecycle.py",
@@ -127,6 +130,10 @@ def validate() -> List[str]:
                 text = skill_md.read_text(encoding="utf-8")
                 if "HIGH_CONTROL_RELEASE_GATE_V2" not in text:
                     errors.append(f"{name}: mandatory GitHub release gate marker is missing")
+                if "release-control.ps1" not in text or "release-control.sh" not in text:
+                    errors.append(f"{name}: OS-native pinned-runtime release launcher is missing")
+                if "unverified global Python" not in text:
+                    errors.append(f"{name}: unverified global Python is not explicitly forbidden")
 
     for name in sorted(independent):
         skill_md = REPO_ROOT / name / "SKILL.md"
@@ -143,6 +150,10 @@ def validate() -> List[str]:
             text = skill_md.read_text(encoding="utf-8")
             if "HIGH_CONTROL_RELEASE_GATE_V2" not in text:
                 errors.append(f"{name}: independent publication Skill lacks the GitHub release gate")
+            if "release-control.ps1" not in text or "release-control.sh" not in text:
+                errors.append(f"{name}: independent Skill lacks the OS-native release launcher")
+            if "unverified global Python" not in text:
+                errors.append(f"{name}: independent Skill does not forbid unverified global Python")
 
     raw_skills = manifest.get("skills", [])
     origin_counts: Dict[str, int] = {}
@@ -193,6 +204,8 @@ def validate() -> List[str]:
     for relative in REQUIRED_SUBSYSTEM_FILES:
         if not (SUBSYSTEM_ROOT / relative).is_file():
             errors.append(f"required subsystem file is missing: high-control-ai-tvc/{relative}")
+    if os.name != "nt" and not os.access(SUBSYSTEM_ROOT / "tools/release-control.sh", os.X_OK):
+        errors.append("tools/release-control.sh must be executable")
     svg = SUBSYSTEM_ROOT / "assets" / "high-control-ai-tvc-sop.svg"
     if svg.is_file():
         try:

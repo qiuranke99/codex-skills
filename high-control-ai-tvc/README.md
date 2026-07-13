@@ -50,7 +50,8 @@ Windows PowerShell：
 
 GitHub `qiuranke99/codex-skills` 的 `main` 是公司 Windows 与家用 Mac 的
 唯一跨机发布权威。`sync` 直接从该远端精确提交创建不可变 release、完成
-全量验证后再原子激活；本机 checkout 只用于创作，不得作为生产发现源。
+全量验证并施加操作系统级只读保护后再原子激活；本机 checkout 只用于创作，
+不得作为生产发现源。生产门还会实际验证 snapshot 拒绝新建文件与写句柄。
 旧版 `adopt/install` 仅用于安全迁移或开发，不能产生生产就绪状态。
 
 ## 从项目开始

@@ -5,8 +5,13 @@
 GitHub repository id `1264973746`, `qiuranke99/codex-skills`, branch `main` is
 the only cross-machine publication authority. A company Windows checkout and a
 home Mac checkout are authoring workspaces only. Production discovery must
-point to an immutable `releases/<GitHub OID>/repo` snapshot produced by
-`release_control.py sync`.
+point to an immutable `releases/<GitHub OID>/repo` snapshot produced by the
+OS-native `release-control.ps1` / `release-control.sh` launcher.
+Activation removes write access from that snapshot (Windows current-user RX
+ACL; macOS/Linux no-write permission modes). Every production check proves
+that creating a file and opening an existing file for writing are rejected,
+then independently re-verifies every Git blob. A hash-only or writable
+snapshot is not production-ready.
 
 `install`, `adopt`, and `status` remain safety/migration tools. They do not
 prove GitHub-latest and cannot make preflight production-ready. Only `sync`
@@ -329,8 +334,10 @@ If an organization blocks shell or PowerShell scripts, the same guarded tools
 can be called with the repository-local Python executable:
 
 ```text
-<repo>/high-control-ai-tvc/.venv/.../python tools/release_control.py sync
-<repo>/high-control-ai-tvc/.venv/.../python tools/release_control.py check --format json
+Windows: tools\release-control.ps1 -Action sync -Format json
+Windows: tools\release-control.ps1 -Action check -Format json
+macOS/Linux: tools/release-control.sh sync --format json
+macOS/Linux: tools/release-control.sh check --format json
 <repo>/high-control-ai-tvc/.venv/.../python tools/preflight.py --automatic-only --format json
 ```
 

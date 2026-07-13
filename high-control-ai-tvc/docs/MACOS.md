@@ -12,7 +12,9 @@
 The local checkout is an authoring/bootstrap workspace, not production
 authority. Production symlinks point to a GitHub-commit-addressed immutable
 snapshot under the discovery root, so moving an authoring checkout cannot
-silently change the active release.
+silently change the active release. Activation removes every write bit from the
+snapshot; the production gate must prove both the permission state and rejected
+write attempts before it accepts the release.
 
 ## Bootstrap
 
@@ -58,9 +60,11 @@ audit must print `READY_LATEST`, then test
 install/preflight helpers prefer that environment automatically. This avoids
 modifying the system Python.
 
-When Codex invokes a Skill validator directly, instruct it to use the same
-repository-local `.venv/bin/python` rather than an unrelated `python3` on PATH.
-This rule matters when Apple system Python and package-manager Python coexist.
+Release gates must use `tools/release-control.sh`; it resolves the validated
+pinned interpreter and disables bytecode writes. When Codex invokes a stage
+validator directly, use the same repository-local `.venv/bin/python` rather
+than an unrelated `python3` on PATH. This rule matters when Apple system Python
+and package-manager Python coexist.
 
 ## Legacy documents
 

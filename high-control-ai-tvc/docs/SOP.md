@@ -21,7 +21,9 @@
 
 GitHub `qiuranke99/codex-skills` 的 `main` 是 Windows/Mac 唯一跨机发布
 权威。新项目、恢复项目和每个 0–10 阶段开始前，都必须运行当前不可变
-snapshot 内的 `tools/release_control.py check` 并要求 `ready_latest=true`。
+snapshot 内的 OS-native `tools/release-control.ps1` / `tools/release-control.sh`
+固定运行时入口执行 `check` 并要求 `ready_latest=true`；不得通过未验证的全局
+Python 直接调用底层脚本。
 本阶段把返回的 `release_commit` 写入 runtime/dependency lock；阶段内冻结该
 commit。GitHub 更新、离线、验证失败、receipt/snapshot/discovery 漂移或
 当前 Codex task 需要重启时必须停止，运行 `sync` 并从新 task 继续，绝不

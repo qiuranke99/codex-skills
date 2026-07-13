@@ -5,7 +5,7 @@
 ## 1. 开始前只替换这些变量
 
 ```text
-<SYSTEM_ROOT>           release_control.py check 返回的 active_system_root；禁止填写 authoring checkout
+<SYSTEM_ROOT>           OS-native release launcher check 返回的 active_system_root；禁止填写 authoring checkout
 <PROJECT_ROOT>          项目绝对路径
 <SOURCE_SCRIPT>         粗脚本、分镜表或创意文件的绝对路径
 <REFERENCE_ROOT>        原始角色、产品、包装、场景、影调参考所在目录
@@ -53,7 +53,7 @@ USER_NOTES: <USER_NOTES>
 
 严格执行以下规则：
 
-1. 在读取任何生产 Skill 或写任何 artifact 前，先运行 `<SYSTEM_ROOT>/tools/release_control.py check --project-root <PROJECT_ROOT> --format json`。只有 `ready_latest=true` 才能继续，并把返回的 `release_commit` 写入本阶段 runtime/dependency lock；若远端更新、离线、snapshot/receipt/discovery 漂移或提示 `PROCESS_RESTART_REQUIRED`，立即停止，运行 `sync` 后打开新的 Codex task，绝不回退旧 release。随后完整读取 <SYSTEM_ROOT>/docs/SOP.md、<SYSTEM_ROOT>/docs/TOOLS_INPUTS_OUTPUTS.md、<SYSTEM_ROOT>/docs/REVISION_AND_APPROVAL.md、<SYSTEM_ROOT>/docs/PROJECT_STRUCTURE.md，以及当前阶段 Skill 的 SKILL.md 和其要求的 references。若 <SYSTEM_ROOT> 不存在或不含 SUITE_MANIFEST.json，报告安装 blocker；不得从聊天记忆或本机 authoring checkout 伪造 SOP。
+1. 在读取任何生产 Skill 或写任何 artifact 前，先运行 OS-native 固定运行时入口：Windows 使用 `<SYSTEM_ROOT>\tools\release-control.ps1 -Action check -ProjectRoot <PROJECT_ROOT> -Format json`，macOS/Linux 使用 `<SYSTEM_ROOT>/tools/release-control.sh check --project-root <PROJECT_ROOT> --format json`。不得用未验证的全局 Python 直接启动 `release_control.py`。只有 `ready_latest=true` 才能继续，并把返回的 `release_commit` 写入本阶段 runtime/dependency lock；若远端更新、离线、snapshot/receipt/discovery 漂移或提示 `PROCESS_RESTART_REQUIRED`，立即停止，用同一入口运行 `sync` 后打开新的 Codex task，绝不回退旧 release。随后完整读取 <SYSTEM_ROOT>/docs/SOP.md、<SYSTEM_ROOT>/docs/TOOLS_INPUTS_OUTPUTS.md、<SYSTEM_ROOT>/docs/REVISION_AND_APPROVAL.md、<SYSTEM_ROOT>/docs/PROJECT_STRUCTURE.md，以及当前阶段 Skill 的 SKILL.md 和其要求的 references。若 <SYSTEM_ROOT> 不存在或不含 SUITE_MANIFEST.json，报告安装 blocker；不得从聊天记忆或本机 authoring checkout 伪造 SOP。
 2. 使用唯一的 <PROJECT_ROOT>/00_project_canon/PROJECT_CANON_MANIFEST.json。不得建立第二本 Canon，也不得让生产 artifact 反向依赖 Canon。
 3. 不得因为脚本缺少专业机位、运镜、blocking、continuity、产品使用逻辑或功能说明而停工。保留源创意模式，自主推断普通导演决策并写入 inference ledger；写意品牌片不得被强改成功能演示片。
 4. 不得发明产品功效、配方、测试数据、认证、法规 claim、精确包装 copy 或未被证据支持的机械结构。只隔离真正不可替代的 blocker，继续完成所有不受影响的工作。
@@ -87,7 +87,7 @@ Codex 每次暂停等待批准后，使用这段继续：
 ```text
 我批准以下明确对象进入下游：<ARTIFACT_IDS / SHOT_UIDS / VERSION / HASH 或人类可读名称>。
 
-请先运行 <SYSTEM_ROOT>/tools/release_control.py check --project-root <PROJECT_ROOT> --format json，并要求 ready_latest=true；若更新则先迁移并打开新 task。然后把批准证据写入对应 Owner 合同并验证 Canon transition，读取 <PROJECT_ROOT> 的完整 Project Canon，确认没有 stale、blocked、hash drift 或未完成 transaction。按照 <SYSTEM_ROOT>/docs/SOP.md 从当前阶段继续到下一个真实用户批准门。不要跳阶段，不要重新生成未受影响资产，不要调用第三方视频 API。
+请先运行 OS-native 固定运行时入口（Windows：<SYSTEM_ROOT>\tools\release-control.ps1 -Action check -ProjectRoot <PROJECT_ROOT> -Format json；macOS/Linux：<SYSTEM_ROOT>/tools/release-control.sh check --project-root <PROJECT_ROOT> --format json），并要求 ready_latest=true；不得通过未验证的全局 Python 直接运行 release_control.py。若更新则先用同一入口 sync 并打开新 task。然后把批准证据写入对应 Owner 合同并验证 Canon transition，读取 <PROJECT_ROOT> 的完整 Project Canon，确认没有 stale、blocked、hash drift 或未完成 transaction。按照 <SYSTEM_ROOT>/docs/SOP.md 从当前阶段继续到下一个真实用户批准门。不要跳阶段，不要重新生成未受影响资产，不要调用第三方视频 API。
 ```
 
 若只是允许使用 `assistant_validated` 结果做预览，不是生产批准：

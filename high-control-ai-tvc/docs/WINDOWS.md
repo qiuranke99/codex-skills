@@ -63,16 +63,22 @@ A successful legacy `install` is never sufficient. `sync` must report
 audit must print `READY_LATEST`. Then test
 `$ai-video-shot-script-director`.
 
-## Company PowerShell policy
+## Pinned release launcher
 
-If `.ps1` execution is blocked, do not change machine policy without IT
-authorization. Use the direct Python form instead:
+Use the OS-native launcher for release checks; it resolves the validated pinned
+runtime, leaves the active snapshot before execution, and disables bytecode
+writes. Do not replace it with an unverified global `python` command:
 
 ```powershell
-.\.venv\Scripts\python.exe tools\release_control.py sync
-.\.venv\Scripts\python.exe tools\release_control.py check --format json
+.\tools\release-control.ps1 -Action sync -Format json
+.\tools\release-control.ps1 -Action check -Format json
 .\.venv\Scripts\python.exe tools\preflight.py --automatic-only --format json
 ```
+
+Successful activation applies a recursive read/execute ACL to the exact GitHub
+commit snapshot. `check` must report `snapshot_write_protection=pass`. If
+company policy blocks `.ps1`, do not bypass the policy or fall back to global
+Python; obtain the approved script-execution route from IT.
 
 The tools accept quoted paths containing spaces and do not require the current
 directory to be added to global PATH.

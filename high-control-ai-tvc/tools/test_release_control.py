@@ -148,6 +148,8 @@ def main() -> int:
             first_receipt = release._load_release_receipt(
                 release._release_state_paths(target, release.DEFAULT_SUITE_ID)["receipt"]
             )
+            if first_receipt.get("snapshot_write_protection", {}).get("protected") is not True:
+                raise AssertionError("release receipt did not attest OS-level snapshot write protection")
             if set(first_receipt["skills"]) != {
                 "fixture-production-skill",
                 "fixture-independent-skill",
@@ -212,11 +214,23 @@ def main() -> int:
             snapshot = Path(receipt["snapshot_root"])
             skill_file = snapshot / "fixture-production-skill" / "SKILL.md"
             original_skill = skill_file.read_bytes()
+            try:
+                skill_file.write_bytes(original_skill + b"\nblocked tamper\n")
+            except OSError:
+                pass
+            else:
+                raise AssertionError("immutable snapshot accepted an ordinary write")
+
+            # Deliberately use the release controller's maintenance-only thaw
+            # path to prove that integrity checks still reject a privileged
+            # mutation even if OS protection is intentionally removed.
+            release._thaw_snapshot(snapshot)
             skill_file.write_bytes(original_skill + b"\ntamper\n")
             drift = release.production_check(target, remote_head_reader=remote_head)
             if drift["ready_latest"] or "SOURCE_TREE_DRIFT" not in str(drift["errors"]):
                 raise AssertionError("tampered immutable snapshot was accepted")
             skill_file.write_bytes(original_skill)
+            release._freeze_snapshot(snapshot)
 
             install_skill = target / "fixture-production-skill" / "SKILL.md"
             original_install = install_skill.read_bytes()
@@ -320,6 +334,12 @@ def main() -> int:
             else:
                 raise AssertionError("non-descendant GitHub main rewrite was auto-activated")
         finally:
+            test_paths = release._release_state_paths(target, release.DEFAULT_SUITE_ID)
+            releases_root = test_paths["releases"]
+            if releases_root.is_dir():
+                for snapshot_root in releases_root.rglob("repo"):
+                    if snapshot_root.is_dir():
+                        release._thaw_snapshot(snapshot_root)
             for key, value in saved.items():
                 setattr(release, key, value)
             if original_thread is None:

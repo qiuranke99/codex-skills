@@ -7,11 +7,13 @@ High-Control suite 包含 15 个 Skill，其中 13 个构成生产核心，2 个
 production Skill。
 
 所有 16 个 publication Skill 的共同前置输入是 GitHub-latest release attestation。
-`release_control.py check --project-root <PROJECT_ROOT>` 必须返回
+OS-native `release-control.ps1` / `release-control.sh` 固定运行时入口执行
+`check --project-root <PROJECT_ROOT>` 后必须返回
 `ready_latest=true`，并生成/更新 `00_project_canon/SYSTEM_RUNTIME_LOCK.json`；
 该锁绑定 repository id、`main` commit、Git tree、manifest/runtime hashes、
-16 个 Skill tree、release receipt 和新 Codex task。任何旧、离线、漂移或
-混代状态都不得进入下列 Owner 合同。
+16 个 Skill tree、release receipt、操作系统级只读 snapshot 证据和新 Codex
+task。生产门必须证明 snapshot 拒绝创建文件与获取写句柄；任何旧、离线、
+可写、漂移或混代状态都不得进入下列 Owner 合同。
 
 ### 六个新增流程 Owner
 
@@ -51,7 +53,7 @@ production Skill。
 |---|---|---|---|
 | Codex Desktop / Codex CLI | 读取 Skill、编制 artifact、运行 validator、协调图像生成与返工 | 全程 | 能发现本仓库 Skill；能读写项目目录；重启后 `$skill-name` 可触发 |
 | Codex Image Generation | 生成资产板、Look refs、Storyboard、K1/K2 | 2、3、4A/4B、6、8（按需） | 每次生成前提示词 sidecar 已冻结；生成调用为回合最后动作；下一回合实际检查 |
-| Python 3.11/3.12 | 运行 schema、hash、Canon transition 和 package validator | 全程 | `python --version` / `python3 --version` 可用；脚本可执行 |
+| 固定 Python 3.11/3.12 runtime | 运行 schema、hash、Canon transition 和 package validator | 全程 | OS-native launcher 能解析已验证解释器；禁止用未验证的全局 Python 替代 |
 | Pillow `11.3.0` | 图片解码、review board、Canon 资产验证、deterministic atlas | 2、4A/4B、6、7、8、10 | 版本与两个 requirements pin 一致；真实 decode/verify/load 通过 |
 | FFmpeg + ffprobe | V1/V2 构建与实时媒体验证；P1/P2 检查视频/音频 | 5、7、9、10 | 位于 PATH；可解析 codec、duration、streams、fps、尺寸、帧/packet 数和 chapters |
 | 文档转换器 | 提取旧 `.doc`/`.rtf` | 0（仅旧格式） | macOS 可使用 `textutil`；Windows 使用 Word/受信任转换器；输出和转换器身份可记录并 hash |

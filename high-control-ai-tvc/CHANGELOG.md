@@ -14,6 +14,12 @@
 - Prompt/P1 合同负例改为顺序隔离夹具：Packaging 权威闭包由预写审计门
   冻结，非 Packaging 变更按 byte/path/stat 回滚；保留 180 秒单测上限，
   POSIX 进程组与 Windows Job Object 确保超时后无孤儿子进程；
+- 16 个生产 Skill 的 release gate 统一改用 OS-native launcher；launcher 从
+  已验证 release receipt 解析固定 Python，并先离开活动 snapshot 再执行
+  check/sync，避免全局 Python 缺失、依赖漂移或 Windows 当前目录锁定；
+- GitHub commit snapshot 在激活前获得操作系统级只读保护：Windows 递归
+  current-user RX ACL，macOS/Linux 清除全部写位；production check 实际证明
+  新建文件与现有文件写句柄均被拒绝，并继续逐 Git blob 反证篡改；
 - 所有 Canon/package locator 统一序列化为 POSIX project-relative 路径，
   文本、提示词证据与机器收据固定为 UTF-8/LF，确保 Windows/Mac 可迁移；
 - 六 Skill 集成验证器固定以 UTF-8 启动并解码子验证器，避免 Windows

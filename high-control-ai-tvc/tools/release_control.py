@@ -4,6 +4,8 @@
 from __future__ import annotations
 
 import argparse
+import csv
+import errno
 import hashlib
 import json
 import os
@@ -515,6 +517,112 @@ def verify_snapshot_against_git(cache: Path, commit: str, snapshot: Path) -> Dic
     return {"git_object_format": algorithm, "git_tree_oid": tree_oid, "file_count": len(records)}
 
 
+def _windows_current_sid() -> str:
+    result = _run(["whoami", "/user", "/fo", "csv", "/nh"], timeout=30)
+    rows = list(csv.reader(result.stdout.splitlines()))
+    if len(rows) != 1 or len(rows[0]) < 2 or not rows[0][1].startswith("S-"):
+        raise ReleaseControlError("SNAPSHOT_PROTECTION_FAILED: cannot resolve the current Windows SID")
+    return rows[0][1]
+
+
+def _freeze_snapshot(snapshot: Path) -> Dict[str, Any]:
+    """Make a validated commit snapshot read-only for the current OS user."""
+    if not snapshot.is_dir() or snapshot.is_symlink():
+        raise ReleaseControlError(f"SNAPSHOT_PROTECTION_FAILED: invalid snapshot root: {snapshot}")
+    if os.name == "nt":
+        sid = _windows_current_sid()
+        # Normalize descendants to inherited ACLs first.  Combining recursive
+        # inheritance removal and grant in one icacls call can strip child read
+        # access before the grant propagates.
+        _run(["icacls", str(snapshot), "/reset", "/T", "/C", "/Q"], timeout=300)
+        _run(["icacls", str(snapshot), "/inheritance:r"], timeout=300)
+        _run(
+            [
+                "icacls",
+                str(snapshot),
+                "/grant:r",
+                f"*{sid}:(OI)(CI)RX",
+            ],
+            timeout=300,
+        )
+        method = "windows_icacls_current_sid_rx"
+    else:
+        files = [path for path in snapshot.rglob("*") if path.is_file()]
+        directories = [snapshot, *(path for path in snapshot.rglob("*") if path.is_dir())]
+        for path in files:
+            path.chmod(0o555 if path.stat().st_mode & 0o111 else 0o444)
+        for path in sorted(directories, key=lambda item: len(item.parts), reverse=True):
+            path.chmod(0o555)
+        method = "posix_no_write_bits"
+    evidence = _assert_snapshot_write_protection(snapshot)
+    evidence["method"] = method
+    return evidence
+
+
+def _thaw_snapshot(snapshot: Path) -> None:
+    """Restore owner write access before quarantining or deleting a release snapshot."""
+    if not snapshot.exists() or snapshot.is_symlink():
+        return
+    if os.name == "nt":
+        _run(["icacls", str(snapshot), "/inheritance:e"], timeout=300)
+        _run(["icacls", str(snapshot), "/reset", "/T", "/C", "/Q"], timeout=300)
+    else:
+        directories = [snapshot, *(path for path in snapshot.rglob("*") if path.is_dir())]
+        for path in directories:
+            path.chmod(0o755)
+        for path in snapshot.rglob("*"):
+            if path.is_file():
+                path.chmod(0o755 if path.stat().st_mode & 0o111 else 0o644)
+
+
+def _assert_snapshot_write_protection(snapshot: Path) -> Dict[str, Any]:
+    if not snapshot.is_dir() or snapshot.is_symlink():
+        raise ReleaseControlError(f"SNAPSHOT_PROTECTION_FAILED: invalid snapshot root: {snapshot}")
+    if os.name != "nt":
+        writable = [
+            path.relative_to(snapshot).as_posix() or "."
+            for path in [snapshot, *snapshot.rglob("*")]
+            if path.stat().st_mode & 0o222
+        ]
+        if writable:
+            raise ReleaseControlError(
+                f"SNAPSHOT_PROTECTION_FAILED: write bits remain on {writable[:20]}"
+            )
+
+    # Prove both directory creation and existing-file write-open are denied.  A
+    # root POSIX process can override mode bits, so mode inspection is the only
+    # meaningful check in that exceptional test/container context.
+    can_probe = os.name == "nt" or not hasattr(os, "geteuid") or os.geteuid() != 0
+    if can_probe:
+        probe = snapshot / f".write-probe-{uuid.uuid4().hex}"
+        try:
+            probe.write_bytes(b"probe")
+        except OSError as exc:
+            if exc.errno not in {errno.EACCES, errno.EPERM, errno.EROFS} and getattr(exc, "winerror", None) != 5:
+                raise
+        else:
+            probe.unlink(missing_ok=True)
+            raise ReleaseControlError("SNAPSHOT_PROTECTION_FAILED: snapshot accepted a new file")
+
+        first_file = next((path for path in snapshot.rglob("*") if path.is_file()), None)
+        if first_file is None:
+            raise ReleaseControlError("SNAPSHOT_PROTECTION_FAILED: snapshot contains no files")
+        try:
+            with first_file.open("ab"):
+                pass
+        except OSError as exc:
+            if exc.errno not in {errno.EACCES, errno.EPERM, errno.EROFS} and getattr(exc, "winerror", None) != 5:
+                raise
+        else:
+            raise ReleaseControlError("SNAPSHOT_PROTECTION_FAILED: snapshot accepted a file write handle")
+
+    return {
+        "protected": True,
+        "platform": sys.platform,
+        "snapshot_root": str(snapshot.resolve()),
+    }
+
+
 def _materialize_snapshot(cache: Path, releases: Path, commit: str) -> Path:
     final_root = releases / commit
     final_repo = final_root / "repo"
@@ -533,6 +641,7 @@ def _materialize_snapshot(cache: Path, releases: Path, commit: str) -> Path:
             verify_snapshot_against_git(cache, commit, final_repo)
         except ReleaseControlError:
             quarantine = releases / f".{commit}.corrupt-{int(time.time())}-{uuid.uuid4().hex[:8]}"
+            _thaw_snapshot(final_repo)
             final_root.rename(quarantine)
         else:
             return final_repo
@@ -828,6 +937,11 @@ def sync_release(
             if set(install_receipt.get("entries", {})) != {skill["name"] for skill in selected}:
                 raise ReleaseControlError("PARTIAL_OR_OBSOLETE_INVENTORY: install receipt is not exactly the manifest inventory")
 
+            snapshot_write_protection = _freeze_snapshot(snapshot)
+            frozen_git_evidence = verify_snapshot_against_git(paths["cache"], first, snapshot)
+            if git_evidence != frozen_git_evidence:
+                raise ReleaseControlError("SNAPSHOT_PROTECTION_FAILED: freezing changed Git content evidence")
+
             skill_records = _skill_release_records(paths["cache"], snapshot, first, selected)
             receipt = {
                 "schema_version": RELEASE_SCHEMA_VERSION,
@@ -843,6 +957,7 @@ def sync_release(
                 "git_object_format": git_evidence["git_object_format"],
                 "snapshot_root": str(snapshot.resolve()),
                 "snapshot_tree_digest": _tree_digest(snapshot),
+                "snapshot_write_protection": snapshot_write_protection,
                 "manifest_sha256": _sha256_file(snapshot / "high-control-ai-tvc" / "SUITE_MANIFEST.json"),
                 "runtime_requirements_sha256": _sha256_file(
                     snapshot / "high-control-ai-tvc" / "config" / "runtime-requirements.json"
@@ -942,6 +1057,23 @@ def production_check(
         if receipt.get("snapshot_tree_digest") != _tree_digest(snapshot):
             raise ReleaseControlError("SOURCE_TREE_DRIFT: snapshot digest differs from release receipt")
         _add_check(checks, "snapshot_integrity", "pass", f"Git tree={git_evidence['git_tree_oid']}")
+
+        protection = receipt.get("snapshot_write_protection")
+        actual_protection = _assert_snapshot_write_protection(snapshot)
+        if not isinstance(protection, dict) or any(
+            protection.get(key) != actual_protection.get(key)
+            for key in ("protected", "platform", "snapshot_root")
+        ) or protection.get("method") not in {
+            "windows_icacls_current_sid_rx",
+            "posix_no_write_bits",
+        }:
+            raise ReleaseControlError("RECEIPT_STALE_OR_TAMPERED: snapshot write-protection evidence differs")
+        _add_check(
+            checks,
+            "snapshot_write_protection",
+            "pass",
+            f"{protection['method']} rejects snapshot writes",
+        )
 
         manifest, _requirements, skills, errors = load_distribution(snapshot)
         skills, inventory_errors = managed_inventory(manifest, skills, snapshot)
