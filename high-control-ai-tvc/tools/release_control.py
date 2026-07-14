@@ -339,6 +339,24 @@ def query_github_identity_and_head() -> str:
         "X-GitHub-Api-Version": "2022-11-28",
     }
     github_token = os.environ.get("GITHUB_TOKEN") or os.environ.get("GH_TOKEN")
+    if not github_token:
+        gh = shutil.which("gh")
+        if gh:
+            try:
+                token_result = subprocess.run(
+                    [gh, "auth", "token"],
+                    text=True,
+                    encoding="utf-8",
+                    errors="replace",
+                    stdout=subprocess.PIPE,
+                    stderr=subprocess.DEVNULL,
+                    timeout=15,
+                    check=False,
+                )
+            except (OSError, subprocess.SubprocessError):
+                token_result = None
+            if token_result is not None and token_result.returncode == 0:
+                github_token = token_result.stdout.strip()
     if github_token:
         headers["Authorization"] = f"Bearer {github_token}"
 
