@@ -338,6 +338,9 @@ def query_github_identity_and_head() -> str:
         "User-Agent": "high-control-ai-tvc-release-control",
         "X-GitHub-Api-Version": "2022-11-28",
     }
+    github_token = os.environ.get("GITHUB_TOKEN") or os.environ.get("GH_TOKEN")
+    if github_token:
+        headers["Authorization"] = f"Bearer {github_token}"
 
     def read_json(url: str) -> Dict[str, Any]:
         request = urllib.request.Request(url, headers=headers)
