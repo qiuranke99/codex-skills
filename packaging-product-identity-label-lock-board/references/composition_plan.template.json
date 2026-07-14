@@ -1,0 +1,30 @@
+{
+  "schema_version": "packaging_board_composition_plan.v1",
+  "raw_board_path": "attempts/01/raw-board.png",
+  "raw_board_sha256": "<sha256>",
+  "output_board_path": "attempts/01/final-board.png",
+  "canvas_size": [3840, 2160],
+  "base_fit": "cover",
+  "overlays": [
+    {
+      "region_id": "front_anchor",
+      "role": "anchor",
+      "source_path": "references/01_front.jpg",
+      "source_sha256": "<sha256>",
+      "crop_box": [0, 0, 100, 100],
+      "target_box": [0, 0, 960, 780],
+      "fit": "contain",
+      "background_rgb": [248, 248, 248]
+    },
+    {
+      "region_id": "front_label_detail",
+      "role": "detail",
+      "source_path": "references/01_front.jpg",
+      "source_sha256": "<sha256>",
+      "crop_box": [0, 0, 100, 100],
+      "target_box": [0, 1620, 640, 2160],
+      "fit": "contain",
+      "background_rgb": [248, 248, 248]
+    }
+  ]
+}

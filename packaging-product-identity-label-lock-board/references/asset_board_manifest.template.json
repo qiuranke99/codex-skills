@@ -1,0 +1,48 @@
+{
+  "schema_version": "packaging_video_asset_board.v1",
+  "run_status": "COMPLETE",
+  "input_profile": "one_to_three_reference",
+  "reference_manifest_path": "reference-manifest.json",
+  "generation_prompt_path": "attempts/01/final_generation_prompt.md",
+  "generation_prompt_sha256": "<sha256>",
+  "worker_result_path": "attempts/01/worker-result.json",
+  "worker_result_sha256": "<sha256>",
+  "composition_plan_path": "attempts/01/composition-plan.json",
+  "composition_plan_sha256": "<sha256>",
+  "composition_receipt_path": "attempts/01/composition-receipt.json",
+  "composition_receipt_sha256": "<sha256>",
+  "final_board_path": "attempts/01/final-board.png",
+  "final_board_sha256": "<sha256>",
+  "ocr": {
+    "status": "candidates_only",
+    "blocking": false
+  },
+  "copy_authority": "video_reference",
+  "unresolved_regions": [],
+  "view_cells": [
+    {"view_id": "front", "evidence_status": "source_observed"},
+    {"view_id": "back", "evidence_status": "source_observed"},
+    {"view_id": "left_side", "evidence_status": "bounded_inferred"},
+    {"view_id": "right_side", "evidence_status": "bounded_inferred"},
+    {"view_id": "front_three_quarter", "evidence_status": "source_observed"},
+    {"view_id": "rear_three_quarter", "evidence_status": "bounded_inferred"},
+    {"view_id": "high_angle", "evidence_status": "bounded_inferred"},
+    {"view_id": "low_angle", "evidence_status": "bounded_inferred"}
+  ],
+  "detail_cells": [
+    {"region_id": "front_label", "evidence_status": "deterministic_reprojection", "source_alias": "front"},
+    {"region_id": "back_copy", "evidence_status": "deterministic_reprojection", "source_alias": "back"},
+    {"region_id": "closure", "evidence_status": "deterministic_reprojection", "source_alias": "three_quarter"},
+    {"region_id": "surface_feature", "evidence_status": "deterministic_reprojection", "source_alias": "three_quarter"}
+  ],
+  "qa": {
+    "inspected": true,
+    "eight_complete_views": "pass",
+    "four_to_six_details": "pass",
+    "identity_consistency": "pass",
+    "label_fidelity": "pass",
+    "source_anchor_match": "pass",
+    "non_product_text_pollution": "pass",
+    "assistant_qa_status": "passed"
+  }
+}
