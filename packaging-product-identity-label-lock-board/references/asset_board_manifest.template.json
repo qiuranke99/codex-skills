@@ -43,6 +43,7 @@
     "label_fidelity": "pass",
     "source_anchor_match": "pass",
     "non_product_text_pollution": "pass",
+    "all_cells_populated": "pass",
     "assistant_qa_status": "passed"
   }
 }

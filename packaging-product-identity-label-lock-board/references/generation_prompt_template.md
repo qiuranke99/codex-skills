@@ -6,7 +6,10 @@ OUTPUT
 - One horizontal 16:9 board only.
 - Requested final design canvas: 3840 x 2160.
 - Eight complete, uncropped product views: front, back, left side, right side, front three-quarter, rear three-quarter, high angle, low angle.
-- Reserve four to six clean detail windows in a lower evidence strip. These windows will be replaced with source-derived evidence crops after generation.
+- Keep every bottle upright on its base. High angle and low angle describe camera position; never lay the product down.
+- Below the eight-view grid, render exactly {{detail_count}} fully populated, edge-to-edge photographic macro panels in one lower evidence strip.
+- Populate the detail panels in this exact order: {{detail_panel_list}}
+- Derive every macro panel from visible evidence in the supplied references. Every panel must contain clearly visible product evidence at generation time.
 - Neutral white or very light gray studio background, soft even light, consistent scale and spacing.
 
 PRODUCT IDENTITY LOCK
@@ -35,5 +38,6 @@ CLEAN-BOARD BANS
 - No heading, title, asset name, view name, angle label, number, arrow, callout, legend, date, status, table, UI, caption, watermark, or non-product text.
 - No props, hands, splashes, scenery, duplicate SKU, alternate packaging, campaign styling, or packaging redesign.
 - No cropped product views and no merged or overlapping products.
+- No blank cells, empty rectangles, placeholders, reserved slots, future-fill boxes, wireframes, unused panels, or drawn empty borders anywhere.
 
-This is one sparse-reference video identity board. It is not a 360-degree scan, print proof, dieline, or continuous rotation Canon.
+This prompt must produce one independently usable, fully populated sparse-reference video identity board in a single image-generation call. It is not a 360-degree scan, print proof, dieline, or continuous rotation Canon.

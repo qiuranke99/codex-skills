@@ -238,7 +238,9 @@ def validate() -> List[str]:
         for marker in (
             "Deliver exactly one clean horizontal 16:9 board",
             "exactly eight complete product views",
-            "four to six evidence detail windows",
+            "four to six fully populated evidence detail panels",
+            "No blank cells, empty rectangles, placeholders, reserved slots",
+            "independently usable as a final single-call prompt",
             "OCR remains nonblocking",
             "never request a fixed 8/12/16/24-angle capture set",
             "The main agent must not call imagegen directly",
@@ -265,6 +267,17 @@ def validate() -> List[str]:
                 errors.append("packaging asset-board manifest must define exactly eight views")
             if not 4 <= len(board_manifest.get("detail_cells", [])) <= 6:
                 errors.append("packaging asset-board manifest must define four to six details")
+            if board_manifest.get("qa", {}).get("all_cells_populated") != "pass":
+                errors.append("packaging asset-board manifest must require all_cells_populated")
+    composition_plan_template = packaging_root / "references/composition_plan.template.json"
+    if composition_plan_template.is_file():
+        try:
+            composition_plan = json.loads(composition_plan_template.read_text(encoding="utf-8"))
+        except (OSError, UnicodeDecodeError, json.JSONDecodeError) as exc:
+            errors.append(f"packaging composition-plan template is invalid: {exc}")
+        else:
+            if not 4 <= len(composition_plan.get("detail_layout", [])) <= 6:
+                errors.append("packaging composition plan must freeze four to six populated detail cells")
     return errors
 
 

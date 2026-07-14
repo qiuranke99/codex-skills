@@ -83,7 +83,12 @@ def valid_fixture(base: Path) -> dict[str, Any]:
     frozen_paths = {entry["alias"]: Path(entry["frozen_path"]) for entry in references["ordered_references"]}
 
     prompt = attempt / "final_generation_prompt.md"
-    prompt.write_text("Create one clean eight-view packaging board with reserved evidence windows.\n", encoding="utf-8", newline="\n")
+    prompt.write_text(
+        "Create one clean eight-view packaging board with exactly four fully populated detail panels. "
+        "No blank cells, empty rectangles, placeholders, reserved slots, or unused panels.\n",
+        encoding="utf-8",
+        newline="\n",
+    )
     raw = attempt / "raw-board.png"
     make_image(raw, (1600, 900), (246, 246, 246))
     worker = attempt / "worker-result.json"
@@ -139,6 +144,10 @@ def valid_fixture(base: Path) -> dict[str, Any]:
             "output_board_path": str(final_board),
             "canvas_size": [3840, 2160],
             "base_fit": "cover",
+            "detail_layout": [
+                {"region_id": f"detail_{index + 1}", "target_box": [index * 960, 1680, (index + 1) * 960, 2160]}
+                for index in range(4)
+            ],
             "overlays": overlays,
         },
     )
@@ -207,11 +216,18 @@ def valid_fixture(base: Path) -> dict[str, Any]:
             "label_fidelity": "pass",
             "source_anchor_match": "pass",
             "non_product_text_pollution": "pass",
+            "all_cells_populated": "pass",
             "assistant_qa_status": "conditional",
         },
     }
     write_json(manifest, manifest_value)
-    return {"manifest": manifest, "value": manifest_value, "run_dir": run_dir}
+    return {
+        "manifest": manifest,
+        "value": manifest_value,
+        "run_dir": run_dir,
+        "plan": plan,
+        "receipt": receipt,
+    }
 
 
 class ContractTests(unittest.TestCase):
@@ -220,14 +236,33 @@ class ContractTests(unittest.TestCase):
         for token in [
             "exactly one clean horizontal 16:9 board",
             "exactly eight complete product views",
-            "four to six evidence detail windows",
+            "four to six fully populated evidence detail panels",
             "OCR remains nonblocking",
             "Do not make OCR completion a global gate",
             "never request a fixed 8/12/16/24-angle capture set",
             "The main agent must not call imagegen directly",
             "at most two repair attempts",
+            "No blank cells, empty rectangles, placeholders, reserved slots",
+            "independently usable as a final single-call prompt",
         ]:
             self.assertIn(token, skill)
+
+    def test_prompt_template_is_standalone_and_population_safe(self) -> None:
+        prompt = (PACKAGE_DIR / "references" / "generation_prompt_template.md").read_text(encoding="utf-8")
+        for required in [
+            "exactly {{detail_count}} fully populated",
+            "{{detail_panel_list}}",
+            "No blank cells, empty rectangles, placeholders, reserved slots",
+            "independently usable",
+            "Keep every bottle upright on its base",
+        ]:
+            self.assertIn(required, prompt)
+        for forbidden in [
+            "will be replaced",
+            "Keep those six windows visually empty",
+            "Do not place any generated close-up content",
+        ]:
+            self.assertNotIn(forbidden, prompt)
 
     def test_three_references_validate_with_unresolved_microcopy(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
@@ -269,6 +304,108 @@ class ContractTests(unittest.TestCase):
             result = run([sys.executable, "-X", "utf8", str(VALIDATOR), "--manifest", str(fixture["manifest"])])
             self.assertEqual(result.returncode, 2)
             self.assertEqual(error_code(result), "blocked_exact_copy_authority")
+
+    def test_staging_prompt_leakage_is_rejected(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            fixture = valid_fixture(Path(tmp))
+            prompt = fixture["run_dir"] / "attempts" / "01" / "final_generation_prompt.md"
+            prompt.write_text(
+                "Create a board. Reserve exactly six clean rectangular detail windows. "
+                "Keep those six windows visually empty and neutral because they will be replaced after generation. "
+                "Do not place any generated close-up content inside the six reserved detail windows.\n",
+                encoding="utf-8",
+                newline="\n",
+            )
+            value = copy.deepcopy(fixture["value"])
+            value["generation_prompt_sha256"] = sha(prompt)
+            write_json(fixture["manifest"], value)
+            result = run([sys.executable, "-X", "utf8", str(VALIDATOR), "--manifest", str(fixture["manifest"])])
+            self.assertEqual(result.returncode, 2)
+            self.assertEqual(error_code(result), "blocked_staging_prompt_leakage")
+
+    def test_overlapping_detail_layout_is_rejected(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            fixture = valid_fixture(Path(tmp))
+            plan = json.loads(fixture["plan"].read_text(encoding="utf-8"))
+            plan["detail_layout"][1]["target_box"] = copy.deepcopy(plan["detail_layout"][0]["target_box"])
+            write_json(fixture["plan"], plan)
+            result = run(
+                [
+                    sys.executable,
+                    "-X",
+                    "utf8",
+                    str(COMPOSER),
+                    "--run-dir",
+                    str(fixture["run_dir"]),
+                    "--plan",
+                    str(fixture["plan"]),
+                    "--receipt",
+                    str(fixture["receipt"]),
+                ]
+            )
+            self.assertEqual(result.returncode, 2)
+            self.assertEqual(error_code(result), "blocked_composition_detail_layout_overlap")
+
+    def test_missing_detail_overlay_is_rejected(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            fixture = valid_fixture(Path(tmp))
+            plan = json.loads(fixture["plan"].read_text(encoding="utf-8"))
+            plan["overlays"] = plan["overlays"][:-1]
+            write_json(fixture["plan"], plan)
+            result = run(
+                [
+                    sys.executable,
+                    "-X",
+                    "utf8",
+                    str(COMPOSER),
+                    "--run-dir",
+                    str(fixture["run_dir"]),
+                    "--plan",
+                    str(fixture["plan"]),
+                    "--receipt",
+                    str(fixture["receipt"]),
+                ]
+            )
+            self.assertEqual(result.returncode, 2)
+            self.assertEqual(error_code(result), "blocked_composition_detail_mapping")
+
+    def test_near_blank_detail_crop_is_rejected(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            fixture = valid_fixture(Path(tmp))
+            blank = fixture["run_dir"] / "references" / "blank.png"
+            make_image(blank, (800, 1200), (248, 248, 248))
+            plan = json.loads(fixture["plan"].read_text(encoding="utf-8"))
+            detail = next(overlay for overlay in plan["overlays"] if overlay["role"] == "detail")
+            detail["source_path"] = str(blank)
+            detail["source_sha256"] = sha(blank)
+            detail["crop_box"] = [0, 0, 800, 1200]
+            write_json(fixture["plan"], plan)
+            result = run(
+                [
+                    sys.executable,
+                    "-X",
+                    "utf8",
+                    str(COMPOSER),
+                    "--run-dir",
+                    str(fixture["run_dir"]),
+                    "--plan",
+                    str(fixture["plan"]),
+                    "--receipt",
+                    str(fixture["receipt"]),
+                ]
+            )
+            self.assertEqual(result.returncode, 2)
+            self.assertEqual(error_code(result), "blocked_composition_detail_blank")
+
+    def test_manifest_detail_mapping_mismatch_is_rejected(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            fixture = valid_fixture(Path(tmp))
+            value = copy.deepcopy(fixture["value"])
+            value["detail_cells"][0]["region_id"] = "unbound_detail"
+            write_json(fixture["manifest"], value)
+            result = run([sys.executable, "-X", "utf8", str(VALIDATOR), "--manifest", str(fixture["manifest"])])
+            self.assertEqual(result.returncode, 2)
+            self.assertEqual(error_code(result), "blocked_composition_detail_mapping")
 
 
 if __name__ == "__main__":

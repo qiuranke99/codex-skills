@@ -1,6 +1,6 @@
 interface:
   display_name: "Packaging Product Identity Board"
   short_description: "One clean 8-view board for text-heavy packaging."
-  default_prompt: "Use $packaging-product-identity-label-lock-board to turn one to three ordinary product photos into exactly one clean horizontal 16:9 video-model asset board with eight complete product views and four to six source-evidenced label, copy, graphic, texture, embossing, closure, or material detail windows. Treat OCR as nonblocking discovery, preserve critical readable copy through frozen source crops and deterministic composition, use exactly one fresh non-decision image worker per generation attempt, inspect the final board, and publish only one accepted result."
+  default_prompt: "Use $packaging-product-identity-label-lock-board to turn one to three ordinary product photos into exactly one clean horizontal 16:9 video-model asset board with eight complete upright product views and four to six fully populated source-evidenced label, copy, graphic, texture, embossing, closure, or material detail panels. Treat OCR as nonblocking discovery, reject every blank or placeholder cell, preserve critical readable copy through frozen source crops and deterministic composition, use exactly one fresh non-decision image worker per generation attempt, inspect the final board, and publish only one accepted result."
 policy:
   allow_implicit_invocation: false

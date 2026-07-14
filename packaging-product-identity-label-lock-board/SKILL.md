@@ -1,6 +1,6 @@
 ---
 name: packaging-product-identity-label-lock-board
-description: Use when the user supplies one to three ordinary photos of a packaged product with dense copy, labels, logos, patterns, transparent liquid, texture, or embossing and wants exactly one clean horizontal 16:9 product identity asset board for downstream image or video models. The board combines eight complete product views with four to six source-evidenced detail windows; OCR is discovery evidence, never a reason to demand a 16-angle capture set.
+description: Use when the user supplies one to three ordinary photos of a packaged product with dense copy, labels, logos, patterns, transparent liquid, texture, or embossing and wants exactly one clean horizontal 16:9 product identity asset board for downstream image or video models. The board combines eight complete product views with four to six fully populated, source-evidenced detail panels; OCR is discovery evidence, never a reason to demand a 16-angle capture set.
 ---
 
 # Packaging Product Identity Label Lock Board
@@ -21,7 +21,7 @@ Continue only when `ready_latest=true`. Never use an unverified global Python to
 Deliver exactly one clean horizontal 16:9 board containing:
 
 - exactly eight complete product views;
-- four to six evidence detail windows selected from the real packaging risks;
+- four to six fully populated evidence detail panels selected from the real packaging risks;
 - the same SKU, silhouette, proportions, closure, liquid level, materials, label architecture, graphics, texture, embossing, and major product-native copy across the board;
 - no titles, view names, arrows, numbers, legends, tables, UI, QA text, dates, or other non-product text inside the image.
 
@@ -96,7 +96,7 @@ Use this default view set:
 
 Keep all eight products complete and uncropped. Preserve the closure/nozzle direction in product coordinates, not screen coordinates.
 
-Select four to six detail windows by risk, not by a fixed checklist. Prefer:
+Select four to six detail panels by risk, not by a fixed checklist. Use four by default for a single-call board; add a fifth or sixth only when each extra panel resolves a distinct video-identity risk. Before prompt freeze, lock one exact count and name every panel. Prefer:
 
 - front label and major identity copy;
 - back label/dense-copy block;
@@ -110,8 +110,9 @@ For text-heavy packaging, the final board should be hybrid:
 
 - use source-observed full-product anchors for the supplied front/back/three-quarter views when possible;
 - use bounded model completion for the missing support views;
-- overwrite the detail windows with source-derived crops through `scripts/compose_asset_board.py`;
-- keep critical readable copy in source-derived windows instead of trusting model-rendered microcopy.
+- require the generated board to populate every selected detail panel with visible source-grounded content;
+- overwrite those already-populated panels with source-derived crops through `scripts/compose_asset_board.py` when Codex executes the full workflow;
+- keep critical readable copy in source-derived panels instead of trusting model-rendered microcopy.
 
 This hybrid board is the primary fix for sparse-view, text-heavy products.
 
@@ -121,11 +122,11 @@ This hybrid board is the primary fix for sparse-view, text-heavy products.
 - neutral white or very light gray studio background;
 - even, soft product light; no dramatic campaign styling;
 - eight full-product views arranged as a coherent grid with generous separation;
-- one clean evidence strip or reserved detail area containing four to six windows;
+- one clean evidence strip containing the exact frozen count of fully populated detail panels;
 - no decorative props, hands, splashes, scenery, packaging redesign, duplicate SKUs, or alternate variants;
 - only genuine product-native text and graphics may appear.
 
-The generated raw board may reserve blank detail windows. The deterministic compositor may then replace those windows with frozen source crops and normalize the final canvas to exact 4K 16:9.
+Every visible panel must already contain useful product evidence in the generated board. Never request or accept blank cells, empty rectangles, placeholders, reserved slots, future-fill boxes, wireframes, or unused panels. Use narrow neutral gutters instead of drawn placeholder borders. The generation prompt must be independently usable as a final single-call prompt in an external image interface. The deterministic compositor may replace populated panels with frozen source crops for higher fidelity and normalize the canvas to exact 4K 16:9; it must never be required merely to remove blanks.
 
 ## Run sequence
 
@@ -165,12 +166,17 @@ Write the complete prompt to `<run-dir>/attempts/<attempt-id>/final_generation_p
 The prompt must state:
 
 - one board only;
-- eight complete product views and four to six reserved detail windows;
+- eight complete product views and the exact frozen count of fully populated detail panels;
+- the name and source-grounded content of every detail panel;
 - exact SKU and identity locks;
 - which views are source anchors and which are bounded completions;
 - copy/graphic/texture/embossing constraints;
+- front, back, side, three-quarter, high-angle, and low-angle views all keep the product upright on its base; high/low describe camera position, never a product lying down;
+- No blank cells, empty rectangles, placeholders, reserved slots, future-fill boxes, wireframes, or unused panels;
 - clean-board bans;
 - no claim of 360 or hidden-surface exactness.
+
+Reject the prompt before generation if it asks any region to remain visually empty, be reserved for later replacement, or omit generated content. Do not publish a staging prompt as a final generation prompt.
 
 ### 4. Delegate one image call
 
@@ -192,10 +198,13 @@ The main agent must not call imagegen directly. Resolve the returned PNG with `s
 
 After inspecting the raw board, create a composition plan from `references/composition_plan.template.json`.
 
+Fail the raw layout gate and repair before composition when any declared detail panel is blank, near-blank, framed as an empty placeholder, missing, or unused, or when a high/low-angle product is lying down. Do not let deterministic overlays hide a failed generation layout.
+
 - Add one to three source anchor overlays when a supplied view should remain exact.
-- Add four to six source-derived detail overlays for the highest copy/graphic/material risks.
+- Add one source-derived detail overlay for every frozen detail panel.
 - Use only frozen run-scoped sources and real crop boxes.
-- Place overlays only into the corresponding reserved board cells.
+- Bind every detail overlay by `region_id` to one explicit detail target box. Detail target boxes must be unique, non-overlapping, and filled exactly once.
+- Replace the corresponding already-populated generated panel; do not create a new panel or rely on an empty target.
 - Do not cover a different view, hide a defect, or introduce non-product text.
 
 Run:
@@ -221,12 +230,14 @@ python scripts/validate_asset_board_run.py `
 Validate:
 
 - exactly eight complete and distinct product views;
-- four to six detail windows;
+- the exact frozen count of four to six populated detail panels;
+- every declared detail panel maps one-to-one to a unique, non-overlapping source-derived overlay and contains non-background pixels;
 - stable SKU, silhouette, proportions, closure, liquid, material, label architecture, and feature placement;
 - front/back/three-quarter anchors match their sources;
 - critical copy/graphics are present in source-derived evidence windows;
 - no invented readable copy is presented as exact;
 - no non-product text pollution;
+- `all_cells_populated: pass` from both main-agent inspection and deterministic detail evidence;
 - exact 3840 × 2160 final canvas;
 - frozen prompt/reference/worker/composition/final-image integrity.
 
@@ -236,7 +247,7 @@ Allow at most two repair attempts after the initial attempt. Each repair uses on
 
 Repair only the failed class in this order:
 
-1. non-product text pollution or broken board layout;
+1. blank, empty, placeholder, unused, or broken board cells and non-product text pollution;
 2. wrong SKU, silhouette, closure, label placement, liquid, or major graphic;
 3. missing/duplicate/cropped full-product view;
 4. source-anchor or detail-window mismatch;
@@ -263,7 +274,7 @@ Block only when:
 - reference files cannot be materialized or hash-bound;
 - an explicitly requested exact-copy claim cannot be supported;
 - the worker provenance cannot be bound;
-- the final board cannot pass the eight-view, four-to-six-detail, clean-image, or identity-consistency checks after three total attempts.
+- the final board cannot pass the eight-view, fully-populated four-to-six-detail, clean-image, or identity-consistency checks after three total attempts.
 
 Missing hidden copy, unavailable OCR, or sparse angles alone are not blocking conditions for a normal `video_reference` board.
 

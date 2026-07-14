@@ -5,6 +5,12 @@
   "output_board_path": "attempts/01/final-board.png",
   "canvas_size": [3840, 2160],
   "base_fit": "cover",
+  "detail_layout": [
+    {"region_id": "front_label", "target_box": [0, 1620, 960, 2160]},
+    {"region_id": "back_copy", "target_box": [960, 1620, 1920, 2160]},
+    {"region_id": "closure", "target_box": [1920, 1620, 2880, 2160]},
+    {"region_id": "surface_feature", "target_box": [2880, 1620, 3840, 2160]}
+  ],
   "overlays": [
     {
       "region_id": "front_anchor",
@@ -17,12 +23,42 @@
       "background_rgb": [248, 248, 248]
     },
     {
-      "region_id": "front_label_detail",
+      "region_id": "front_label",
       "role": "detail",
       "source_path": "references/01_front.jpg",
       "source_sha256": "<sha256>",
       "crop_box": [0, 0, 100, 100],
-      "target_box": [0, 1620, 640, 2160],
+      "target_box": [0, 1620, 960, 2160],
+      "fit": "contain",
+      "background_rgb": [248, 248, 248]
+    },
+    {
+      "region_id": "back_copy",
+      "role": "detail",
+      "source_path": "references/02_back.jpg",
+      "source_sha256": "<sha256>",
+      "crop_box": [0, 0, 100, 100],
+      "target_box": [960, 1620, 1920, 2160],
+      "fit": "contain",
+      "background_rgb": [248, 248, 248]
+    },
+    {
+      "region_id": "closure",
+      "role": "detail",
+      "source_path": "references/03_three_quarter.jpg",
+      "source_sha256": "<sha256>",
+      "crop_box": [0, 0, 100, 100],
+      "target_box": [1920, 1620, 2880, 2160],
+      "fit": "contain",
+      "background_rgb": [248, 248, 248]
+    },
+    {
+      "region_id": "surface_feature",
+      "role": "detail",
+      "source_path": "references/03_three_quarter.jpg",
+      "source_sha256": "<sha256>",
+      "crop_box": [0, 0, 100, 100],
+      "target_box": [2880, 1620, 3840, 2160],
       "fit": "contain",
       "background_rgb": [248, 248, 248]
     }

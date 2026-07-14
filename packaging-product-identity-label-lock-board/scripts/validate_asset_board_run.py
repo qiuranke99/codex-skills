@@ -27,6 +27,12 @@ EXPECTED_VIEWS = {
 EVIDENCE = {"source_observed", "source_crop", "deterministic_reprojection", "bounded_inferred", "unknown"}
 SOURCE_DERIVED = {"source_observed", "source_crop", "deterministic_reprojection"}
 SHA_RE = re.compile(r"[0-9a-f]{64}")
+STAGING_PROMPT_PATTERNS = [
+    re.compile(r"\bwill be replaced\b", re.IGNORECASE),
+    re.compile(r"\breserv(?:e|ed)\b[^\n]{0,100}\b(?:detail|evidence)\b[^\n]{0,100}\b(?:window|cell|panel)s?\b", re.IGNORECASE),
+    re.compile(r"\bkeep\b[^\n]{0,120}\b(?:window|cell|panel)s?\b[^\n]{0,80}\b(?:empty|blank)\b", re.IGNORECASE),
+    re.compile(r"\bdo not place\b[^\n]{0,100}\b(?:close-up|detail)\b[^\n]{0,100}\b(?:window|cell|panel)s?\b", re.IGNORECASE),
+]
 
 
 class ValidationError(RuntimeError):
@@ -96,6 +102,24 @@ def png_size(path: Path) -> tuple[int, int]:
     return struct.unpack(">II", data[16:24])
 
 
+def validated_box(value: Any, field: str, width: int, height: int) -> tuple[int, int, int, int]:
+    if not isinstance(value, list) or len(value) != 4 or not all(isinstance(item, int) for item in value):
+        raise ValidationError("blocked_composition_detail_layout_invalid", f"{field} must contain four integers")
+    left, top, right, bottom = value
+    if left < 0 or top < 0 or right <= left or bottom <= top or right > width or bottom > height:
+        raise ValidationError("blocked_composition_detail_layout_invalid", f"{field} is outside the final canvas")
+    return left, top, right, bottom
+
+
+def boxes_overlap(first: tuple[int, int, int, int], second: tuple[int, int, int, int]) -> bool:
+    return not (
+        first[2] <= second[0]
+        or second[2] <= first[0]
+        or first[3] <= second[1]
+        or second[3] <= first[1]
+    )
+
+
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--manifest", required=True, type=Path)
@@ -125,6 +149,21 @@ def main() -> int:
     prompt_path, prompt_bytes = require_file_hash(
         root, manifest, "generation_prompt_path", "generation_prompt_sha256"
     )
+    try:
+        prompt_text = prompt_bytes.decode("utf-8")
+    except UnicodeDecodeError as exc:
+        raise ValidationError("blocked_generation_prompt_invalid", str(exc)) from exc
+    staging_hits = [pattern.pattern for pattern in STAGING_PROMPT_PATTERNS if pattern.search(prompt_text)]
+    if staging_hits:
+        raise ValidationError(
+            "blocked_staging_prompt_leakage",
+            "generation prompt requests an empty or later-filled intermediate board",
+        )
+    if "No blank cells" not in prompt_text or "fully populated" not in prompt_text:
+        raise ValidationError(
+            "blocked_generation_prompt_population_contract",
+            "generation prompt must require a fully populated board and explicitly ban blank cells",
+        )
     worker_path, worker_bytes = require_file_hash(root, manifest, "worker_result_path", "worker_result_sha256")
     plan_path, plan_bytes = require_file_hash(root, manifest, "composition_plan_path", "composition_plan_sha256")
     receipt_path, receipt_bytes = require_file_hash(
@@ -167,6 +206,7 @@ def main() -> int:
             same_path(receipt.get("raw_board_path"), raw_path),
             same_path(receipt.get("output_board_path"), final_path),
             receipt.get("detail_overlay_count") in {4, 5, 6},
+            receipt.get("detail_cells_populated") is True,
             isinstance(receipt.get("anchor_overlay_count"), int),
             0 <= receipt.get("anchor_overlay_count") <= 3,
         ]
@@ -176,6 +216,44 @@ def main() -> int:
     width, height = png_size(final_path)
     if (width, height) != (3840, 2160):
         raise ValidationError("blocked_final_board_dimensions", f"final board must be 3840x2160, got {width}x{height}")
+
+    plan_layout = plan.get("detail_layout")
+    receipt_layout = receipt.get("detail_layout")
+    if not isinstance(plan_layout, list) or not 4 <= len(plan_layout) <= 6 or receipt_layout != plan_layout:
+        raise ValidationError("blocked_composition_detail_layout_invalid", "plan and receipt detail_layout must match")
+    layout_ids: set[str] = set()
+    layout_boxes: dict[str, tuple[int, int, int, int]] = {}
+    for index, cell in enumerate(plan_layout, 1):
+        if not isinstance(cell, dict):
+            raise ValidationError("blocked_composition_detail_layout_invalid", f"detail cell {index} is not an object")
+        region_id = cell.get("region_id")
+        if not isinstance(region_id, str) or not region_id or region_id in layout_ids:
+            raise ValidationError("blocked_composition_detail_layout_invalid", "detail layout IDs must be unique")
+        target_box = validated_box(cell.get("target_box"), f"detail_layout[{index}].target_box", width, height)
+        if any(boxes_overlap(target_box, other) for other in layout_boxes.values()):
+            raise ValidationError("blocked_composition_detail_layout_overlap", f"detail target overlaps: {region_id}")
+        layout_ids.add(region_id)
+        layout_boxes[region_id] = target_box
+
+    receipt_overlays = receipt.get("overlays")
+    if not isinstance(receipt_overlays, list):
+        raise ValidationError("blocked_composition_receipt_invalid", "receipt overlays must be an array")
+    receipt_details: dict[str, dict[str, Any]] = {}
+    for overlay in receipt_overlays:
+        if not isinstance(overlay, dict) or overlay.get("role") != "detail":
+            continue
+        region_id = overlay.get("region_id")
+        if not isinstance(region_id, str) or region_id in receipt_details:
+            raise ValidationError("blocked_composition_detail_mapping", "receipt detail IDs must be unique")
+        target_box = validated_box(overlay.get("target_box"), f"receipt.{region_id}.target_box", width, height)
+        occupancy = overlay.get("non_background_fraction")
+        if region_id not in layout_boxes or target_box != layout_boxes[region_id]:
+            raise ValidationError("blocked_composition_detail_mapping", f"receipt detail does not match layout: {region_id}")
+        if not isinstance(occupancy, (int, float)) or occupancy < 0.02:
+            raise ValidationError("blocked_composition_detail_blank", f"detail is blank or near-blank: {region_id}")
+        receipt_details[region_id] = overlay
+    if set(receipt_details) != layout_ids or receipt.get("detail_overlay_count") != len(layout_ids):
+        raise ValidationError("blocked_composition_detail_mapping", "every detail cell must be populated exactly once")
 
     views = manifest.get("view_cells")
     if not isinstance(views, list) or len(views) != 8:
@@ -203,6 +281,11 @@ def main() -> int:
             raise ValidationError("blocked_detail_evidence", f"detail {region_id} is not source-derived")
         if detail.get("source_alias") not in aliases:
             raise ValidationError("blocked_detail_evidence", f"detail {region_id} has unknown source_alias")
+    if region_ids != layout_ids:
+        raise ValidationError(
+            "blocked_composition_detail_mapping",
+            "manifest detail cells must match the populated composition layout one-to-one",
+        )
 
     ocr = manifest.get("ocr")
     if not isinstance(ocr, dict) or ocr.get("status") not in {"not_run", "candidates_only", "reviewed"}:
@@ -229,6 +312,7 @@ def main() -> int:
         "label_fidelity",
         "source_anchor_match",
         "non_product_text_pollution",
+        "all_cells_populated",
     }
     if not isinstance(qa, dict) or qa.get("inspected") is not True:
         raise ValidationError("blocked_visual_inspection", "main-agent inspection is required")

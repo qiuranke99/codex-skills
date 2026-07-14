@@ -12,7 +12,7 @@ import sys
 from pathlib import Path
 from typing import Any
 
-from PIL import Image, ImageOps
+from PIL import Image, ImageChops, ImageOps
 
 
 class CompositionError(RuntimeError):
@@ -85,6 +85,23 @@ def fit_image(image: Image.Image, size: tuple[int, int], mode: str, background: 
     return panel
 
 
+def boxes_overlap(first: tuple[int, int, int, int], second: tuple[int, int, int, int]) -> bool:
+    return not (
+        first[2] <= second[0]
+        or second[2] <= first[0]
+        or first[3] <= second[1]
+        or second[3] <= first[1]
+    )
+
+
+def non_background_fraction(panel: Image.Image, background: tuple[int, int, int]) -> float:
+    background_image = Image.new("RGB", panel.size, background)
+    difference = ImageChops.difference(panel.convert("RGB"), background_image).convert("L")
+    histogram = difference.histogram()
+    changed = sum(histogram[9:])
+    return changed / max(1, panel.width * panel.height)
+
+
 def write_json(path: Path, value: dict[str, Any]) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
     temporary = path.with_suffix(path.suffix + ".tmp")
@@ -153,8 +170,29 @@ def main() -> int:
     overlays = plan.get("overlays")
     if not isinstance(overlays, list) or not overlays:
         raise CompositionError("blocked_composition_plan_invalid", "overlays must be a non-empty array")
+    detail_layout = plan.get("detail_layout")
+    if not isinstance(detail_layout, list) or not 4 <= len(detail_layout) <= 6:
+        raise CompositionError(
+            "blocked_composition_detail_layout_invalid",
+            "detail_layout must contain the exact four to six populated detail cells",
+        )
+    detail_targets: dict[str, tuple[int, int, int, int]] = {}
+    for index, cell in enumerate(detail_layout, 1):
+        if not isinstance(cell, dict):
+            raise CompositionError("blocked_composition_detail_layout_invalid", f"detail cell {index} is not an object")
+        region_id = cell.get("region_id")
+        if not isinstance(region_id, str) or not re.fullmatch(r"[a-z][a-z0-9_-]{0,63}", region_id):
+            raise CompositionError("blocked_composition_detail_layout_invalid", f"detail cell {index} has invalid region_id")
+        if region_id in detail_targets:
+            raise CompositionError("blocked_composition_detail_layout_invalid", f"duplicate detail region_id: {region_id}")
+        target_box = require_box(cell.get("target_box"), f"detail_layout[{index}].target_box", canvas_width, canvas_height)
+        if any(boxes_overlap(target_box, existing) for existing in detail_targets.values()):
+            raise CompositionError("blocked_composition_detail_layout_overlap", f"detail target overlaps another cell: {region_id}")
+        detail_targets[region_id] = target_box
     records: list[dict[str, Any]] = []
     ids: set[str] = set()
+    populated_detail_ids: set[str] = set()
+    placed_targets: list[tuple[str, tuple[int, int, int, int]]] = []
     role_counts = {"anchor": 0, "detail": 0}
     for index, overlay in enumerate(overlays, 1):
         if not isinstance(overlay, dict):
@@ -186,6 +224,30 @@ def main() -> int:
         target_box = require_box(
             overlay.get("target_box"), f"{region_id}.target_box", canvas_width, canvas_height
         )
+        for placed_region, placed_box in placed_targets:
+            if boxes_overlap(target_box, placed_box):
+                raise CompositionError(
+                    "blocked_composition_target_overlap",
+                    f"overlay target {region_id} overlaps {placed_region}",
+                )
+        placed_targets.append((region_id, target_box))
+        if role == "detail":
+            if region_id not in detail_targets:
+                raise CompositionError(
+                    "blocked_composition_detail_mapping",
+                    f"detail overlay is not declared in detail_layout: {region_id}",
+                )
+            if target_box != detail_targets[region_id]:
+                raise CompositionError(
+                    "blocked_composition_detail_mapping",
+                    f"detail overlay target differs from detail_layout: {region_id}",
+                )
+            populated_detail_ids.add(region_id)
+        elif any(boxes_overlap(target_box, detail_box) for detail_box in detail_targets.values()):
+            raise CompositionError(
+                "blocked_composition_target_overlap",
+                f"anchor overlay {region_id} overlaps the frozen detail layout",
+            )
         background_value = overlay.get("background_rgb", [248, 248, 248])
         if (
             not isinstance(background_value, list)
@@ -194,7 +256,14 @@ def main() -> int:
         ):
             raise CompositionError("blocked_composition_plan_invalid", f"{region_id} has invalid background_rgb")
         target_size = (target_box[2] - target_box[0], target_box[3] - target_box[1])
-        panel = fit_image(crop, target_size, str(overlay.get("fit", "contain")), tuple(background_value))
+        background = tuple(background_value)
+        panel = fit_image(crop, target_size, str(overlay.get("fit", "contain")), background)
+        occupancy = non_background_fraction(panel, background)
+        if role == "detail" and occupancy < 0.02:
+            raise CompositionError(
+                "blocked_composition_detail_blank",
+                f"detail overlay contains too little non-background evidence: {region_id} ({occupancy:.6f})",
+            )
         board.paste(panel, (target_box[0], target_box[1]))
         records.append(
             {
@@ -207,8 +276,21 @@ def main() -> int:
                 "target_box": list(target_box),
                 "fit": str(overlay.get("fit", "contain")),
                 "evidence_status": "deterministic_reprojection",
+                "non_background_fraction": round(occupancy, 6),
             }
         )
+
+    if populated_detail_ids != set(detail_targets):
+        missing = sorted(set(detail_targets) - populated_detail_ids)
+        extra = sorted(populated_detail_ids - set(detail_targets))
+        raise CompositionError(
+            "blocked_composition_detail_mapping",
+            f"every detail cell must be filled exactly once; missing={missing}, extra={extra}",
+        )
+    if role_counts["detail"] != len(detail_targets) or not 4 <= role_counts["detail"] <= 6:
+        raise CompositionError("blocked_composition_detail_mapping", "detail overlay count must equal detail_layout")
+    if not 0 <= role_counts["anchor"] <= 3:
+        raise CompositionError("blocked_composition_plan_invalid", "zero to three anchor overlays are legal")
 
     output_path.parent.mkdir(parents=True, exist_ok=True)
     temporary = output_path.with_suffix(".tmp.png")
@@ -228,6 +310,11 @@ def main() -> int:
         "exact_16_9": True,
         "anchor_overlay_count": role_counts["anchor"],
         "detail_overlay_count": role_counts["detail"],
+        "detail_cells_populated": True,
+        "detail_layout": [
+            {"region_id": region_id, "target_box": list(target_box)}
+            for region_id, target_box in detail_targets.items()
+        ],
         "overlays": records,
     }
     write_json(receipt_path, receipt)
