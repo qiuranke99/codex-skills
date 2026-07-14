@@ -1,74 +1,44 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "packaging_exact_copy_canon_evidence.schema.json",
-  "title": "Packaging Exact-Copy Canon Authority Evidence v2",
+  "title": "Packaging Asset-Board Canon Authority Evidence v1",
   "type": "object",
   "additionalProperties": false,
   "required": [
     "schema_version", "owner_skill", "asset_key", "primary_asset_sha256",
-    "packaging_run", "validator_file_sha256", "run_artifact_locks",
-    "primary_member", "sha256"
+    "packaging_run", "validator_file_sha256", "final_board", "sha256"
   ],
   "properties": {
-    "schema_version": {"const": "packaging-exact-copy-canon-evidence.v2"},
+    "schema_version": {"const": "packaging-board-canon-evidence.v1"},
     "owner_skill": {"const": "packaging-product-identity-label-lock-board"},
     "asset_key": {"type": "string", "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]*$"},
     "primary_asset_sha256": {"$ref": "#/$defs/sha"},
     "packaging_run": {
-      "type": "object", "additionalProperties": false,
+      "type": "object",
+      "additionalProperties": false,
       "required": [
-        "run_root_locator", "run_manifest_locator", "run_manifest_file_sha256",
-        "run_id", "contract_version"
+        "run_root_locator", "asset_board_manifest_locator", "asset_board_manifest_file_sha256"
       ],
       "properties": {
         "run_root_locator": {"$ref": "#/$defs/safeLocator"},
-        "run_manifest_locator": {"$ref": "#/$defs/safeLocator"},
-        "run_manifest_file_sha256": {"$ref": "#/$defs/sha"},
-        "run_id": {"type": "string", "minLength": 1},
-        "contract_version": {"const": "whole_product_ocr_rotation_pack_v3"}
+        "asset_board_manifest_locator": {"$ref": "#/$defs/safeLocator"},
+        "asset_board_manifest_file_sha256": {"$ref": "#/$defs/sha"}
       }
     },
     "validator_file_sha256": {"$ref": "#/$defs/sha"},
-    "run_artifact_locks": {
-      "type": "object", "additionalProperties": false,
-      "required": [
-        "exact_copy_bundle", "coverage_matrix", "generation_prompt_index",
-        "asset_qa", "continuity_qa", "post_composite_verification"
-      ],
-      "properties": {
-        "exact_copy_bundle": {"$ref": "#/$defs/fileLock"},
-        "coverage_matrix": {"$ref": "#/$defs/fileLock"},
-        "generation_prompt_index": {"$ref": "#/$defs/fileLock"},
-        "asset_qa": {"$ref": "#/$defs/fileLock"},
-        "continuity_qa": {"$ref": "#/$defs/fileLock"},
-        "post_composite_verification": {"$ref": "#/$defs/fileLock"}
-      }
-    },
-    "primary_member": {
-      "type": "object", "additionalProperties": false,
-      "required": [
-        "asset_id", "view_id", "locator", "file_sha256",
-        "post_result_id", "post_result_sha256"
-      ],
-      "properties": {
-        "asset_id": {"type": "string", "minLength": 1},
-        "view_id": {"type": "string", "minLength": 1},
-        "locator": {"$ref": "#/$defs/safeLocator"},
-        "file_sha256": {"$ref": "#/$defs/sha"},
-        "post_result_id": {"type": "string", "minLength": 1},
-        "post_result_sha256": {"$ref": "#/$defs/sha"}
-      }
-    },
+    "final_board": {"$ref": "#/$defs/fileLock"},
     "sha256": {"$ref": "#/$defs/sha"}
   },
   "$defs": {
     "sha": {"type": "string", "pattern": "^[a-f0-9]{64}$"},
     "safeLocator": {
-      "type": "string", "minLength": 1,
+      "type": "string",
+      "minLength": 1,
       "not": {"pattern": "(^/|(^|/)\\.\\.(/|$))"}
     },
     "fileLock": {
-      "type": "object", "additionalProperties": false,
+      "type": "object",
+      "additionalProperties": false,
       "required": ["locator", "file_sha256"],
       "properties": {
         "locator": {"$ref": "#/$defs/safeLocator"},

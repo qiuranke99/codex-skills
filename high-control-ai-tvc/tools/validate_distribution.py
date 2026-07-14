@@ -219,13 +219,15 @@ def validate() -> List[str]:
     packaging_required = (
         "SKILL.md",
         "agents/openai.yaml",
-        "references/packaging_asset_pack_contract.md",
-        "references/generation_receipt.template.json",
+        "references/generation_prompt_template.md",
+        "references/composition_plan.template.json",
+        "references/asset_board_manifest.template.json",
         "scripts/freeze_reference_bundle.py",
         "scripts/resolve_worker_image.py",
-        "scripts/build_generation_receipt.py",
-        "scripts/validate_packaging_run.py",
+        "scripts/compose_asset_board.py",
+        "scripts/validate_asset_board_run.py",
         "scripts/test_contract.py",
+        "scripts/export_ai_video_canon.py",
     )
     for relative in packaging_required:
         if not (packaging_root / relative).is_file():
@@ -234,11 +236,14 @@ def validate() -> List[str]:
     if packaging_skill.is_file():
         text = packaging_skill.read_text(encoding="utf-8")
         for marker in (
-            "asset_pack_contract_version: whole_product_ocr_rotation_pack_v3",
-            "runtime_contract_version: delegated_master_worker_transport_v1",
-            "one non-decision image worker",
-            "packaging-generation-receipt.v2",
-            "scripts/build_generation_receipt.py",
+            "Deliver exactly one clean horizontal 16:9 board",
+            "exactly eight complete product views",
+            "four to six evidence detail windows",
+            "OCR remains nonblocking",
+            "never request a fixed 8/12/16/24-angle capture set",
+            "The main agent must not call imagegen directly",
+            "scripts/compose_asset_board.py",
+            "scripts/validate_asset_board_run.py",
         ):
             if marker not in text:
                 errors.append(f"packaging worker-runtime marker is missing: {marker}")
@@ -247,17 +252,19 @@ def validate() -> List[str]:
     packaging_ui = packaging_root / "agents/openai.yaml"
     if packaging_ui.is_file() and "allow_implicit_invocation: false" not in packaging_ui.read_text(encoding="utf-8"):
         errors.append("packaging worker runtime must disable implicit invocation")
-    receipt_template = packaging_root / "references/generation_receipt.template.json"
-    if receipt_template.is_file():
+    board_manifest_template = packaging_root / "references/asset_board_manifest.template.json"
+    if board_manifest_template.is_file():
         try:
-            receipt = json.loads(receipt_template.read_text(encoding="utf-8"))
+            board_manifest = json.loads(board_manifest_template.read_text(encoding="utf-8"))
         except (OSError, UnicodeDecodeError, json.JSONDecodeError) as exc:
-            errors.append(f"packaging generation receipt template is invalid: {exc}")
+            errors.append(f"packaging asset-board manifest template is invalid: {exc}")
         else:
-            if receipt.get("schema_version") != "packaging-generation-receipt.v2":
-                errors.append("packaging generation receipt template is not v2")
-            if not isinstance(receipt.get("worker_provenance"), dict):
-                errors.append("packaging generation receipt v2 lacks worker_provenance")
+            if board_manifest.get("schema_version") != "packaging_video_asset_board.v1":
+                errors.append("packaging asset-board manifest has the wrong schema")
+            if len(board_manifest.get("view_cells", [])) != 8:
+                errors.append("packaging asset-board manifest must define exactly eight views")
+            if not 4 <= len(board_manifest.get("detail_cells", [])) <= 6:
+                errors.append("packaging asset-board manifest must define four to six details")
     return errors
 
 

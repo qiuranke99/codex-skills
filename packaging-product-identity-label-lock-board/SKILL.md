@@ -5,7 +5,16 @@ description: Use when the user supplies one to three ordinary photos of a packag
 
 # Packaging Product Identity Label Lock Board
 
-Create one usable video-model reference board for one packaged product. Keep the stable Skill slug. Do not turn this workflow into a 360-degree product Canon, a print-proof system, or a family of new Skills.
+Create one usable video-model reference board for one packaged product. Keep the stable Skill slug. Do not turn this workflow into a 360-degree capture factory, a print-proof system, or a family of new Skills.
+
+## Runtime release gate
+
+This package belongs to the High-Control AI TVC release suite. Before any production action, run `HIGH_CONTROL_RELEASE_GATE_V2` through the OS-native pinned-runtime launcher:
+
+- Windows: `high-control-ai-tvc/tools/release-control.ps1 -Action check -Format json`
+- macOS/Linux: `high-control-ai-tvc/tools/release-control.sh check --format json`
+
+Continue only when `ready_latest=true`. Never use an unverified global Python to bypass the release gate or its pinned runtime.
 
 ## Core outcome
 
@@ -40,7 +49,7 @@ Do not produce:
 - bridge masters, motion envelopes, or loop-closure authority;
 - print-ready label artwork;
 - exact-copy authority for text that is not source-visible or artwork-backed;
-- a packaging Canon export.
+- a required packaging Canon export as part of the core board run.
 
 ## Evidence model
 
@@ -257,6 +266,19 @@ Block only when:
 - the final board cannot pass the eight-view, four-to-six-detail, clean-image, or identity-consistency checks after three total attempts.
 
 Missing hidden copy, unavailable OCR, or sparse angles alone are not blocking conditions for a normal `video_reference` board.
+
+An optional later Canon bridge may consume the already accepted board without creating more views. It may authorize `label_copy` only when the board manifest already passed `copy_authority: exact_copy_evidence`; it is never part of the default board deliverable.
+
+## Optional AI-Video Project Canon Export
+
+This appendix is downstream compatibility for the already accepted board, not another board, angle set, or default deliverable. Run `scripts/export_ai_video_canon.py` only when an AI-video project explicitly needs a fixed-owner Canon record.
+
+- Runtime dependency: this package's `requirements.txt` pins `Pillow` for deterministic board validation.
+- `authority_stage: terminal_packaging_canon`
+- `terminal_route_decision: not_applicable`
+- `geometry_layout_only` authorizes `[product_geometry]` from an accepted board.
+- `geometry_layout_exact_copy_verified` authorizes `[product_geometry, label_copy]` only when the bound board manifest has `copy_authority: exact_copy_evidence`, reviewed nonblocking OCR, zero unresolved claimed regions, passed label fidelity, and a live package-validator pass.
+- The export bridge never generates, repairs, expands, or upgrades the board by inference.
 
 ## Final rule
 

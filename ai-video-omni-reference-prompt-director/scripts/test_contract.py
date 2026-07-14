@@ -455,66 +455,35 @@ def make_packaging_exact_copy_authority_evidence(
         spec.loader.exec_module(module)
         _PACKAGING_FIXTURE_MODULE = module
     module = _PACKAGING_FIXTURE_MODULE
-    run_root = project_root / f"sources/{artifact_id}_complete_packaging_run"
-    cache_root = _PACKAGING_FIXTURE_CACHE.get(artifact_id)
-    if cache_root is None:
-        fixture_temp = tempfile.TemporaryDirectory(prefix="omni-packaging-fixture-")
-        _PACKAGING_FIXTURE_TEMP_DIRS.append(fixture_temp)
-        cache_root = Path(fixture_temp.name) / "complete_run"
-        module.create_complete_run(cache_root)
-        _PACKAGING_FIXTURE_CACHE[artifact_id] = cache_root
-    shutil.copytree(cache_root, run_root)
-    manifest_path = run_root / "00_manifest/run_manifest.json"
-    manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
-    asset_qa_path = run_root / manifest["paths"]["asset_qa"]
-    asset_qa = json.loads(asset_qa_path.read_text(encoding="utf-8"))
-    primary = next(item for item in asset_qa["assets"] if item["view_id"] == "ROT_0000")
-    post_path = run_root / manifest["paths"]["post_composite_verification"]
-    post = json.loads(post_path.read_text(encoding="utf-8"))
-    post_result = next(
-        item for item in post["asset_results"]
-        if item["asset_id"] == primary["asset_id"] and item["view_id"] == primary["view_id"]
+    fixture_data = module.valid_fixture(
+        project_root / f"sources/{artifact_id}_packaging_board_fixture"
     )
+    run_root = Path(fixture_data["run_dir"])
+    manifest_path = Path(fixture_data["manifest"])
+    manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
+    manifest["ocr"] = {"status": "reviewed", "blocking": False}
+    manifest["copy_authority"] = "exact_copy_evidence"
+    manifest["unresolved_regions"] = []
+    manifest["qa"]["assistant_qa_status"] = "passed"
+    write_json(manifest_path, manifest)
+    primary_path = Path(manifest["final_board_path"])
     run_root_rel = run_root.relative_to(project_root).as_posix()
-    primary_rel = (Path(run_root_rel) / primary["file_path"]).as_posix()
-    role_mapping = {
-        "exact_copy_bundle": ("exact_copy_bundle", "exact_copy_bundle_file_sha256"),
-        "coverage_matrix": ("coverage_matrix", "coverage_matrix_sha256"),
-        "generation_prompt_index": ("generation_prompt_index", "generation_prompt_index_sha256"),
-        "asset_qa": ("asset_qa", "asset_qa_sha256"),
-        "continuity_qa": ("continuity_qa", "continuity_qa_sha256"),
-        "post_composite_verification": (
-            "post_composite_verification", "post_composite_verification_sha256"
-        ),
-    }
-    locks = {
-        role: {
-            "locator": (Path(run_root_rel) / manifest["paths"][path_key]).as_posix(),
-            "file_sha256": manifest["hashes"][hash_key],
-        }
-        for role, (path_key, hash_key) in role_mapping.items()
-    }
-    validator_path = packaging_scripts / "validate_packaging_run.py"
+    primary_rel = primary_path.relative_to(project_root).as_posix()
+    primary_hash = file_hash(primary_path)
+    manifest_rel = manifest_path.relative_to(project_root).as_posix()
+    validator_path = packaging_scripts / "validate_asset_board_run.py"
     evidence = {
-        "schema_version": "packaging-exact-copy-canon-evidence.v2",
+        "schema_version": "packaging-board-canon-evidence.v1",
         "owner_skill": "packaging-product-identity-label-lock-board",
         "asset_key": asset_key,
-        "primary_asset_sha256": primary["file_sha256"],
+        "primary_asset_sha256": primary_hash,
         "packaging_run": {
             "run_root_locator": run_root_rel,
-            "run_manifest_locator": (Path(run_root_rel) / "00_manifest/run_manifest.json").as_posix(),
-            "run_manifest_file_sha256": file_hash(manifest_path),
-            "run_id": manifest["run_id"],
-            "contract_version": manifest["contract_version"],
+            "asset_board_manifest_locator": manifest_rel,
+            "asset_board_manifest_file_sha256": file_hash(manifest_path),
         },
         "validator_file_sha256": file_hash(validator_path),
-        "run_artifact_locks": locks,
-        "primary_member": {
-            "asset_id": primary["asset_id"], "view_id": primary["view_id"],
-            "locator": primary_rel, "file_sha256": primary["file_sha256"],
-            "post_result_id": post_result["result_id"],
-            "post_result_sha256": validator.canonical_envelope_hash(post_result),
-        },
+        "final_board": {"locator": primary_rel, "file_sha256": primary_hash},
         "sha256": None,
     }
     evidence["sha256"] = validator.canonical_envelope_hash(evidence)
@@ -526,7 +495,7 @@ def make_packaging_exact_copy_authority_evidence(
         "file_sha256": file_hash(project_root / evidence_rel),
         "semantic_sha256": evidence["sha256"],
     }
-    return primary_rel, primary["file_sha256"], authority
+    return primary_rel, primary_hash, authority
 
 
 def make_bridge_asset(

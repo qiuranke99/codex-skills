@@ -144,67 +144,38 @@ def create_packaging_exact_copy_run_and_evidence(
     prefix: str,
     asset_key: str,
 ) -> dict[str, str]:
-    """Build one fully validated COMPLETE run and bind its primary master."""
+    """Build one validated exact-copy-evidence board and bind its final PNG."""
     fixture = load_packaging_fixture_module()
-    run_root = root / prefix / "complete_packaging_run"
-    fixture.create_complete_run(run_root)
-    run_errors = fixture.validate_run(run_root)
-    if run_errors:
-        raise AssertionError(f"packaging exact-copy fixture invalid: {run_errors}")
-    manifest_path = run_root / "00_manifest/run_manifest.json"
+    fixture_data = fixture.valid_fixture(root / prefix / "packaging_board_fixture")
+    run_root = Path(fixture_data["run_dir"])
+    manifest_path = Path(fixture_data["manifest"])
     manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
-    asset_qa_path = run_root / manifest["paths"]["asset_qa"]
-    asset_qa = json.loads(asset_qa_path.read_text(encoding="utf-8"))
-    primary = next(item for item in asset_qa["assets"] if item["view_id"] == "ROT_0000")
-    post_path = run_root / manifest["paths"]["post_composite_verification"]
-    post = json.loads(post_path.read_text(encoding="utf-8"))
-    post_result = next(
-        item for item in post["asset_results"]
-        if item["asset_id"] == primary["asset_id"] and item["view_id"] == primary["view_id"]
-    )
+    manifest["ocr"] = {"status": "reviewed", "blocking": False}
+    manifest["copy_authority"] = "exact_copy_evidence"
+    manifest["unresolved_regions"] = []
+    manifest["qa"]["assistant_qa_status"] = "passed"
+    manifest_locator = manifest_path.relative_to(root).as_posix()
+    write_json(root, manifest_locator, manifest)
+    primary_path = Path(manifest["final_board_path"])
+    primary_hash = hashlib.sha256(primary_path.read_bytes()).hexdigest()
     run_root_locator = run_root.relative_to(root).as_posix()
-    primary_locator = (Path(run_root_locator) / primary["file_path"]).as_posix()
-    role_mapping = {
-        "exact_copy_bundle": ("exact_copy_bundle", "exact_copy_bundle_file_sha256"),
-        "coverage_matrix": ("coverage_matrix", "coverage_matrix_sha256"),
-        "generation_prompt_index": ("generation_prompt_index", "generation_prompt_index_sha256"),
-        "asset_qa": ("asset_qa", "asset_qa_sha256"),
-        "continuity_qa": ("continuity_qa", "continuity_qa_sha256"),
-        "post_composite_verification": (
-            "post_composite_verification", "post_composite_verification_sha256"
-        ),
-    }
-    locks = {
-        role: {
-            "locator": (Path(run_root_locator) / manifest["paths"][path_key]).as_posix(),
-            "file_sha256": manifest["hashes"][hash_key],
-        }
-        for role, (path_key, hash_key) in role_mapping.items()
-    }
+    primary_locator = primary_path.relative_to(root).as_posix()
     validator_path = (
         SKILL_ROOT
-        / "packaging-product-identity-label-lock-board/scripts/validate_packaging_run.py"
+        / "packaging-product-identity-label-lock-board/scripts/validate_asset_board_run.py"
     )
     evidence = {
-        "schema_version": "packaging-exact-copy-canon-evidence.v2",
+        "schema_version": "packaging-board-canon-evidence.v1",
         "owner_skill": "packaging-product-identity-label-lock-board",
         "asset_key": asset_key,
-        "primary_asset_sha256": primary["file_sha256"],
+        "primary_asset_sha256": primary_hash,
         "packaging_run": {
             "run_root_locator": run_root_locator,
-            "run_manifest_locator": (Path(run_root_locator) / "00_manifest/run_manifest.json").as_posix(),
-            "run_manifest_file_sha256": hashlib.sha256(manifest_path.read_bytes()).hexdigest(),
-            "run_id": manifest["run_id"],
-            "contract_version": manifest["contract_version"],
+            "asset_board_manifest_locator": manifest_locator,
+            "asset_board_manifest_file_sha256": hashlib.sha256(manifest_path.read_bytes()).hexdigest(),
         },
         "validator_file_sha256": hashlib.sha256(validator_path.read_bytes()).hexdigest(),
-        "run_artifact_locks": locks,
-        "primary_member": {
-            "asset_id": primary["asset_id"], "view_id": primary["view_id"],
-            "locator": primary_locator, "file_sha256": primary["file_sha256"],
-            "post_result_id": post_result["result_id"],
-            "post_result_sha256": canonical_hash(post_result),
-        },
+        "final_board": {"locator": primary_locator, "file_sha256": primary_hash},
         "sha256": None,
     }
     evidence["sha256"] = canonical_hash(evidence)
@@ -212,11 +183,11 @@ def create_packaging_exact_copy_run_and_evidence(
     evidence_file_sha = write_json(root, evidence_locator, evidence)
     return {
         "primary_locator": primary_locator,
-        "primary_hash": primary["file_sha256"],
+        "primary_hash": primary_hash,
         "packaging_exact_copy_evidence_locator": evidence_locator,
         "packaging_exact_copy_evidence_hash": evidence_file_sha,
         "packaging_run_root_locator": run_root_locator,
-        "exact_copy_bundle_locator": locks["exact_copy_bundle"]["locator"],
+        "packaging_final_board_locator": primary_locator,
     }
 
 
@@ -603,16 +574,16 @@ def main() -> int:
             arbitrary_command,
             "primary_asset_sha256 mismatch",
         )
-        exact_bundle = root / exact_values["exact_copy_bundle_locator"]
-        exact_bundle_bytes = exact_bundle.read_bytes()
-        exact_bundle.write_bytes(exact_bundle_bytes + b"\n")
+        final_board = root / exact_values["packaging_final_board_locator"]
+        final_board_bytes = final_board.read_bytes()
+        final_board.write_bytes(final_board_bytes + b"\n")
         expect_failure_without_manifest_mutation(
             root,
-            "exact packaging with drifted bundle",
+            "exact packaging with drifted final board",
             exact_command,
             "sha-256 mismatch",
         )
-        exact_bundle.write_bytes(exact_bundle_bytes)
+        final_board.write_bytes(final_board_bytes)
         exact_result = run(exact_command)
         if exact_result.returncode != 0:
             raise AssertionError(f"exact-copy-verified packaging export failed: {exact_result.stdout}")

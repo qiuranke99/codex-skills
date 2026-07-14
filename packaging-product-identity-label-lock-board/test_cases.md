@@ -39,5 +39,5 @@ Executable acceptance suite: `python -B scripts/test_contract.py`.
 
 - Do not derive R8/R12/R16/R24 requirements.
 - Do not request 16 source angles because the bottle is transparent, asymmetric, liquid-filled, or pump-operated.
-- Do not create rotation/elevation rings, bridge masters, motion envelopes, per-copy-region masters, or a Canon export.
+- Do not create rotation/elevation rings, bridge masters, motion envelopes, per-copy-region masters, or require a Canon export as part of board creation.
 - Do not split this workflow into additional Skills.

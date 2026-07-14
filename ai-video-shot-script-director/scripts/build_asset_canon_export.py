@@ -11,11 +11,11 @@ from __future__ import annotations
 import argparse
 import copy
 import hashlib
-import importlib.util
 import io
 import json
 import os
 import re
+import subprocess
 import sys
 import uuid
 import warnings
@@ -314,13 +314,12 @@ def validate_packaging_exact_copy_evidence(
         return ["packaging exact-copy evidence root must be an object"]
     required_fields = {
         "schema_version", "owner_skill", "asset_key", "primary_asset_sha256",
-        "packaging_run", "validator_file_sha256", "run_artifact_locks",
-        "primary_member", "sha256",
+        "packaging_run", "validator_file_sha256", "final_board", "sha256",
     }
     errors: list[str] = []
     if set(value) != required_fields:
         errors.append("packaging exact-copy evidence must contain exact fields")
-    if value.get("schema_version") != "packaging-exact-copy-canon-evidence.v2":
+    if value.get("schema_version") != "packaging-board-canon-evidence.v1":
         errors.append("packaging exact-copy evidence schema_version is invalid")
     if value.get("owner_skill") != "packaging-product-identity-label-lock-board":
         errors.append("packaging exact-copy evidence owner_skill is invalid")
@@ -333,8 +332,7 @@ def validate_packaging_exact_copy_evidence(
         errors.append("packaging exact-copy evidence sha256 is not canonical")
     packaging_run = value.get("packaging_run")
     if not isinstance(packaging_run, dict) or set(packaging_run) != {
-        "run_root_locator", "run_manifest_locator", "run_manifest_file_sha256",
-        "run_id", "contract_version",
+        "run_root_locator", "asset_board_manifest_locator", "asset_board_manifest_file_sha256",
     }:
         errors.append("packaging exact-copy evidence packaging_run lock is invalid")
         return errors
@@ -351,35 +349,39 @@ def validate_packaging_exact_copy_evidence(
     if not run_root.is_dir():
         errors.append("packaging run root is missing")
         return errors
-    expected_manifest_path = (run_root / "00_manifest/run_manifest.json").resolve()
+    expected_manifest_path = (run_root / "asset-board-manifest.json").resolve()
     try:
         manifest_path, manifest_bytes = _resolve_locked_file(
             project_root,
-            packaging_run.get("run_manifest_locator"),
-            packaging_run.get("run_manifest_file_sha256"),
-            "packaging COMPLETE run manifest",
+            packaging_run.get("asset_board_manifest_locator"),
+            packaging_run.get("asset_board_manifest_file_sha256"),
+            "packaging asset-board manifest",
         )
     except ExportError as exc:
         errors.append(str(exc))
         return errors
     if manifest_path != expected_manifest_path:
-        errors.append("packaging run manifest must be the canonical run-root manifest")
-    run_manifest = _read_json_bytes(manifest_bytes, "packaging COMPLETE run manifest")
+        errors.append("packaging asset-board manifest must be the canonical run-root manifest")
+    run_manifest = _read_json_bytes(manifest_bytes, "packaging asset-board manifest")
+    ocr = run_manifest.get("ocr")
+    qa = run_manifest.get("qa")
     if (
-        run_manifest.get("stage") != "COMPLETE"
-        or run_manifest.get("exact_copy_mode") != "all_visible_product_native_copy"
-        or run_manifest.get("allow_geometry_only_preview") is not False
-        or run_manifest.get("production_approval_status") not in {"user_granted", "external_pipeline_granted"}
+        run_manifest.get("schema_version") != "packaging_video_asset_board.v1"
+        or run_manifest.get("run_status") != "COMPLETE"
+        or run_manifest.get("copy_authority") != "exact_copy_evidence"
+        or not isinstance(ocr, dict)
+        or ocr.get("status") != "reviewed"
+        or ocr.get("blocking") is not False
+        or run_manifest.get("unresolved_regions") != []
+        or not isinstance(qa, dict)
+        or qa.get("assistant_qa_status") != "passed"
+        or qa.get("label_fidelity") != "pass"
     ):
-        errors.append("packaging Canon authority requires a production-approved COMPLETE all-visible exact-copy run")
-    if packaging_run.get("run_id") != run_manifest.get("run_id"):
-        errors.append("packaging evidence run_id mismatch")
-    if packaging_run.get("contract_version") != run_manifest.get("contract_version"):
-        errors.append("packaging evidence contract_version mismatch")
+        errors.append("packaging Canon authority requires a passed COMPLETE exact-copy-evidence board")
 
     validator_path = (
         Path(__file__).resolve().parents[2]
-        / "packaging-product-identity-label-lock-board/scripts/validate_packaging_run.py"
+        / "packaging-product-identity-label-lock-board/scripts/validate_asset_board_run.py"
     )
     if not validator_path.is_file():
         errors.append("packaging run validator is unavailable; exact authority fails closed")
@@ -387,120 +389,55 @@ def validate_packaging_exact_copy_evidence(
     validator_sha = _sha(validator_path.read_bytes())
     if value.get("validator_file_sha256") != validator_sha:
         errors.append("packaging evidence validator_file_sha256 is stale")
-    lock_roles = {
-        "exact_copy_bundle": ("exact_copy_bundle", "exact_copy_bundle_file_sha256"),
-        "coverage_matrix": ("coverage_matrix", "coverage_matrix_sha256"),
-        "generation_prompt_index": ("generation_prompt_index", "generation_prompt_index_sha256"),
-        "asset_qa": ("asset_qa", "asset_qa_sha256"),
-        "continuity_qa": ("continuity_qa", "continuity_qa_sha256"),
-        "post_composite_verification": (
-            "post_composite_verification", "post_composite_verification_sha256"
-        ),
-    }
-    artifact_locks = value.get("run_artifact_locks")
-    if not isinstance(artifact_locks, dict) or set(artifact_locks) != set(lock_roles):
-        errors.append("packaging run_artifact_locks must contain the exact v2 closure")
-        artifact_locks = {}
-    for role, (path_key, hash_key) in lock_roles.items():
-        lock = artifact_locks.get(role)
-        if not isinstance(lock, dict) or set(lock) != {"locator", "file_sha256"}:
-            errors.append(f"packaging run artifact lock {role} is invalid")
-            continue
-        run_relative = run_manifest.get("paths", {}).get(path_key)
-        expected_hash = run_manifest.get("hashes", {}).get(hash_key)
-        expected_locator = (Path(str(run_root_locator)) / str(run_relative)).as_posix()
-        if lock.get("locator") != expected_locator or lock.get("file_sha256") != expected_hash:
-            errors.append(f"packaging run artifact lock {role} does not match COMPLETE manifest")
-            continue
-        try:
-            _resolve_locked_file(project_root, lock["locator"], lock["file_sha256"], f"packaging run {role}")
-        except ExportError as exc:
-            errors.append(str(exc))
 
-    primary_member = value.get("primary_member")
-    required_member_fields = {
-        "asset_id", "view_id", "locator", "file_sha256", "post_result_id",
-        "post_result_sha256",
-    }
-    if not isinstance(primary_member, dict) or set(primary_member) != required_member_fields:
-        errors.append("packaging primary_member lock is invalid")
-        return errors
-    asset_lock = artifact_locks.get("asset_qa") if isinstance(artifact_locks, dict) else None
-    post_lock = artifact_locks.get("post_composite_verification") if isinstance(artifact_locks, dict) else None
-    if not isinstance(asset_lock, dict) or not isinstance(post_lock, dict):
+    final_board = value.get("final_board")
+    if not isinstance(final_board, dict) or set(final_board) != {"locator", "file_sha256"}:
+        errors.append("packaging final_board lock is invalid")
         return errors
     try:
-        _, asset_qa_bytes = _resolve_locked_file(
-            project_root, asset_lock.get("locator"), asset_lock.get("file_sha256"), "packaging asset QA"
+        board_path, board_bytes = _resolve_locked_file(
+            project_root,
+            final_board.get("locator"),
+            final_board.get("file_sha256"),
+            "packaging final board",
         )
-        _, post_bytes = _resolve_locked_file(
-            project_root, post_lock.get("locator"), post_lock.get("file_sha256"), "packaging post verification"
-        )
-        asset_qa = _read_json_bytes(asset_qa_bytes, "packaging asset QA")
-        post = _read_json_bytes(post_bytes, "packaging post verification")
     except ExportError as exc:
         errors.append(str(exc))
         return errors
-    matching_assets = [
-        item for item in asset_qa.get("assets", [])
-        if isinstance(item, dict) and item.get("file_sha256") == primary_asset_sha256
-    ]
-    if len(matching_assets) != 1:
-        errors.append("Canon primary must uniquely match one approved packaging master")
+    manifest_board_value = run_manifest.get("final_board_path")
+    if not isinstance(manifest_board_value, str):
+        errors.append("packaging manifest final_board_path is invalid")
         return errors
-    asset = matching_assets[0]
-    expected_primary_locator = (
-        Path(str(run_root_locator)) / str(asset.get("file_path"))
-    ).as_posix()
-    if (
-        primary_member.get("asset_id") != asset.get("asset_id")
-        or primary_member.get("view_id") != asset.get("view_id")
-        or primary_member.get("locator") != expected_primary_locator
-        or primary_member.get("file_sha256") != asset.get("file_sha256")
-        or asset.get("assistant_qa_status") != "passed"
-        or asset.get("independently_generated") is not True
-        or asset.get("derived_from_multipanel") is not False
-    ):
-        errors.append("packaging primary_member does not match the approved independent master")
-    expected_primary_path = (project_root.resolve() / expected_primary_locator).resolve()
-    if primary_asset_path is not None and primary_asset_path.resolve() != expected_primary_path:
-        errors.append("Canon primary path is not the approved packaging master path")
-    matching_post = [
-        item for item in post.get("asset_results", [])
-        if isinstance(item, dict)
-        and item.get("asset_id") == asset.get("asset_id")
-        and item.get("view_id") == asset.get("view_id")
-        and item.get("asset_file_sha256") == primary_asset_sha256
-    ]
-    if len(matching_post) != 1:
-        errors.append("packaging primary lacks one exact post-verification result")
+    manifest_board_path = Path(manifest_board_value)
+    if not manifest_board_path.is_absolute():
+        manifest_board_path = (run_root / manifest_board_path).resolve()
     else:
-        result = matching_post[0]
-        if (
-            primary_member.get("post_result_id") != result.get("result_id")
-            or primary_member.get("post_result_sha256") != _json_hash(result)
-        ):
-            errors.append("packaging primary post-result lock mismatch")
-    # Full live validation is the final authority gate, not the first parser.
-    # Reject cheap schema, lock, hash, and member mismatches before paying for a
-    # production-shaped COMPLETE run validation.  The success path still runs
-    # the complete validator exactly once and cannot bypass it.
+        manifest_board_path = manifest_board_path.resolve()
+    if board_path != manifest_board_path:
+        errors.append("packaging final_board lock does not match the board manifest")
+    board_sha = _sha(board_bytes)
+    if (
+        board_sha != run_manifest.get("final_board_sha256")
+        or board_sha != primary_asset_sha256
+        or board_sha != final_board.get("file_sha256")
+    ):
+        errors.append("packaging final board hash does not match Canon primary")
+    if primary_asset_path is not None and primary_asset_path.resolve() != board_path:
+        errors.append("Canon primary path is not the accepted packaging asset board")
+
+    # Run the package validator after all cheap evidence and hash checks pass.
     if errors:
         return errors
-    try:
-        spec = importlib.util.spec_from_file_location(
-            "_packaging_exact_copy_canon_validator", validator_path
-        )
-        if spec is None or spec.loader is None:
-            raise ImportError("validator module spec unavailable")
-        validator_module = importlib.util.module_from_spec(spec)
-        spec.loader.exec_module(validator_module)
-        run_errors = validator_module.validate_run(run_root)
-    except Exception as exc:
-        errors.append(f"packaging COMPLETE run validator could not execute: {exc}")
-        return errors
-    if run_errors:
-        errors.append("packaging COMPLETE run failed live validation: " + "; ".join(run_errors))
+    result = subprocess.run(
+        [sys.executable, "-X", "utf8", str(validator_path), "--manifest", str(manifest_path)],
+        capture_output=True,
+        text=True,
+        encoding="utf-8",
+        check=False,
+    )
+    if result.returncode != 0:
+        detail = (result.stdout + result.stderr).strip()
+        errors.append(f"packaging asset-board live validation failed: {detail}")
     return errors
 
 
