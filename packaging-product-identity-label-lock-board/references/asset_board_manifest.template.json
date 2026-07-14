@@ -3,6 +3,8 @@
   "run_status": "COMPLETE",
   "input_profile": "one_to_three_reference",
   "reference_manifest_path": "reference-manifest.json",
+  "generation_reference_pack_path": "attempts/01/provider-references/generation-reference-pack.json",
+  "generation_reference_pack_sha256": "<sha256>",
   "generation_prompt_path": "attempts/01/final_generation_prompt.md",
   "generation_prompt_sha256": "<sha256>",
   "worker_result_path": "attempts/01/worker-result.json",

@@ -40,6 +40,45 @@ def sha256_bytes(data: bytes) -> str:
     return hashlib.sha256(data).hexdigest()
 
 
+def bind_prompt_transport(expected_prompt_bytes: bytes, observed_prompt: str, evidence_label: str) -> dict[str, Any]:
+    """Bind provider text without confusing a POSIX file terminator with prompt content.
+
+    The only non-exact form accepted is omission of one and only one terminal
+    LF from a frozen sidecar that itself ends in exactly one LF.  No other
+    whitespace, newline, encoding, or body normalization is permitted.
+    """
+    observed_bytes = observed_prompt.encode("utf-8")
+    has_one_file_terminator = all(
+        [
+            expected_prompt_bytes.endswith(b"\n"),
+            not expected_prompt_bytes.endswith(b"\n\n"),
+            b"\r" not in expected_prompt_bytes,
+        ]
+    )
+    content_bytes = expected_prompt_bytes[:-1] if has_one_file_terminator else expected_prompt_bytes
+    if observed_bytes == expected_prompt_bytes:
+        mode = "exact_bytes"
+        normalization_applied = False
+    elif has_one_file_terminator and observed_bytes == content_bytes and not observed_bytes.endswith(b"\n"):
+        mode = "single_terminal_lf_omitted"
+        normalization_applied = True
+    else:
+        raise ContractError(
+            "blocked_worker_prompt_mismatch",
+            (
+                f"{evidence_label} differs from the frozen prompt beyond the only permitted "
+                "transport variance (omission of one file-terminal LF)"
+            ),
+        )
+    return {
+        "observed_sha256": sha256_bytes(observed_bytes),
+        "content_sha256": sha256_bytes(content_bytes),
+        "raw_sha_match": observed_bytes == expected_prompt_bytes,
+        "mode": mode,
+        "normalization_applied": normalization_applied,
+    }
+
+
 def normalized_path(path: Path) -> str:
     return os.path.normcase(os.path.abspath(os.fspath(path)))
 
@@ -537,25 +576,37 @@ def validate_worker_rollout(
             "blocked_worker_image_event_incomplete",
             "completed image event lacks revised_prompt evidence",
         )
-    tool_prompt_bytes = revised_prompt.encode("utf-8")
-    if tool_prompt_bytes != expected_prompt_bytes:
-        raise ContractError(
-            "blocked_worker_prompt_mismatch",
-            "image-generation event prompt does not exactly match the frozen prompt sidecar",
-        )
-    prompt_binding_mode = "image_event_revised_prompt"
+    event_prompt_binding = bind_prompt_transport(
+        expected_prompt_bytes,
+        revised_prompt,
+        "image-generation event prompt",
+    )
+    prompt_binding_mode = f"image_event_{event_prompt_binding['mode']}"
+    inline_prompt_binding: dict[str, Any] | None = None
     try:
         inline_prompt = extract_js_json_value(call_input, "prompt")
     except ContractError as exc:
         if exc.code != "blocked_worker_call_unparseable":
             raise
     else:
-        if not isinstance(inline_prompt, str) or inline_prompt.encode("utf-8") != expected_prompt_bytes:
+        if not isinstance(inline_prompt, str):
             raise ContractError(
                 "blocked_worker_prompt_mismatch",
-                "inline imagegen prompt does not exactly match the frozen prompt sidecar",
+                "inline imagegen prompt is not a string",
             )
-        prompt_binding_mode = "inline_literal_and_image_event"
+        inline_prompt_binding = bind_prompt_transport(
+            expected_prompt_bytes,
+            inline_prompt,
+            "inline imagegen prompt",
+        )
+        if inline_prompt_binding["content_sha256"] != event_prompt_binding["content_sha256"]:
+            raise ContractError(
+                "blocked_worker_prompt_mismatch",
+                "inline and image-event prompt content identities differ",
+            )
+        prompt_binding_mode = (
+            f"inline_{inline_prompt_binding['mode']}_and_image_event_{event_prompt_binding['mode']}"
+        )
 
     if expected_references:
         actual = extract_js_string_array_value(call_input, "referenced_image_paths")
@@ -588,7 +639,15 @@ def validate_worker_rollout(
         "worker_turn_id": worker_turn_id,
         "call_id": call_id,
         "saved_path": saved_path,
-        "tool_prompt_sha256": sha256_bytes(tool_prompt_bytes),
+        "tool_prompt_sha256": event_prompt_binding["observed_sha256"],
+        "prompt_content_sha256": event_prompt_binding["content_sha256"],
+        "prompt_sha_match": event_prompt_binding["raw_sha_match"],
+        "prompt_content_match": True,
+        "prompt_transport_mode": event_prompt_binding["mode"],
+        "prompt_transport_normalization_applied": event_prompt_binding["normalization_applied"],
+        "inline_prompt_sha256": (
+            inline_prompt_binding["observed_sha256"] if inline_prompt_binding is not None else None
+        ),
         "prompt_binding_mode": prompt_binding_mode,
         "image_wrapper_candidate_count": len(completed_image_calls),
         "reference_mode": "frozen_manifest" if expected_references else "none_test_only",
@@ -722,7 +781,7 @@ def main() -> int:
 
     result = {
         "ok": True,
-        "contract": "delegated_image_worker_result.v1",
+        "contract": "delegated_image_worker_result.v2",
         "resolved_at_utc": datetime.now(timezone.utc).isoformat(),
         "agent_path": args.agent_path,
         "worker_thread_id": worker["thread_id"],
@@ -738,8 +797,16 @@ def main() -> int:
         "observed_aspect_ratio": width / height,
         "exact_16_9": width * 9 == height * 16,
         "generation_prompt_sha256": sha256_bytes(prompt_bytes),
+        "frozen_prompt_sha256": sha256_bytes(prompt_bytes),
         "tool_prompt_sha256": evidence["tool_prompt_sha256"],
-        "prompt_sha_match": evidence["tool_prompt_sha256"] == sha256_bytes(prompt_bytes),
+        "prompt_content_sha256": evidence["prompt_content_sha256"],
+        "prompt_sha_match": evidence["prompt_sha_match"],
+        "prompt_content_match": evidence["prompt_content_match"],
+        "prompt_transport_mode": evidence["prompt_transport_mode"],
+        "prompt_transport_normalization_applied": evidence[
+            "prompt_transport_normalization_applied"
+        ],
+        "inline_prompt_sha256": evidence["inline_prompt_sha256"],
         "prompt_binding_mode": evidence["prompt_binding_mode"],
         "image_wrapper_candidate_count": evidence["image_wrapper_candidate_count"],
         "reference_mode": reference_evidence["reference_mode"],
@@ -747,6 +814,7 @@ def main() -> int:
         "reference_manifest_sha256": reference_evidence["manifest_sha256"],
         "ordered_reference_bundle_sha256": reference_evidence["ordered_bundle_sha256"],
         "reference_count": reference_evidence["reference_count"],
+        "reference_bytes_verified": True,
     }
     write_json(args.result_json, result)
     print(json.dumps(result, ensure_ascii=False, sort_keys=True))

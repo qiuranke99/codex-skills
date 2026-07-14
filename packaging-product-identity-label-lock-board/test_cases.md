@@ -63,6 +63,12 @@ Executable acceptance suite: `python -B scripts/test_contract.py`.
    - Show it within 60 seconds as `unaccepted raw preview`; never label it accepted.
 9. A success sentence appears before one completed image event and resolver-bound PNG.
    - Fail `blocked_premature_success_claim`.
+10. The completed image event prompt is identical to the frozen prompt except that the sidecar's one file-terminal LF is absent from the tool string.
+   - Pass with `prompt_transport_mode: single_terminal_lf_omitted`, preserve both raw hashes, bind the same PNG, and do not regenerate.
+11. The tool prompt changes body text, internal spaces, encoding, CR/LF, or more than one terminal newline.
+   - Fail `blocked_worker_prompt_mismatch`; the file-terminal-LF rule cannot normalize any of these changes.
+12. A legacy resolver rejected an otherwise completed call only because of the single file-terminal LF.
+   - Re-run the corrected resolver against that exact worker/call and reuse the saved PNG. Starting another image worker is a contract failure.
 
 ## Forbidden legacy behavior
 

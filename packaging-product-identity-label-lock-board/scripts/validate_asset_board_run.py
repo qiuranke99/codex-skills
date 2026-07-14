@@ -46,6 +46,57 @@ def sha256_bytes(data: bytes) -> str:
     return hashlib.sha256(data).hexdigest()
 
 
+def worker_prompt_binding_is_valid(worker: dict[str, Any], prompt_bytes: bytes) -> bool:
+    contract = worker.get("contract")
+    if contract == "delegated_image_worker_result.v1":
+        return all(
+            [
+                worker.get("prompt_sha_match") is True,
+                worker.get("generation_prompt_sha256") == sha256_bytes(prompt_bytes),
+                worker.get("tool_prompt_sha256") == sha256_bytes(prompt_bytes),
+            ]
+        )
+    if contract != "delegated_image_worker_result.v2":
+        return False
+    has_one_file_terminator = all(
+        [
+            prompt_bytes.endswith(b"\n"),
+            not prompt_bytes.endswith(b"\n\n"),
+            b"\r" not in prompt_bytes,
+        ]
+    )
+    content_bytes = prompt_bytes[:-1] if has_one_file_terminator else prompt_bytes
+    mode = worker.get("prompt_transport_mode")
+    common = all(
+        [
+            worker.get("generation_prompt_sha256") == sha256_bytes(prompt_bytes),
+            worker.get("frozen_prompt_sha256") == sha256_bytes(prompt_bytes),
+            worker.get("prompt_content_sha256") == sha256_bytes(content_bytes),
+            worker.get("prompt_content_match") is True,
+        ]
+    )
+    if not common:
+        return False
+    if mode == "exact_bytes":
+        return all(
+            [
+                worker.get("tool_prompt_sha256") == sha256_bytes(prompt_bytes),
+                worker.get("prompt_sha_match") is True,
+                worker.get("prompt_transport_normalization_applied") is False,
+            ]
+        )
+    if mode == "single_terminal_lf_omitted":
+        return all(
+            [
+                has_one_file_terminator,
+                worker.get("tool_prompt_sha256") == sha256_bytes(content_bytes),
+                worker.get("prompt_sha_match") is False,
+                worker.get("prompt_transport_normalization_applied") is True,
+            ]
+        )
+    return False
+
+
 def normalized(path: Path) -> str:
     return os.path.normcase(os.path.abspath(os.fspath(path)))
 
@@ -172,16 +223,51 @@ def main() -> int:
     final_path, final_bytes = require_file_hash(root, manifest, "final_board_path", "final_board_sha256")
 
     worker = json.loads(worker_bytes.decode("utf-8"))
+    reference_mode = worker.get("reference_mode")
+    if reference_mode in {None, "frozen_manifest", "frozen_source_manifest"}:
+        worker_reference_binding_valid = all(
+            [
+                worker.get("reference_manifest_sha256") == sha256_bytes(reference_bytes),
+                worker.get("reference_count") == len(reference_entries),
+            ]
+        )
+    elif reference_mode == "generation_provider_pack":
+        pack_path, pack_bytes = require_file_hash(
+            root,
+            manifest,
+            "generation_reference_pack_path",
+            "generation_reference_pack_sha256",
+        )
+        try:
+            pack = json.loads(pack_bytes.decode("utf-8"))
+        except (UnicodeDecodeError, json.JSONDecodeError) as exc:
+            raise ValidationError("blocked_reference_manifest_invalid", str(exc)) from exc
+        provider_entries = pack.get("provider_references")
+        provider_count = pack.get("provider_reference_count")
+        source_manifest_path = Path(str(pack.get("source_reference_manifest_path", "")))
+        worker_reference_binding_valid = all(
+            [
+                pack.get("schema_version") == "packaging_generation_reference_pack.v1",
+                isinstance(provider_entries, list),
+                isinstance(provider_count, int),
+                isinstance(provider_entries, list) and len(provider_entries) == provider_count,
+                isinstance(provider_count, int) and 1 <= provider_count <= 5,
+                same_path(str(source_manifest_path), reference_path),
+                pack.get("source_reference_manifest_sha256") == sha256_bytes(reference_bytes),
+                worker.get("reference_manifest_sha256") == sha256_bytes(pack_bytes),
+                worker.get("ordered_reference_bundle_sha256") == pack.get("provider_bundle_sha256"),
+                worker.get("reference_count") == provider_count,
+                same_path(worker.get("reference_manifest_path"), pack_path),
+            ]
+        )
+    else:
+        worker_reference_binding_valid = False
     if not all(
         [
             worker.get("ok") is True,
-            worker.get("contract") == "delegated_image_worker_result.v1",
-            worker.get("prompt_sha_match") is True,
+            worker_prompt_binding_is_valid(worker, prompt_bytes),
             worker.get("reference_bytes_verified") is True,
-            worker.get("generation_prompt_sha256") == sha256_bytes(prompt_bytes),
-            worker.get("tool_prompt_sha256") == sha256_bytes(prompt_bytes),
-            worker.get("reference_manifest_sha256") == sha256_bytes(reference_bytes),
-            worker.get("reference_count") == len(reference_entries),
+            worker_reference_binding_valid,
         ]
     ):
         raise ValidationError("blocked_worker_provenance_invalid", "worker result does not bind prompt and references")

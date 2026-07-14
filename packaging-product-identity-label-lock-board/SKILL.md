@@ -23,11 +23,11 @@ Treat a complete copyable generation prompt as the first user deliverable, not a
 - Publish the complete frozen prompt within 180 seconds of invocation and within 120 seconds of a successful release gate.
 - If the user requested OCR, spend at most 45 seconds on OCR discovery. On timeout or disagreement, mark the affected copy `unknown` or `candidates_only` and continue.
 - Before prompt publication, do not run package tests, composition planning, worker-provenance resolution, project archiving, release maintenance, or deep supporting-copy review.
-- Publish the exact prompt bytes inline in a user-visible commentary message before worker spawn. Include the prompt path, SHA-256, ordered provider references, and `copy_authority`. A path, hash, summary, or progress sentence alone is not prompt delivery.
+- Publish the complete prompt text inline in a user-visible commentary message before worker spawn. Include the frozen-file SHA-256, provider-content SHA-256, prompt path, ordered provider references, and `copy_authority`. A path, hash, summary, or progress sentence alone is not prompt delivery.
 - Spawn the worker within 30 seconds after prompt publication. Require imagegen submission within 90 seconds after spawn.
 - While the worker runs, send a truthful user-visible status update at least every 60 seconds.
 - Give each submitted image call at most 15 minutes and all automatic generation attempts together at most 20 minutes. Interrupt a timed-out worker. Do not retry while the prior call state is unknown.
-- After one completed image event is resolver-bound to a PNG, show that raw board within 60 seconds as `unaccepted raw preview` before composition and QA. Never claim generation success before that evidence exists.
+- After one completed image event, resolve that same call before considering any retry. A file-terminal-LF transport difference is a binding normalization, not a generation failure. Show the resolver-bound raw board within 60 seconds as `unaccepted raw preview` before composition and QA. Never claim generation success before that evidence exists.
 - On every terminal success, parameter failure, worker timeout, imagegen timeout, or validation failure, repeat the complete frozen prompt inline with its SHA-256 and the exact terminal status.
 
 Record the milestones in a run-scoped trace based on `references/prompt_dispatch_trace.template.json`. Validate the terminal trace with `scripts/validate_prompt_dispatch_trace.py`.
@@ -188,7 +188,7 @@ For one to five sources, the pack keeps the ordered frozen paths. For six or mor
 
 ### 3. Freeze the exact generation prompt
 
-Write the complete prompt to `<run-dir>/attempts/<attempt-id>/final_generation_prompt.md` as UTF-8/LF without BOM. Start from `references/generation_prompt_template.md`, then replace every placeholder with product-specific observed facts and explicit unknowns.
+Write the complete prompt to `<run-dir>/attempts/<attempt-id>/final_generation_prompt.md` as UTF-8/LF without BOM and with exactly one file-terminal LF. Start from `references/generation_prompt_template.md`, then replace every placeholder with product-specific observed facts and explicit unknowns.
 
 The prompt must state:
 
@@ -205,7 +205,7 @@ The prompt must state:
 
 Reject the prompt before generation if it asks any region to remain visually empty, be reserved for later replacement, or omit generated content. Do not publish a staging prompt as a final generation prompt.
 
-Describe direct anchors and deterministic detail sheets exactly as declared by `generation-reference-pack.json`. Write the prompt once, compute its SHA-256, then immediately publish the complete bytes inline. Record `PROMPT_PUBLISHED` before doing any other production work. If the prompt deadline is reached, freeze the best source-grounded version with explicit unknowns and terminate as `BLOCKED_PROMPT_READY_TIMEOUT`; do not continue silently rewriting it.
+Describe direct anchors and deterministic detail sheets exactly as declared by `generation-reference-pack.json`. Write the prompt once. Compute the frozen-file SHA-256 over all bytes and the provider-content SHA-256 over the same bytes minus the single file-terminal LF. The provider prompt string is that complete content without the serialization-only terminal LF. Immediately publish the complete text and both hashes inline. Record `PROMPT_PUBLISHED` before doing any other production work. If the prompt deadline is reached, freeze the best source-grounded version with explicit unknowns and terminate as `BLOCKED_PROMPT_READY_TIMEOUT`; do not continue silently rewriting it.
 
 ### 4. Delegate one image call
 
@@ -216,12 +216,12 @@ For each actual generation attempt:
 1. Create a fresh 32-character lowercase hexadecimal nonce.
 2. Record the parent thread ID and a spawn-time checkpoint.
 3. Spawn exactly one fresh nonce-suffixed, non-decision image worker with `fork_turns="none"`.
-4. Give it the already frozen prompt bytes and the one-to-five ordered `provider_paths`. Do not mention or invoke this Skill in the worker task.
+4. Give it the frozen provider prompt content (the sidecar text without its one file-terminal LF), both prompt hashes, and the one-to-five ordered `provider_paths`. Do not mention or invoke this Skill in the worker task.
 5. Instruct the worker to make one `imagegen` call as its first and only tool action, using `referenced_image_paths`, then terminate with empty text.
 6. Forbid the worker from reading the Skill, reading project/task files, rerunning the release gate, creating files, performing OCR, selecting references, rewriting the prompt, inspecting quality, approving, repairing, publishing, or calling any other agent.
 7. Never use `num_last_images_to_include` for production binding and never submit more than five paths.
 
-The main agent must not call imagegen directly. If the worker has not submitted imagegen within 90 seconds, interrupt it and terminate `BLOCKED_WORKER_SUBMIT_TIMEOUT` with the complete prompt. If submission occurred but no image is returned within 15 minutes, interrupt it and terminate `BLOCKED_IMAGEGEN_TIMEOUT`; do not create a replacement worker while the call state is unknown. Resolve a returned PNG with `scripts/resolve_worker_image.py` so prompt bytes, provider-reference bytes, parent/worker lineage, call ID, and image bytes are bound. Resolver failure means no generation-success claim.
+The main agent must not call imagegen directly. If the worker has not submitted imagegen within 90 seconds, interrupt it and terminate `BLOCKED_WORKER_SUBMIT_TIMEOUT` with the complete prompt. If submission occurred but no image is returned within 15 minutes, interrupt it and terminate `BLOCKED_IMAGEGEN_TIMEOUT`; do not create a replacement worker while the call state is unknown. Resolve a returned PNG with `scripts/resolve_worker_image.py` so the frozen-file hash, provider-content hash, provider-reference bytes, parent/worker lineage, call ID, and image bytes are bound. The resolver may accept only exact prompt bytes or omission of exactly one file-terminal LF; it must record which mode occurred and reject every body, internal-whitespace, encoding, or additional-newline difference. A completed call rejected only by the legacy terminal-LF rule must be re-resolved and reused after the resolver correction; never spend another image call on that binding-only condition. Other resolver failures mean no generation-success claim.
 
 ### 5. Compose source evidence
 
@@ -274,7 +274,7 @@ Validate:
 
 Allow at most two repair attempts after the initial attempt. Each repair uses one new worker and one image call.
 
-Start a repair only when enough of the 20-minute total automatic budget remains. A parameter error before an external image event permits one deterministic correction within 60 seconds; otherwise terminate with the complete prompt and explicit status. Never spend an unbounded interval rebuilding the ledger, prompt, or run directory.
+Start a repair only when enough of the 20-minute total automatic budget remains. A parameter error before an external image event permits one deterministic correction within 60 seconds. After a completed image event, first resolve or narrowly re-resolve that same event; a binding-only single-terminal-LF difference forbids regeneration. Otherwise terminate with the complete prompt and explicit status. Never spend an unbounded interval rebuilding the ledger, prompt, or run directory.
 
 Repair only the failed class in this order:
 
@@ -306,7 +306,7 @@ Block only when:
 - no supplied image identifies the product at all;
 - reference files cannot be materialized or hash-bound;
 - an explicitly requested exact-copy claim cannot be supported;
-- the worker provenance cannot be bound;
+- the worker provenance cannot be bound after applying the single permitted file-terminal-LF transport rule;
 - the final board cannot pass the eight-view, fully-populated four-to-six-detail, clean-image, or identity-consistency checks after three total attempts.
 
 Use explicit runtime terminal states for bounded failures: `BLOCKED_RELEASE_GATE`, `BLOCKED_REFERENCE_MATERIALIZATION`, `BLOCKED_PROMPT_READY_TIMEOUT`, `BLOCKED_WORKER_START_TIMEOUT`, `BLOCKED_WORKER_SUBMIT_TIMEOUT`, `BLOCKED_IMAGEGEN_TIMEOUT`, `BLOCKED_VALIDATION`, or `REJECTED_AFTER_MAX_ATTEMPTS`. Every state after prompt compilation still delivers the complete prompt; none authorizes a request for more angles.

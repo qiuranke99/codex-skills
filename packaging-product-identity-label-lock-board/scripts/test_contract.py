@@ -416,6 +416,9 @@ def valid_fixture(base: Path) -> dict[str, Any]:
         "run_dir": run_dir,
         "plan": plan,
         "receipt": receipt,
+        "worker": worker,
+        "prompt": prompt,
+        "reference_manifest": reference_manifest,
     }
 
 
@@ -433,11 +436,12 @@ class ContractTests(unittest.TestCase):
             "at most two repair attempts",
             "No blank cells, empty rectangles, placeholders, reserved slots",
             "independently usable as a final single-call prompt",
-            "Publish the exact prompt bytes inline",
+            "Publish the complete prompt text inline",
             "fork_turns=\"none\"",
             "imagegen may receive at most five paths",
             "at most 15 minutes",
             "unaccepted raw preview",
+            "never spend another image call on that binding-only condition",
         ]:
             self.assertIn(token, skill)
 
@@ -509,6 +513,72 @@ class ContractTests(unittest.TestCase):
                     allow_no_references=False,
                 )
             self.assertEqual(caught.exception.code, "blocked_worker_image_call_count")
+
+    def test_resolver_accepts_exact_prompt_bytes(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            fixture = generation_reference_fixture(Path(tmp), 3)
+            resolver = load_resolver_module()
+            reference_evidence = resolver.load_reference_manifest(fixture["pack_manifest"])
+            nonce = "0123456789abcdef0123456789abcdef"
+            prompt = "Create one complete packaging identity board.\n"
+            worker = worker_events(prompt, reference_evidence["paths"], nonce)
+            evidence = resolver.validate_worker_rollout(
+                events=worker["events"],
+                thread_id=worker["thread_id"],
+                agent_path=worker["agent_path"],
+                parent_thread_id=worker["parent_id"],
+                worker_run_nonce=nonce,
+                expected_prompt_bytes=prompt.encode("utf-8"),
+                expected_references=reference_evidence["paths"],
+                allow_no_references=False,
+            )
+            self.assertTrue(evidence["prompt_sha_match"])
+            self.assertTrue(evidence["prompt_content_match"])
+            self.assertEqual(evidence["prompt_transport_mode"], "exact_bytes")
+            self.assertFalse(evidence["prompt_transport_normalization_applied"])
+
+    def test_resolver_accepts_only_one_omitted_file_terminal_lf(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            fixture = generation_reference_fixture(Path(tmp), 3)
+            resolver = load_resolver_module()
+            reference_evidence = resolver.load_reference_manifest(fixture["pack_manifest"])
+            nonce = "0123456789abcdef0123456789abcdef"
+            provider_prompt = "Create one complete packaging identity board."
+            worker = worker_events(provider_prompt, reference_evidence["paths"], nonce)
+            evidence = resolver.validate_worker_rollout(
+                events=worker["events"],
+                thread_id=worker["thread_id"],
+                agent_path=worker["agent_path"],
+                parent_thread_id=worker["parent_id"],
+                worker_run_nonce=nonce,
+                expected_prompt_bytes=(provider_prompt + "\n").encode("utf-8"),
+                expected_references=reference_evidence["paths"],
+                allow_no_references=False,
+            )
+            self.assertFalse(evidence["prompt_sha_match"])
+            self.assertTrue(evidence["prompt_content_match"])
+            self.assertEqual(evidence["prompt_transport_mode"], "single_terminal_lf_omitted")
+            self.assertTrue(evidence["prompt_transport_normalization_applied"])
+            self.assertEqual(evidence["prompt_content_sha256"], hashlib.sha256(provider_prompt.encode()).hexdigest())
+
+    def test_resolver_rejects_prompt_body_or_internal_whitespace_changes(self) -> None:
+        resolver = load_resolver_module()
+        for expected, observed in [
+            (b"Create the exact board.\n", "Create a different board."),
+            (b"Create  the exact board.\n", "Create the exact board."),
+            (b"Create the exact board.\n", "Create the exact board.\r\n"),
+            (b"Create the exact board.\r\n", "Create the exact board.\r"),
+        ]:
+            with self.subTest(observed=repr(observed)):
+                with self.assertRaises(resolver.ContractError) as caught:
+                    resolver.bind_prompt_transport(expected, observed, "test prompt")
+                self.assertEqual(caught.exception.code, "blocked_worker_prompt_mismatch")
+
+    def test_resolver_rejects_more_than_one_terminal_newline_variance(self) -> None:
+        resolver = load_resolver_module()
+        with self.assertRaises(resolver.ContractError) as caught:
+            resolver.bind_prompt_transport(b"Create the exact board.\n\n", "Create the exact board.\n", "test prompt")
+        self.assertEqual(caught.exception.code, "blocked_worker_prompt_mismatch")
 
     def test_prompt_first_dispatch_accepts_a_bounded_success_trace(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
@@ -584,6 +654,65 @@ class ContractTests(unittest.TestCase):
             self.assertEqual(payload["view_count"], 8)
             self.assertEqual(payload["detail_count"], 4)
             self.assertEqual(payload["copy_authority"], "video_reference")
+
+    def test_provider_pack_worker_reference_binding_validates(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            fixture = valid_fixture(Path(tmp))
+            output_dir = fixture["run_dir"] / "attempts" / "01" / "provider-references"
+            pack_manifest = output_dir / "generation-reference-pack.json"
+            packed = run(
+                [
+                    sys.executable,
+                    "-X",
+                    "utf8",
+                    str(REFERENCE_PACKER),
+                    "--reference-manifest",
+                    str(fixture["reference_manifest"]),
+                    "--output-dir",
+                    str(output_dir),
+                    "--manifest",
+                    str(pack_manifest),
+                ]
+            )
+            self.assertEqual(packed.returncode, 0, packed.stderr)
+            pack = json.loads(pack_manifest.read_text(encoding="utf-8"))
+            prompt_bytes = fixture["prompt"].read_bytes()
+            worker = json.loads(fixture["worker"].read_text(encoding="utf-8"))
+            worker.update(
+                {
+                    "contract": "delegated_image_worker_result.v2",
+                    "frozen_prompt_sha256": hashlib.sha256(prompt_bytes).hexdigest(),
+                    "prompt_content_sha256": hashlib.sha256(prompt_bytes[:-1]).hexdigest(),
+                    "prompt_content_match": True,
+                    "prompt_transport_mode": "exact_bytes",
+                    "prompt_transport_normalization_applied": False,
+                    "reference_mode": "generation_provider_pack",
+                    "reference_manifest_path": str(pack_manifest),
+                    "reference_manifest_sha256": sha(pack_manifest),
+                    "ordered_reference_bundle_sha256": pack["provider_bundle_sha256"],
+                    "reference_count": pack["provider_reference_count"],
+                }
+            )
+            write_json(fixture["worker"], worker)
+            value = copy.deepcopy(fixture["value"])
+            value["worker_result_sha256"] = sha(fixture["worker"])
+            value["generation_reference_pack_path"] = str(pack_manifest)
+            value["generation_reference_pack_sha256"] = sha(pack_manifest)
+            write_json(fixture["manifest"], value)
+            result = run([sys.executable, "-X", "utf8", str(VALIDATOR), "--manifest", str(fixture["manifest"])])
+            self.assertEqual(result.returncode, 0, result.stderr)
+
+    def test_provider_pack_worker_reference_mismatch_is_rejected(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            fixture = valid_fixture(Path(tmp))
+            worker = json.loads(fixture["worker"].read_text(encoding="utf-8"))
+            worker["reference_mode"] = "generation_provider_pack"
+            write_json(fixture["worker"], worker)
+            value = copy.deepcopy(fixture["value"])
+            value["worker_result_sha256"] = sha(fixture["worker"])
+            write_json(fixture["manifest"], value)
+            result = run([sys.executable, "-X", "utf8", str(VALIDATOR), "--manifest", str(fixture["manifest"])])
+            self.assertEqual(error_code(result), "blocked_manifest_path_invalid")
 
     def test_missing_view_fails_without_requesting_more_sources(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
