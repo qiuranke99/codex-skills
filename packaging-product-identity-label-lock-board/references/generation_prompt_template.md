@@ -2,6 +2,11 @@
 
 Create exactly one clean, photorealistic packaged-product identity asset board for downstream image and video models.
 
+REFERENCE BINDING
+- Use exactly {{provider_reference_count}} ordered provider references; never submit more than five paths.
+- Reference roles in order: {{provider_reference_roles}}
+- Direct complete-product anchors and deterministic detail sheets are different evidence roles. Preserve the source identities represented inside every declared sheet.
+
 OUTPUT
 - One horizontal 16:9 board only.
 - Requested final design canvas: 3840 x 2160.

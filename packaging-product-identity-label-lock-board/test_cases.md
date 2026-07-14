@@ -38,6 +38,10 @@ Executable acceptance suite: `python -B scripts/test_contract.py`.
    - Fail `blocked_staging_prompt_leakage`; never publish it as a final generation prompt.
 3. High-angle or low-angle support views are requested.
    - Keep the product upright on its base and change camera position; a lying-down product fails the view contract.
+4. The frozen prompt exists on disk but has not been shown to the user.
+   - Fail `blocked_prompt_not_inline`; a path, hash, summary, or progress sentence is not prompt delivery.
+5. Prompt publication occurs after worker spawn or later than 180 seconds from invocation.
+   - Fail the dispatch trace and terminate with the complete prompt rather than continuing a silent rewrite.
 
 ## Worker and repair behavior
 
@@ -47,6 +51,18 @@ Executable acceptance suite: `python -B scripts/test_contract.py`.
    - Fail the worker contract.
 3. Initial attempt plus two repairs all fail.
    - Stop after three total image calls and report the failed checks.
+4. Six or seven sources are supplied.
+   - Preserve the full frozen ledger, compile exactly one to five provider references, and prove the raw six/seven paths cannot reach imagegen. A seven-source text-heavy package normally becomes three complete anchors plus two deterministic detail sheets.
+5. A worker inherits conversation context, rereads the Skill, reruns the release gate, or calls any tool before imagegen.
+   - Fail the thin-worker contract. Spawn with `fork_turns="none"`; imagegen is the first and only tool call.
+6. One imagegen wrapper returns a parameter error.
+   - Do not claim an image exists. Apply at most one deterministic correction inside 60 seconds, or terminate with the complete prompt and explicit status.
+7. No image is returned 15 minutes after submission, or the prior call state is unknown.
+   - Interrupt the worker, do not start an orphan retry, and return `BLOCKED_IMAGEGEN_TIMEOUT` plus the complete prompt.
+8. The raw PNG exists but composition or QA has not run.
+   - Show it within 60 seconds as `unaccepted raw preview`; never label it accepted.
+9. A success sentence appears before one completed image event and resolver-bound PNG.
+   - Fail `blocked_premature_success_claim`.
 
 ## Forbidden legacy behavior
 

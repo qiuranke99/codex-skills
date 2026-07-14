@@ -1,6 +1,6 @@
 interface:
   display_name: "Packaging Product Identity Board"
   short_description: "One clean 8-view board for text-heavy packaging."
-  default_prompt: "Use $packaging-product-identity-label-lock-board to turn one to three ordinary product photos into exactly one clean horizontal 16:9 video-model asset board with eight complete upright product views and four to six fully populated source-evidenced label, copy, graphic, texture, embossing, closure, or material detail panels. Treat OCR as nonblocking discovery, reject every blank or placeholder cell, preserve critical readable copy through frozen source crops and deterministic composition, use exactly one fresh non-decision image worker per generation attempt, inspect the final board, and publish only one accepted result."
+  default_prompt: "Use $packaging-product-identity-label-lock-board to turn ordinary product photos into exactly one clean horizontal 16:9 video-model asset board with eight complete upright views and four to six populated source-evidenced details. Treat OCR as a 45-second nonblocking discovery pass, compile any larger source ledger into at most five imagegen-bound references, freeze and publish the complete prompt inline before worker spawn, use one fresh fork_turns=none non-decision worker whose first and only tool call is imagegen, enforce the dispatch and generation time budgets, show a resolver-bound raw preview before QA, and return the complete prompt with every success or failure state."
 policy:
   allow_implicit_invocation: false

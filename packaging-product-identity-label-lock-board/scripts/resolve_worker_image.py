@@ -222,6 +222,73 @@ def load_reference_manifest(manifest_path: Path) -> dict[str, Any]:
         manifest = json.loads(manifest_bytes.decode("utf-8"))
     except (UnicodeDecodeError, json.JSONDecodeError) as exc:
         raise ContractError("blocked_reference_manifest_invalid", str(exc)) from exc
+    if manifest.get("schema_version") == "packaging_generation_reference_pack.v1":
+        source_manifest_path = Path(str(manifest.get("source_reference_manifest_path", "")))
+        if not source_manifest_path.is_absolute() or not source_manifest_path.is_file():
+            raise ContractError("blocked_reference_manifest_invalid", "provider pack source manifest is missing")
+        source_bytes = source_manifest_path.read_bytes()
+        if sha256_bytes(source_bytes) != manifest.get("source_reference_manifest_sha256"):
+            raise ContractError("blocked_reference_manifest_hash_mismatch", "provider pack source manifest hash mismatch")
+        run_root = source_manifest_path.parent.resolve()
+        try:
+            manifest_path.resolve().relative_to(run_root)
+        except ValueError as exc:
+            raise ContractError(
+                "blocked_reference_manifest_location",
+                "provider pack manifest must live inside the frozen run directory",
+            ) from exc
+        entries = manifest.get("provider_references")
+        count = manifest.get("provider_reference_count")
+        if not isinstance(entries, list) or not isinstance(count, int) or len(entries) != count or not 1 <= count <= 5:
+            raise ContractError(
+                "blocked_reference_manifest_invalid",
+                "provider reference pack must contain exactly one to five ordered entries",
+            )
+        paths: list[Path] = []
+        verified_entries: list[dict[str, Any]] = []
+        normalized_root = normalized_path(run_root)
+        for expected_index, entry in enumerate(entries, 1):
+            if not isinstance(entry, dict) or entry.get("provider_index") != expected_index:
+                raise ContractError("blocked_reference_manifest_invalid", "provider reference order/index is invalid")
+            provider_path = entry.get("provider_path")
+            expected_sha = entry.get("provider_sha256")
+            if not isinstance(provider_path, str) or not isinstance(expected_sha, str):
+                raise ContractError("blocked_reference_manifest_invalid", "provider reference path/hash is invalid")
+            path = Path(provider_path)
+            if not path.is_absolute() or not re.fullmatch(r"[0-9a-f]{64}", expected_sha):
+                raise ContractError("blocked_reference_manifest_invalid", "provider reference path/hash is invalid")
+            normalized_provider = normalized_path(path)
+            try:
+                common = os.path.commonpath([normalized_root, normalized_provider])
+            except ValueError as exc:
+                raise ContractError("blocked_reference_manifest_invalid", str(exc)) from exc
+            if common != normalized_root:
+                raise ContractError(
+                    "blocked_reference_manifest_location",
+                    f"provider reference is outside the run directory: {path}",
+                )
+            if not path.is_file() or sha256_bytes(path.read_bytes()) != expected_sha:
+                raise ContractError("blocked_reference_bytes_changed", f"provider reference changed: {path}")
+            paths.append(path)
+            verified_entries.append(entry)
+        normalized_paths = [normalized_path(path) for path in paths]
+        if len(set(normalized_paths)) != len(normalized_paths):
+            raise ContractError("blocked_reference_manifest_invalid", "provider reference paths are not unique")
+        digest = sha256_bytes(
+            json.dumps(verified_entries, ensure_ascii=False, separators=(",", ":"), sort_keys=True).encode("utf-8")
+        )
+        if manifest.get("provider_bundle_sha256") != digest:
+            raise ContractError(
+                "blocked_reference_manifest_hash_mismatch",
+                "provider reference bundle hash does not match manifest entries",
+            )
+        return {
+            "paths": paths,
+            "manifest_sha256": sha256_bytes(manifest_bytes),
+            "ordered_bundle_sha256": digest,
+            "reference_count": len(paths),
+            "reference_mode": "generation_provider_pack",
+        }
     if manifest.get("schema_version") != "packaging_reference_bundle.v1":
         raise ContractError("blocked_reference_manifest_invalid", "unexpected reference manifest schema")
     entries = manifest.get("ordered_references")
@@ -295,6 +362,7 @@ def load_reference_manifest(manifest_path: Path) -> dict[str, Any]:
         "manifest_sha256": sha256_bytes(manifest_bytes),
         "ordered_bundle_sha256": actual_bundle_sha,
         "reference_count": len(paths),
+        "reference_mode": "frozen_source_manifest",
     }
 
 
@@ -413,10 +481,10 @@ def validate_worker_rollout(
         ):
             final_response_messages.append((index, payload))
 
-    if not image_calls:
+    if len(image_calls) != 1:
         raise ContractError(
             "blocked_worker_image_call_count",
-            "worker trace has no imagegen wrapper call",
+            f"worker must contain exactly one imagegen wrapper call, found {len(image_calls)}",
         )
     if len(image_events) != 1:
         raise ContractError(
@@ -436,11 +504,7 @@ def validate_worker_rollout(
             "blocked_worker_event_order",
             "imagegen wrapper calls must precede the only image-generation event",
         )
-    # A wrapper can fail before imagegen is reached (for example while decoding
-    # prompt transport).  The only wrapper that can have produced the one
-    # completed image event is the nearest preceding wrapper.  Earlier wrappers
-    # have no image event and are not counted as image generations.
-    call_index, image_call = completed_image_calls[-1]
+    call_index, image_call = completed_image_calls[0]
     agent_final_index, agent_final = final_agent_messages[0]
     response_final_candidates = [
         (index, payload)
@@ -624,6 +688,7 @@ def main() -> int:
             "manifest_sha256": None,
             "ordered_bundle_sha256": None,
             "reference_count": 0,
+            "reference_mode": "none_test_only",
         }
     )
 
@@ -677,7 +742,7 @@ def main() -> int:
         "prompt_sha_match": evidence["tool_prompt_sha256"] == sha256_bytes(prompt_bytes),
         "prompt_binding_mode": evidence["prompt_binding_mode"],
         "image_wrapper_candidate_count": evidence["image_wrapper_candidate_count"],
-        "reference_mode": evidence["reference_mode"],
+        "reference_mode": reference_evidence["reference_mode"],
         "reference_manifest_path": str(args.reference_manifest) if args.reference_manifest else None,
         "reference_manifest_sha256": reference_evidence["manifest_sha256"],
         "ordered_reference_bundle_sha256": reference_evidence["ordered_bundle_sha256"],
