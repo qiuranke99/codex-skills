@@ -137,8 +137,13 @@ def main() -> int:
             raise CompositionError("blocked_composition_path_escape", f"{name} escapes run directory: {path}")
 
     plan, plan_bytes = load_json(plan_path)
-    if plan.get("schema_version") != "packaging_board_composition_plan.v1":
+    if plan.get("schema_version") != "packaging_board_composition_plan.v2":
         raise CompositionError("blocked_composition_plan_invalid", "unexpected plan schema")
+    if plan.get("layout_style") != "borderless_continuous_background" or plan.get("drawn_borders") is not False:
+        raise CompositionError(
+            "blocked_composition_borderless_contract",
+            "composition must declare a borderless continuous background and drawn_borders=false",
+        )
     canvas = plan.get("canvas_size")
     if not isinstance(canvas, list) or len(canvas) != 2 or not all(isinstance(item, int) for item in canvas):
         raise CompositionError("blocked_composition_plan_invalid", "canvas_size must be [width, height]")
@@ -171,10 +176,10 @@ def main() -> int:
     if not isinstance(overlays, list) or not overlays:
         raise CompositionError("blocked_composition_plan_invalid", "overlays must be a non-empty array")
     detail_layout = plan.get("detail_layout")
-    if not isinstance(detail_layout, list) or not 4 <= len(detail_layout) <= 6:
+    if not isinstance(detail_layout, list) or not 2 <= len(detail_layout) <= 3:
         raise CompositionError(
             "blocked_composition_detail_layout_invalid",
-            "detail_layout must contain the exact four to six populated detail cells",
+            "detail_layout must contain exactly two or three populated detail regions",
         )
     detail_targets: dict[str, tuple[int, int, int, int]] = {}
     for index, cell in enumerate(detail_layout, 1):
@@ -207,6 +212,19 @@ def main() -> int:
         if role not in role_counts:
             raise CompositionError("blocked_composition_plan_invalid", f"invalid overlay role: {role}")
         role_counts[role] += 1
+        if overlay.get("border_px", 0) != 0:
+            raise CompositionError("blocked_composition_visible_frame", f"{region_id} requests a drawn border")
+        if overlay.get("seamless_background_match") is not True:
+            raise CompositionError(
+                "blocked_composition_borderless_contract",
+                f"{region_id} must declare seamless_background_match=true",
+            )
+        fit_mode = str(overlay.get("fit", "contain"))
+        if role == "detail" and fit_mode != "cover":
+            raise CompositionError(
+                "blocked_composition_visible_frame",
+                f"detail region {region_id} must use cover so no contain-padding box is created",
+            )
         source_path = run_path(run_dir, overlay.get("source_path"), f"overlays[{index}].source_path")
         if not source_path.is_file():
             raise CompositionError("blocked_composition_source_missing", f"source missing: {source_path}")
@@ -257,7 +275,7 @@ def main() -> int:
             raise CompositionError("blocked_composition_plan_invalid", f"{region_id} has invalid background_rgb")
         target_size = (target_box[2] - target_box[0], target_box[3] - target_box[1])
         background = tuple(background_value)
-        panel = fit_image(crop, target_size, str(overlay.get("fit", "contain")), background)
+        panel = fit_image(crop, target_size, fit_mode, background)
         occupancy = non_background_fraction(panel, background)
         if role == "detail" and occupancy < 0.02:
             raise CompositionError(
@@ -274,7 +292,9 @@ def main() -> int:
                 "source_sha256": expected_source_sha,
                 "crop_box": list(crop_box),
                 "target_box": list(target_box),
-                "fit": str(overlay.get("fit", "contain")),
+                "fit": fit_mode,
+                "border_px": 0,
+                "seamless_background_match": True,
                 "evidence_status": "deterministic_reprojection",
                 "non_background_fraction": round(occupancy, 6),
             }
@@ -285,9 +305,9 @@ def main() -> int:
         extra = sorted(populated_detail_ids - set(detail_targets))
         raise CompositionError(
             "blocked_composition_detail_mapping",
-            f"every detail cell must be filled exactly once; missing={missing}, extra={extra}",
+            f"every detail region must be filled exactly once; missing={missing}, extra={extra}",
         )
-    if role_counts["detail"] != len(detail_targets) or not 4 <= role_counts["detail"] <= 6:
+    if role_counts["detail"] != len(detail_targets) or not 2 <= role_counts["detail"] <= 3:
         raise CompositionError("blocked_composition_detail_mapping", "detail overlay count must equal detail_layout")
     if not 0 <= role_counts["anchor"] <= 3:
         raise CompositionError("blocked_composition_plan_invalid", "zero to three anchor overlays are legal")
@@ -298,7 +318,7 @@ def main() -> int:
     os.replace(temporary, output_path)
     output_bytes = output_path.read_bytes()
     receipt = {
-        "schema_version": "packaging_board_composition_receipt.v1",
+        "schema_version": "packaging_board_composition_receipt.v2",
         "plan_path": str(plan_path),
         "plan_sha256": sha256_bytes(plan_bytes),
         "raw_board_path": str(raw_path),
@@ -310,7 +330,9 @@ def main() -> int:
         "exact_16_9": True,
         "anchor_overlay_count": role_counts["anchor"],
         "detail_overlay_count": role_counts["detail"],
-        "detail_cells_populated": True,
+        "layout_style": "borderless_continuous_background",
+        "drawn_borders": False,
+        "detail_regions_populated": True,
         "detail_layout": [
             {"region_id": region_id, "target_box": list(target_box)}
             for region_id, target_box in detail_targets.items()

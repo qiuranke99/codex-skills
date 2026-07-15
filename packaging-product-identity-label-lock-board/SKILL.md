@@ -1,11 +1,25 @@
 ---
 name: packaging-product-identity-label-lock-board
-description: Use when the user supplies usually one to three complete photos, optionally plus additional close-up evidence, of one packaged product with dense copy, labels, logos, patterns, transparent liquid, texture, or embossing and wants exactly one clean horizontal 16:9 product identity asset board for downstream image or video models. The board combines eight complete product views with four to six fully populated, source-evidenced detail panels; OCR is discovery evidence, never a reason to demand a fixed multi-angle capture set.
+description: Use when the user supplies usually one to three photos, optionally plus close-ups or artwork, of one packaged product with dense multilingual copy, labels, codes, transparent liquid, texture, or embossing and wants exactly one clean horizontal 16:9 identity asset board for downstream image or video models. Build a source-cited OCR/copy ledger, embed every transcribed line and its reading order in the generation prompt, produce seven complete views plus two or three source-grounded close-ups on one borderless continuous background, and reject visible gibberish; never demand a fixed multi-angle capture set.
 ---
 
 # Packaging Product Identity Label Lock Board
 
-Create one usable video-model reference board for one packaged product. Keep the stable Skill slug. Do not turn this workflow into a 360-degree capture factory, a print-proof system, or a family of new Skills.
+Create one usable video-model identity board for one packaged product. Keep this stable Skill slug. Do not create sibling Skills, a 360-degree capture factory, or a print-proof workflow.
+
+## Final outcome
+
+Return exactly one clean horizontal 16:9 board at requested 3840 × 2160, plus the complete copyable generation prompt and run evidence.
+
+The board contains:
+
+- exactly seven complete product views;
+- two source-grounded detail regions by default, with a third allowed only for one distinct unresolved identity risk;
+- nine regions by default and never more than ten;
+- one `borderless_continuous_background` with open spacing, not a drawn grid or a set of cards;
+- one SKU with consistent silhouette, closure, material, fill, label architecture, graphics, texture, embossing, and product-native copy.
+
+This board is a downstream video/image reference. It does not claim unseen geometry or unreadable copy has been measured.
 
 ## Runtime release gate
 
@@ -14,318 +28,264 @@ This package belongs to the High-Control AI TVC release suite. Start one monoton
 - Windows: `high-control-ai-tvc/tools/release-control.ps1 -Action check -Format json`
 - macOS/Linux: `high-control-ai-tvc/tools/release-control.sh check --format json`
 
-Give the gate 60 seconds. Continue to reference mutation, worker spawn, imagegen, composition, or publication only when `ready_latest=true`. Never rerun the gate inside the worker and never use an unverified global Python to bypass its pinned runtime. If the gate fails or times out, compile and publish the complete prompt as `prompt_status: release_unverified`, do not generate, and terminate as `BLOCKED_RELEASE_GATE`.
+Give the gate 60 seconds. Continue only when `ready_latest=true`. Never rerun it inside the image worker. If it fails or times out, compile and publish the complete prompt as `prompt_status: release_unverified`, do not generate, and terminate `BLOCKED_RELEASE_GATE`.
 
 ## Prompt-first latency contract
 
-Treat a complete copyable generation prompt as the first user deliverable, not as post-generation metadata.
+The complete reusable generation prompt is the first user deliverable.
 
 - Publish the complete frozen prompt within 180 seconds of invocation and within 120 seconds of a successful release gate.
-- If the user requested OCR, spend at most 45 seconds on OCR discovery. On timeout or disagreement, mark the affected copy `unknown` or `candidates_only` and continue.
-- Before prompt publication, do not run package tests, composition planning, worker-provenance resolution, project archiving, release maintenance, or deep supporting-copy review.
-- Publish the complete prompt text inline in a user-visible commentary message before worker spawn. Include the frozen-file SHA-256, provider-content SHA-256, prompt path, ordered provider references, and `copy_authority`. A path, hash, summary, or progress sentence alone is not prompt delivery.
-- Spawn the worker within 30 seconds after prompt publication. Require imagegen submission within 90 seconds after spawn.
-- While the worker runs, send a truthful user-visible status update at least every 60 seconds.
-- Give each submitted image call at most 15 minutes and all automatic generation attempts together at most 20 minutes. Interrupt a timed-out worker. Do not retry while the prior call state is unknown.
-- After one completed image event, resolve that same call before considering any retry. A file-terminal-LF transport difference is a binding normalization, not a generation failure. Show the resolver-bound raw board within 60 seconds as `unaccepted raw preview` before composition and QA. Never claim generation success before that evidence exists.
-- On every terminal success, parameter failure, worker timeout, imagegen timeout, or validation failure, repeat the complete frozen prompt inline with its SHA-256 and the exact terminal status.
+- If OCR is requested, spend at most 45 seconds on the first OCR discovery pass. Mark unresolved lines rather than silently waiting.
+- Before prompt publication, do not run package tests, composition planning, project archiving, release maintenance, or deep copy cleanup.
+- Publish the complete prompt text inline before worker spawn, with prompt path, frozen-file SHA-256, provider-content SHA-256, ordered provider references, copy-ledger SHA-256, copy-block SHA-256, and `copy_authority`.
+- Spawn the image worker within 30 seconds after prompt publication. Require imagegen submission within 90 seconds after spawn.
+- Send truthful status at least every 60 seconds while generation runs.
+- Give an image call at most 15 minutes and all automatic attempts at most 20 minutes. Never start a retry while the previous call state is unknown.
+- Show a resolver-bound result within 60 seconds as `unaccepted raw preview`; do not claim acceptance before composition and QA.
 
-Record the milestones in a run-scoped trace based on `references/prompt_dispatch_trace.template.json`. Validate the terminal trace with `scripts/validate_prompt_dispatch_trace.py`.
+Persist these milestones in `prompt-dispatch-trace.json` from `references/prompt_dispatch_trace.template.json` and validate it with `scripts/validate_prompt_dispatch_trace.py`.
 
-## Core outcome
+## Input sufficiency and evidence limits
 
-Deliver exactly one clean horizontal 16:9 board containing:
+One front, one back, and one three-quarter/side photograph are a normal sufficient set. One or two complete views are also legal. Additional close-ups or approved artwork may be used when already supplied.
 
-- exactly eight complete product views;
-- four to six fully populated evidence detail panels selected from the real packaging risks;
-- the same SKU, silhouette, proportions, closure, liquid level, materials, label architecture, graphics, texture, embossing, and major product-native copy across the board;
-- no titles, view names, arrows, numbers, legends, tables, UI, QA text, dates, or other non-product text inside the image.
+- never request a fixed 8/12/16/24-angle capture set;
+- never convert missing label copy into a demand for more angles;
+- never claim hidden text, QR payloads, barcode digits, underside markings, or unseen panels are exact;
+- classify geometry as `source_observed`, `source_crop`, `deterministic_reprojection`, `bounded_inferred`, or `unknown`;
+- record unknowns explicitly and continue the normal `video_reference` path.
 
-The board is a downstream image/video identity reference. It is not a claim that hidden copy, unseen geometry, or a continuous 360-degree orbit has been measured exactly.
+Do not block the board because a barcode, QR code, hidden side panel, or microcopy line is unresolved. Copy uncertainty must not trigger an angle request.
 
-## Normal inputs
+## Copy truth layer
 
-Treat one front, one back, and one three-quarter photograph as a normal and sufficient input set. One or two photographs are also legal. More references may be accepted when the user already has them, but never request a fixed 8/12/16/24-angle capture set.
+OCR remains nonblocking for geometry/material work, but a structured copy ledger is mandatory whenever visible product copy exists. OCR is candidate extraction, not authority.
 
-Only request one additional targeted image when the product cannot be identified without it, for example:
+Do not make OCR completion a global gate. An OCR timeout or disagreement lowers only the affected copy authority; it does not block the board or trigger an angle request.
 
-- no image shows the complete silhouette;
-- the primary front label is wholly unreadable;
-- the closure or dispensing mechanism is completely hidden and materially defines the SKU.
+It only lowers the affected copy region's authority. It never authorizes guessed wording or a larger capture demand.
 
-Do not block the board because a barcode, QR code, hidden side panel, microcopy line, or underside is unresolved. Record that region as unknown or unverified and keep working.
+### 1. Freeze sources before transcription
 
-## Non-goals
+Use `scripts/freeze_reference_bundle.py`. Every copy region must cite one frozen `source_alias` and exact `source_sha256`. Do not cite mutable originals.
 
-Do not produce:
+### 2. OCR and visually reconcile region by region
 
-- independent per-angle masters;
-- a rotation ring or elevation ring;
-- R8/R12/R16/R24 capture requirements;
-- bridge masters, motion envelopes, or loop-closure authority;
-- print-ready label artwork;
-- exact-copy authority for text that is not source-visible or artwork-backed;
-- a required packaging Canon export as part of the core board run.
+Transcribe all visible copy into `copy-ledger.json` based on `references/copy_ledger.template.json`.
 
-## Evidence model
+For every label, print, embossing, date/code block, or other copy region:
 
-Before prompting, build a compact internal ledger. Keep it outside the image.
+- keep a stable `region_id`;
+- record surface, source alias, source SHA-256, orientation, alignment, reading order, and column order;
+- split copy into one ledger entry per physical line in the correct sequence;
+- preserve spelling, case, punctuation, spaces, units, line breaks, multilingual distinctions, and source typos exactly;
+- retain every OCR result as `approved_exact`, `candidate`, or `unresolved`;
+- use `approved_exact` only after the line is visibly reconciled against the frozen source or approved artwork;
+- never approve an `ocr_only` or `not_readable` line as exact;
+- keep mirrored show-through, reflections, and embossed patterns separate from printed copy.
 
-For every useful source and region, record one of:
+If OCR engines disagree, record candidates and continue. Do not choose the most plausible wording. The ledger must make uncertainty visible rather than manufacture certainty.
 
-- `source_observed`: directly visible in a supplied photograph;
-- `source_crop`: a crop from a frozen source, used as an anchor or detail;
-- `deterministic_reprojection`: a crop that was resized, rectified, or placed by a deterministic compositor;
-- `bounded_inferred`: a model-generated completion constrained by observed shape/material evidence;
-- `unknown`: not supported and not safe to infer.
-
-Generated pixels never upgrade themselves to `source_observed`. Unknown evidence does not block the whole board unless it prevents product identification.
-
-## OCR and copy handling
-
-If the user asks to OCR first, perform one time-bounded OCR discovery pass before prompt freeze. OCR remains nonblocking and shares the 45-second budget in the prompt-first latency contract.
-
-1. Run OCR or careful visual transcription on only the supplied images.
-2. Treat OCR output as candidates, not truth. Preserve spelling, case, punctuation, units, line breaks, mirrored show-through, and multilingual distinctions.
-3. Separate copy into:
-   - major identity copy: brand, product name, variant, net content, hero claim;
-   - dense supporting copy: ingredients, directions, manufacturer text;
-   - codes/graphics: barcode, QR, certification marks, ornaments, logos;
-   - surface-native marks: embossing, debossing, texture, molded lettering.
-4. Use source crops or approved artwork for critical readable copy and codes. Do not ask the image model to invent unreadable characters.
-5. A normal video-reference board may remain `copy_authority: video_reference` with named unresolved microcopy. Use `copy_authority: exact_copy_evidence` only when every claimed field is visibly verified and the final pixels are source/artwork-backed.
-
-OCR failure, missing language support, or disagreement between OCR candidates must not trigger an angle request and must not prevent geometry/material generation. It only lowers the affected copy region's authority.
-
-## Board architecture
-
-Use this default view set:
-
-1. front;
-2. back;
-3. left side;
-4. right side;
-5. front three-quarter;
-6. rear three-quarter;
-7. high angle;
-8. low angle.
-
-Keep all eight products complete and uncropped. Preserve the closure/nozzle direction in product coordinates, not screen coordinates.
-
-Select four to six detail panels by risk, not by a fixed checklist. Use four by default for a single-call board; add a fifth or sixth only when each extra panel resolves a distinct video-identity risk. Before prompt freeze, lock one exact count and name every panel. Prefer:
-
-- front label and major identity copy;
-- back label/dense-copy block;
-- barcode or QR only when useful downstream;
-- pump, cap, dispenser, shoulder, or neck construction;
-- transparent liquid level, dip tube, or internal component;
-- embossing, debossing, molded pattern, foil, gloss/matte boundary, or texture;
-- base, edge, seam, or distinctive graphic ornament.
-
-For text-heavy packaging, the final board should be hybrid:
-
-- use source-observed full-product anchors for the supplied front/back/three-quarter views when possible;
-- use bounded model completion for the missing support views;
-- require the generated board to populate every selected detail panel with visible source-grounded content;
-- overwrite those already-populated panels with source-derived crops through `scripts/compose_asset_board.py` when Codex executes the full workflow;
-- keep critical readable copy in source-derived panels instead of trusting model-rendered microcopy.
-
-This hybrid board is the primary fix for sparse-view, text-heavy products.
-
-## Layout and visual rules
-
-- requested canvas: 3840 × 2160, horizontal 16:9;
-- neutral white or very light gray studio background;
-- even, soft product light; no dramatic campaign styling;
-- eight full-product views arranged as a coherent grid with generous separation;
-- one clean evidence strip containing the exact frozen count of fully populated detail panels;
-- no decorative props, hands, splashes, scenery, packaging redesign, duplicate SKUs, or alternate variants;
-- only genuine product-native text and graphics may appear.
-
-Every visible panel must already contain useful product evidence in the generated board. Never request or accept blank cells, empty rectangles, placeholders, reserved slots, future-fill boxes, wireframes, or unused panels. Use narrow neutral gutters instead of drawn placeholder borders. The generation prompt must be independently usable as a final single-call prompt in an external image interface. The deterministic compositor may replace populated panels with frozen source crops for higher fidelity and normalize the canvas to exact 4K 16:9; it must never be required merely to remove blanks.
-
-## Run sequence
-
-### 1. Inspect and freeze identity
-
-Inspect every supplied source. Freeze:
-
-- silhouette and proportions;
-- closure/pump/cap geometry and orientation;
-- transparent/opaque material behavior;
-- fill line, liquid color, dip tube, and internal elements;
-- front/back label position, size, color, border, ornament, logo, and major copy;
-- texture, embossing, seam, base, and edge features;
-- unresolved regions and their evidence status.
-
-Do not make OCR completion a global gate. Freeze enough observed facts to identify the SKU, silhouette, closure, material, label architecture, major source-visible copy, and selected detail risks; defer deep microcopy review until after imagegen submission.
-
-### 2. Freeze the reference bundle
-
-Copy the ordered user sources into a run-scoped immutable bundle:
-
-```powershell
-python scripts/freeze_reference_bundle.py `
-  --run-dir <run-dir> `
-  --manifest <run-dir>/reference-manifest.json `
-  --reference front=<front-image> `
-  --reference back=<back-image> `
-  --reference three_quarter=<three-quarter-image>
-```
-
-Use only the aliases that exist. Preserve the order: primary/front, back, three-quarter, then optional detail/artwork sources.
-
-The source ledger may contain more than five images, but imagegen may receive at most five paths. Never pass every frozen source path directly to the worker. Compile the provider-bound pack before prompt freeze:
-
-```powershell
-python scripts/build_generation_reference_pack.py `
-  --reference-manifest <run-dir>/reference-manifest.json `
-  --output-dir <run-dir>/attempts/<attempt-id>/provider-references `
-  --manifest <run-dir>/attempts/<attempt-id>/generation-reference-pack.json
-```
-
-For one to five sources, the pack keeps the ordered frozen paths. For six or more, it keeps the first three complete-product anchors and deterministically combines the remaining evidence into two clean, text-free detail sheets. Use exactly the returned `provider_paths`, in order, for imagegen. Treat any provider count outside one to five as `BLOCKED_REFERENCE_MATERIALIZATION`; do not spawn a worker.
-
-### 3. Freeze the exact generation prompt
-
-Write the complete prompt to `<run-dir>/attempts/<attempt-id>/final_generation_prompt.md` as UTF-8/LF without BOM and with exactly one file-terminal LF. Start from `references/generation_prompt_template.md`, then replace every placeholder with product-specific observed facts and explicit unknowns.
-
-The prompt must state:
-
-- one board only;
-- eight complete product views and the exact frozen count of fully populated detail panels;
-- the name and source-grounded content of every detail panel;
-- exact SKU and identity locks;
-- which views are source anchors and which are bounded completions;
-- copy/graphic/texture/embossing constraints;
-- front, back, side, three-quarter, high-angle, and low-angle views all keep the product upright on its base; high/low describe camera position, never a product lying down;
-- No blank cells, empty rectangles, placeholders, reserved slots, future-fill boxes, wireframes, or unused panels;
-- clean-board bans;
-- no claim of 360 or hidden-surface exactness.
-
-Reject the prompt before generation if it asks any region to remain visually empty, be reserved for later replacement, or omit generated content. Do not publish a staging prompt as a final generation prompt.
-
-Describe direct anchors and deterministic detail sheets exactly as declared by `generation-reference-pack.json`. Write the prompt once. Compute the frozen-file SHA-256 over all bytes and the provider-content SHA-256 over the same bytes minus the single file-terminal LF. The provider prompt string is that complete content without the serialization-only terminal LF. Immediately publish the complete text and both hashes inline. Record `PROMPT_PUBLISHED` before doing any other production work. If the prompt deadline is reached, freeze the best source-grounded version with explicit unknowns and terminate as `BLOCKED_PROMPT_READY_TIMEOUT`; do not continue silently rewriting it.
-
-### 4. Delegate one image call
-
-Only an explicit user invocation of this Skill authorizes a worker.
-
-For each actual generation attempt:
-
-1. Create a fresh 32-character lowercase hexadecimal nonce.
-2. Record the parent thread ID and a spawn-time checkpoint.
-3. Spawn exactly one fresh nonce-suffixed, non-decision image worker with `fork_turns="none"`.
-4. Give it the frozen provider prompt content (the sidecar text without its one file-terminal LF), both prompt hashes, and the one-to-five ordered `provider_paths`. Do not mention or invoke this Skill in the worker task.
-5. Instruct the worker to make one `imagegen` call as its first and only tool action, using `referenced_image_paths`, then terminate with empty text.
-6. Forbid the worker from reading the Skill, reading project/task files, rerunning the release gate, creating files, performing OCR, selecting references, rewriting the prompt, inspecting quality, approving, repairing, publishing, or calling any other agent.
-7. Never use `num_last_images_to_include` for production binding and never submit more than five paths.
-
-The main agent must not call imagegen directly. If the worker has not submitted imagegen within 90 seconds, interrupt it and terminate `BLOCKED_WORKER_SUBMIT_TIMEOUT` with the complete prompt. If submission occurred but no image is returned within 15 minutes, interrupt it and terminate `BLOCKED_IMAGEGEN_TIMEOUT`; do not create a replacement worker while the call state is unknown. Resolve a returned PNG with `scripts/resolve_worker_image.py` so the frozen-file hash, provider-content hash, provider-reference bytes, parent/worker lineage, call ID, and image bytes are bound. The resolver may accept only exact prompt bytes or omission of exactly one file-terminal LF; it must record which mode occurred and reject every body, internal-whitespace, encoding, or additional-newline difference. A completed call rejected only by the legacy terminal-LF rule must be re-resolved and reused after the resolver correction; never spend another image call on that binding-only condition. Other resolver failures mean no generation-success claim.
-
-### 5. Compose source evidence
-
-Only after the resolver-bound raw preview has been shown, inspect the raw board and create a composition plan from `references/composition_plan.template.json`.
-
-Fail the raw layout gate and repair before composition when any declared detail panel is blank, near-blank, framed as an empty placeholder, missing, or unused, or when a high/low-angle product is lying down. Do not let deterministic overlays hide a failed generation layout.
-
-- Add one to three source anchor overlays when a supplied view should remain exact.
-- Add one source-derived detail overlay for every frozen detail panel.
-- Use only frozen run-scoped sources and real crop boxes.
-- Bind every detail overlay by `region_id` to one explicit detail target box. Detail target boxes must be unique, non-overlapping, and filled exactly once.
-- Replace the corresponding already-populated generated panel; do not create a new panel or rely on an empty target.
-- Do not cover a different view, hide a defect, or introduce non-product text.
+### 3. Compile the complete prompt block deterministically
 
 Run:
 
-```powershell
-python scripts/compose_asset_board.py `
-  --run-dir <run-dir> `
-  --plan <run-dir>/attempts/<attempt-id>/composition-plan.json `
-  --receipt <run-dir>/attempts/<attempt-id>/composition-receipt.json
+```text
+python -X utf8 scripts/compile_copy_prompt.py --ledger <run-dir>/copy-ledger.json --output <attempt>/copy-prompt-block.md --receipt <attempt>/copy-prompt-receipt.json
 ```
 
-The output is an exact 3840 × 2160 PNG. The receipt binds the raw board, every source crop, every target box, and the final board.
+The compiler emits every approved, candidate, and unresolved line in ledger order. Approved lines are separated from audit-only candidates. It also binds the ledger and block hashes and proves all lines were emitted in order.
 
-### 6. Inspect and validate
+Render the final prompt with `scripts/render_generation_prompt.py`, using `references/generation_prompt_values.template.json` for product-specific substitutions. The renderer embeds `copy-prompt-block.md` verbatim at `{{copy_contract_block}}`, rejects missing values or surviving placeholders, and writes a prompt receipt. Do not summarize the block as “preserve all text.” The final prompt must contain the actual strings, region mapping, format, and reading order.
 
-Main-agent visual inspection is mandatory. Bind the accepted attempt in an asset manifest based on `references/asset_board_manifest.template.json`, then run:
+### 4. Respect the pixel-authority boundary
 
-```powershell
-python scripts/validate_asset_board_run.py `
-  --manifest <run-dir>/asset-board-manifest.json
+Listing all text in a prompt reduces omission and ordering errors; it does not make generated pixels exact. Therefore:
+
+- critical readable copy must be preserved with source crops or approved artwork reprojection;
+- Use source crops or approved artwork for critical readable copy and codes. Do not ask the image model to invent unreadable characters;
+- source-derived front/back anchors may be used when they blend into the continuous background and keep the product complete;
+- generated full views may keep unresolved dense microcopy visually quiet, but must never replace it with invented glyphs;
+- any visible pseudo-Chinese, pseudo-Latin, fake digits, altered punctuation, fake barcode value, or fake QR module is a board failure;
+- `copy_authority: exact_copy_evidence` is legal only when every claimed line is approved, reviewed, and source/artwork-backed in the final pixels;
+- otherwise publish `copy_authority: video_reference` and name unresolved regions.
+
+## Fixed board topology
+
+Use these seven complete, uncropped product views in this semantic order:
+
+1. front full product;
+2. back full product;
+3. one evidence-supported side full product;
+4. side 45-degree high-angle full product;
+5. side 45-degree low-angle full product;
+6. top-down full product;
+7. low-up full product.
+
+High, low, top-down, and low-up describe camera position. Keep the product upright on its base; never turn a requested angle into a lying-down product.
+
+Then add:
+
+8. closure/top close-up;
+9. highest-risk local identity close-up, normally front/back label copy, embossing, texture, code block, or base;
+10. optional second local identity close-up only when it resolves a distinct, source-evidenced risk.
+
+The default is nine regions. Do not add both left and right sides, redundant three-quarter views, a lower strip of many thumbnails, or filler regions.
+
+## Borderless visual grammar
+
+Treat “region” as semantic content, not a drawn box.
+
+- use one seamless white or very light gray studio background across the whole canvas;
+- use open spacing, scale, and grouping to separate views;
+- allow asymmetrical/freeform placement when it improves view size and text legibility;
+- make front, back, and copy-risk regions larger than low-risk views;
+- no white rectangular frames, card containers, grid lines, panel outlines, divider rules, evidence strips, or bordered crops;
+- no heading, angle labels, arrows, numbers, captions, legends, UI, QA badges, or non-product text;
+- no blank cells, empty rectangles, placeholders, reserved slots, future-fill boxes, wireframes, or unused panels;
+- no overlap, crop, duplicate SKU, extra closure, hands, props, splashes, or scenery.
+
+The image model must generate every declared region as populated content. The compositor may improve copy fidelity but cannot hide a blank, framed, or broken raw layout.
+
+## Provider reference materialization
+
+The frozen source ledger may contain up to eight images, but imagegen may receive at most five paths. The worker must never submit more than five paths. Run `scripts/build_generation_reference_pack.py` before prompt freeze.
+
+- one to five sources remain ordered direct references;
+- six to eight sources become three complete-product anchors plus at most two deterministic detail sheets;
+- preserve order: front/primary, back, three-quarter/side, then detail/artwork;
+- if the provider pack contains zero or more than five paths, stop `BLOCKED_REFERENCE_MATERIALIZATION`.
+
+## Freeze and publish the prompt
+
+Write product facts to one run-scoped values JSON and render the prompt deterministically:
+
+```text
+python -X utf8 scripts/render_generation_prompt.py --template references/generation_prompt_template.md --values <attempt>/generation-prompt-values.json --copy-block <attempt>/copy-prompt-block.md --output <attempt>/final_generation_prompt.md --receipt <attempt>/generation-prompt-receipt.json
 ```
 
-Validate:
+The output is UTF-8/LF without BOM with exactly one file-terminal LF.
 
-- exactly eight complete and distinct product views;
-- the exact frozen count of four to six populated detail panels;
-- every declared detail panel maps one-to-one to a unique, non-overlapping source-derived overlay and contains non-background pixels;
-- stable SKU, silhouette, proportions, closure, liquid, material, label architecture, and feature placement;
-- front/back/three-quarter anchors match their sources;
-- critical copy/graphics are present in source-derived evidence windows;
-- no invented readable copy is presented as exact;
-- no non-product text pollution;
-- `all_cells_populated: pass` from both main-agent inspection and deterministic detail evidence;
-- exact 3840 × 2160 final canvas;
-- frozen prompt/reference/worker/composition/final-image integrity.
+The prompt must include:
 
-### 7. Repair narrowly
+- one 3840 × 2160 horizontal board;
+- the seven named complete views and exact two/three close-up count;
+- nine regions by default, ten maximum;
+- one continuous background and explicit no-frame/no-grid bans;
+- observed identity facts and explicit unknowns;
+- the full deterministic copy contract block verbatim;
+- source-backed copy rules and visible-gibberish rejection;
+- No blank cells, empty rectangles, placeholders, reserved slots, future-fill boxes, wireframes, or unused panels;
+- independently usable as a final single-call prompt.
 
-Allow at most two repair attempts after the initial attempt. Each repair uses one new worker and one image call.
+Compute the file hash and provider-content hash, publish the complete prompt text inline, and record `PROMPT_PUBLISHED`. A path, summary, or hash without full prompt text is not delivery.
 
-Start a repair only when enough of the 20-minute total automatic budget remains. A parameter error before an external image event permits one deterministic correction within 60 seconds. After a completed image event, first resolve or narrowly re-resolve that same event; a binding-only single-terminal-LF difference forbids regeneration. Otherwise terminate with the complete prompt and explicit status. Never spend an unbounded interval rebuilding the ledger, prompt, or run directory.
+## Delegate exactly one image call
 
-Repair only the failed class in this order:
+Only an explicit user invocation of this Skill authorizes a worker. Implicit invocation must stop before generation. The main agent must not call imagegen directly.
 
-1. blank, empty, placeholder, unused, or broken board cells and non-product text pollution;
-2. wrong SKU, silhouette, closure, label placement, liquid, or major graphic;
-3. missing/duplicate/cropped full-product view;
-4. source-anchor or detail-window mismatch;
-5. material, embossing, or texture drift;
-6. minor polish.
+1. Create a fresh 32-character lowercase hexadecimal nonce and spawn exactly one fresh nonce-suffixed non-decision worker with `fork_turns="none"`.
+2. Give it the frozen provider prompt content, both prompt hashes, the ordered provider paths, and a run nonce.
+3. Its first and only tool action is one imagegen call.
+4. Forbid it from reading this Skill, performing OCR, changing text, selecting references, running gates, inspecting, approving, repairing, or publishing.
+5. Resolve the returned PNG with `scripts/resolve_worker_image.py` and bind prompt, reference bytes, lineage, call ID, and image bytes.
 
-Do not respond to copy uncertainty by requesting a rotation capture set.
+Only exact prompt bytes or omission of exactly one file-terminal LF are acceptable. Re-resolve that same completed call for a terminal-LF-only mismatch; never spend another image call on that binding-only condition.
 
-### 8. Publish one accepted board
+## Raw-board gate
 
-Select exactly one accepted attempt. Return the final board image and a concise statement of:
+Before deterministic overlays, inspect the actual raw board and reject it if:
 
-- `assistant_qa_status: passed | conditional`;
-- `copy_authority: video_reference | exact_copy_evidence`;
-- any unresolved regions that matter to downstream use.
+- it has fewer/more than seven complete views or fewer than two/more than three close-ups;
+- total regions are below nine or above ten;
+- any full product is cropped, duplicated, merged, overlapping, or lying down;
+- any declared region is blank, placeholder-like, or unused;
+- any white frame, card border, grid line, divider, evidence strip, or boxed panel is visible;
+- product identity, closure, liquid level, label architecture, graphics, or embossing drift;
+- any invented/corrupted readable copy is visible.
 
-Persist the exact generation prompt and its SHA-256 next to the accepted board. Keep all operational metadata outside the image.
+Do not let later source overlays turn a failed raw layout into a pass.
 
-Repeat the complete prompt inline in the final result. Validate `prompt-dispatch-trace.json` before claiming acceptance. `ACCEPTED` requires exactly one completed image event for the accepted attempt, a resolver-bound PNG, a shown raw preview, passed board validation, and no premature success statement.
+## Deterministic composition
 
-## Blocking conditions
+Build `composition-plan.json` from `references/composition_plan.template.json` and run `scripts/compose_asset_board.py`.
 
-Block only when:
+- use schema `packaging_board_composition_plan.v2`;
+- require `layout_style: borderless_continuous_background` and `drawn_borders: false`;
+- map every detail region one-to-one to a unique non-overlapping target;
+- use `fit: cover` for detail overlays so contain-padding cannot form white cards;
+- require `seamless_background_match: true` and `border_px: 0` on every overlay;
+- use source-backed front/back anchors only when the complete product remains uncropped and the background blends seamlessly;
+- never draw a stroke, border, label, or card around a region.
 
-- no supplied image identifies the product at all;
-- reference files cannot be materialized or hash-bound;
-- an explicitly requested exact-copy claim cannot be supported;
-- the worker provenance cannot be bound after applying the single permitted file-terminal-LF transport rule;
-- the final board cannot pass the eight-view, fully-populated four-to-six-detail, clean-image, or identity-consistency checks after three total attempts.
+The compositor outputs an exact 3840 × 2160 PNG and a v2 receipt binding raw board, sources, crops, targets, and final image.
 
-Use explicit runtime terminal states for bounded failures: `BLOCKED_RELEASE_GATE`, `BLOCKED_REFERENCE_MATERIALIZATION`, `BLOCKED_PROMPT_READY_TIMEOUT`, `BLOCKED_WORKER_START_TIMEOUT`, `BLOCKED_WORKER_SUBMIT_TIMEOUT`, `BLOCKED_IMAGEGEN_TIMEOUT`, `BLOCKED_VALIDATION`, or `REJECTED_AFTER_MAX_ATTEMPTS`. Every state after prompt compilation still delivers the complete prompt; none authorizes a request for more angles.
+## Post-generation copy QA
 
-Missing hidden copy, unavailable OCR, or sparse angles alone are not blocking conditions for a normal `video_reference` board.
+Create `copy-qa.json` from `references/copy_qa.template.json` after inspecting the final board.
 
-An optional later Canon bridge may consume the already accepted board without creating more views. It may authorize `label_copy` only when the board manifest already passed `copy_authority: exact_copy_evidence`; it is never part of the default board deliverable.
+For every board region:
 
-## Optional AI-Video Project Canon Export
+- compare visible strings against ledger line IDs in physical reading order;
+- mark only `exact_match`, `source_reprojected`, or `no_readable_copy_present`;
+- list all covered copy-region IDs and require zero mismatch line IDs;
+- require `source_backed_pixels: true` for source-reprojected regions;
+- set `board_wide_invented_or_corrupted_visible_copy: false` only after inspecting the entire board, including full views;
+- reject rather than excuse any readable gibberish.
 
-This appendix is downstream compatibility for the already accepted board, not another board, angle set, or default deliverable. Run `scripts/export_ai_video_canon.py` only when an AI-video project explicitly needs a fixed-owner Canon record.
+Run:
 
-- Runtime dependency: this package's `requirements.txt` pins `Pillow` for deterministic board validation.
-- `authority_stage: terminal_packaging_canon`
-- `terminal_route_decision: not_applicable`
-- `geometry_layout_only` authorizes `[product_geometry]` from an accepted board.
-- `geometry_layout_exact_copy_verified` authorizes `[product_geometry, label_copy]` only when the bound board manifest has `copy_authority: exact_copy_evidence`, reviewed nonblocking OCR, zero unresolved claimed regions, passed label fidelity, and a live package-validator pass.
-- The export bridge never generates, repairs, expands, or upgrades the board by inference.
+```text
+python -X utf8 scripts/validate_copy_contract.py --ledger <run-dir>/copy-ledger.json --block <attempt>/copy-prompt-block.md --receipt <attempt>/copy-prompt-receipt.json --prompt <attempt>/final_generation_prompt.md --qa <attempt>/copy-qa.json --copy-authority video_reference
+```
 
-## Final rule
+This proves the prompt contains the complete ledger block and the accepted board has source-backed coverage for every approved copy region.
 
-The Skill succeeds when one board is useful and honest for downstream video generation and the user never waits through a hidden orchestration failure without a complete reusable prompt and truthful state. It does not succeed by manufacturing more views, more files, repeated gates, silent repair loops, or more authority than the evidence supports.
+## Final board validation
+
+Fill `references/asset_board_manifest.template.json`, then run:
+
+```text
+python -X utf8 scripts/validate_asset_board_run.py --manifest <run-dir>/asset-board-manifest.json
+```
+
+Acceptance requires:
+
+- exactly seven complete views;
+- exactly two or three source-derived close-ups;
+- exactly nine or ten total regions;
+- exact 3840 × 2160 PNG;
+- `borderless_continuous_background: pass` and `no_visible_frames: pass` from main-agent inspection;
+- complete prompt copy coverage and passed pixel copy QA;
+- no invented/corrupted visible copy;
+- no non-product annotations or blank regions;
+- frozen prompt/reference/worker/composition/final-image hashes all valid.
+
+## Repair limits
+
+Allow at most two repair attempts after the initial attempt. Each repair must target one observed failure class: topology/frame, geometry/identity, or copy fidelity. Reuse the frozen ledger and copy block unless source evidence changes. Never make random prompt rewrites or request more angles as a repair.
+
+If generated text is wrong:
+
+1. verify the prompt still embeds the deterministic block;
+2. prefer deterministic source/artwork reprojection for readable copy;
+3. if model rendering is still required, issue one narrow repair referencing exact line IDs and regions;
+4. reject after the third total attempt rather than accepting gibberish.
+
+## Deliverables and terminal states
+
+Return:
+
+- final board PNG and SHA-256;
+- complete frozen generation prompt inline and its file/content hashes;
+- copy ledger, compiled copy block, compilation receipt, and copy QA paths/hashes;
+- ordered provider references;
+- copy authority and unresolved regions;
+- asset-board manifest and validation result;
+- terminal status.
+
+Valid bounded failures are `BLOCKED_RELEASE_GATE`, `BLOCKED_REFERENCE_MATERIALIZATION`, `BLOCKED_PROMPT_READY_TIMEOUT`, `BLOCKED_WORKER_START_TIMEOUT`, `BLOCKED_WORKER_SUBMIT_TIMEOUT`, `BLOCKED_IMAGEGEN_TIMEOUT`, `BLOCKED_VALIDATION`, and `REJECTED_AFTER_MAX_ATTEMPTS`. Every state after prompt compilation still returns the complete prompt. Sparse angles, OCR disagreement, or hidden copy alone do not block a normal `video_reference` board.
+
+On every terminal success or failure after compilation, repeat the complete frozen prompt inline with its hashes and truthful terminal status.
+
+The Skill succeeds only when the board is compact, borderless, copy-auditable, and honest enough for downstream video generation. It does not succeed by filling the canvas with more views, by listing text without validating pixels, or by accepting visible gibberish.

@@ -2,77 +2,64 @@
 
 Executable acceptance suite: `python -B scripts/test_contract.py`.
 
-## Sparse-reference behavior
+## Sparse references and copy truth
 
 1. Front, back, and three-quarter photos of a transparent pump bottle with dense bilingual labels and embossing.
-   - Pass: one 16:9 board, eight complete views, four to six populated source-derived details, no request for more angles.
-2. One complete front photo with readable primary label.
-   - Pass conditionally: hidden surfaces are `bounded_inferred` or `unknown`; no exact hidden-copy claim.
-3. OCR is unavailable or two OCR candidates disagree.
-   - Pass the normal board path; lower only the affected copy authority.
-4. User explicitly requests exact print-copy authority without readable sources or artwork.
-   - Block the exact-copy claim, not the normal video-reference board.
+   - Pass: no request for more angles; a source-cited ordered copy ledger; a borderless nine-region board.
+2. OCR returns plausible but conflicting Chinese/Latin strings.
+   - Pass: every candidate remains in the ledger, but only source-reconciled lines become `approved_exact`.
+3. An `ocr_only` line is marked `approved_exact`.
+   - Fail `blocked_copy_ledger_unverified_exact`.
+4. The prompt says “preserve all text” but omits the compiled copy block.
+   - Fail `blocked_copy_prompt_coverage`.
+5. User requests exact copy without readable source or artwork.
+   - Block `exact_copy_evidence`; the normal `video_reference` path may continue with explicit unknowns.
 
-## Board contract
+## Board topology and visual grammar
 
-1. Exactly eight complete views and one frozen count of four to six populated detail panels.
-   - Pass when all views are distinct, every panel contains useful product evidence, and the final image is exactly 3840 × 2160.
-2. A title, angle label, arrow, number, legend, QA badge, or UI box is visible.
-   - Fail `non_product_text_pollution`.
-3. One product view is cropped, duplicated, missing, or belongs to another SKU.
+1. Seven complete views plus closure/top and one local detail.
+   - Pass with exactly nine total regions.
+2. A distinct third detail is needed for a separate copy/embossing/code risk.
+   - Pass with ten total regions; eleven fails.
+3. Both sides, multiple redundant three-quarters, or a six-panel lower strip are added.
+   - Fail the fixed seven-view/two-to-three-detail contract.
+4. Any full product is cropped, lying down, duplicated, merged, or overlapped.
    - Fail visual inspection.
-4. Generated pseudo-copy is presented as exact.
-   - Fail label fidelity or exact-copy authority.
-5. Critical label/graphic/material details come from frozen source crops and a deterministic receipt.
-   - Pass source-evidence binding.
-6. Any blank cell, empty rectangle, reserved slot, placeholder frame, future-fill box, or unused panel is visible.
-   - Fail `all_cells_populated` and repair the layout before publication.
-7. Two detail overlays target the same cell, one declared cell is unfilled, or a detail crop is near-background-only.
-   - Fail deterministic composition mapping or non-background validation.
+5. A white rectangle, grid divider, card outline, evidence strip, panel frame, or visible border appears.
+   - Fail `no_visible_frames`; a compositor plan with `border_px > 0` also fails deterministically.
+6. A declared region is blank, near-blank, reserved, or unused.
+   - Fail raw-board inspection or composition mapping.
 
-## Prompt handoff behavior
+## Copy pixel QA
 
-1. The frozen generation prompt is copied directly into an external image interface with the ordered references.
-   - Pass when that single call is instructed to produce a fully populated board without relying on later composition.
-2. A prompt asks the model to reserve, keep empty, or later replace any detail region.
-   - Fail `blocked_staging_prompt_leakage`; never publish it as a final generation prompt.
-3. High-angle or low-angle support views are requested.
-   - Keep the product upright on its base and change camera position; a lying-down product fails the view contract.
-4. The frozen prompt exists on disk but has not been shown to the user.
-   - Fail `blocked_prompt_not_inline`; a path, hash, summary, or progress sentence is not prompt delivery.
-5. Prompt publication occurs after worker spawn or later than 180 seconds from invocation.
-   - Fail the dispatch trace and terminate with the complete prompt rather than continuing a silent rewrite.
+1. Approved front-label lines are present in a source-reprojected detail and match ledger order.
+   - Pass copy coverage.
+2. A full view contains readable pseudo-Chinese or changed English even though the detail crop is correct.
+   - Fail `board_wide_invented_or_corrupted_visible_copy`; the correct close-up does not excuse board-wide gibberish.
+3. A source-reprojected region lacks `source_backed_pixels: true`.
+   - Fail copy-QA binding.
+4. An approved copy region has no accepted exact/source-reprojected board region.
+   - Fail `blocked_copy_qa_coverage`.
+5. All claimed exact lines are reviewed and source/artwork-backed with no candidates or unknowns.
+   - `exact_copy_evidence` may pass.
 
-## Worker and repair behavior
+## Prompt and worker behavior
 
-1. Explicit invocation freezes one prompt and ordered source bundle, then one fresh worker makes exactly one image call.
-   - Pass when the resolver binds prompt, references, lineage, call ID, and PNG.
-2. The main agent calls imagegen directly, one worker calls twice, or a worker makes decisions.
-   - Fail the worker contract.
-3. Initial attempt plus two repairs all fail.
-   - Stop after three total image calls and report the failed checks.
-4. Six or seven sources are supplied.
-   - Preserve the full frozen ledger, compile exactly one to five provider references, and prove the raw six/seven paths cannot reach imagegen. A seven-source text-heavy package normally becomes three complete anchors plus two deterministic detail sheets.
-5. A worker inherits conversation context, rereads the Skill, reruns the release gate, or calls any tool before imagegen.
-   - Fail the thin-worker contract. Spawn with `fork_turns="none"`; imagegen is the first and only tool call.
-6. One imagegen wrapper returns a parameter error.
-   - Do not claim an image exists. Apply at most one deterministic correction inside 60 seconds, or terminate with the complete prompt and explicit status.
-7. No image is returned 15 minutes after submission, or the prior call state is unknown.
-   - Interrupt the worker, do not start an orphan retry, and return `BLOCKED_IMAGEGEN_TIMEOUT` plus the complete prompt.
-8. The raw PNG exists but composition or QA has not run.
-   - Show it within 60 seconds as `unaccepted raw preview`; never label it accepted.
-9. A success sentence appears before one completed image event and resolver-bound PNG.
-   - Fail `blocked_premature_success_claim`.
-10. The completed image event prompt is identical to the frozen prompt except that the sidecar's one file-terminal LF is absent from the tool string.
-   - Pass with `prompt_transport_mode: single_terminal_lf_omitted`, preserve both raw hashes, bind the same PNG, and do not regenerate.
-11. The tool prompt changes body text, internal spaces, encoding, CR/LF, or more than one terminal newline.
-   - Fail `blocked_worker_prompt_mismatch`; the file-terminal-LF rule cannot normalize any of these changes.
-12. A legacy resolver rejected an otherwise completed call only because of the single file-terminal LF.
-   - Re-run the corrected resolver against that exact worker/call and reuse the saved PNG. Starting another image worker is a contract failure.
+1. The frozen prompt includes the seven named views, exact detail count, no-frame bans, observed product facts, explicit unknowns, and compiled copy block.
+   - Pass as an independently usable external generation prompt.
+2. Prompt publication occurs after worker spawn or is replaced by a path/hash summary.
+   - Fail dispatch trace.
+3. The worker inherits context, reads the Skill, calls another tool, rewrites the prompt, or makes more than one image call.
+   - Fail thin-worker contract.
+4. A completed call differs only by omission of the file-terminal LF.
+   - Re-resolve the same PNG; do not regenerate.
+5. No image arrives within 15 minutes.
+   - Stop `BLOCKED_IMAGEGEN_TIMEOUT`, do not create an orphan retry, and return the complete prompt.
 
 ## Forbidden legacy behavior
 
-- Do not derive R8/R12/R16/R24 requirements.
-- Do not request 16 source angles because the bottle is transparent, asymmetric, liquid-filled, or pump-operated.
-- Do not create rotation/elevation rings, bridge masters, motion envelopes, per-copy-region masters, or require a Canon export as part of board creation.
+- Do not derive R8/R12/R16/R24 capture requirements.
+- Do not require 16 source angles because packaging is transparent, asymmetric, liquid-filled, or text-heavy.
+- Do not treat prompt enumeration alone as exact-copy proof.
+- Do not accept visible gibberish because a close-up happens to be correct.
 - Do not split this workflow into additional Skills.

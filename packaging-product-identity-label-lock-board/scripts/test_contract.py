@@ -25,6 +25,9 @@ DISPATCH_VALIDATOR = SCRIPT_DIR / "validate_prompt_dispatch_trace.py"
 COMPOSER = SCRIPT_DIR / "compose_asset_board.py"
 VALIDATOR = SCRIPT_DIR / "validate_asset_board_run.py"
 RESOLVER = SCRIPT_DIR / "resolve_worker_image.py"
+COPY_COMPILER = SCRIPT_DIR / "compile_copy_prompt.py"
+COPY_VALIDATOR = SCRIPT_DIR / "validate_copy_contract.py"
+PROMPT_RENDERER = SCRIPT_DIR / "render_generation_prompt.py"
 
 
 def sha(path: Path) -> str:
@@ -121,7 +124,7 @@ def dispatch_trace_fixture(base: Path, terminal_status: str = "ACCEPTED") -> dic
     references = generation_reference_fixture(base, 7)
     prompt = references["run_dir"] / "attempts" / "01" / "final_generation_prompt.md"
     prompt.write_text(
-        "Create one fully populated eight-view packaging board from exactly five ordered references.\n",
+        "Create one fully populated nine-region borderless packaging board from exactly five ordered references.\n",
         encoding="utf-8",
         newline="\n",
     )
@@ -271,12 +274,111 @@ def valid_fixture(base: Path) -> dict[str, Any]:
     references = json.loads(reference_manifest.read_text(encoding="utf-8"))
     frozen_paths = {entry["alias"]: Path(entry["frozen_path"]) for entry in references["ordered_references"]}
 
+    copy_ledger = run_dir / "copy-ledger.json"
+    write_json(
+        copy_ledger,
+        {
+            "schema_version": "packaging_copy_ledger.v1",
+            "product_id": "fixture-product",
+            "ocr_status": "candidates_only",
+            "regions": [
+                {
+                    "region_id": "front_label",
+                    "surface": "front",
+                    "source_alias": "front",
+                    "source_sha256": sha(frozen_paths["front"]),
+                    "layout": {
+                        "orientation": "upright",
+                        "reading_order": "top-to-bottom",
+                        "column_order": "single-column",
+                        "alignment": "center",
+                    },
+                    "lines": [
+                        {
+                            "line_id": "front_label.L001",
+                            "order": 1,
+                            "text": "GAAR",
+                            "language": "en",
+                            "status": "approved_exact",
+                            "evidence": "source_visual",
+                        },
+                        {
+                            "line_id": "front_label.L002",
+                            "order": 2,
+                            "text": "unreadable supporting copy",
+                            "language": "und",
+                            "status": "unresolved",
+                            "evidence": "not_readable",
+                        },
+                    ],
+                }
+            ],
+        },
+    )
+    copy_block = attempt / "copy-prompt-block.md"
+    copy_receipt = attempt / "copy-prompt-receipt.json"
+    compiled = run(
+        [
+            sys.executable,
+            "-X",
+            "utf8",
+            str(COPY_COMPILER),
+            "--ledger",
+            str(copy_ledger),
+            "--output",
+            str(copy_block),
+            "--receipt",
+            str(copy_receipt),
+        ]
+    )
+    if compiled.returncode != 0:
+        raise AssertionError(compiled.stderr)
+
     prompt = attempt / "final_generation_prompt.md"
-    prompt.write_text(
-        "Create one clean eight-view packaging board with exactly four fully populated detail panels. "
-        "No blank cells, empty rectangles, placeholders, reserved slots, or unused panels.\n",
-        encoding="utf-8",
-        newline="\n",
+    prompt_values = attempt / "generation-prompt-values.json"
+    values = json.loads((PACKAGE_DIR / "references" / "generation_prompt_values.template.json").read_text(encoding="utf-8"))
+    write_json(prompt_values, values)
+    prompt_receipt = attempt / "generation-prompt-receipt.json"
+    rendered = run(
+        [
+            sys.executable,
+            "-X",
+            "utf8",
+            str(PROMPT_RENDERER),
+            "--template",
+            str(PACKAGE_DIR / "references" / "generation_prompt_template.md"),
+            "--values",
+            str(prompt_values),
+            "--copy-block",
+            str(copy_block),
+            "--output",
+            str(prompt),
+            "--receipt",
+            str(prompt_receipt),
+        ]
+    )
+    if rendered.returncode != 0:
+        raise AssertionError(rendered.stderr)
+    copy_qa = attempt / "copy-qa.json"
+    write_json(
+        copy_qa,
+        {
+            "schema_version": "packaging_copy_qa.v1",
+            "copy_ledger_sha256": sha(copy_ledger),
+            "copy_prompt_block_sha256": sha(copy_block),
+            "overall_status": "passed",
+            "board_wide_invented_or_corrupted_visible_copy": False,
+            "board_regions": [
+                {
+                    "board_region_id": "local_identity_detail",
+                    "visual_status": "source_reprojected",
+                    "covered_copy_region_ids": ["front_label"],
+                    "order_match": "pass",
+                    "source_backed_pixels": True,
+                    "mismatch_line_ids": [],
+                }
+            ],
+        },
     )
     raw = attempt / "raw-board.png"
     make_image(raw, (1600, 900), (246, 246, 246))
@@ -306,36 +408,41 @@ def valid_fixture(base: Path) -> dict[str, Any]:
             "crop_box": [0, 0, 800, 1200],
             "target_box": [0, 0, 720, 1500],
             "fit": "contain",
-            "background_rgb": [248, 248, 248],
+            "seamless_background_match": True,
+            "border_px": 0,
         }
     )
-    detail_aliases = ["front", "back", "three_quarter", "front"]
+    detail_aliases = ["three_quarter", "front"]
+    detail_ids = ["closure_top", "local_identity_detail"]
     for index, alias in enumerate(detail_aliases):
         overlays.append(
             {
-                "region_id": f"detail_{index + 1}",
+                "region_id": detail_ids[index],
                 "role": "detail",
                 "source_path": str(frozen_paths[alias]),
                 "source_sha256": sha(frozen_paths[alias]),
                 "crop_box": [100, 300, 700, 900],
-                "target_box": [index * 960, 1680, (index + 1) * 960, 2160],
-                "fit": "contain",
-                "background_rgb": [248, 248, 248],
+                "target_box": [index * 1920, 1680, (index + 1) * 1920, 2160],
+                "fit": "cover",
+                "seamless_background_match": True,
+                "border_px": 0,
             }
         )
     final_board = attempt / "final-board.png"
     write_json(
         plan,
         {
-            "schema_version": "packaging_board_composition_plan.v1",
+            "schema_version": "packaging_board_composition_plan.v2",
             "raw_board_path": str(raw),
             "raw_board_sha256": sha(raw),
             "output_board_path": str(final_board),
             "canvas_size": [3840, 2160],
             "base_fit": "cover",
+            "layout_style": "borderless_continuous_background",
+            "drawn_borders": False,
             "detail_layout": [
-                {"region_id": f"detail_{index + 1}", "target_box": [index * 960, 1680, (index + 1) * 960, 2160]}
-                for index in range(4)
+                {"region_id": detail_ids[index], "target_box": [index * 1920, 1680, (index + 1) * 1920, 2160]}
+                for index in range(2)
             ],
             "overlays": overlays,
         },
@@ -361,16 +468,15 @@ def valid_fixture(base: Path) -> dict[str, Any]:
     views = [
         {"view_id": "front", "evidence_status": "source_observed"},
         {"view_id": "back", "evidence_status": "source_observed"},
-        {"view_id": "left_side", "evidence_status": "bounded_inferred"},
-        {"view_id": "right_side", "evidence_status": "bounded_inferred"},
-        {"view_id": "front_three_quarter", "evidence_status": "source_observed"},
-        {"view_id": "rear_three_quarter", "evidence_status": "bounded_inferred"},
-        {"view_id": "high_angle", "evidence_status": "bounded_inferred"},
-        {"view_id": "low_angle", "evidence_status": "bounded_inferred"},
+        {"view_id": "side", "evidence_status": "source_observed"},
+        {"view_id": "high_side_45", "evidence_status": "bounded_inferred"},
+        {"view_id": "low_side_45", "evidence_status": "bounded_inferred"},
+        {"view_id": "top_down", "evidence_status": "bounded_inferred"},
+        {"view_id": "low_up", "evidence_status": "bounded_inferred"},
     ]
     details = [
         {
-            "region_id": f"detail_{index + 1}",
+            "region_id": detail_ids[index],
             "evidence_status": "deterministic_reprojection",
             "source_alias": alias,
         }
@@ -378,10 +484,18 @@ def valid_fixture(base: Path) -> dict[str, Any]:
     ]
     manifest = run_dir / "asset-board-manifest.json"
     manifest_value = {
-        "schema_version": "packaging_video_asset_board.v1",
+        "schema_version": "packaging_video_asset_board.v2",
         "run_status": "COMPLETE",
         "input_profile": "one_to_three_reference",
         "reference_manifest_path": str(reference_manifest),
+        "copy_ledger_path": str(copy_ledger),
+        "copy_ledger_sha256": sha(copy_ledger),
+        "copy_prompt_block_path": str(copy_block),
+        "copy_prompt_block_sha256": sha(copy_block),
+        "copy_prompt_receipt_path": str(copy_receipt),
+        "copy_prompt_receipt_sha256": sha(copy_receipt),
+        "copy_qa_path": str(copy_qa),
+        "copy_qa_sha256": sha(copy_qa),
         "generation_prompt_path": str(prompt),
         "generation_prompt_sha256": sha(prompt),
         "worker_result_path": str(worker),
@@ -395,17 +509,24 @@ def valid_fixture(base: Path) -> dict[str, Any]:
         "ocr": {"status": "candidates_only", "blocking": False},
         "copy_authority": "video_reference",
         "unresolved_regions": ["hidden_side_microcopy"],
-        "view_cells": views,
-        "detail_cells": details,
+        "layout_style": "borderless_continuous_background",
+        "region_count": 9,
+        "view_regions": views,
+        "detail_regions": details,
         "qa": {
             "inspected": True,
-            "eight_complete_views": "pass",
-            "four_to_six_details": "pass",
+            "seven_complete_views": "pass",
+            "two_to_three_details": "pass",
+            "nine_to_ten_total_regions": "pass",
+            "borderless_continuous_background": "pass",
+            "no_visible_frames": "pass",
             "identity_consistency": "pass",
             "label_fidelity": "pass",
+            "copy_prompt_coverage": "pass",
+            "copy_pixel_qa": "pass",
             "source_anchor_match": "pass",
             "non_product_text_pollution": "pass",
-            "all_cells_populated": "pass",
+            "all_regions_populated": "pass",
             "assistant_qa_status": "conditional",
         },
     }
@@ -419,6 +540,12 @@ def valid_fixture(base: Path) -> dict[str, Any]:
         "worker": worker,
         "prompt": prompt,
         "reference_manifest": reference_manifest,
+        "copy_ledger": copy_ledger,
+        "copy_block": copy_block,
+        "copy_receipt": copy_receipt,
+        "copy_qa": copy_qa,
+        "prompt_values": prompt_values,
+        "prompt_receipt": prompt_receipt,
     }
 
 
@@ -427,8 +554,12 @@ class ContractTests(unittest.TestCase):
         skill = (PACKAGE_DIR / "SKILL.md").read_text(encoding="utf-8")
         for token in [
             "exactly one clean horizontal 16:9 board",
-            "exactly eight complete product views",
-            "four to six fully populated evidence detail panels",
+            "exactly seven complete product views",
+            "two source-grounded detail regions by default",
+            "nine regions by default and never more than ten",
+            "borderless_continuous_background",
+            "compile_copy_prompt.py",
+            "validate_copy_contract.py",
             "OCR remains nonblocking",
             "Do not make OCR completion a global gate",
             "never request a fixed 8/12/16/24-angle capture set",
@@ -448,11 +579,14 @@ class ContractTests(unittest.TestCase):
     def test_prompt_template_is_standalone_and_population_safe(self) -> None:
         prompt = (PACKAGE_DIR / "references" / "generation_prompt_template.md").read_text(encoding="utf-8")
         for required in [
-            "exactly {{detail_count}} fully populated",
-            "{{detail_panel_list}}",
+            "exactly {{detail_count}} source-grounded close-ups",
+            "{{detail_region_list}}",
+            "{{copy_contract_block}}",
+            "No white frames, grid lines, panel outlines",
+            "ten is the absolute maximum",
             "No blank cells, empty rectangles, placeholders, reserved slots",
             "independently usable",
-            "Keep every bottle upright on its base",
+            "Keep every product complete and upright on its base",
             "never submit more than five paths",
             "{{provider_reference_roles}}",
         ]:
@@ -651,8 +785,9 @@ class ContractTests(unittest.TestCase):
             self.assertEqual(result.returncode, 0, result.stderr)
             payload = json.loads(result.stdout)
             self.assertEqual(payload["reference_count"], 3)
-            self.assertEqual(payload["view_count"], 8)
-            self.assertEqual(payload["detail_count"], 4)
+            self.assertEqual(payload["view_count"], 7)
+            self.assertEqual(payload["detail_count"], 2)
+            self.assertEqual(payload["region_count"], 9)
             self.assertEqual(payload["copy_authority"], "video_reference")
 
     def test_provider_pack_worker_reference_binding_validates(self) -> None:
@@ -718,7 +853,7 @@ class ContractTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as tmp:
             fixture = valid_fixture(Path(tmp))
             value = copy.deepcopy(fixture["value"])
-            value["view_cells"].pop()
+            value["view_regions"].pop()
             write_json(fixture["manifest"], value)
             result = run([sys.executable, "-X", "utf8", str(VALIDATOR), "--manifest", str(fixture["manifest"])])
             self.assertEqual(result.returncode, 2)
@@ -743,6 +878,109 @@ class ContractTests(unittest.TestCase):
             result = run([sys.executable, "-X", "utf8", str(VALIDATOR), "--manifest", str(fixture["manifest"])])
             self.assertEqual(result.returncode, 2)
             self.assertEqual(error_code(result), "blocked_exact_copy_authority")
+
+    def test_copy_compiler_emits_every_line_in_declared_order(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            fixture = valid_fixture(Path(tmp))
+            block = fixture["copy_block"].read_text(encoding="utf-8")
+            first = block.index('[front_label.L001] "GAAR"')
+            second = block.index('[front_label.L002] status=unresolved candidate="unreadable supporting copy"')
+            self.assertLess(first, second)
+            receipt = json.loads(fixture["copy_receipt"].read_text(encoding="utf-8"))
+            self.assertTrue(receipt["all_lines_emitted"])
+            self.assertTrue(receipt["order_preserved"])
+            self.assertEqual(receipt["line_count"], 2)
+            prompt_receipt = json.loads(fixture["prompt_receipt"].read_text(encoding="utf-8"))
+            self.assertTrue(prompt_receipt["copy_block_embedded_verbatim"])
+            self.assertEqual(prompt_receipt["unresolved_placeholder_count"], 0)
+
+    def test_ocr_only_text_cannot_be_approved_exact(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            fixture = valid_fixture(Path(tmp))
+            ledger = json.loads(fixture["copy_ledger"].read_text(encoding="utf-8"))
+            ledger["regions"][0]["lines"][0]["evidence"] = "ocr_only"
+            write_json(fixture["copy_ledger"], ledger)
+            result = run(
+                [
+                    sys.executable,
+                    "-X",
+                    "utf8",
+                    str(COPY_COMPILER),
+                    "--ledger",
+                    str(fixture["copy_ledger"]),
+                    "--output",
+                    str(fixture["copy_block"]),
+                    "--receipt",
+                    str(fixture["copy_receipt"]),
+                ]
+            )
+            self.assertEqual(error_code(result), "blocked_copy_ledger_unverified_exact")
+
+    def test_copy_ledger_must_bind_frozen_source_alias_and_hash(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            fixture = valid_fixture(Path(tmp))
+            ledger = json.loads(fixture["copy_ledger"].read_text(encoding="utf-8"))
+            ledger["regions"][0]["source_sha256"] = "0" * 64
+            write_json(fixture["copy_ledger"], ledger)
+            value = copy.deepcopy(fixture["value"])
+            value["copy_ledger_sha256"] = sha(fixture["copy_ledger"])
+            write_json(fixture["manifest"], value)
+            result = run([sys.executable, "-X", "utf8", str(VALIDATOR), "--manifest", str(fixture["manifest"])])
+            self.assertEqual(error_code(result), "blocked_copy_ledger_source_binding")
+
+    def test_prompt_missing_copy_block_is_rejected(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            fixture = valid_fixture(Path(tmp))
+            fixture["prompt"].write_text("No copy block here.\n", encoding="utf-8", newline="\n")
+            result = run(
+                [
+                    sys.executable,
+                    "-X",
+                    "utf8",
+                    str(COPY_VALIDATOR),
+                    "--ledger",
+                    str(fixture["copy_ledger"]),
+                    "--block",
+                    str(fixture["copy_block"]),
+                    "--receipt",
+                    str(fixture["copy_receipt"]),
+                    "--prompt",
+                    str(fixture["prompt"]),
+                    "--qa",
+                    str(fixture["copy_qa"]),
+                    "--copy-authority",
+                    "video_reference",
+                ]
+            )
+            self.assertEqual(error_code(result), "blocked_copy_prompt_coverage")
+
+    def test_visible_gibberish_flag_is_rejected(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            fixture = valid_fixture(Path(tmp))
+            qa = json.loads(fixture["copy_qa"].read_text(encoding="utf-8"))
+            qa["board_wide_invented_or_corrupted_visible_copy"] = True
+            write_json(fixture["copy_qa"], qa)
+            result = run(
+                [
+                    sys.executable,
+                    "-X",
+                    "utf8",
+                    str(COPY_VALIDATOR),
+                    "--ledger",
+                    str(fixture["copy_ledger"]),
+                    "--block",
+                    str(fixture["copy_block"]),
+                    "--receipt",
+                    str(fixture["copy_receipt"]),
+                    "--prompt",
+                    str(fixture["prompt"]),
+                    "--qa",
+                    str(fixture["copy_qa"]),
+                    "--copy-authority",
+                    "video_reference",
+                ]
+            )
+            self.assertEqual(error_code(result), "blocked_visible_copy_corruption")
 
     def test_staging_prompt_leakage_is_rejected(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
@@ -808,6 +1046,28 @@ class ContractTests(unittest.TestCase):
             self.assertEqual(result.returncode, 2)
             self.assertEqual(error_code(result), "blocked_composition_detail_mapping")
 
+    def test_drawn_overlay_border_is_rejected(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            fixture = valid_fixture(Path(tmp))
+            plan = json.loads(fixture["plan"].read_text(encoding="utf-8"))
+            plan["overlays"][1]["border_px"] = 1
+            write_json(fixture["plan"], plan)
+            result = run(
+                [
+                    sys.executable,
+                    "-X",
+                    "utf8",
+                    str(COMPOSER),
+                    "--run-dir",
+                    str(fixture["run_dir"]),
+                    "--plan",
+                    str(fixture["plan"]),
+                    "--receipt",
+                    str(fixture["receipt"]),
+                ]
+            )
+            self.assertEqual(error_code(result), "blocked_composition_visible_frame")
+
     def test_near_blank_detail_crop_is_rejected(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
             fixture = valid_fixture(Path(tmp))
@@ -840,7 +1100,7 @@ class ContractTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as tmp:
             fixture = valid_fixture(Path(tmp))
             value = copy.deepcopy(fixture["value"])
-            value["detail_cells"][0]["region_id"] = "unbound_detail"
+            value["detail_regions"][0]["region_id"] = "unbound_detail"
             write_json(fixture["manifest"], value)
             result = run([sys.executable, "-X", "utf8", str(VALIDATOR), "--manifest", str(fixture["manifest"])])
             self.assertEqual(result.returncode, 2)

@@ -7,15 +7,17 @@ REFERENCE BINDING
 - Reference roles in order: {{provider_reference_roles}}
 - Direct complete-product anchors and deterministic detail sheets are different evidence roles. Preserve the source identities represented inside every declared sheet.
 
-OUTPUT
-- One horizontal 16:9 board only.
-- Requested final design canvas: 3840 x 2160.
-- Eight complete, uncropped product views: front, back, left side, right side, front three-quarter, rear three-quarter, high angle, low angle.
-- Keep every bottle upright on its base. High angle and low angle describe camera position; never lay the product down.
-- Below the eight-view grid, render exactly {{detail_count}} fully populated, edge-to-edge photographic macro panels in one lower evidence strip.
-- Populate the detail panels in this exact order: {{detail_panel_list}}
-- Derive every macro panel from visible evidence in the supplied references. Every panel must contain clearly visible product evidence at generation time.
-- Neutral white or very light gray studio background, soft even light, consistent scale and spacing.
+OUTPUT AND BORDERLESS TOPOLOGY
+- One horizontal 16:9 board only. Requested final design canvas: 3840 x 2160.
+- Use one continuous seamless white or very light gray studio background across the entire canvas.
+- Default to exactly nine open-spaced product regions; ten is the absolute maximum. No drawn grid, panel border, white rectangular frame, card outline, evidence strip, divider line, or boxed cell.
+- Render exactly seven complete, uncropped product views: front, back, one evidence-supported side, side 45-degree high-angle, side 45-degree low-angle, top-down full product, and low-up full product.
+- Keep every product complete and upright on its base. High, low, top-down, and low-up describe camera position; never lay the product down.
+- Render exactly {{detail_count}} source-grounded close-ups, where detail_count is two by default and never exceeds three.
+- Populate close-ups in this exact order: {{detail_region_list}}.
+- The first close-up is closure/top evidence. The second is the highest-risk local identity detail, normally a label/copy, embossing, texture, base, or code region. Use an optional third only for a distinct source-evidenced risk.
+- Blend every close-up into the same continuous background using open spacing. Every region must already contain useful product evidence at generation time.
+- Soft even studio light, consistent product identity, enough breathing room for readability, no overlap, no crop.
 
 PRODUCT IDENTITY LOCK
 - SKU / variant: {{sku_variant}}
@@ -27,22 +29,30 @@ PRODUCT IDENTITY LOCK
 - Internal tube or components: {{internal_components}}
 - Front label architecture: {{front_label}}
 - Back label architecture: {{back_label}}
-- Major exact source-visible copy: {{major_copy}}
-- Logos, graphics, ornaments, borders, codes: {{graphics}}
+- Logos, graphics, ornaments, codes: {{graphics}}
 - Texture, embossing, debossing, seams, base: {{surface_features}}
+
+COPY CONTRACT — EMBED VERBATIM BELOW
+{{copy_contract_block}}
+
+COPY RENDERING RULES
+- The embedded copy contract contains every OCR/transcription line, its region, source binding, status, format, and reading order.
+- Render only APPROVED EXACT strings as readable text and preserve them verbatim. Never transform a CANDIDATE or UNRESOLVED line into readable product copy.
+- Do not invent pseudo-Chinese, pseudo-Latin, fake digits, fake barcode values, fake QR modules, certification marks, or hidden label text.
+- Prompt inclusion improves content/order control but is not pixel proof. Critical readable copy must remain source/artwork-backed in the accepted board.
 
 EVIDENCE BOUNDARIES
 - Source-observed views: {{source_observed_views}}
 - Bounded completion views: {{bounded_completion_views}}
 - Unknown or unverified regions: {{unknown_regions}}
-- Do not invent readable microcopy, barcode payloads, QR modules, certification marks, or hidden label panels.
-- Preserve label color, scale, placement, border, ornament, logo silhouette, and major identity copy from the references.
-- Keep unreadable dense microcopy visually quiet rather than fabricating plausible characters.
+- Preserve label color, scale, placement, border, ornament, logo silhouette, graphics, and embossing from the references.
+- Keep unresolved microcopy non-readable and visually quiet; do not fill it with invented glyphs.
 
 CLEAN-BOARD BANS
 - No heading, title, asset name, view name, angle label, number, arrow, callout, legend, date, status, table, UI, caption, watermark, or non-product text.
 - No props, hands, splashes, scenery, duplicate SKU, alternate packaging, campaign styling, or packaging redesign.
-- No cropped product views and no merged or overlapping products.
+- No cropped, merged, overlapping, or lying-down product views.
 - No blank cells, empty rectangles, placeholders, reserved slots, future-fill boxes, wireframes, unused panels, or drawn empty borders anywhere.
+- No white frames, grid lines, panel outlines, card containers, evidence-strip boxes, or visual dividers.
 
-This prompt must produce one independently usable, fully populated sparse-reference video identity board in a single image-generation call. It is not a 360-degree scan, print proof, dieline, or continuous rotation Canon.
+This prompt must produce one independently usable, fully populated, borderless sparse-reference video identity board in a single image-generation call. It is not a 360-degree scan, print proof, dieline, or continuous rotation Canon.

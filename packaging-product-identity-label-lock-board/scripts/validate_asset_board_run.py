@@ -9,6 +9,7 @@ import json
 import os
 import re
 import struct
+import subprocess
 import sys
 from pathlib import Path
 from typing import Any
@@ -17,12 +18,11 @@ from typing import Any
 EXPECTED_VIEWS = {
     "front",
     "back",
-    "left_side",
-    "right_side",
-    "front_three_quarter",
-    "rear_three_quarter",
-    "high_angle",
-    "low_angle",
+    "side",
+    "high_side_45",
+    "low_side_45",
+    "top_down",
+    "low_up",
 }
 EVIDENCE = {"source_observed", "source_crop", "deterministic_reprojection", "bounded_inferred", "unknown"}
 SOURCE_DERIVED = {"source_observed", "source_crop", "deterministic_reprojection"}
@@ -181,7 +181,7 @@ def main() -> int:
     manifest_path = args.manifest.expanduser().resolve()
     manifest, _ = load_json(manifest_path, "blocked_asset_board_manifest_invalid")
     root = manifest_path.parent
-    if manifest.get("schema_version") != "packaging_video_asset_board.v1":
+    if manifest.get("schema_version") != "packaging_video_asset_board.v2":
         raise ValidationError("blocked_asset_board_manifest_invalid", "unexpected asset-board schema")
     if manifest.get("run_status") != "COMPLETE":
         raise ValidationError("blocked_asset_board_incomplete", "run_status must be COMPLETE")
@@ -193,7 +193,12 @@ def main() -> int:
     reference_entries = references.get("ordered_references")
     if not isinstance(reference_entries, list) or not 1 <= len(reference_entries) <= 8:
         raise ValidationError("blocked_reference_count_invalid", "one to eight frozen references are legal")
-    aliases = {entry.get("alias") for entry in reference_entries if isinstance(entry, dict)}
+    reference_sha_by_alias = {
+        entry.get("alias"): entry.get("sha256")
+        for entry in reference_entries
+        if isinstance(entry, dict) and isinstance(entry.get("alias"), str)
+    }
+    aliases = set(reference_sha_by_alias)
     profile = manifest.get("input_profile")
     if profile == "one_to_three_reference" and len(reference_entries) > 3:
         raise ValidationError("blocked_input_profile_mismatch", "one_to_three_reference contains more than three files")
@@ -203,6 +208,27 @@ def main() -> int:
     prompt_path, prompt_bytes = require_file_hash(
         root, manifest, "generation_prompt_path", "generation_prompt_sha256"
     )
+    copy_ledger_path, copy_ledger_bytes = require_file_hash(root, manifest, "copy_ledger_path", "copy_ledger_sha256")
+    copy_block_path, _ = require_file_hash(root, manifest, "copy_prompt_block_path", "copy_prompt_block_sha256")
+    copy_receipt_path, _ = require_file_hash(
+        root, manifest, "copy_prompt_receipt_path", "copy_prompt_receipt_sha256"
+    )
+    copy_qa_path, _ = require_file_hash(root, manifest, "copy_qa_path", "copy_qa_sha256")
+    try:
+        copy_ledger = json.loads(copy_ledger_bytes.decode("utf-8"))
+    except (UnicodeDecodeError, json.JSONDecodeError) as exc:
+        raise ValidationError("blocked_copy_ledger_invalid", str(exc)) from exc
+    if copy_ledger.get("schema_version") != "packaging_copy_ledger.v1" or not isinstance(copy_ledger.get("regions"), list):
+        raise ValidationError("blocked_copy_ledger_invalid", "unexpected copy-ledger schema")
+    for region in copy_ledger["regions"]:
+        if not isinstance(region, dict):
+            raise ValidationError("blocked_copy_ledger_invalid", "copy-ledger region must be an object")
+        source_alias = region.get("source_alias")
+        if source_alias not in reference_sha_by_alias or region.get("source_sha256") != reference_sha_by_alias[source_alias]:
+            raise ValidationError(
+                "blocked_copy_ledger_source_binding",
+                f"copy region {region.get('region_id')} does not bind one frozen source alias/hash",
+            )
     try:
         prompt_text = prompt_bytes.decode("utf-8")
     except UnicodeDecodeError as exc:
@@ -277,9 +303,9 @@ def main() -> int:
 
     plan = json.loads(plan_bytes.decode("utf-8"))
     receipt = json.loads(receipt_bytes.decode("utf-8"))
-    if plan.get("schema_version") != "packaging_board_composition_plan.v1":
+    if plan.get("schema_version") != "packaging_board_composition_plan.v2":
         raise ValidationError("blocked_composition_plan_invalid", "unexpected composition-plan schema")
-    if receipt.get("schema_version") != "packaging_board_composition_receipt.v1":
+    if receipt.get("schema_version") != "packaging_board_composition_receipt.v2":
         raise ValidationError("blocked_composition_receipt_invalid", "unexpected composition-receipt schema")
     raw_path = inside(root, plan.get("raw_board_path"), "raw_board_path")
     if not raw_path.is_file() or worker.get("image_sha256") != sha256_bytes(raw_path.read_bytes()):
@@ -294,8 +320,10 @@ def main() -> int:
             same_path(receipt.get("plan_path"), plan_path),
             same_path(receipt.get("raw_board_path"), raw_path),
             same_path(receipt.get("output_board_path"), final_path),
-            receipt.get("detail_overlay_count") in {4, 5, 6},
-            receipt.get("detail_cells_populated") is True,
+            receipt.get("detail_overlay_count") in {2, 3},
+            receipt.get("detail_regions_populated") is True,
+            receipt.get("layout_style") == "borderless_continuous_background",
+            receipt.get("drawn_borders") is False,
             isinstance(receipt.get("anchor_overlay_count"), int),
             0 <= receipt.get("anchor_overlay_count") <= 3,
         ]
@@ -308,7 +336,7 @@ def main() -> int:
 
     plan_layout = plan.get("detail_layout")
     receipt_layout = receipt.get("detail_layout")
-    if not isinstance(plan_layout, list) or not 4 <= len(plan_layout) <= 6 or receipt_layout != plan_layout:
+    if not isinstance(plan_layout, list) or not 2 <= len(plan_layout) <= 3 or receipt_layout != plan_layout:
         raise ValidationError("blocked_composition_detail_layout_invalid", "plan and receipt detail_layout must match")
     layout_ids: set[str] = set()
     layout_boxes: dict[str, tuple[int, int, int, int]] = {}
@@ -342,22 +370,22 @@ def main() -> int:
             raise ValidationError("blocked_composition_detail_blank", f"detail is blank or near-blank: {region_id}")
         receipt_details[region_id] = overlay
     if set(receipt_details) != layout_ids or receipt.get("detail_overlay_count") != len(layout_ids):
-        raise ValidationError("blocked_composition_detail_mapping", "every detail cell must be populated exactly once")
+        raise ValidationError("blocked_composition_detail_mapping", "every detail region must be populated exactly once")
 
-    views = manifest.get("view_cells")
-    if not isinstance(views, list) or len(views) != 8:
-        raise ValidationError("blocked_view_coverage", "exactly eight view cells are required")
+    views = manifest.get("view_regions")
+    if not isinstance(views, list) or len(views) != 7:
+        raise ValidationError("blocked_view_coverage", "exactly seven full-product view regions are required")
     view_ids = [view.get("view_id") for view in views if isinstance(view, dict)]
-    if len(view_ids) != 8 or set(view_ids) != EXPECTED_VIEWS:
-        raise ValidationError("blocked_view_coverage", "view IDs must match the eight-view board contract")
+    if len(view_ids) != 7 or set(view_ids) != EXPECTED_VIEWS:
+        raise ValidationError("blocked_view_coverage", "view IDs must match the seven-view board contract")
     for view in views:
         status = view.get("evidence_status")
         if status not in EVIDENCE or status == "unknown":
             raise ValidationError("blocked_view_evidence", f"COMPLETE view has invalid evidence status: {status}")
 
-    details = manifest.get("detail_cells")
-    if not isinstance(details, list) or not 4 <= len(details) <= 6:
-        raise ValidationError("blocked_detail_coverage", "four to six detail cells are required")
+    details = manifest.get("detail_regions")
+    if not isinstance(details, list) or not 2 <= len(details) <= 3:
+        raise ValidationError("blocked_detail_coverage", "two to three detail regions are required")
     region_ids: set[str] = set()
     for detail in details:
         if not isinstance(detail, dict):
@@ -375,12 +403,21 @@ def main() -> int:
             "blocked_composition_detail_mapping",
             "manifest detail cells must match the populated composition layout one-to-one",
         )
+    total_regions = len(views) + len(details)
+    if total_regions not in {9, 10} or manifest.get("region_count") != total_regions:
+        raise ValidationError("blocked_region_count", "the board must contain nine regions by default and never more than ten")
+    if manifest.get("layout_style") != "borderless_continuous_background":
+        raise ValidationError("blocked_visible_frames", "manifest must declare borderless_continuous_background")
+    if plan.get("layout_style") != "borderless_continuous_background" or plan.get("drawn_borders") is not False:
+        raise ValidationError("blocked_visible_frames", "composition plan violates the borderless layout contract")
 
     ocr = manifest.get("ocr")
     if not isinstance(ocr, dict) or ocr.get("status") not in {"not_run", "candidates_only", "reviewed"}:
         raise ValidationError("blocked_ocr_state_invalid", "invalid OCR state")
     if ocr.get("blocking") is not False:
         raise ValidationError("blocked_ocr_global_gate", "OCR may not be a global board gate")
+    if copy_ledger.get("ocr_status") != ocr.get("status"):
+        raise ValidationError("blocked_ocr_state_invalid", "manifest OCR status differs from copy ledger")
     authority = manifest.get("copy_authority")
     if authority not in {"video_reference", "exact_copy_evidence"}:
         raise ValidationError("blocked_copy_authority_invalid", "invalid copy authority")
@@ -392,16 +429,47 @@ def main() -> int:
             "blocked_exact_copy_authority",
             "exact_copy_evidence requires reviewed OCR and zero unresolved regions",
         )
+    copy_validation = subprocess.run(
+        [
+            sys.executable,
+            "-X",
+            "utf8",
+            str(Path(__file__).resolve().parent / "validate_copy_contract.py"),
+            "--ledger",
+            str(copy_ledger_path),
+            "--block",
+            str(copy_block_path),
+            "--receipt",
+            str(copy_receipt_path),
+            "--prompt",
+            str(prompt_path),
+            "--qa",
+            str(copy_qa_path),
+            "--copy-authority",
+            authority,
+        ],
+        capture_output=True,
+        text=True,
+        encoding="utf-8",
+    )
+    if copy_validation.returncode != 0:
+        detail = copy_validation.stderr.strip() or copy_validation.stdout.strip()
+        raise ValidationError("blocked_copy_contract", detail)
 
     qa = manifest.get("qa")
     required_qa = {
-        "eight_complete_views",
-        "four_to_six_details",
+        "seven_complete_views",
+        "two_to_three_details",
+        "nine_to_ten_total_regions",
+        "borderless_continuous_background",
+        "no_visible_frames",
         "identity_consistency",
         "label_fidelity",
+        "copy_prompt_coverage",
+        "copy_pixel_qa",
         "source_anchor_match",
         "non_product_text_pollution",
-        "all_cells_populated",
+        "all_regions_populated",
     }
     if not isinstance(qa, dict) or qa.get("inspected") is not True:
         raise ValidationError("blocked_visual_inspection", "main-agent inspection is required")
@@ -417,6 +485,7 @@ def main() -> int:
         "reference_count": len(reference_entries),
         "view_count": len(views),
         "detail_count": len(details),
+        "region_count": total_regions,
         "copy_authority": authority,
         "assistant_qa_status": qa.get("assistant_qa_status"),
         "final_board_path": str(final_path),

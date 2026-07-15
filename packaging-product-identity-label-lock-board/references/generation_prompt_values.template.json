@@ -1,0 +1,20 @@
+{
+  "provider_reference_count": 3,
+  "provider_reference_roles": "front direct source; back direct source; three-quarter/side direct source",
+  "detail_count": 2,
+  "detail_region_list": "closure_top; local_identity_detail",
+  "sku_variant": "<source-observed SKU and variant>",
+  "silhouette": "<source-observed silhouette and proportions>",
+  "closure": "<source-observed closure/pump/cap>",
+  "nozzle_orientation": "<source-observed direction in product coordinates>",
+  "container_material": "<source-observed material, transparency, and finish>",
+  "fill_and_liquid": "<source-observed color and level>",
+  "internal_components": "<source-observed tube/components>",
+  "front_label": "<source-observed front label architecture>",
+  "back_label": "<source-observed back label architecture>",
+  "graphics": "<source-observed logos, ornaments, borders, and codes>",
+  "surface_features": "<source-observed texture, embossing, seams, and base>",
+  "source_observed_views": "<list>",
+  "bounded_completion_views": "<list>",
+  "unknown_regions": "<list or none>"
+}

@@ -1,15 +1,15 @@
 {
-  "schema_version": "packaging_board_composition_plan.v1",
+  "schema_version": "packaging_board_composition_plan.v2",
   "raw_board_path": "attempts/01/raw-board.png",
   "raw_board_sha256": "<sha256>",
   "output_board_path": "attempts/01/final-board.png",
   "canvas_size": [3840, 2160],
   "base_fit": "cover",
+  "layout_style": "borderless_continuous_background",
+  "drawn_borders": false,
   "detail_layout": [
-    {"region_id": "front_label", "target_box": [0, 1620, 960, 2160]},
-    {"region_id": "back_copy", "target_box": [960, 1620, 1920, 2160]},
-    {"region_id": "closure", "target_box": [1920, 1620, 2880, 2160]},
-    {"region_id": "surface_feature", "target_box": [2880, 1620, 3840, 2160]}
+    {"region_id": "closure_top", "target_box": [0, 1500, 1920, 2160]},
+    {"region_id": "local_identity_detail", "target_box": [1920, 1500, 3840, 2160]}
   ],
   "overlays": [
     {
@@ -18,49 +18,32 @@
       "source_path": "references/01_front.jpg",
       "source_sha256": "<sha256>",
       "crop_box": [0, 0, 100, 100],
-      "target_box": [0, 0, 960, 780],
+      "target_box": [0, 0, 960, 1500],
       "fit": "contain",
-      "background_rgb": [248, 248, 248]
+      "seamless_background_match": true,
+      "border_px": 0
     },
     {
-      "region_id": "front_label",
+      "region_id": "closure_top",
+      "role": "detail",
+      "source_path": "references/03_three_quarter.jpg",
+      "source_sha256": "<sha256>",
+      "crop_box": [0, 0, 100, 100],
+      "target_box": [0, 1500, 1920, 2160],
+      "fit": "cover",
+      "seamless_background_match": true,
+      "border_px": 0
+    },
+    {
+      "region_id": "local_identity_detail",
       "role": "detail",
       "source_path": "references/01_front.jpg",
       "source_sha256": "<sha256>",
       "crop_box": [0, 0, 100, 100],
-      "target_box": [0, 1620, 960, 2160],
-      "fit": "contain",
-      "background_rgb": [248, 248, 248]
-    },
-    {
-      "region_id": "back_copy",
-      "role": "detail",
-      "source_path": "references/02_back.jpg",
-      "source_sha256": "<sha256>",
-      "crop_box": [0, 0, 100, 100],
-      "target_box": [960, 1620, 1920, 2160],
-      "fit": "contain",
-      "background_rgb": [248, 248, 248]
-    },
-    {
-      "region_id": "closure",
-      "role": "detail",
-      "source_path": "references/03_three_quarter.jpg",
-      "source_sha256": "<sha256>",
-      "crop_box": [0, 0, 100, 100],
-      "target_box": [1920, 1620, 2880, 2160],
-      "fit": "contain",
-      "background_rgb": [248, 248, 248]
-    },
-    {
-      "region_id": "surface_feature",
-      "role": "detail",
-      "source_path": "references/03_three_quarter.jpg",
-      "source_sha256": "<sha256>",
-      "crop_box": [0, 0, 100, 100],
-      "target_box": [2880, 1620, 3840, 2160],
-      "fit": "contain",
-      "background_rgb": [248, 248, 248]
+      "target_box": [1920, 1500, 3840, 2160],
+      "fit": "cover",
+      "seamless_background_match": true,
+      "border_px": 0
     }
   ]
 }

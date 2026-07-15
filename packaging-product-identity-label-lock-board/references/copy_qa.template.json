@@ -1,0 +1,25 @@
+{
+  "schema_version": "packaging_copy_qa.v1",
+  "copy_ledger_sha256": "<sha256>",
+  "copy_prompt_block_sha256": "<sha256>",
+  "overall_status": "passed",
+  "board_wide_invented_or_corrupted_visible_copy": false,
+  "board_regions": [
+    {
+      "board_region_id": "front",
+      "visual_status": "source_reprojected",
+      "covered_copy_region_ids": ["front_label"],
+      "order_match": "pass",
+      "source_backed_pixels": true,
+      "mismatch_line_ids": []
+    },
+    {
+      "board_region_id": "side",
+      "visual_status": "no_readable_copy_present",
+      "covered_copy_region_ids": [],
+      "order_match": "not_applicable",
+      "source_backed_pixels": false,
+      "mismatch_line_ids": []
+    }
+  ]
+}
