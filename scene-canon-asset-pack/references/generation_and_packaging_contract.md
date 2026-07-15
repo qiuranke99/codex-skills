@@ -7,11 +7,12 @@ Freeze Scene Canon, neutral appearance, motion envelope, coverage graph, and all
 For each machine asset:
 
 1. Confirm every predecessor is QA-approved and hash-current.
-2. Freeze the ordered reference manifest and set `generation_status: spec_frozen`.
+2. Freeze the ordered reference manifest with `scripts/freeze_reference_bundle.py`; require the Scene-owned schema, exact prompt-plan order, one source first, exact direct predecessors, and asset-scoped frozen bytes; then set `generation_status: spec_frozen`.
 3. Spawn one fresh worker and set the queue to the current dependency stage.
 4. Resolve the single image call into a runtime-bound worker result.
 5. Inspect the real image in the still-running main agent and write an independent inspection receipt.
-6. On failure, set `repair_required`, invalidate descendants and stale 4K prompts, repair the earliest affected canon/graph state, and retry only with a new worker and revision.
+6. Run `validate_scene_package.py --mode stage --through-asset <ASSET_ID>`; do not advance unless the exact generated prefix, reference bundles, asset/attempt lineage, same-parent publication/inspection ownership, serialization, bytes, dimensions, and dependency approvals pass.
+7. On failure, set `repair_required`, invalidate descendants and stale 4K prompts, repair the earliest affected canon/graph state, and retry only with a new worker and revision.
 7. On approval, advance to the next stage without user continuation.
 
 The worker's image call is terminal only for the worker turn. It never terminates the main-agent finalizer.
@@ -56,6 +57,8 @@ scene-canon-output/
     ├── prompt-publication-receipt.json
     └── <asset-id-lower>/
         ├── reference-manifest.json
+        ├── references/
+        │   └── <ordered frozen source and predecessor bytes>
         ├── worker-result.json
         └── inspection-receipt.json
 ```
@@ -78,7 +81,7 @@ Never reuse an asset revision after regeneration. Increment the asset revision a
 
 Request the highest native resolution exposed by the active tool, but treat returned pixels as facts. Verify local pixels and record them in both the manifest and `actual_image_dimensions.json`. Set `native_4k_claim: true` only with explicit runtime/file evidence.
 
-Strict delivery rejects identical file bytes and near-identical decoded image content across machine assets. A recolor, re-encode, crop-only, or focal-only variation cannot satisfy a second graph role.
+Strict delivery rejects identical file bytes and near-identical decoded image content across machine assets regardless of claimed camera pose, reveal, or role. A recolor, re-encode, crop-only, or focal-only variation cannot satisfy a second graph role.
 
 ## Cleanliness
 
@@ -88,7 +91,7 @@ Default to horizontal 16:9. Machine assets contain no text, title, number, arrow
 
 `--mode state` validates schema and in-progress consistency. It prints `STATE_VALID_NOT_COMPLETE` for any non-packaged state.
 
-`--mode delivery` is the only completion gate. It requires `package_status: packaged`, queue complete, exactly six approved machine assets, graph closure, prompt-first runtime proof, six bound worker results, six independent main-agent inspections, six actual files, six finalized 4K prompts, and one derived review board. Any planned, awaiting, failed, blocked, stale, duplicate, placeholder, or self-attested-only record exits non-zero.
+`--mode delivery` is the only completion gate. It requires `package_status: packaged`, queue complete, exactly six approved machine assets, referentially closed graph/path/loop/reveal/evidence records, prompt-first same-parent runtime proof, six asset/attempt-bound worker results, six parent-owned independent inspections, exact structured-QA hash/receipt bindings, six actual files, six asset-specific finalized 4K prompts at the frozen 4K target, and one pixel-rebuilt derived review board. Any planned, awaiting, failed, blocked, stale, duplicate, dangling, placeholder, non-finite, or self-attested-only record exits non-zero.
 
 ## Package Status
 

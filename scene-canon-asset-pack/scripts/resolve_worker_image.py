@@ -168,7 +168,7 @@ def read_rollout(rollout_path: Path) -> list[dict[str, Any]]:
     return events
 
 
-def load_reference_manifest(manifest_path: Path) -> dict[str, Any]:
+def load_reference_manifest(manifest_path: Path, expected_asset_id: str | None = None) -> dict[str, Any]:
     if not manifest_path.is_file():
         raise ContractError(
             "blocked_reference_manifest_missing",
@@ -184,8 +184,15 @@ def load_reference_manifest(manifest_path: Path) -> dict[str, Any]:
         manifest = json.loads(manifest_bytes.decode("utf-8"))
     except (UnicodeDecodeError, json.JSONDecodeError) as exc:
         raise ContractError("blocked_reference_manifest_invalid", str(exc)) from exc
-    if manifest.get("schema_version") != "single_face_reference_bundle.v1":
+    manifest_keys = {"schema_version", "asset_id", "source_reference_id", "ordered_references", "ordered_bundle_sha256"}
+    if set(manifest) != manifest_keys or manifest.get("schema_version") != "scene_canon_reference_bundle.v1":
         raise ContractError("blocked_reference_manifest_invalid", "unexpected reference manifest schema")
+    asset_id = manifest.get("asset_id")
+    source_reference_id = manifest.get("source_reference_id")
+    if asset_id not in {slug.upper() for slug in SCENE_CANON_ASSET_TASK_SLUGS} or not isinstance(source_reference_id, str) or not source_reference_id:
+        raise ContractError("blocked_reference_manifest_invalid", "reference manifest lacks Scene Canon asset/source binding")
+    if expected_asset_id is not None and asset_id != expected_asset_id:
+        raise ContractError("blocked_reference_manifest_invalid", "reference manifest targets the wrong Scene Canon asset")
     entries = manifest.get("ordered_references")
     if not isinstance(entries, list) or not entries:
         raise ContractError("blocked_reference_manifest_invalid", "ordered_references must be non-empty")
@@ -198,10 +205,14 @@ def load_reference_manifest(manifest_path: Path) -> dict[str, Any]:
     for expected_index, entry in enumerate(entries, 1):
         if not isinstance(entry, dict):
             raise ContractError("blocked_reference_manifest_invalid", "reference entry is not an object")
+        entry_keys = {"index", "alias", "kind", "source_reference_id", "asset_id", "source_path", "frozen_path", "size_bytes", "sha256"}
+        if set(entry) != entry_keys:
+            raise ContractError("blocked_reference_manifest_invalid", "reference entry fields are incomplete or unexpected")
         alias = entry.get("alias")
         frozen_path = entry.get("frozen_path")
         size_bytes = entry.get("size_bytes")
         expected_sha = entry.get("sha256")
+        kind = entry.get("kind")
         if entry.get("index") != expected_index or not isinstance(alias, str):
             raise ContractError("blocked_reference_manifest_invalid", "reference order/index is invalid")
         if not isinstance(frozen_path, str) or not isinstance(size_bytes, int):
@@ -230,6 +241,11 @@ def load_reference_manifest(manifest_path: Path) -> dict[str, Any]:
                 "blocked_reference_bytes_changed",
                 f"frozen reference bytes changed after materialization: {path}",
             )
+        if expected_index == 1:
+            if kind != "source_reference" or entry.get("source_reference_id") != source_reference_id or entry.get("asset_id") is not None:
+                raise ContractError("blocked_reference_manifest_invalid", "reference 1 must be the bound original scene source")
+        elif kind != "approved_predecessor" or entry.get("source_reference_id") is not None or entry.get("asset_id") not in {slug.upper() for slug in SCENE_CANON_ASSET_TASK_SLUGS}:
+            raise ContractError("blocked_reference_manifest_invalid", "later references must be bound approved predecessors")
         aliases.append(alias)
         paths.append(path)
         verified_entries.append(entry)
@@ -239,6 +255,9 @@ def load_reference_manifest(manifest_path: Path) -> dict[str, Any]:
     normalized_paths = [normalized_path(path) for path in paths]
     if len(set(normalized_paths)) != len(normalized_paths):
         raise ContractError("blocked_reference_manifest_invalid", "frozen reference paths are not unique")
+    actual_files = [path for path in reference_root.iterdir() if path.is_file()]
+    if any(path.is_dir() for path in reference_root.iterdir()) or {normalized_path(path) for path in actual_files} != set(normalized_paths):
+        raise ContractError("blocked_reference_manifest_invalid", "run-scoped references contain missing or unlisted files")
 
     digest_payload = json.dumps(
         verified_entries,
@@ -257,6 +276,8 @@ def load_reference_manifest(manifest_path: Path) -> dict[str, Any]:
         "manifest_sha256": sha256_bytes(manifest_bytes),
         "ordered_bundle_sha256": actual_bundle_sha,
         "reference_count": len(paths),
+        "asset_id": asset_id,
+        "source_reference_id": source_reference_id,
     }
 
 
@@ -308,7 +329,7 @@ def validate_parent_spawn_chain(
     worker_run_nonce: str,
     delivery_ciphertext: str,
     not_before_ms: int,
-) -> dict[str, str]:
+) -> dict[str, Any]:
     task_name = validate_worker_name_binding(agent_path, worker_run_nonce)
     if not parent_events or parent_events[0].get("type") != "session_meta":
         raise ContractError("blocked_worker_spawn_chain_mismatch", "parent rollout lacks session metadata")
@@ -399,6 +420,7 @@ def validate_parent_spawn_chain(
         "parent_spawn_call_id": spawn_call_id,
         "parent_spawn_turn_id": parent_turn_id,
         "parent_spawn_activity_ms": str(activity["occurred_at_ms"]),
+        "parent_spawn_event_index": spawn_index,
         "task_delivery_ciphertext_sha256": sha256_bytes(delivery_ciphertext.encode("utf-8")),
     }
 
@@ -700,6 +722,8 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument("--agent-path", required=True, help="Exact canonical worker path returned by spawn_agent")
     parser.add_argument("--not-before-ms", required=True, type=int, help="Checkpoint captured before worker spawn")
     parser.add_argument("--parent-thread-id", required=True, help="Exact finalizing parent thread id")
+    parser.add_argument("--asset-id", required=True, choices=sorted(slug.upper() for slug in SCENE_CANON_ASSET_TASK_SLUGS))
+    parser.add_argument("--attempt-id", required=True, help="Exact accepted-attempt candidate id")
     parser.add_argument("--worker-run-nonce", required=True, help="Exact 32-character lowercase hex run nonce")
     parser.add_argument("--expected-prompt", required=True, type=Path)
     parser.add_argument("--reference-manifest", type=Path)
@@ -713,7 +737,12 @@ def build_parser() -> argparse.ArgumentParser:
 
 def main() -> int:
     args = build_parser().parse_args()
-    validate_worker_name_binding(args.agent_path, args.worker_run_nonce)
+    task_name = validate_worker_name_binding(args.agent_path, args.worker_run_nonce)
+    expected_task_name = f"scene_canon_image_{args.asset_id.lower()}_{args.worker_run_nonce}"
+    if task_name != expected_task_name:
+        raise ContractError("blocked_worker_asset_mismatch", "worker task name does not match --asset-id")
+    if not re.fullmatch(r"[A-Z0-9][A-Z0-9_-]{3,127}", args.attempt_id):
+        raise ContractError("blocked_worker_attempt_invalid", "attempt id must be a stable uppercase identifier")
     if args.reference_manifest is None and not args.allow_no_references:
         raise ContractError(
             "blocked_reference_manifest_missing",
@@ -734,7 +763,7 @@ def main() -> int:
         raise ContractError("blocked_generation_prompt_persistence", str(exc)) from exc
 
     reference_evidence = (
-        load_reference_manifest(args.reference_manifest)
+        load_reference_manifest(args.reference_manifest, args.asset_id)
         if args.reference_manifest is not None
         else {
             "paths": [],
@@ -792,6 +821,8 @@ def main() -> int:
         "contract": "delegated_image_worker_result.v3",
         "resolved_at_utc": datetime.now(timezone.utc).isoformat(),
         "agent_path": args.agent_path,
+        "asset_id": args.asset_id,
+        "attempt_id": args.attempt_id,
         "worker_task_name": evidence["worker_task_name"],
         "worker_run_nonce": evidence["worker_run_nonce"],
         "worker_thread_id": worker["thread_id"],
@@ -803,6 +834,7 @@ def main() -> int:
         "parent_spawn_call_id": spawn_evidence["parent_spawn_call_id"],
         "parent_spawn_turn_id": spawn_evidence["parent_spawn_turn_id"],
         "parent_spawn_activity_ms": int(spawn_evidence["parent_spawn_activity_ms"]),
+        "parent_spawn_event_index": spawn_evidence["parent_spawn_event_index"],
         "task_delivery_ciphertext_sha256": spawn_evidence["task_delivery_ciphertext_sha256"],
         "image_generation_call_id": evidence["call_id"],
         "worker_saved_path": str(source_path),

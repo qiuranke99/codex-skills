@@ -6,6 +6,7 @@ from __future__ import annotations
 import copy
 import json
 import shutil
+import sqlite3
 import subprocess
 import sys
 import tempfile
@@ -14,7 +15,8 @@ from typing import Any, Callable
 
 from PIL import Image, ImageDraw
 
-from resolve_worker_image import ContractError, SCENE_CANON_ASSET_TASK_SLUGS, validate_worker_name_binding
+from freeze_reference_bundle import freeze_bundle
+from resolve_worker_image import ContractError, SCENE_CANON_ASSET_TASK_SLUGS, load_reference_manifest, validate_worker_name_binding
 
 from validate_scene_package import (
     DEPENDENCIES,
@@ -49,7 +51,7 @@ CHECKS = {
 
 def write_json(path: Path, value: Any) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
-    path.write_text(json.dumps(value, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
+    path.write_text(json.dumps(value, ensure_ascii=False, indent=2, allow_nan=False) + "\n", encoding="utf-8", newline="\n")
 
 
 def read_json(path: Path) -> Any:
@@ -62,6 +64,85 @@ def substantive(label: str) -> str:
         "camera coverage, neutral appearance, provenance, and delivery evidence. Every required check "
         "has an explicit subject and byte-level receipt, so the package can fail closed when evidence drifts.\n"
     )
+
+
+def write_jsonl(path: Path, events: list[dict[str, Any]]) -> None:
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text("".join(json.dumps(event, ensure_ascii=False, separators=(",", ":")) + "\n" for event in events), encoding="utf-8", newline="\n")
+
+
+def run_resolver_e2e_probe(root: Path) -> dict[str, Any]:
+    asset_id = "CDM_001"; attempt_id = "ATTEMPT_CDM_001_E2E"; nonce = "0123456789abcdef0123456789abcdef"
+    task_name = f"scene_canon_image_cdm_001_{nonce}"; agent_path = f"/root/{task_name}"
+    parent_thread_id = "parent-thread-e2e"; worker_thread_id = "worker-thread-e2e"
+    parent_turn_id = "parent-turn-e2e"; worker_turn_id = "worker-turn-e2e"
+    spawn_call_id = "spawn-call-e2e"; image_call_id = "image-call-e2e"; delivery_ciphertext = "opaque-ciphertext-e2e"
+    not_before_ms = 1000; spawn_ms = 1100
+    codex_home = root / "codex-home"; package_root = root / "package"; runtime_dir = package_root / "10_runtime/cdm_001"
+    source_path = package_root / "01_source_analysis/source.png"; source_path.parent.mkdir(parents=True, exist_ok=True)
+    Image.new("RGB", (32, 18), (10, 20, 30)).save(source_path, format="PNG")
+    reference_manifest = runtime_dir / "reference-manifest.json"
+    freeze = subprocess.run([
+        sys.executable, str(HERE / "freeze_reference_bundle.py"), "--asset-id", asset_id,
+        "--source-reference-id", "SRC_001", "--source", str(source_path), "--output", str(reference_manifest),
+    ], text=True, capture_output=True)
+    if freeze.returncode != 0:
+        raise AssertionError(f"freezer failed:\n{freeze.stdout}\n{freeze.stderr}")
+    reference_data = read_json(reference_manifest); frozen_reference = Path(reference_data["ordered_references"][0]["frozen_path"])
+    prompt = "Generate exactly one independent full-frame CDM_001 test scene raster from the ordered frozen source."
+    prompt_path = runtime_dir / "generation-prompt.txt"; prompt_path.parent.mkdir(parents=True, exist_ok=True); prompt_path.write_bytes(prompt.encode("utf-8"))
+    generated_path = codex_home / "generated_images" / worker_thread_id / f"{image_call_id}.png"
+    generated_path.parent.mkdir(parents=True, exist_ok=True); Image.new("RGB", (64, 36), (40, 50, 60)).save(generated_path, format="PNG")
+    parent_rollout = root / "parent-rollout.jsonl"; worker_rollout = root / "worker-rollout.jsonl"
+    write_jsonl(parent_rollout, [
+        {"type": "session_meta", "payload": {"id": parent_thread_id}},
+        {"type": "event_msg", "payload": {"type": "agent_message", "event_id": "pre-spawn-sentinel", "message": "event before worker spawn"}},
+        {"type": "response_item", "payload": {"type": "function_call", "name": "spawn_agent", "call_id": spawn_call_id, "arguments": json.dumps({"task_name": task_name, "fork_turns": "none", "message": delivery_ciphertext}, separators=(",", ":")), "internal_chat_message_metadata_passthrough": {"turn_id": parent_turn_id}}},
+        {"type": "event_msg", "payload": {"type": "sub_agent_activity", "event_id": spawn_call_id, "kind": "started", "occurred_at_ms": spawn_ms, "agent_thread_id": worker_thread_id, "agent_path": agent_path}},
+        {"type": "response_item", "payload": {"type": "function_call_output", "call_id": spawn_call_id, "output": json.dumps({"task_name": agent_path}), "internal_chat_message_metadata_passthrough": {"turn_id": parent_turn_id}}},
+    ])
+    delivery_header = f"Message Type: NEW_TASK\nTask name: {agent_path}\nSender: /root\nPayload:\n"
+    tool_input = "tools.image_gen__imagegen({prompt:" + json.dumps(prompt) + ",referenced_image_paths:" + json.dumps([str(frozen_reference)]) + "})"
+    write_jsonl(worker_rollout, [
+        {"type": "session_meta", "payload": {"id": worker_thread_id, "agent_path": agent_path, "parent_thread_id": parent_thread_id}},
+        {"type": "event_msg", "payload": {"type": "task_started", "turn_id": worker_turn_id}},
+        {"type": "turn_context", "payload": {"turn_id": worker_turn_id}},
+        {"type": "inter_agent_communication_metadata", "payload": {"trigger_turn": True}},
+        {"type": "response_item", "payload": {"type": "agent_message", "recipient": agent_path, "author": "/root", "content": [{"type": "input_text", "text": delivery_header}, {"type": "encrypted_content", "encrypted_content": delivery_ciphertext}], "internal_chat_message_metadata_passthrough": {"turn_id": worker_turn_id}}},
+        {"type": "response_item", "payload": {"type": "custom_tool_call", "input": tool_input}},
+        {"type": "event_msg", "payload": {"type": "image_generation_end", "status": "completed", "call_id": image_call_id, "saved_path": str(generated_path)}},
+        {"type": "event_msg", "payload": {"type": "agent_message", "phase": "final_answer", "message": ""}},
+        {"type": "response_item", "payload": {"type": "message", "role": "assistant", "phase": "final_answer", "content": []}},
+        {"type": "event_msg", "payload": {"type": "task_complete", "turn_id": worker_turn_id, "last_agent_message": ""}},
+    ])
+    state_db = root / "state_5.sqlite"; connection = sqlite3.connect(state_db)
+    connection.execute("CREATE TABLE threads (id TEXT, rollout_path TEXT, created_at INTEGER, created_at_ms INTEGER, source TEXT)")
+    connection.execute("INSERT INTO threads VALUES (?, ?, ?, ?, ?)", (parent_thread_id, str(parent_rollout), 1, 900, "{}"))
+    connection.execute("INSERT INTO threads VALUES (?, ?, ?, ?, ?)", (worker_thread_id, str(worker_rollout), 1, spawn_ms, json.dumps({"subagent": {"thread_spawn": {"agent_path": agent_path, "parent_thread_id": parent_thread_id}}})))
+    connection.commit(); connection.close()
+    copy_to = package_root / "02_diagnostic_master/canonical_diagnostic_master.png"; result_json = runtime_dir / "worker-result.json"
+    resolve = subprocess.run([
+        sys.executable, str(HERE / "resolve_worker_image.py"), "--agent-path", agent_path, "--not-before-ms", str(not_before_ms),
+        "--parent-thread-id", parent_thread_id, "--asset-id", asset_id, "--attempt-id", attempt_id, "--worker-run-nonce", nonce,
+        "--expected-prompt", str(prompt_path), "--reference-manifest", str(reference_manifest), "--copy-to", str(copy_to),
+        "--result-json", str(result_json), "--state-db", str(state_db), "--codex-home", str(codex_home),
+    ], text=True, capture_output=True)
+    if resolve.returncode != 0:
+        raise AssertionError(f"resolver failed:\n{resolve.stdout}\n{resolve.stderr}")
+    result = read_json(result_json)
+    expected = {
+        "ok": True, "contract": "delegated_image_worker_result.v3", "asset_id": asset_id, "attempt_id": attempt_id,
+        "worker_task_name": task_name, "worker_thread_id": worker_thread_id, "parent_thread_id": parent_thread_id,
+        "parent_spawn_call_id": spawn_call_id, "parent_spawn_event_index": 2, "binding_mode": "parent_spawn_cipher_chain_v1",
+        "prompt_sha_match": True, "reference_mode": "frozen_manifest", "reference_count": 1,
+        "image_generation_call_id": image_call_id, "width_px": 64, "height_px": 36,
+    }
+    for key, value in expected.items():
+        if result.get(key) != value:
+            raise AssertionError(f"resolver result mismatch for {key}: {result.get(key)!r} != {value!r}")
+    if result["reference_manifest_sha256"] != sha256_file(reference_manifest) or result["ordered_reference_bundle_sha256"] != reference_data["ordered_bundle_sha256"] or not copy_to.is_file() or sha256_file(copy_to) != result["image_sha256"]:
+        raise AssertionError("resolver output/reference/image hash binding failed")
+    return result
 
 
 def make_pattern(path: Path, seed: int) -> None:
@@ -282,19 +363,10 @@ def reference_plan(asset_id: str) -> list[dict[str, Any]]:
 
 
 def make_reference_manifest(root: Path, asset_id: str, asset_paths: dict[str, Path]) -> Path:
-    entries = []
-    sources: list[tuple[str | None, Path]] = []
-    if len(DEPENDENCIES[asset_id]) < 5:
-        sources.append((None, root / "01_source_analysis/source.png"))
-    sources.extend((dependency, asset_paths[dependency]) for dependency in DEPENDENCIES[asset_id])
-    for index, (dependency, path) in enumerate(sources, 1):
-        entries.append({
-            "index": index, "source_path": str(path.resolve()), "frozen_path": str(path.resolve()),
-            "sha256": sha256_file(path), "size_bytes": path.stat().st_size, "asset_id": dependency,
-        })
-    payload = {"schema_version": "packaging_reference_bundle.v1", "ordered_references": entries, "ordered_bundle_sha256": canonical_json_hash(entries)}
-    output = root / f"10_runtime/{asset_id.lower()}-references.json"
-    write_json(output, payload)
+    sources: list[tuple[str, str | None, Path]] = [("source_reference", None, root / "01_source_analysis/source.png")]
+    sources.extend(("approved_predecessor", dependency, asset_paths[dependency]) for dependency in DEPENDENCIES[asset_id])
+    output = root / f"10_runtime/{asset_id.lower()}/reference-manifest.json"
+    freeze_bundle(asset_id, "SRC_001", output, sources)
     return output
 
 
@@ -337,15 +409,21 @@ def create_fixture(root: Path) -> None:
     rollout = root / "10_runtime/parent-rollout.jsonl"
     rollout.parent.mkdir(parents=True, exist_ok=True)
     publication_event_id = "event-six-prompts-public"
-    rollout.write_text(json.dumps({"event_id": publication_event_id, "elapsed_ms": 100, "assistant_message": prompt_doc}, ensure_ascii=False) + "\n", encoding="utf-8")
+    rollout_events = [
+        {"type": "session_meta", "payload": {"id": "parent-thread-fixture"}},
+        {"type": "response_item", "payload": {"type": "message", "event_id": publication_event_id, "elapsed_ms": 100, "assistant_message": prompt_doc}},
+    ]
+    for order, asset_id in enumerate(MACHINE_ASSET_IDS, 1):
+        rollout_events.append({"type": "response_item", "payload": {"type": "function_call", "name": "spawn_agent", "call_id": f"spawn-{order}", "asset_id": asset_id}})
+    rollout.write_text("".join(json.dumps(item, ensure_ascii=False) + "\n" for item in rollout_events), encoding="utf-8", newline="\n")
     publication = {
         "schema_version": "scene_prompt_publication_receipt.v1", "origin": "deterministic_contract_fixture",
-        "parent_rollout_path": str(rollout.resolve()), "parent_rollout_sha256": sha256_file(rollout),
-        "publication_event_id": publication_event_id, "publication_elapsed_ms": 100,
+        "parent_thread_id": "parent-thread-fixture", "parent_rollout_path": str(rollout.resolve()), "parent_rollout_sha256": sha256_file(rollout),
+        "publication_event_id": publication_event_id, "publication_event_index": 1, "publication_elapsed_ms": 100,
         "prompt_document_sha256": sha256_text(prompt_doc),
         "published_prompt_ids": [item["prompt_id"] for item in prompts],
         "published_prompt_sha256": [item["prompt_sha256"] for item in prompts],
-        "first_worker_spawn_elapsed_ms": 200,
+        "first_worker_spawn_event_index": 2, "first_worker_spawn_elapsed_ms": 200,
     }
     publication_path = root / "10_runtime/prompt-publication-receipt.json"
     write_json(publication_path, publication)
@@ -355,7 +433,6 @@ def create_fixture(root: Path) -> None:
         asset_paths[asset_id] = root / ASSET_PATHS[asset_id]
         make_pattern(asset_paths[asset_id], seed)
     review_path = root / "07_review_board/scene_asset_overview_board.png"
-    make_pattern(review_path, 12)
 
     manifest = read_json(TEMPLATE)
     manifest.update({
@@ -386,19 +463,21 @@ def create_fixture(root: Path) -> None:
         result_path = root / result_rel
         result = {
             "contract": "delegated_image_worker_result.v3", "ok": True,
+            "asset_id": asset_id, "attempt_id": f"ATTEMPT_{asset_id}_01",
             "binding_mode": "parent_spawn_cipher_chain_v1", "prompt_sha_match": True,
             "generation_prompt_sha256": prompts[order - 1]["prompt_sha256"], "tool_prompt_sha256": prompts[order - 1]["prompt_sha256"],
             "run_image_path": str(image_path.resolve()), "image_sha256": sha256_file(image_path), "width_px": 192, "height_px": 108,
             "reference_manifest_path": str(ref_path.resolve()), "reference_manifest_sha256": sha256_file(ref_path),
             "ordered_reference_bundle_sha256": read_json(ref_path)["ordered_bundle_sha256"],
             "reference_count": len(read_json(ref_path)["ordered_references"]),
-            "agent_path": f"/root/scene_image_{order}_{'a' * order}", "worker_thread_id": f"worker-thread-{order}",
+            "agent_path": f"/root/scene_canon_image_{asset_id.lower()}_{order:032x}", "worker_task_name": f"scene_canon_image_{asset_id.lower()}_{order:032x}", "worker_thread_id": f"worker-thread-{order}",
             "parent_thread_id": "parent-thread-fixture", "worker_run_nonce": f"{order:032x}",
-            "image_generation_call_id": f"image-call-{order}", "parent_spawn_activity_ms": spawn,
+            "image_generation_call_id": f"image-call-{order}", "parent_spawn_activity_ms": spawn, "parent_spawn_event_index": order + 1,
         }
         write_json(result_path, result)
         inspection = {
             "schema_version": "scene_inspection_receipt.v1", "origin": "deterministic_contract_fixture",
+            "inspector_task_id": "parent-thread-fixture",
             "receipt_id": f"INSPECT_{asset_id}", "asset_id": asset_id, "coverage_node_id": NODE_BY_ASSET[asset_id],
             "worker_result_path": result_rel, "worker_result_sha256": sha256_file(result_path),
             "image_path": ASSET_PATHS[asset_id], "image_sha256": sha256_file(image_path),
@@ -421,10 +500,16 @@ def create_fixture(root: Path) -> None:
         })
         dimensions_index[asset_id] = {"file_path": ASSET_PATHS[asset_id], "width": 192, "height": 108, "verified": True}
 
+    write_json(root / "00_manifest/ASSET_MANIFEST.json", manifest)
+    build_result = subprocess.run([sys.executable, str(HERE / "build_review_board.py"), str(root / "00_manifest/ASSET_MANIFEST.json"), str(review_path)], text=True, capture_output=True)
+    if build_result.returncode != 0:
+        raise RuntimeError(build_result.stdout + build_result.stderr)
     review = asset_by_id["HRB_001"]
+    with Image.open(review_path) as review_image:
+        review_width, review_height = review_image.size
     review.update({
         "file_sha256": sha256_file(review_path), "generation_status": "generated", "accepted_attempt_id": "DERIVED_FROM_SIX_APPROVED_ASSETS",
-        "assistant_qa_status": "approved", "actual_pixel_dimensions": {"width": 192, "height": 108}, "actual_dimensions_verified": True,
+        "assistant_qa_status": "approved", "actual_pixel_dimensions": {"width": review_width, "height": review_height}, "actual_dimensions_verified": True,
         "canon_sha256": canon_hash, "appearance_sha256": appearance_hash, "completion_hash": completion_hash,
     })
     write_json(root / "00_manifest/actual_image_dimensions.json", dimensions_index)
@@ -457,16 +542,24 @@ def create_fixture(root: Path) -> None:
     output_4k.write_text("\n".join(four_k_parts), encoding="utf-8")
 
     qa = []
+    inspection_ids = {asset_id: f"INSPECT_{asset_id}" for asset_id in MACHINE_ASSET_IDS}
+    node_asset = {item["node_id"]: item["asset_id"] for item in canon["coverage_graph"]["nodes"]}
+    def bind(asset_ids: list[str]) -> tuple[list[str], list[str]]:
+        return ([asset_by_id[item]["file_sha256"] for item in asset_ids], [inspection_ids[item] for item in asset_ids])
     for asset_id in MACHINE_ASSET_IDS:
         qa.append({"check_id": f"ASSET_{asset_id}", "scope": "asset", "subject_ids": [asset_id], "status": "passed", "applicability": "required", "evidence_summary": "Bound inspection verifies the complete asset hard-gate checklist.", "bound_asset_sha256": [asset_by_id[asset_id]["file_sha256"]], "inspection_receipt_ids": [f"INSPECT_{asset_id}"]})
     for item in canon["coverage_graph"]["edges"]:
-        qa.append({"check_id": f"QA_{item['edge_id']}", "scope": "edge", "subject_ids": [item["edge_id"]], "status": "passed", "applicability": "required", "evidence_summary": "Shared landmarks, overlap invariants, reveal order, and parallax are verified.", "bound_asset_sha256": [], "inspection_receipt_ids": []})
+        asset_ids = [node_asset[item["from_node_id"]], node_asset[item["to_node_id"]]]; hashes, receipts = bind(asset_ids)
+        qa.append({"check_id": f"QA_{item['edge_id']}", "scope": "edge", "subject_ids": [item["edge_id"]], "status": "passed", "applicability": "required", "evidence_summary": "Shared landmarks, overlap invariants, reveal order, and parallax are verified.", "bound_asset_sha256": hashes, "inspection_receipt_ids": receipts})
     for item in canon["coverage_graph"]["paths"]:
-        qa.append({"check_id": f"QA_{item['path_id']}", "scope": "path", "subject_ids": [item["path_id"]], "status": "passed", "applicability": "required", "evidence_summary": "Every directed edge and declared movement is executable within the envelope.", "bound_asset_sha256": [], "inspection_receipt_ids": []})
+        asset_ids = [node_asset[node_id] for node_id in item["node_ids"]]; hashes, receipts = bind(asset_ids)
+        qa.append({"check_id": f"QA_{item['path_id']}", "scope": "path", "subject_ids": [item["path_id"]], "status": "passed", "applicability": "required", "evidence_summary": "Every directed edge and declared movement is executable within the envelope.", "bound_asset_sha256": hashes, "inspection_receipt_ids": receipts})
     for item in canon["coverage_graph"]["loops"]:
-        qa.append({"check_id": f"QA_{item['loop_id']}", "scope": "loop", "subject_ids": [item["loop_id"]], "status": "passed", "applicability": "required", "evidence_summary": "Loop closure returns to the same landmark identity and handedness.", "bound_asset_sha256": [], "inspection_receipt_ids": []})
+        asset_ids = [node_asset[node_id] for node_id in item["node_ids"]]; hashes, receipts = bind(asset_ids)
+        qa.append({"check_id": f"QA_{item['loop_id']}", "scope": "loop", "subject_ids": [item["loop_id"]], "status": "passed", "applicability": "required", "evidence_summary": "Loop closure returns to the same landmark identity and handedness.", "bound_asset_sha256": hashes, "inspection_receipt_ids": receipts})
+    all_hashes, all_receipts = bind(MACHINE_ASSET_IDS)
     for check_id in ["prompt_publication", "runtime_lineage", "duplicate_detection", "four_k_mapping"]:
-        qa.append({"check_id": check_id, "scope": "package", "subject_ids": ["TEST_SCENE_ASSET_PACK_V2"], "status": "passed", "applicability": "required", "evidence_summary": "Package-level receipt and one-to-one reconciliation passed the strict validator.", "bound_asset_sha256": [], "inspection_receipt_ids": []})
+        qa.append({"check_id": check_id, "scope": "package", "subject_ids": ["TEST_SCENE_ASSET_PACK_V2"], "status": "passed", "applicability": "required", "evidence_summary": "Package-level receipt and one-to-one reconciliation passed the strict validator.", "bound_asset_sha256": all_hashes, "inspection_receipt_ids": all_receipts})
     manifest["structured_qa_records"] = qa
     write_json(root / "00_manifest/ASSET_MANIFEST.json", manifest)
 
@@ -487,6 +580,94 @@ def rebind_canon(root: Path) -> None:
         asset["canon_sha256"] = canon_hash
     for record in manifest["four_k_prompt_records"]:
         record["source_canon_sha256"] = canon_hash
+    save_manifest(root, manifest)
+
+
+def rebind_canon_hash_only(root: Path) -> None:
+    canon_hash = sha256_file(root / "00_manifest/SCENE_CANON.json")
+    manifest = load_manifest(root)
+    manifest["canon_sha256"] = canon_hash
+    for asset in manifest["assets"]:
+        asset["canon_sha256"] = canon_hash
+    for record in manifest["four_k_prompt_records"]:
+        record["source_canon_sha256"] = canon_hash
+    save_manifest(root, manifest)
+
+
+def refresh_qa_bindings(manifest: dict[str, Any], canon: dict[str, Any]) -> None:
+    asset_by_id = {item["asset_id"]: item for item in manifest["assets"]}
+    inspection_ids = {asset_id: f"INSPECT_{asset_id}" for asset_id in MACHINE_ASSET_IDS}
+    node_asset = {item["node_id"]: item["asset_id"] for item in canon["coverage_graph"]["nodes"]}
+    edge_assets = {item["edge_id"]: [node_asset[item["from_node_id"]], node_asset[item["to_node_id"]]] for item in canon["coverage_graph"]["edges"]}
+    path_assets = {item["path_id"]: [node_asset[node_id] for node_id in item["node_ids"]] for item in canon["coverage_graph"]["paths"]}
+    loop_assets = {item["loop_id"]: [node_asset[node_id] for node_id in item["node_ids"]] for item in canon["coverage_graph"]["loops"]}
+    for record in manifest["structured_qa_records"]:
+        if record["scope"] == "package":
+            asset_ids = MACHINE_ASSET_IDS
+        elif record["scope"] == "asset":
+            asset_ids = record["subject_ids"]
+        elif record["scope"] == "edge":
+            asset_ids = edge_assets.get(record["subject_ids"][0], [])
+        elif record["scope"] == "path":
+            asset_ids = path_assets.get(record["subject_ids"][0], [])
+        else:
+            asset_ids = loop_assets.get(record["subject_ids"][0], [])
+        record["bound_asset_sha256"] = [asset_by_id[item]["file_sha256"] for item in asset_ids]
+        record["inspection_receipt_ids"] = [inspection_ids[item] for item in asset_ids]
+
+
+def rebind_runtime(root: Path) -> None:
+    manifest = load_manifest(root)
+    canon = read_json(root / "00_manifest/SCENE_CANON.json")
+    assets = {item["asset_id"]: item for item in manifest["assets"]}
+    paths = {asset_id: root / ASSET_PATHS[asset_id] for asset_id in MACHINE_ASSET_IDS}
+    for asset_id in MACHINE_ASSET_IDS:
+        asset = assets[asset_id]
+        image_path = paths[asset_id]
+        ref_path = make_reference_manifest(root, asset_id, paths)
+        result_path = root / asset["worker_result_path"]
+        result = read_json(result_path)
+        result.update({
+            "run_image_path": str(image_path.resolve()), "image_sha256": sha256_file(image_path),
+            "reference_manifest_path": str(ref_path.resolve()), "reference_manifest_sha256": sha256_file(ref_path),
+            "ordered_reference_bundle_sha256": read_json(ref_path)["ordered_bundle_sha256"],
+            "reference_count": len(read_json(ref_path)["ordered_references"]),
+        })
+        write_json(result_path, result)
+        inspection_path = root / asset["inspection_receipt_path"]
+        inspection = read_json(inspection_path)
+        inspection.update({"worker_result_sha256": sha256_file(result_path), "image_sha256": sha256_file(image_path)})
+        write_json(inspection_path, inspection)
+        asset.update({
+            "file_sha256": sha256_file(image_path), "worker_result_sha256": sha256_file(result_path),
+            "inspection_receipt_sha256": sha256_file(inspection_path),
+        })
+    for record in manifest["four_k_prompt_records"]:
+        record["source_asset_sha256"] = assets[record["asset_id"]]["file_sha256"]
+    refresh_qa_bindings(manifest, canon)
+    save_manifest(root, manifest)
+
+
+def make_stage_fixture(root: Path, through_asset: str) -> None:
+    manifest = load_manifest(root)
+    template = read_json(TEMPLATE)
+    through_index = MACHINE_ASSET_IDS.index(through_asset)
+    template_assets = {item["asset_id"]: item for item in template["assets"]}
+    for index, asset_id in enumerate(MACHINE_ASSET_IDS):
+        if index > through_index:
+            replacement = copy.deepcopy(template_assets[asset_id])
+            manifest["assets"][index] = replacement
+    manifest["assets"][-1] = copy.deepcopy(template_assets["HRB_001"])
+    manifest.update({"package_status": "generating", "task_finalization_status": "in_progress", "assistant_qa_status": "not_reviewed", "human_review_overview_board": None})
+    next_asset = MACHINE_ASSET_IDS[through_index + 1] if through_index + 1 < len(MACHINE_ASSET_IDS) else None
+    last_inspected = 300 + through_index * 200
+    manifest["generation_queue"] = {
+        "ordered_asset_ids": MACHINE_ASSET_IDS, "status": "running", "current_asset_id": next_asset, "next_asset_id": next_asset,
+        "max_parallel_workers": 1, "user_continuation_required": False,
+        "first_worker_spawn_elapsed_ms": 200, "last_worker_complete_elapsed_ms": last_inspected,
+    }
+    dimensions_index = read_json(root / "00_manifest/actual_image_dimensions.json")
+    write_json(root / "00_manifest/actual_image_dimensions.json", {asset_id: dimensions_index[asset_id] for asset_id in MACHINE_ASSET_IDS[: through_index + 1]})
     save_manifest(root, manifest)
 
 
@@ -592,6 +773,118 @@ def mutate_duplicate_4k_prompt_ids(root: Path) -> None:
         handle.write("\n## 4K_SHARED\n\nShared prompt marker used only by the negative fixture.\n")
 
 
+def mutate_schema_additional_properties(root: Path) -> None:
+    canon = read_json(root / "00_manifest/SCENE_CANON.json"); canon["source_asset_dimensions"]["SRC_001"] = "not-dimensions"; write_json(root / "00_manifest/SCENE_CANON.json", canon); rebind_canon(root)
+
+
+def mutate_nan_number(root: Path) -> None:
+    path = root / "00_manifest/SCENE_CANON.json"; text = path.read_text(encoding="utf-8"); path.write_text(text.replace('"translation_baseline_normalized": 0.25', '"translation_baseline_normalized": NaN', 1), encoding="utf-8", newline="\n"); rebind_canon_hash_only(root)
+
+
+def mutate_empty_core_markdown(root: Path) -> None:
+    (root / "00_manifest/SCENE_CANON.md").write_text("", encoding="utf-8")
+
+
+def mutate_hrb_reuses_machine(root: Path) -> None:
+    manifest = load_manifest(root); machine = manifest["assets"][0]; review = manifest["assets"][-1]
+    review.update({"file_path": machine["file_path"], "file_sha256": machine["file_sha256"], "actual_pixel_dimensions": machine["actual_pixel_dimensions"]})
+    manifest["human_review_overview_board"] = machine["file_path"]; save_manifest(root, manifest)
+
+
+def mutate_primary_reference_ghost(root: Path) -> None:
+    canon = read_json(root / "00_manifest/SCENE_CANON.json"); canon["primary_reference"] = "SRC_GHOST"; write_json(root / "00_manifest/SCENE_CANON.json", canon); rebind_canon(root)
+
+
+def mutate_duplicate_source_id(root: Path) -> None:
+    canon = read_json(root / "00_manifest/SCENE_CANON.json"); canon["source_reference_list"].append(copy.deepcopy(canon["source_reference_list"][0])); write_json(root / "00_manifest/SCENE_CANON.json", canon); rebind_canon(root)
+
+
+def mutate_source_locator_escape(root: Path) -> None:
+    canon = read_json(root / "00_manifest/SCENE_CANON.json"); canon["source_reference_list"][0]["source_locator"] = "../../outside-source.png"; write_json(root / "00_manifest/SCENE_CANON.json", canon); rebind_canon(root)
+
+
+def mutate_loop_edges_unrelated(root: Path) -> None:
+    canon = read_json(root / "00_manifest/SCENE_CANON.json"); canon["coverage_graph"]["loops"][0]["edge_ids"] = ["EDGE_05", "EDGE_06", "EDGE_01", "EDGE_02"]; write_json(root / "00_manifest/SCENE_CANON.json", canon); rebind_canon(root)
+
+
+def mutate_ghost_edge_path(root: Path) -> None:
+    canon = read_json(root / "00_manifest/SCENE_CANON.json"); canon["coverage_graph"]["edges"][0]["path_ids"].append("PATH_GHOST"); write_json(root / "00_manifest/SCENE_CANON.json", canon); rebind_canon(root)
+
+
+def mutate_negative_publication_time(root: Path) -> None:
+    manifest = load_manifest(root); path = root / manifest["prompt_publication_receipt_path"]; receipt = read_json(path); receipt["publication_elapsed_ms"] = -100; write_json(path, receipt); manifest["prompt_publication_receipt_sha256"] = sha256_file(path); save_manifest(root, manifest)
+
+
+def mutate_foreign_publication_parent(root: Path) -> None:
+    manifest = load_manifest(root); receipt_path = root / manifest["prompt_publication_receipt_path"]; receipt = read_json(receipt_path)
+    old_rollout = Path(receipt["parent_rollout_path"]); events = old_rollout.read_text(encoding="utf-8").splitlines(); meta = json.loads(events[0]); meta["payload"]["id"] = "foreign-parent-thread"
+    foreign = root / "10_runtime/foreign-parent.jsonl"; foreign.write_text(json.dumps(meta) + "\n" + "\n".join(events[1:]) + "\n", encoding="utf-8", newline="\n")
+    receipt.update({"parent_thread_id": "foreign-parent-thread", "parent_rollout_path": str(foreign.resolve()), "parent_rollout_sha256": sha256_file(foreign)})
+    write_json(receipt_path, receipt); manifest["prompt_publication_receipt_sha256"] = sha256_file(receipt_path); save_manifest(root, manifest)
+
+
+def mutate_4k_target_tiny(root: Path) -> None:
+    canon = read_json(root / "00_manifest/SCENE_CANON.json"); canon["target_4k_dimensions"] = {"width": 1, "height": 1}; write_json(root / "00_manifest/SCENE_CANON.json", canon); rebind_canon(root)
+    manifest = load_manifest(root)
+    for asset in manifest["assets"]: asset["target_pixel_dimensions"] = {"width": 1, "height": 1}
+    for record in manifest["four_k_prompt_records"]: record["target_dimensions"] = {"width": 1, "height": 1}
+    save_manifest(root, manifest)
+
+
+def mutate_4k_missing_reference(root: Path) -> None:
+    manifest = load_manifest(root); manifest["four_k_prompt_records"][0]["required_reference_images"] = ["missing/reference.png"]; save_manifest(root, manifest)
+
+
+def mutate_stale_structured_qa(root: Path) -> None:
+    manifest = load_manifest(root); record = next(item for item in manifest["structured_qa_records"] if item["scope"] == "asset"); record["bound_asset_sha256"] = ["0" * 64]; record["inspection_receipt_ids"] = ["INSPECT_GHOST"]; save_manifest(root, manifest)
+
+
+def mutate_closure_landmark_ghost(root: Path) -> None:
+    canon = read_json(root / "00_manifest/SCENE_CANON.json"); canon["coverage_graph"]["loops"][0]["closure_landmark_ids"] = ["L_GHOST"]; write_json(root / "00_manifest/SCENE_CANON.json", canon); rebind_canon(root)
+
+
+def mutate_envelope_reveal_ghost(root: Path) -> None:
+    canon = read_json(root / "00_manifest/SCENE_CANON.json"); canon["supported_camera_motion_envelope"]["included_reveal_region_ids"] = ["REGION_GHOST"]; write_json(root / "00_manifest/SCENE_CANON.json", canon); rebind_canon(root)
+
+
+def mutate_edge_reveal_ghost(root: Path) -> None:
+    canon = read_json(root / "00_manifest/SCENE_CANON.json"); canon["coverage_graph"]["edges"][0]["reveal_order_region_ids"] = ["REGION_GHOST"]; write_json(root / "00_manifest/SCENE_CANON.json", canon); rebind_canon(root)
+
+
+def mutate_node_evidence_ghost(root: Path) -> None:
+    canon = read_json(root / "00_manifest/SCENE_CANON.json"); canon["coverage_graph"]["nodes"][0]["source_evidence_ids"] = ["E_GHOST"]; write_json(root / "00_manifest/SCENE_CANON.json", canon); rebind_canon(root)
+
+
+def mutate_node_completion_ghost(root: Path) -> None:
+    canon = read_json(root / "00_manifest/SCENE_CANON.json"); canon["coverage_graph"]["nodes"][0]["canonical_completion_ids"] = ["COMP_GHOST"]; write_json(root / "00_manifest/SCENE_CANON.json", canon); rebind_canon(root)
+
+
+def mutate_dangling_adjacency(root: Path) -> None:
+    canon = read_json(root / "00_manifest/SCENE_CANON.json"); canon["coverage_graph"]["nodes"][0]["adjacent_node_ids"].append("NODE_GHOST"); write_json(root / "00_manifest/SCENE_CANON.json", canon); rebind_canon(root)
+
+
+def mutate_wrong_worker_asset(root: Path) -> None:
+    manifest = load_manifest(root); asset = manifest["assets"][0]; path = root / asset["worker_result_path"]; result = read_json(path); nonce = result["worker_run_nonce"]; result["agent_path"] = f"/root/scene_canon_image_srm_001_{nonce}"; result["worker_task_name"] = f"scene_canon_image_srm_001_{nonce}"; write_json(path, result); asset["worker_result_sha256"] = sha256_file(path)
+    inspection = root / asset["inspection_receipt_path"]; receipt = read_json(inspection); receipt["worker_result_sha256"] = asset["worker_result_sha256"]; write_json(inspection, receipt); asset["inspection_receipt_sha256"] = sha256_file(inspection); save_manifest(root, manifest)
+
+
+def mutate_attempt_mismatch(root: Path) -> None:
+    manifest = load_manifest(root); asset = manifest["assets"][0]; path = root / asset["worker_result_path"]; result = read_json(path); result["attempt_id"] = "ATTEMPT_OTHER_01"; write_json(path, result); asset["worker_result_sha256"] = sha256_file(path)
+    inspection = root / asset["inspection_receipt_path"]; receipt = read_json(inspection); receipt["worker_result_sha256"] = asset["worker_result_sha256"]; write_json(inspection, receipt); asset["inspection_receipt_sha256"] = sha256_file(inspection); save_manifest(root, manifest)
+
+
+def mutate_inspection_owner(root: Path) -> None:
+    manifest = load_manifest(root); asset = manifest["assets"][0]; path = root / asset["inspection_receipt_path"]; receipt = read_json(path); receipt["inspector_task_id"] = "foreign-task"; write_json(path, receipt); asset["inspection_receipt_sha256"] = sha256_file(path); save_manifest(root, manifest)
+
+
+def mutate_reencoded_same_pixels(root: Path) -> None:
+    source = Image.open(root / ASSET_PATHS["CDM_001"]).convert("RGB"); source.save(root / ASSET_PATHS["COV_002"], format="PNG", compress_level=9); rebind_runtime(root)
+
+
+def mutate_unlisted_frozen_reference(root: Path) -> None:
+    extra = root / "10_runtime/cdm_001/references/99-unlisted.png"; make_pattern(extra, 15)
+
+
 def run() -> int:
     with tempfile.TemporaryDirectory(prefix="scene-canon-v2-") as temporary:
         base = Path(temporary) / "valid"
@@ -610,7 +903,7 @@ def run() -> int:
         print("PASS fixture/live evidence boundary")
 
         relabeled = Path(temporary) / "live_origin_relabel"
-        shutil.copytree(base, relabeled)
+        create_fixture(relabeled)
         mutate_live_origin_relabel(relabeled)
         relabeled_errors = validate_package(relabeled, mode="delivery", fixture_mode=False)
         if not any("live worker result missing audited provenance fields" in error for error in relabeled_errors):
@@ -620,7 +913,7 @@ def run() -> int:
         print("PASS expected failure: live_origin_relabel")
 
         state = Path(temporary) / "state"
-        shutil.copytree(base, state)
+        create_fixture(state)
         state_manifest = load_manifest(state)
         state_manifest["package_status"] = "repair_required"
         state_manifest["task_finalization_status"] = "in_progress"
@@ -632,6 +925,32 @@ def run() -> int:
             for error in state_errors: print(f"  - {error}")
             return 1
         print("PASS state validator remains separate from delivery")
+
+        stage = Path(temporary) / "stage"
+        create_fixture(stage)
+        make_stage_fixture(stage, "COV_001")
+        stage_errors = validate_package(stage, mode="stage", fixture_mode=True, through_asset="COV_001")
+        if stage_errors:
+            print("FAIL valid strict stage runtime")
+            for error in stage_errors: print(f"  - {error}")
+            return 1
+        print("PASS strict stage runtime prefix")
+
+        stage_attempt = Path(temporary) / "stage_attempt_mismatch"
+        create_fixture(stage_attempt); make_stage_fixture(stage_attempt, "COV_001"); mutate_attempt_mismatch(stage_attempt)
+        stage_attempt_errors = validate_package(stage_attempt, mode="stage", fixture_mode=True, through_asset="COV_001")
+        if not any("does not bind asset and accepted attempt" in error for error in stage_attempt_errors):
+            print("FAIL stage accepted an attempt mismatch")
+            return 1
+        print("PASS expected stage failure: attempt_mismatch")
+
+        stage_owner = Path(temporary) / "stage_inspection_owner"
+        create_fixture(stage_owner); make_stage_fixture(stage_owner, "COV_001"); mutate_inspection_owner(stage_owner)
+        stage_owner_errors = validate_package(stage_owner, mode="stage", fixture_mode=True, through_asset="COV_001")
+        if not any("inspection owner is not" in error for error in stage_owner_errors):
+            print("FAIL stage accepted a foreign inspection owner")
+            return 1
+        print("PASS expected stage failure: inspection_owner")
 
         review_output = Path(temporary) / "review.png"
         result = subprocess.run([sys.executable, str(HERE / "build_review_board.py"), str(base / "00_manifest/ASSET_MANIFEST.json"), str(review_output)], text=True, capture_output=True)
@@ -662,7 +981,13 @@ def run() -> int:
                 continue
             print(f"FAIL resolver accepted an invalid worker namespace: {invalid_task}")
             return 1
+        reference_probe = load_reference_manifest(base / "10_runtime/cdm_001/reference-manifest.json", "CDM_001")
+        if reference_probe["reference_count"] != 1 or reference_probe["source_reference_id"] != "SRC_001":
+            print("FAIL vendored resolver could not load the Scene Canon frozen reference bundle")
+            return 1
         print("PASS vendored worker resolver smoke")
+        resolver_result = run_resolver_e2e_probe(Path(temporary) / "resolver_e2e")
+        print(f"PASS resolver full synthetic state/parent/worker rollout: {resolver_result['asset_id']} {resolver_result['attempt_id']}")
 
         cases: list[tuple[str, Callable[[Path], None], str]] = [
             ("one_machine_plus_review_packaged", mutate_one_machine_plus_review, "at least 7 items"),
@@ -681,10 +1006,35 @@ def run() -> int:
             ("placeholder_qa_report", mutate_placeholder_qa, "report is placeholder"),
             ("non_executable_path", mutate_non_executable_path, "does not execute"),
             ("duplicate_4k_prompt_ids", mutate_duplicate_4k_prompt_ids, "4K prompt IDs must be unique"),
+            ("schema_additional_properties", mutate_schema_additional_properties, "expected type"),
+            ("non_finite_number", mutate_nan_number, "non-finite JSON number"),
+            ("empty_core_markdown", mutate_empty_core_markdown, "core deliverable is placeholder or empty"),
+            ("hrb_reuses_machine", mutate_hrb_reuses_machine, "cannot reuse a machine asset"),
+            ("primary_reference_ghost", mutate_primary_reference_ghost, "source reference IDs must be unique and include"),
+            ("duplicate_source_id", mutate_duplicate_source_id, "source reference IDs must be unique and include"),
+            ("source_locator_escape", mutate_source_locator_escape, "path escapes package root"),
+            ("loop_edges_unrelated", mutate_loop_edges_unrelated, "loop edge"),
+            ("ghost_edge_path", mutate_ghost_edge_path, "edge/path membership must be exact"),
+            ("negative_publication_time", mutate_negative_publication_time, "all six prompts must be public"),
+            ("foreign_publication_parent", mutate_foreign_publication_parent, "do not share the finalizing parent"),
+            ("tiny_4k_target", mutate_4k_target_tiny, "below minimum"),
+            ("missing_4k_reference", mutate_4k_missing_reference, "required references must contain only"),
+            ("stale_structured_qa", mutate_stale_structured_qa, "bindings are stale or incomplete"),
+            ("closure_landmark_ghost", mutate_closure_landmark_ghost, "closure landmarks must exist"),
+            ("envelope_reveal_ghost", mutate_envelope_reveal_ghost, "motion envelope reveal region lies outside"),
+            ("edge_reveal_ghost", mutate_edge_reveal_ghost, "reveal order lies outside"),
+            ("node_evidence_ghost", mutate_node_evidence_ghost, "source evidence reference is unresolved"),
+            ("node_completion_ghost", mutate_node_completion_ghost, "canonical completion reference is unresolved"),
+            ("dangling_adjacency", mutate_dangling_adjacency, "adjacency list must exactly match"),
+            ("wrong_worker_asset", mutate_wrong_worker_asset, "worker namespace does not bind"),
+            ("attempt_mismatch", mutate_attempt_mismatch, "does not bind asset and accepted attempt"),
+            ("inspection_owner", mutate_inspection_owner, "inspection owner is not"),
+            ("same_pixels_reencoded", mutate_reencoded_same_pixels, "near-duplicate or crop/focal-only coverage"),
+            ("unlisted_frozen_reference", mutate_unlisted_frozen_reference, "missing or unlisted files"),
         ]
         for name, mutator, expected in cases:
             root = Path(temporary) / name
-            shutil.copytree(base, root)
+            create_fixture(root)
             mutator(root)
             case_errors = validate_package(root, mode="delivery", fixture_mode=True)
             if not case_errors or not any(expected.lower() in error.lower() for error in case_errors):
@@ -693,7 +1043,7 @@ def run() -> int:
                 return 1
             print(f"PASS expected failure: {name}")
 
-    print("scene canon contract fixtures: strict valid/state boundaries + 17 expected failures passed")
+    print("scene canon contract fixtures: strict valid/stage boundaries + 44 expected failures passed")
     return 0
 
 

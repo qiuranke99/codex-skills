@@ -94,7 +94,10 @@
     "canon_revision": {"type": "string", "minLength": 1},
     "canon_freeze_status": {"enum": ["draft", "candidate", "frozen", "reopened_for_repair"]},
     "source_asset_dimensions": {"type": "object", "additionalProperties": {"$ref": "#/$defs/dimensions"}},
-    "target_4k_dimensions": {"$ref": "#/$defs/dimensions"},
+    "target_4k_dimensions": {
+      "type": "object", "additionalProperties": false, "required": ["width", "height"],
+      "properties": {"width": {"type": "integer", "minimum": 3840}, "height": {"type": "integer", "minimum": 2160}}
+    },
     "generated_asset_index": {"type": "array", "uniqueItems": true, "items": {"type": "string"}},
     "four_k_prompt_index": {"type": "array", "uniqueItems": true, "items": {"type": "string"}},
     "QA_status": {"enum": ["not_started", "in_progress", "failed", "approved", "blocked"]}
@@ -200,7 +203,7 @@
     },
     "coverageLoop": {
       "type": "object", "additionalProperties": false, "required": ["loop_id", "node_ids", "edge_ids", "closure_landmark_ids", "convergence_status"],
-      "properties": {"loop_id": {"type": "string"}, "node_ids": {"type": "array", "minItems": 3, "items": {"type": "string"}}, "edge_ids": {"type": "array", "minItems": 3, "items": {"type": "string"}}, "closure_landmark_ids": {"type": "array", "minItems": 1, "uniqueItems": true, "items": {"type": "string"}}, "convergence_status": {"enum": ["pending", "failed", "verified"]}}
+      "properties": {"loop_id": {"type": "string"}, "node_ids": {"type": "array", "minItems": 3, "uniqueItems": true, "items": {"type": "string"}}, "edge_ids": {"type": "array", "minItems": 3, "uniqueItems": true, "items": {"type": "string"}}, "closure_landmark_ids": {"type": "array", "minItems": 1, "uniqueItems": true, "items": {"type": "string"}}, "convergence_status": {"enum": ["pending", "failed", "verified"]}}
     },
     "coverageGraph": {
       "type": "object", "additionalProperties": false,

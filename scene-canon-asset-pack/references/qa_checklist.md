@@ -59,7 +59,10 @@ Run `look_contamination_checklist.md`. Fail both inherited cinematic look and ac
 - Verify actual pixels from the returned/local file.
 - Fail unverified dimension records or unsupported native-4K claims.
 - Confirm the asset was independently generated and not cropped from a multi-panel source.
-- Bind every machine asset to one audited v3 worker result and one later main-agent inspection receipt; reject self-attested turns or reused worker/thread/nonce/call IDs.
+- Bind every machine asset and accepted attempt to one correctly namespaced audited v3 worker result and one later inspection receipt owned by the same finalizing parent task; reject self-attested turns, cross-asset names, stale attempts, foreign parents, or reused worker/thread/nonce/call IDs.
+- Require one Scene-owned asset-scoped frozen reference bundle per attempt; its source/predecessor identities, order, bytes, and hash must exactly match the public prompt plan and load successfully through the vendored resolver.
+- Rebuild `HRB_001` deterministically from all six approved machine assets and compare actual pixels; a reused machine path/image or arbitrary seventh image fails.
+- After each approved node, require `--mode stage --through-asset <ASSET_ID>` to pass for the exact contiguous generated prefix; `--mode state` alone never authorizes the next worker.
 
 ## 13. 4K Mapping
 
@@ -67,4 +70,4 @@ Run `4k_prompt_qa_checklist.md` after every asset passes visual QA. A regenerate
 
 ## Package Gate
 
-Approve only when all six complete prompts were publicly disclosed in one pre-spawn assistant event, the serialized queue finished without a user-continuation gate, every required asset and graph edge/path/loop has a passed structured QA record, no hard blocker remains inside the minimum-complete boundary, and strict delivery validation exits zero. Deterministic fixture receipts may test the validator but can never satisfy production delivery. Keep assistant QA distinct from user or external production approval.
+Approve only when all six complete prompts were publicly disclosed in one unique same-parent pre-spawn assistant event, the serialized queue finished without a user-continuation gate, every required asset and graph edge/path/loop has a passed structured QA record whose exact asset hashes and inspection IDs reconcile, no hard blocker remains inside the minimum-complete boundary, and strict delivery validation exits zero. Reject non-finite JSON, unresolved source/evidence/landmark/completion IDs, graph membership drift, missing 4K references, targets below 3840×2160, and duplicate prompt bodies. Deterministic fixture receipts may test the validator but can never satisfy production delivery. Keep assistant QA distinct from user or external production approval.

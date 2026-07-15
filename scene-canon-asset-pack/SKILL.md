@@ -81,7 +81,7 @@ Build exactly six mandatory graph nodes bound one-to-one to the six asset IDs. R
 
 ### 3. Publish All Six Complete Prompts Before Generation
 
-Create `00_manifest/GENERATION_PROMPTS.md` and the six `generation_prompt_records` from the frozen canon and graph. Each record contains the complete tool prompt, SHA-256, target asset/node, ordered references, dependency stage, and predecessor IDs. Use at most five provider references per worker.
+Create `00_manifest/GENERATION_PROMPTS.md` and the six `generation_prompt_records` from the frozen canon and graph. Each record contains the complete, asset-specific tool prompt, SHA-256, target asset/node, exactly one primary source followed by the exact ordered direct predecessors, dependency stage, and predecessor IDs. Use at most five provider references per worker. The six prompt bodies and hashes must be unique.
 
 Publish all six complete prompt bodies together in one assistant update before spawning any worker. Include asset IDs and SHA-256 values. Then write a runtime-bound prompt-publication receipt. A file path, summary, template, placeholder, hash-only list, or post-generation disclosure does not satisfy this gate. If all six prompts cannot be published, stop `blocked_prompt_publication` before any image call.
 
@@ -95,7 +95,7 @@ Keep the generation dependency DAG distinct from dispatch order: `CDM_001` has n
 
 Each later prompt may already be public, but its ordered references become dispatchable only after every predecessor is QA-approved. Spawn one fresh worker named `scene_canon_image_<asset>_<32-hex-nonce>` for the current asset, using `fork_turns="none"`. The worker task contains the exact frozen prompt inline, the same prompt hash, ordered reference paths, target asset ID, and the instruction to make one image call and terminate.
 
-The main agent must not call image generation. Resolve each worker result with the vendored audited v3 `scripts/resolve_worker_image.py`; it binds parent/worker lineage, exact prompt transport, ordered reference bytes, call ID, image bytes, and returned dimensions without runtime-importing a sibling Skill. Inspect the actual image in the main agent, then write a separate inspection receipt. Advance the queue only after delivery-state validation confirms the current node is approved and all dependency hashes remain current.
+The main agent must not call image generation. Before each dispatch, run `scripts/freeze_reference_bundle.py` so `10_runtime/<asset>/reference-manifest.json` uses `scene_canon_reference_bundle.v1` and all bytes live under that asset's `references/` directory. Resolve each worker result with the vendored audited v3 `scripts/resolve_worker_image.py`, passing the exact `--asset-id` and `--attempt-id`; it binds parent/worker/asset/attempt lineage, exact prompt transport, ordered reference bytes, spawn event index, call ID, image bytes, and returned dimensions without runtime-importing a sibling Skill. Inspect the actual image in the main agent, then write a separate inspection receipt owned by the same finalizing parent task. Advance the queue only after delivery-state validation confirms the current node is approved and all dependency hashes remain current.
 
 Use a new worker and asset revision for a repair. Do not parallelize dependent nodes or spawn a replacement while the prior call state is unknown.
 
@@ -103,15 +103,19 @@ Use a new worker and asset revision for a repair. Do not parallelize dependent n
 
 For every asset verify source fidelity, topology, scale, landmark order, material/base color, fixed content, high/low reveal when applicable, overlap invariants, parallax when translation is supported, path continuity, loop convergence, duplication, contamination, and neutral appearance. Repair the earliest affected canon/graph state and invalidate all dependent assets/prompts when a contradiction appears.
 
-Compose `HRB_001`, the Human Review Overview Board, only from the six approved assets with `scripts/build_review_board.py`. Run intermediate checks explicitly with:
+After every approved worker inspection, run the strict contiguous-prefix gate before dispatching the next asset:
+
+`python scripts/validate_scene_package.py <package-root> --mode stage --through-asset <ASSET_ID>`
+
+This revalidates the public same-parent event, asset-scoped reference bundle, asset/attempt worker binding, serialized spawn/inspection order, parent-owned inspection, current image bytes/dimensions, dependencies, and duplicate coverage for every generated asset through the named node. The lighter schema/state check is:
 
 `python scripts/validate_scene_package.py <package-root> --mode state`
 
-This may return `STATE_VALID_NOT_COMPLETE`; it is never delivery success. Final delivery must run:
+Both non-delivery modes return `STATE_VALID_NOT_COMPLETE`; neither is delivery success. Compose `HRB_001`, the Human Review Overview Board, only from the six approved assets with `scripts/build_review_board.py`. Final delivery must run:
 
 `python scripts/validate_scene_package.py <package-root> --mode delivery`
 
-Any planned, awaiting, failed, blocked, stale, duplicate, unmapped, graph-incomplete, receipt-unbound, or placeholder state must exit non-zero.
+Any planned, awaiting, failed, blocked, stale, duplicate, unmapped, graph-incomplete, receipt-unbound, non-finite, source-dangling, reference-order-drifted, or placeholder state must exit non-zero. Delivery also rebuilds `HRB_001` from the six approved machine assets and compares actual pixels, rather than trusting a composite label.
 
 ### 6. Bind Six 4K Regeneration Prompts
 

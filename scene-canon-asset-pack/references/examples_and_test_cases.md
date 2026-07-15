@@ -58,6 +58,19 @@ The bundled contract test must fail these mutations:
 15. `live_origin_relabel`: changing fixture origin labels cannot replace replay of real parent/worker rollout lineage.
 16. `non_executable_path`: valid node and edge IDs still fail when their ordered sequence cannot execute the declared path.
 17. `duplicate_4k_prompt_ids`: six assets cannot share one 4K prompt ID; Canon, asset back-pointers, and records must reconcile one-to-one.
+18. `schema_additional_properties` and `non_finite_number`: schema-valued maps and JSON numbers fail closed instead of accepting malformed dimensions or `NaN`.
+19. `empty_core_markdown`: present-but-empty Canon, appearance, or asset-index Markdown is not delivery.
+20. `hrb_reuses_machine`: `HRB_001` must pixel-match the deterministic six-asset composite and cannot reuse any machine path or bytes.
+21. `primary_reference_ghost`, `duplicate_source_id`, and `source_locator_escape`: source IDs are unique, primary must exist, and packaged source locators remain local and decodable.
+22. `loop_edges_unrelated`, `ghost_edge_path`, `closure_landmark_ghost`, and `dangling_adjacency`: graph, path, loop, adjacency, and closure references are exact and bidirectional.
+23. `envelope_reveal_ghost`, `edge_reveal_ghost`, `node_evidence_ghost`, and `node_completion_ghost`: all motion, reveal, evidence, completion, and landmark references resolve inside the frozen boundary.
+24. `negative_publication_time` and `foreign_publication_parent`: publication uses non-negative time, one bound event index, and the same finalizing parent as all workers.
+25. `wrong_worker_asset`, `attempt_mismatch`, and `inspection_owner`: worker namespace, target asset, accepted attempt, and parent inspection owner cannot be relabeled.
+26. `same_pixels_reencoded`: identical decoded pixels fail even when bytes, claimed pose, and claimed reveal differ.
+27. `tiny_4k_target` and `missing_4k_reference`: every 4K record uses the frozen target at least 3840×2160 and exactly the matching local approved asset.
+28. `stale_structured_qa`: every asset/edge/path/loop/package QA record binds the exact required asset hashes and inspection receipt IDs.
+29. `stage_attempt_mismatch` and `stage_inspection_owner`: the contiguous-prefix stage gate rejects stale attempt IDs or a foreign inspection owner before any later worker can dispatch; a schema-only state check cannot authorize advancement.
+30. `unlisted_frozen_reference`: an asset-scoped `references/` directory must contain exactly the files listed in its bound manifest; stale or unlisted bytes fail.
 
 ## Visual Smoke-Test Boundary
 

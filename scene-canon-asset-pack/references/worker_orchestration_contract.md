@@ -14,7 +14,7 @@ Freeze all six generation prompts before the first worker. Write them to `00_man
 - prompt SHA-256;
 - ordered reference paths and their ordered-bundle SHA-256.
 
-Publish all six prompt bodies inline in one assistant update with their IDs and hashes. Create `10_runtime/prompt-publication-receipt.json` only after publication. The receipt must bind the parent rollout path/hash, assistant event ID, prompt-document hash, all six prompt IDs/hashes, elapsed publication time, and the later first-worker spawn time. The strict validator checks that the runtime event contains all six IDs and hashes and precedes every worker spawn.
+Publish all six prompt bodies inline in one assistant update with their IDs and hashes. Create `10_runtime/prompt-publication-receipt.json` only after publication. The receipt must bind the finalizing parent thread ID, parent rollout path/hash, the unique assistant event ID and event index, prompt-document hash, all six prompt IDs/hashes, non-negative elapsed publication time, and the later first-worker spawn time/index. The strict validator checks that the bound parent rollout has the same session ID, the runtime event occurs exactly once and contains all six IDs, hashes, and complete bodies, and every bound worker spawn event follows it.
 
 If publication cannot be proven, stop `blocked_prompt_publication`. A path, template, summary, truncated body, placeholder, or hash-only disclosure is invalid.
 
@@ -29,7 +29,7 @@ Use this exact order and predecessor closure:
 5. `COV_003`: `CDM_001`, `SRM_001`, `COV_001`, `COV_002`.
 6. `SCL_001`: direct references `CDM_001`, `SRM_001`, and `COV_003`; the latter's transitive closure already binds `COV_001` and `COV_002`.
 
-The prompt text stays frozen after publication. Reference 1 is always the frozen original scene source; up to four later entries are approved direct predecessors. Ordered dispatch references may replace a planned predecessor locator with its approved immutable asset path without changing the prompt body; record the final ordered-reference bundle hash in the worker result. Do not dispatch a stage while any predecessor is unapproved or stale.
+The prompt text stays frozen after publication. Reference 1 is always the frozen original scene source; up to four later entries are the exact ordered approved direct predecessors. Materialize this plan with `scripts/freeze_reference_bundle.py` into `10_runtime/<asset>/reference-manifest.json` and sibling `references/` bytes using `scene_canon_reference_bundle.v1`. The manifest asset ID, primary source ID, aliases, kinds, order, predecessor IDs, file sizes, hashes, and bundle hash must exactly equal the published prompt plan; the directory must contain no unlisted or nested stale files. Do not dispatch a stage while any predecessor is unapproved or stale.
 
 ## Thin Worker Task
 
@@ -45,7 +45,7 @@ The worker cannot inspect, choose, edit, retry, QA, approve, reject, publish, or
 
 ## Runtime Binding
 
-Run the vendored audited v3 `scripts/resolve_worker_image.py` after the worker terminates. It is self-contained and does not runtime-import a sibling Skill. It requires the exact prompt file, ordered reference manifest, parent/worker lineage, spawn checkpoint, run nonce, copy target, and result JSON path.
+Run the vendored audited v3 `scripts/resolve_worker_image.py` after the worker terminates. It is self-contained and does not runtime-import a sibling Skill. It requires the exact asset ID, accepted-attempt candidate ID, prompt file, asset-scoped ordered reference manifest, parent/worker lineage, spawn checkpoint, run nonce, copy target, and result JSON path.
 
 The resolver must prove:
 
@@ -62,7 +62,7 @@ Do not select the newest image by timestamp. Do not handwrite a successful worke
 
 The main agent opens the resolved image, compares it with the source, canon, graph node, predecessors, and edge invariants, and writes a separate inspection receipt. It includes the worker-result hash, image hash, graph node ID, inspector task ID, inspected-at time, all hard QA fields, and `decision: approved` or `rejected`.
 
-Only an approved receipt advances the queue. Rejection records root cause, invalidates descendants, and returns to the earliest affected freeze state.
+Only an approved receipt followed by a zero-error `--mode stage --through-asset <ASSET_ID>` check advances the queue. The stage gate requires the exact contiguous generated prefix and replays all bound prefix evidence; the lighter `--mode state` is schema/state validation only. Rejection records root cause, invalidates descendants, and returns to the earliest affected freeze state.
 
 ## Timeouts And Unknown Calls
 

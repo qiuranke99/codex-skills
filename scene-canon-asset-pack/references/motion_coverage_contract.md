@@ -62,13 +62,13 @@ Every edge records:
 - non-empty overlap invariant IDs;
 - one or more path IDs.
 
-Every edge endpoint must exist and must be declared adjacent in both nodes. Any edge with a translational movement type requires `translation_baseline_normalized > 0`, `parallax_expected: true`, and `parallax_evidence_status: verified` at delivery. Rotational or digital-only edges use `not_applicable` only when no new spatial reveal is claimed.
+Every edge endpoint must exist, and each node's adjacency list must exactly equal the undirected neighbors implied by the edge set—no missing or dangling adjacency IDs. Every edge must belong to at least one path, and edge↔path membership must be exact in both directions. Any edge with a translational movement type requires a finite `translation_baseline_normalized > 0`, `parallax_expected: true`, and `parallax_evidence_status: verified` at delivery. Edge reveal IDs and envelope reveal IDs must resolve inside the minimum-complete boundary and be evidenced by nodes or edges. Rotational or digital-only edges use `not_applicable` only when no new spatial reveal is claimed.
 
 ## Path And Loop Closure
 
 Every supported path contains at least two connected nodes and all of its edges. Every node belongs to at least one path. Include at least one loop with three or more unique nodes, corresponding edge IDs, one or more closure landmarks, and `convergence_status: verified`.
 
-Loop closure compares landmark count/order, left/right relation, connection position, topology, scale, material identity, intrinsic state, and completion stability from both directions. A declared loop that is open, unverified, or missing an edge fails delivery.
+Loop closure compares landmark count/order, left/right relation, connection position, topology, scale, material identity, intrinsic state, and completion stability from both directions. Its node and edge IDs are unique and one-to-one; each listed edge must execute the corresponding ordered node transition, and every closure landmark must exist and remain visible at every loop node. A declared loop that is open, unverified, dangling, or missing/misordering an edge fails delivery.
 
 ## Scene-Type Adaptation
 
