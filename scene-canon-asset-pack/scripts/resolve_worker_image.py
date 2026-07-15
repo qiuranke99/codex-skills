@@ -25,6 +25,9 @@ from typing import Any
 
 
 PNG_SIGNATURE = b"\x89PNG\r\n\x1a\n"
+SCENE_CANON_ASSET_TASK_SLUGS = {
+    "cdm_001", "srm_001", "cov_001", "cov_002", "cov_003", "scl_001",
+}
 JSON_DECODER = json.JSONDecoder()
 
 
@@ -284,14 +287,14 @@ def validate_worker_name_binding(agent_path: str, worker_run_nonce: str) -> str:
             "worker run nonce must be exactly 32 lowercase hexadecimal characters",
         )
     task_name = agent_path.rsplit("/", 1)[-1]
-    if (
-        not re.fullmatch(r"[a-z0-9_]+", task_name)
-        or not task_name.startswith("single_face_image_")
-        or not task_name.endswith(f"_{worker_run_nonce}")
-    ):
+    valid_task_names = {
+        f"scene_canon_image_{asset_slug}_{worker_run_nonce}"
+        for asset_slug in SCENE_CANON_ASSET_TASK_SLUGS
+    }
+    if not re.fullmatch(r"[a-z0-9_]+", task_name) or task_name not in valid_task_names:
         raise ContractError(
             "blocked_worker_nonce_mismatch",
-            "worker task name must end with the complete run nonce",
+            "worker task name must bind one exact Scene Canon asset slug and the complete run nonce",
         )
     return task_name
 

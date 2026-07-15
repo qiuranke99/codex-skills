@@ -55,6 +55,9 @@ The bundled contract test must fail these mutations:
 12. `published_prompt_mutated`: a prompt changed after publication fails its SHA-256 binding.
 13. `missing_primary_source_anchor`: generated predecessors cannot displace the frozen original scene source from reference 1.
 14. `placeholder_qa_report`: placeholder prose cannot substitute for structured QA evidence.
+15. `live_origin_relabel`: changing fixture origin labels cannot replace replay of real parent/worker rollout lineage.
+16. `non_executable_path`: valid node and edge IDs still fail when their ordered sequence cannot execute the declared path.
+17. `duplicate_4k_prompt_ids`: six assets cannot share one 4K prompt ID; Canon, asset back-pointers, and records must reconcile one-to-one.
 
 ## Visual Smoke-Test Boundary
 

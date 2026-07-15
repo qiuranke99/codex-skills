@@ -33,7 +33,7 @@ The prompt text stays frozen after publication. Reference 1 is always the frozen
 
 ## Thin Worker Task
 
-Spawn with `fork_turns="none"` and a unique nonce-suffixed task name. The task contains:
+Spawn with `fork_turns="none"` and a unique `scene_canon_image_<asset>_<32-hex-nonce>` task name. The task contains:
 
 1. target asset ID and attempt ID;
 2. full frozen prompt inline and its SHA-256;

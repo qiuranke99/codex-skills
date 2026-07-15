@@ -9,9 +9,9 @@ Use `scene_motion_six.v1`. The graph contains exactly six mandatory nodes and ex
 | `CDM_001` | `source_aligned_diagnostic` | source identity, neutral appearance, primary landmark frame | 1 |
 | `SRM_001` | `elevated_spatial_relation` | topology, upper boundaries, depth and connection relations | 2 |
 | `COV_001` | `left_adjacent_continuity` | left reveal order, shared landmark overlap, lateral baseline | 3 |
-| `COV_002` | `right_adjacent_continuity` | right reveal order, convergence against left path | 4 |
-| `COV_003` | `motion_reveal` | low/elevated/path reveal selected by the supported envelope | 5 |
-| `SCL_001` | `scale_landmark_depth` | scale, landmark spacing, near/mid/far depth relation | 6 |
+| `COV_002` | `right_adjacent_continuity` | right reveal order, convergence against left path | 3 |
+| `COV_003` | `motion_reveal` | low/elevated/path reveal selected by the supported envelope | 4 |
+| `SCL_001` | `scale_landmark_depth` | scale, landmark spacing, near/mid/far depth relation | 5 |
 
 Do not let one asset satisfy two roles. Do not replace a role with a crop, zoom, focal-length-only change, repeated camera tuple, or review-board tile.
 

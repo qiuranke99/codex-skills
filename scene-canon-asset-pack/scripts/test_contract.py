@@ -14,6 +14,8 @@ from typing import Any, Callable
 
 from PIL import Image, ImageDraw
 
+from resolve_worker_image import ContractError, SCENE_CANON_ASSET_TASK_SLUGS, validate_worker_name_binding
+
 from validate_scene_package import (
     DEPENDENCIES,
     MACHINE_ASSET_IDS,
@@ -477,6 +479,17 @@ def save_manifest(root: Path, value: dict[str, Any]) -> None:
     write_json(root / "00_manifest/ASSET_MANIFEST.json", value)
 
 
+def rebind_canon(root: Path) -> None:
+    canon_hash = sha256_file(root / "00_manifest/SCENE_CANON.json")
+    manifest = load_manifest(root)
+    manifest["canon_sha256"] = canon_hash
+    for asset in manifest["assets"]:
+        asset["canon_sha256"] = canon_hash
+    for record in manifest["four_k_prompt_records"]:
+        record["source_canon_sha256"] = canon_hash
+    save_manifest(root, manifest)
+
+
 def mutate_one_machine_plus_review(root: Path) -> None:
     value = load_manifest(root); value["assets"] = [value["assets"][0], value["assets"][-1]]; save_manifest(root, value)
 
@@ -539,6 +552,46 @@ def mutate_placeholder_qa(root: Path) -> None:
     (root / "09_qa/coverage_graph_report.md").write_text("TODO", encoding="utf-8")
 
 
+def mutate_live_origin_relabel(root: Path) -> None:
+    manifest = load_manifest(root)
+    publication_path = root / manifest["prompt_publication_receipt_path"]
+    publication = read_json(publication_path)
+    publication["origin"] = "live_runtime"
+    write_json(publication_path, publication)
+    manifest["prompt_publication_receipt_sha256"] = sha256_file(publication_path)
+    for asset in manifest["assets"]:
+        if not asset["is_machine_asset"]:
+            continue
+        inspection_path = root / asset["inspection_receipt_path"]
+        inspection = read_json(inspection_path)
+        inspection["origin"] = "live_runtime"
+        write_json(inspection_path, inspection)
+        asset["inspection_receipt_sha256"] = sha256_file(inspection_path)
+    manifest["runtime_evidence_origin"] = "live_runtime"
+    save_manifest(root, manifest)
+
+
+def mutate_non_executable_path(root: Path) -> None:
+    canon_path = root / "00_manifest/SCENE_CANON.json"
+    canon = read_json(canon_path)
+    reveal_path = next(item for item in canon["coverage_graph"]["paths"] if item["path_id"] == "PATH_REVEAL")
+    reveal_path["node_ids"] = [NODE_BY_ASSET[item] for item in ["COV_001", "SCL_001", "COV_003"]]
+    write_json(canon_path, canon)
+    rebind_canon(root)
+
+
+def mutate_duplicate_4k_prompt_ids(root: Path) -> None:
+    manifest = load_manifest(root)
+    for asset in manifest["assets"]:
+        if asset["is_machine_asset"]:
+            asset["four_k_prompt_id"] = "4K_SHARED"
+    for record in manifest["four_k_prompt_records"]:
+        record["prompt_id"] = "4K_SHARED"
+    save_manifest(root, manifest)
+    with (root / "08_4k_regeneration/4K_ASSET_REGENERATION_PROMPTS.md").open("a", encoding="utf-8") as handle:
+        handle.write("\n## 4K_SHARED\n\nShared prompt marker used only by the negative fixture.\n")
+
+
 def run() -> int:
     with tempfile.TemporaryDirectory(prefix="scene-canon-v2-") as temporary:
         base = Path(temporary) / "valid"
@@ -555,6 +608,16 @@ def run() -> int:
             print("FAIL fixture evidence unexpectedly satisfied production delivery")
             return 1
         print("PASS fixture/live evidence boundary")
+
+        relabeled = Path(temporary) / "live_origin_relabel"
+        shutil.copytree(base, relabeled)
+        mutate_live_origin_relabel(relabeled)
+        relabeled_errors = validate_package(relabeled, mode="delivery", fixture_mode=False)
+        if not any("live worker result missing audited provenance fields" in error for error in relabeled_errors):
+            print("FAIL live_origin_relabel: relabeled fixture receipts satisfied production delivery")
+            for error in relabeled_errors: print(f"  - {error}")
+            return 1
+        print("PASS expected failure: live_origin_relabel")
 
         state = Path(temporary) / "state"
         shutil.copytree(base, state)
@@ -582,6 +645,23 @@ def run() -> int:
         if help_result.returncode != 0 or "delegated" not in (help_result.stdout + help_result.stderr).lower():
             print("FAIL vendored worker resolver smoke")
             return 1
+        nonce = "a" * 32
+        for asset_slug in SCENE_CANON_ASSET_TASK_SLUGS:
+            expected_task = f"scene_canon_image_{asset_slug}_{nonce}"
+            if validate_worker_name_binding(f"/root/{expected_task}", nonce) != expected_task:
+                print(f"FAIL scene worker name binding: {asset_slug}")
+                return 1
+        for invalid_task in (
+            f"single_face_image_cdm_001_{nonce}",
+            f"scene_canon_image_garbage_{nonce}",
+            f"scene_canon_image__{nonce}",
+        ):
+            try:
+                validate_worker_name_binding(f"/root/{invalid_task}", nonce)
+            except ContractError:
+                continue
+            print(f"FAIL resolver accepted an invalid worker namespace: {invalid_task}")
+            return 1
         print("PASS vendored worker resolver smoke")
 
         cases: list[tuple[str, Callable[[Path], None], str]] = [
@@ -599,6 +679,8 @@ def run() -> int:
             ("published_prompt_mutated", mutate_prompt_body, "prompt body hash mismatch"),
             ("missing_primary_source_anchor", mutate_missing_source_anchor, "primary scene source must be reference 1"),
             ("placeholder_qa_report", mutate_placeholder_qa, "report is placeholder"),
+            ("non_executable_path", mutate_non_executable_path, "does not execute"),
+            ("duplicate_4k_prompt_ids", mutate_duplicate_4k_prompt_ids, "4K prompt IDs must be unique"),
         ]
         for name, mutator, expected in cases:
             root = Path(temporary) / name
@@ -611,7 +693,7 @@ def run() -> int:
                 return 1
             print(f"PASS expected failure: {name}")
 
-    print("scene canon contract fixtures: strict valid/state boundaries + 14 expected failures passed")
+    print("scene canon contract fixtures: strict valid/state boundaries + 17 expected failures passed")
     return 0
 
 

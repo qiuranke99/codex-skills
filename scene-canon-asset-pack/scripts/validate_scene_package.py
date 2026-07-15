@@ -12,6 +12,8 @@ from itertools import combinations
 from pathlib import Path
 from typing import Any, Iterable
 
+import resolve_worker_image as worker_resolver
+
 try:
     from PIL import Image
 except ImportError:  # delivery fails closed below
@@ -335,6 +337,25 @@ def validate_graph(canon: dict[str, Any], errors: list[str]) -> tuple[dict[str, 
         for edge_id in path["edge_ids"]:
             if edge_id in edge_by_id and path["path_id"] not in edge_by_id[edge_id]["path_ids"]:
                 errors.append(f"{path['path_id']}: edge does not declare path membership")
+        path_nodes = path["node_ids"]
+        path_edges = path["edge_ids"]
+        is_closed = len(path_edges) == len(path_nodes)
+        expected_edge_count = len(path_nodes) if is_closed else max(0, len(path_nodes) - 1)
+        if len(path_edges) != expected_edge_count:
+            errors.append(f"{path['path_id']}: path node/edge counts do not form an executable sequence")
+        elif path_nodes:
+            destinations = path_nodes[1:] + ([path_nodes[0]] if is_closed else [])
+            for edge_id, left, right in zip(path_edges, path_nodes, destinations):
+                edge = edge_by_id.get(edge_id)
+                if edge is not None and (edge["from_node_id"], edge["to_node_id"]) != (left, right):
+                    errors.append(f"{path['path_id']}: edge {edge_id} does not execute {left}->{right}")
+            executable_movements = {
+                edge_by_id[edge_id]["movement_type"]
+                for edge_id in path_edges
+                if edge_id in edge_by_id
+            }
+            if set(path["supported_movement_types"]) != executable_movements:
+                errors.append(f"{path['path_id']}: declared movements do not match its executable edges")
     if not graph["loops"]:
         errors.append("coverage graph requires loop closure")
     for loop in graph["loops"]:
@@ -468,6 +489,68 @@ def validate_prompt_publication(
             if prompt["prompt_id"] not in event_text or prompt["prompt_sha256"] not in event_text or prompt["prompt_body"] not in event_text:
                 errors.append(f"{prompt['prompt_id']}: complete prompt body/hash was not published in the bound event")
     return receipt
+
+
+def validate_live_worker_lineage(
+    result: dict[str, Any],
+    prompt: dict[str, Any],
+    reference_path: Path,
+    errors: list[str],
+    label: str,
+) -> None:
+    required = {
+        "worker_task_name", "worker_turn_id", "worker_rollout_path", "parent_rollout_path",
+        "parent_spawn_call_id", "parent_spawn_turn_id", "task_delivery_ciphertext_sha256",
+        "worker_saved_path", "reference_mode",
+    }
+    missing = sorted(required - set(result))
+    if missing:
+        errors.append(f"{label}: live worker result missing audited provenance fields: {', '.join(missing)}")
+        return
+    try:
+        reference_manifest = read_json(reference_path)
+        expected_references = [Path(item["frozen_path"]) for item in reference_manifest["ordered_references"]]
+        worker_rollout = Path(str(result["worker_rollout_path"]))
+        parent_rollout = Path(str(result["parent_rollout_path"]))
+        worker_evidence = worker_resolver.validate_worker_rollout(
+            worker_resolver.read_rollout(worker_rollout),
+            thread_id=str(result.get("worker_thread_id", "")),
+            agent_path=str(result.get("agent_path", "")),
+            parent_thread_id=str(result.get("parent_thread_id", "")),
+            worker_run_nonce=str(result.get("worker_run_nonce", "")),
+            expected_prompt_bytes=prompt["prompt_body"].encode("utf-8"),
+            expected_references=expected_references,
+            allow_no_references=False,
+        )
+        spawn_evidence = worker_resolver.validate_parent_spawn_chain(
+            worker_resolver.read_rollout(parent_rollout),
+            parent_thread_id=str(result.get("parent_thread_id", "")),
+            worker_thread_id=str(result.get("worker_thread_id", "")),
+            agent_path=str(result.get("agent_path", "")),
+            worker_run_nonce=str(result.get("worker_run_nonce", "")),
+            delivery_ciphertext=worker_evidence["task_delivery_ciphertext"],
+            not_before_ms=int(result.get("parent_spawn_activity_ms", -1)),
+        )
+    except (OSError, KeyError, TypeError, ValueError, worker_resolver.ContractError) as exc:
+        errors.append(f"{label}: live worker lineage replay failed: {exc}")
+        return
+    expected_worker = {
+        "worker_task_name": worker_evidence["worker_task_name"],
+        "worker_turn_id": worker_evidence["worker_turn_id"],
+        "image_generation_call_id": worker_evidence["call_id"],
+        "tool_prompt_sha256": worker_evidence["tool_prompt_sha256"],
+        "reference_mode": worker_evidence["reference_mode"],
+    }
+    for key, expected in expected_worker.items():
+        if result.get(key) != expected:
+            errors.append(f"{label}: live worker lineage field {key} does not match replayed evidence")
+    if worker_resolver.normalized_path(Path(str(result["worker_saved_path"]))) != worker_resolver.normalized_path(Path(worker_evidence["saved_path"])):
+        errors.append(f"{label}: live worker saved path does not match replayed evidence")
+    for key in ("binding_mode", "parent_spawn_call_id", "parent_spawn_turn_id", "task_delivery_ciphertext_sha256"):
+        if result.get(key) != spawn_evidence[key]:
+            errors.append(f"{label}: live parent spawn field {key} does not match replayed evidence")
+    if result.get("parent_spawn_activity_ms") != int(spawn_evidence["parent_spawn_activity_ms"]):
+        errors.append(f"{label}: live parent spawn time does not match replayed evidence")
 
 
 def validate_package(root: Path, mode: str = "delivery", fixture_mode: bool = False) -> list[str]:
@@ -680,6 +763,8 @@ def validate_package(root: Path, mode: str = "delivery", fixture_mode: bool = Fa
             errors.append(f"{asset_id}: worker result does not bind the manifest image")
         reference_path = Path(str(result.get("reference_manifest_path", "")))
         validate_reference_manifest(root, reference_path, result, DEPENDENCIES[asset_id], errors, asset_id)
+        if manifest["runtime_evidence_origin"] == "live_runtime" and reference_path.is_file() and expected_prompt:
+            validate_live_worker_lineage(result, expected_prompt, reference_path, errors, asset_id)
         agent = str(result.get("agent_path", ""))
         thread = str(result.get("worker_thread_id", ""))
         nonce = str(result.get("worker_run_nonce", ""))
@@ -770,9 +855,16 @@ def validate_package(root: Path, mode: str = "delivery", fixture_mode: bool = Fa
                     errors.append("HRB_001 dimensions are false or unverified")
             except (OSError, RuntimeError, ValueError) as exc:
                 errors.append(f"HRB_001 decode failed: {exc}")
-    finalized = [record for record in manifest["four_k_prompt_records"] if record["status"] == "finalized_post_qa"]
+    four_k_records = manifest["four_k_prompt_records"]
+    finalized = [record for record in four_k_records if record["status"] == "finalized_post_qa"]
+    expected_four_k_ids = [f"4K_{asset_id}" for asset_id in MACHINE_ASSET_IDS]
     if len(finalized) != 6 or [record["asset_id"] for record in finalized] != MACHINE_ASSET_IDS:
         errors.append("delivery requires exactly one finalized 4K prompt per machine asset")
+    finalized_prompt_ids = [record["prompt_id"] for record in finalized]
+    if len(four_k_records) != 6 or len(finalized_prompt_ids) != len(set(finalized_prompt_ids)):
+        errors.append("4K prompt IDs must be unique with no extra or non-finalized records")
+    if finalized_prompt_ids != expected_four_k_ids:
+        errors.append("4K prompt records must use the ordered one-to-one asset prompt IDs")
     four_k_doc = (root / "08_4k_regeneration/4K_ASSET_REGENERATION_PROMPTS.md").read_text(encoding="utf-8")
     asset_by_id = {asset["asset_id"]: asset for asset in machine_assets}
     for record in finalized:
@@ -795,8 +887,9 @@ def validate_package(root: Path, mode: str = "delivery", fixture_mode: bool = Fa
         errors.append("approved machine and 4K mapping counts must both equal six")
     if set(canon["generated_asset_index"]) != set(MACHINE_ASSET_IDS + ["HRB_001"]):
         errors.append("Scene Canon generated_asset_index is incomplete")
-    if set(canon["four_k_prompt_index"]) != {f"4K_{asset_id}" for asset_id in MACHINE_ASSET_IDS}:
-        errors.append("Scene Canon 4K prompt index is incomplete")
+    asset_four_k_ids = [asset["four_k_prompt_id"] for asset in machine_assets]
+    if canon["four_k_prompt_index"] != expected_four_k_ids or asset_four_k_ids != expected_four_k_ids or finalized_prompt_ids != expected_four_k_ids:
+        errors.append("Scene Canon, assets, and 4K records must share one ordered one-to-one prompt index")
     qa_records = manifest["structured_qa_records"]
     if not qa_records:
         errors.append("structured QA records are required")
