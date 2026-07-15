@@ -456,16 +456,12 @@ def make_packaging_exact_copy_authority_evidence(
         _PACKAGING_FIXTURE_MODULE = module
     module = _PACKAGING_FIXTURE_MODULE
     fixture_data = module.valid_fixture(
-        project_root / f"sources/{artifact_id}_packaging_board_fixture"
+        project_root / f"sources/{artifact_id}_packaging_board_fixture",
+        exact_copy=True,
     )
     run_root = Path(fixture_data["run_dir"])
     manifest_path = Path(fixture_data["manifest"])
     manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
-    manifest["ocr"] = {"status": "reviewed", "blocking": False}
-    manifest["copy_authority"] = "exact_copy_evidence"
-    manifest["unresolved_regions"] = []
-    manifest["qa"]["assistant_qa_status"] = "passed"
-    write_json(manifest_path, manifest)
     primary_path = Path(manifest["final_board_path"])
     run_root_rel = run_root.relative_to(project_root).as_posix()
     primary_rel = primary_path.relative_to(project_root).as_posix()

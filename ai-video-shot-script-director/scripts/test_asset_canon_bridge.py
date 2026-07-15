@@ -146,14 +146,10 @@ def create_packaging_exact_copy_run_and_evidence(
 ) -> dict[str, str]:
     """Build one validated exact-copy-evidence board and bind its final PNG."""
     fixture = load_packaging_fixture_module()
-    fixture_data = fixture.valid_fixture(root / prefix / "packaging_board_fixture")
+    fixture_data = fixture.valid_fixture(root / prefix / "packaging_board_fixture", exact_copy=True)
     run_root = Path(fixture_data["run_dir"])
     manifest_path = Path(fixture_data["manifest"])
     manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
-    manifest["ocr"] = {"status": "reviewed", "blocking": False}
-    manifest["copy_authority"] = "exact_copy_evidence"
-    manifest["unresolved_regions"] = []
-    manifest["qa"]["assistant_qa_status"] = "passed"
     manifest_locator = manifest_path.relative_to(root).as_posix()
     write_json(root, manifest_locator, manifest)
     primary_path = Path(manifest["final_board_path"])

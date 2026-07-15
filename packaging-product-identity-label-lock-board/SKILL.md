@@ -28,7 +28,7 @@ This package belongs to the High-Control AI TVC release suite. Start one monoton
 - Windows: `high-control-ai-tvc/tools/release-control.ps1 -Action check -Format json`
 - macOS/Linux: `high-control-ai-tvc/tools/release-control.sh check --format json`
 
-Give the gate 60 seconds. Continue only when `ready_latest=true`. Never rerun it inside the image worker. If it fails or times out, compile and publish the complete prompt as `prompt_status: release_unverified`, do not generate, and terminate `BLOCKED_RELEASE_GATE`.
+Give the gate 60 seconds. Continue only when `ready_latest=true`. Never rerun it inside the image worker and never use an unverified global Python to bypass the pinned runtime. If it fails or times out, compile and publish the complete prompt as `prompt_status: release_unverified`, do not generate, and terminate `BLOCKED_RELEASE_GATE`.
 
 ## Prompt-first latency contract
 
@@ -287,5 +287,16 @@ Return:
 Valid bounded failures are `BLOCKED_RELEASE_GATE`, `BLOCKED_REFERENCE_MATERIALIZATION`, `BLOCKED_PROMPT_READY_TIMEOUT`, `BLOCKED_WORKER_START_TIMEOUT`, `BLOCKED_WORKER_SUBMIT_TIMEOUT`, `BLOCKED_IMAGEGEN_TIMEOUT`, `BLOCKED_VALIDATION`, and `REJECTED_AFTER_MAX_ATTEMPTS`. Every state after prompt compilation still returns the complete prompt. Sparse angles, OCR disagreement, or hidden copy alone do not block a normal `video_reference` board.
 
 On every terminal success or failure after compilation, repeat the complete frozen prompt inline with its hashes and truthful terminal status.
+
+## Optional AI-Video Project Canon Export
+
+This appendix is downstream compatibility for the already accepted board, not another board, angle set, or default deliverable. Run `scripts/export_ai_video_canon.py` only when an AI-video project explicitly needs a fixed-owner Canon record.
+
+- Runtime dependency: this package's `requirements.txt` pins `Pillow` for deterministic board and copy-evidence validation.
+- `authority_stage: terminal_packaging_canon`
+- `terminal_route_decision: not_applicable`
+- `geometry_layout_only` authorizes `[product_geometry]` from an accepted board.
+- `geometry_layout_exact_copy_verified` authorizes `[product_geometry, label_copy]` only when the bound v2 board manifest has `copy_authority: exact_copy_evidence`, reviewed copy ledger, zero unresolved claimed regions, verbatim prompt coverage, passed board-wide copy QA, source/artwork-backed pixels, and a live package-validator pass.
+- The export bridge never generates, repairs, expands, or upgrades the board by inference.
 
 The Skill succeeds only when the board is compact, borderless, copy-auditable, and honest enough for downstream video generation. It does not succeed by filling the canvas with more views, by listing text without validating pixels, or by accepting visible gibberish.

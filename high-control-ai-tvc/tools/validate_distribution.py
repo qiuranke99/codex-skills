@@ -220,11 +220,17 @@ def validate() -> List[str]:
         "SKILL.md",
         "agents/openai.yaml",
         "references/generation_prompt_template.md",
+        "references/generation_prompt_values.template.json",
+        "references/copy_ledger.template.json",
+        "references/copy_qa.template.json",
         "references/composition_plan.template.json",
         "references/asset_board_manifest.template.json",
         "scripts/freeze_reference_bundle.py",
         "scripts/resolve_worker_image.py",
         "scripts/compose_asset_board.py",
+        "scripts/compile_copy_prompt.py",
+        "scripts/render_generation_prompt.py",
+        "scripts/validate_copy_contract.py",
         "scripts/validate_asset_board_run.py",
         "scripts/test_contract.py",
         "scripts/export_ai_video_canon.py",
@@ -236,12 +242,19 @@ def validate() -> List[str]:
     if packaging_skill.is_file():
         text = packaging_skill.read_text(encoding="utf-8")
         for marker in (
-            "Deliver exactly one clean horizontal 16:9 board",
-            "exactly eight complete product views",
-            "four to six fully populated evidence detail panels",
+            "Return exactly one clean horizontal 16:9 board",
+            "exactly seven complete product views",
+            "two source-grounded detail regions by default",
+            "nine regions by default and never more than ten",
+            "borderless_continuous_background",
             "No blank cells, empty rectangles, placeholders, reserved slots",
             "independently usable as a final single-call prompt",
             "OCR remains nonblocking",
+            "copy-ledger.json",
+            "scripts/compile_copy_prompt.py",
+            "scripts/render_generation_prompt.py",
+            "scripts/validate_copy_contract.py",
+            "board_wide_invented_or_corrupted_visible_copy",
             "never request a fixed 8/12/16/24-angle capture set",
             "The main agent must not call imagegen directly",
             "scripts/compose_asset_board.py",
@@ -261,14 +274,20 @@ def validate() -> List[str]:
         except (OSError, UnicodeDecodeError, json.JSONDecodeError) as exc:
             errors.append(f"packaging asset-board manifest template is invalid: {exc}")
         else:
-            if board_manifest.get("schema_version") != "packaging_video_asset_board.v1":
+            if board_manifest.get("schema_version") != "packaging_video_asset_board.v2":
                 errors.append("packaging asset-board manifest has the wrong schema")
-            if len(board_manifest.get("view_cells", [])) != 8:
-                errors.append("packaging asset-board manifest must define exactly eight views")
-            if not 4 <= len(board_manifest.get("detail_cells", [])) <= 6:
-                errors.append("packaging asset-board manifest must define four to six details")
-            if board_manifest.get("qa", {}).get("all_cells_populated") != "pass":
-                errors.append("packaging asset-board manifest must require all_cells_populated")
+            if len(board_manifest.get("view_regions", [])) != 7:
+                errors.append("packaging asset-board manifest must define exactly seven views")
+            if not 2 <= len(board_manifest.get("detail_regions", [])) <= 3:
+                errors.append("packaging asset-board manifest must define two or three details")
+            if board_manifest.get("region_count") not in {9, 10}:
+                errors.append("packaging asset-board manifest must define nine or ten total regions")
+            if board_manifest.get("layout_style") != "borderless_continuous_background":
+                errors.append("packaging asset-board manifest must require a borderless continuous background")
+            if board_manifest.get("qa", {}).get("all_regions_populated") != "pass":
+                errors.append("packaging asset-board manifest must require all_regions_populated")
+            if board_manifest.get("qa", {}).get("no_visible_frames") != "pass":
+                errors.append("packaging asset-board manifest must reject visible frames")
     composition_plan_template = packaging_root / "references/composition_plan.template.json"
     if composition_plan_template.is_file():
         try:
@@ -276,8 +295,14 @@ def validate() -> List[str]:
         except (OSError, UnicodeDecodeError, json.JSONDecodeError) as exc:
             errors.append(f"packaging composition-plan template is invalid: {exc}")
         else:
-            if not 4 <= len(composition_plan.get("detail_layout", [])) <= 6:
-                errors.append("packaging composition plan must freeze four to six populated detail cells")
+            if composition_plan.get("schema_version") != "packaging_board_composition_plan.v2":
+                errors.append("packaging composition plan has the wrong schema")
+            if not 2 <= len(composition_plan.get("detail_layout", [])) <= 3:
+                errors.append("packaging composition plan must freeze two or three populated detail regions")
+            if composition_plan.get("layout_style") != "borderless_continuous_background":
+                errors.append("packaging composition plan must require a borderless continuous background")
+            if composition_plan.get("drawn_borders") is not False:
+                errors.append("packaging composition plan must forbid drawn borders")
     return errors
 
 

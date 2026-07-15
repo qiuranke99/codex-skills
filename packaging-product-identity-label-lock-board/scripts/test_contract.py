@@ -247,7 +247,7 @@ def worker_events(prompt: str, references: list[Path], nonce: str) -> dict[str, 
     }
 
 
-def valid_fixture(base: Path) -> dict[str, Any]:
+def valid_fixture(base: Path, exact_copy: bool = False) -> dict[str, Any]:
     run_dir = base / "run"
     attempt = run_dir / "attempts" / "01"
     attempt.mkdir(parents=True)
@@ -280,7 +280,7 @@ def valid_fixture(base: Path) -> dict[str, Any]:
         {
             "schema_version": "packaging_copy_ledger.v1",
             "product_id": "fixture-product",
-            "ocr_status": "candidates_only",
+            "ocr_status": "reviewed" if exact_copy else "candidates_only",
             "regions": [
                 {
                     "region_id": "front_label",
@@ -305,10 +305,10 @@ def valid_fixture(base: Path) -> dict[str, Any]:
                         {
                             "line_id": "front_label.L002",
                             "order": 2,
-                            "text": "unreadable supporting copy",
-                            "language": "und",
-                            "status": "unresolved",
-                            "evidence": "not_readable",
+                            "text": "BULGARIAN ROSE SWEET ORANGE BATH OIL" if exact_copy else "unreadable supporting copy",
+                            "language": "en" if exact_copy else "und",
+                            "status": "approved_exact" if exact_copy else "unresolved",
+                            "evidence": "source_visual" if exact_copy else "not_readable",
                         },
                     ],
                 }
@@ -506,9 +506,9 @@ def valid_fixture(base: Path) -> dict[str, Any]:
         "composition_receipt_sha256": sha(receipt),
         "final_board_path": str(final_board),
         "final_board_sha256": sha(final_board),
-        "ocr": {"status": "candidates_only", "blocking": False},
-        "copy_authority": "video_reference",
-        "unresolved_regions": ["hidden_side_microcopy"],
+        "ocr": {"status": "reviewed" if exact_copy else "candidates_only", "blocking": False},
+        "copy_authority": "exact_copy_evidence" if exact_copy else "video_reference",
+        "unresolved_regions": [] if exact_copy else ["hidden_side_microcopy"],
         "layout_style": "borderless_continuous_background",
         "region_count": 9,
         "view_regions": views,
@@ -527,7 +527,7 @@ def valid_fixture(base: Path) -> dict[str, Any]:
             "source_anchor_match": "pass",
             "non_product_text_pollution": "pass",
             "all_regions_populated": "pass",
-            "assistant_qa_status": "conditional",
+            "assistant_qa_status": "passed" if exact_copy else "conditional",
         },
     }
     write_json(manifest, manifest_value)

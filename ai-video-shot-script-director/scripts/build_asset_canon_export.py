@@ -366,7 +366,7 @@ def validate_packaging_exact_copy_evidence(
     ocr = run_manifest.get("ocr")
     qa = run_manifest.get("qa")
     if (
-        run_manifest.get("schema_version") != "packaging_video_asset_board.v1"
+        run_manifest.get("schema_version") != "packaging_video_asset_board.v2"
         or run_manifest.get("run_status") != "COMPLETE"
         or run_manifest.get("copy_authority") != "exact_copy_evidence"
         or not isinstance(ocr, dict)
@@ -376,6 +376,9 @@ def validate_packaging_exact_copy_evidence(
         or not isinstance(qa, dict)
         or qa.get("assistant_qa_status") != "passed"
         or qa.get("label_fidelity") != "pass"
+        or qa.get("copy_prompt_coverage") != "pass"
+        or qa.get("copy_pixel_qa") != "pass"
+        or qa.get("no_visible_frames") != "pass"
     ):
         errors.append("packaging Canon authority requires a passed COMPLETE exact-copy-evidence board")
 
