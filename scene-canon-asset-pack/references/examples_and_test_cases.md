@@ -9,6 +9,12 @@
 
 Do not trigger for a storyboard, one shot anchor, character/product lock, Look Master, Lighting Master, ordinary retouch, source-image search, simple upscale, or video prompt.
 
+An otherwise matching six-scene-asset request that does not explicitly invoke
+`$scene-canon-asset-pack` must return `blocked_explicit_invocation_required`.
+The main agent must not promise to perform the package later through generic
+`imagegen`, ask only for a reference upload, or generate the six assets
+directly. No Scene worker or image call is authorized.
+
 ## Test A — Heavy-Grade Single Interior
 
 Pass only if the workflow separates warm/cool cast and crushed shadows from material base color; preserves fixed neon/emissive structure; creates a neutral diagnostic master; covers meaningful high/low reveals without new furniture; and the 4K prompt forbids source-look restoration.

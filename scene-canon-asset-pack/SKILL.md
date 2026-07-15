@@ -1,6 +1,6 @@
 ---
 name: scene-canon-asset-pack
-description: "Create a reusable six-image Scene Canon Asset Pack from one or more user-supplied scene reference images. Use only when the user explicitly invokes the Skill and needs a neutral, motion-bounded environment package with one frozen canon, six complete prompts disclosed before generation, dependency-staged non-decision image workers, an executable coverage graph, cross-view continuity QA, and one 4K regeneration prompt per approved machine asset. Trigger for scene assets, environment plates, location assets, spatial expansion, or scene continuity; do not use for storyboards, shot anchors, characters, products, look/lighting masters, retouching, source search, simple upscale, video prompts, or video generation."
+description: "Create a reusable six-image Scene Canon Asset Pack from one or more user-supplied scene reference images. Use only when the user explicitly invokes the Skill and needs a neutral, motion-bounded environment package with one frozen canon, six complete prompts disclosed before generation, dependency-staged non-decision image workers, an executable coverage graph, cross-view continuity QA, and one 4K regeneration prompt per approved machine asset. If a matching request does not explicitly invoke this Skill, do not promise or perform it through generic imagegen or main-agent direct generation; require the explicit invocation instead. Trigger for scene assets, environment plates, location assets, spatial expansion, or scene continuity; do not use for storyboards, shot anchors, characters, products, look/lighting masters, retouching, source search, simple upscale, video prompts, or video generation."
 ---
 
 # Scene Canon Asset Pack
@@ -15,7 +15,7 @@ Build one minimum-complete, internally consistent scene canon, then generate exa
 
 ## Authorization And Input Gate
 
-Require explicit `$scene-canon-asset-pack` invocation and at least one usable user-supplied scene reference image. Explicit invocation authorizes the narrow `AGENTS.md` exception: one fresh non-decision image worker for each actual image-generation attempt. Do not spawn a worker after implicit routing or without the project authorization rule.
+Require explicit `$scene-canon-asset-pack` invocation and at least one usable user-supplied scene reference image. Explicit invocation authorizes the narrow `AGENTS.md` exception: one fresh non-decision image worker for each actual image-generation attempt. Do not spawn a worker after implicit routing or without the project authorization rule. An implicit matching request must return `blocked_explicit_invocation_required`; do not promise later fulfillment, ask only for a reference upload, substitute generic `imagegen`, or let the main agent generate the six assets directly.
 
 Accept one or more scene references, crops, material details, alternate lighting/state views, and optional camera-motion constraints. If no scene reference exists, return `blocked_missing_scene_reference`. If the user forbids inference, deliver a source-supported gap report and do not generate. Separate creative completion from engineering, survey, forensic, construction, or scientific truth claims.
 
@@ -127,7 +127,7 @@ Advance only:
 
 `input_ready → evidence_locked → appearance_frozen → canon_frozen → motion_envelope_frozen → coverage_graph_frozen → six_prompts_published → generating_stage_1..6 → graph_qa_pending → six_assets_approved → four_k_mapped → packaged`
 
-Use `repair_required` from any generation or graph-QA stage and return to the earliest affected freeze. Use `blocked_missing_scene_reference`, `blocked_exactness_evidence`, `blocked_prompt_publication`, `blocked_worker_runtime`, or `hard_blocked_generation_runtime` only for non-substitutable blockers.
+Use `repair_required` from any generation or graph-QA stage and return to the earliest affected freeze. Use `blocked_explicit_invocation_required`, `blocked_missing_scene_reference`, `blocked_exactness_evidence`, `blocked_prompt_publication`, `blocked_worker_runtime`, or `hard_blocked_generation_runtime` only for non-substitutable blockers.
 
 ## Completion Gate
 

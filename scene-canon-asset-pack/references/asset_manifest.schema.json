@@ -28,7 +28,7 @@
     "appearance_sha256": {"$ref": "#/$defs/sha256"},
     "completion_hash": {"$ref": "#/$defs/sha256"},
     "motion_profile_id": {"const": "scene_motion_six.v1"},
-    "package_status": {"enum": ["draft", "prompts_frozen", "prompts_published", "generating", "repair_required", "graph_qa_pending", "four_k_mapping_failed", "packaged", "blocked_missing_scene_reference", "blocked_exactness_evidence", "blocked_prompt_publication", "blocked_worker_runtime", "hard_blocked_generation_runtime"]},
+    "package_status": {"enum": ["draft", "prompts_frozen", "prompts_published", "generating", "repair_required", "graph_qa_pending", "four_k_mapping_failed", "packaged", "blocked_explicit_invocation_required", "blocked_missing_scene_reference", "blocked_exactness_evidence", "blocked_prompt_publication", "blocked_worker_runtime", "hard_blocked_generation_runtime"]},
     "task_finalization_status": {"enum": ["not_started", "in_progress", "ready_to_publish", "complete", "blocked"]},
     "assistant_qa_status": {"enum": ["not_reviewed", "failed", "passed", "blocked"]},
     "production_approval_status": {"enum": ["not_granted", "user_granted", "external_pipeline_granted"]},
