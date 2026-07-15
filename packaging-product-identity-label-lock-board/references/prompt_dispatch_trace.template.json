@@ -6,6 +6,7 @@
   "generation_prompt_sha256": "replace-with-sha256",
   "generation_reference_pack_path": "replace-with-absolute-path",
   "generation_reference_pack_sha256": "replace-with-sha256",
+  "generation_authorization": "explicit_board_generation",
   "prompt_publication": {
     "mode": "inline_complete_prompt",
     "elapsed_ms": 0,

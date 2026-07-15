@@ -31,6 +31,7 @@ TERMINAL_STATUSES = {
     "BLOCKED_IMAGEGEN_TIMEOUT",
     "BLOCKED_VALIDATION",
     "REJECTED_AFTER_MAX_ATTEMPTS",
+    "USER_SKIPPED_GENERATION",
 }
 WORKER_STATUSES = {
     "ACCEPTED",
@@ -44,6 +45,13 @@ SUBMITTED_STATUSES = {
     "BLOCKED_IMAGEGEN_TIMEOUT",
     "BLOCKED_VALIDATION",
     "REJECTED_AFTER_MAX_ATTEMPTS",
+}
+NO_WORKER_STATUSES = {
+    "BLOCKED_RELEASE_GATE",
+    "BLOCKED_REFERENCE_MATERIALIZATION",
+    "BLOCKED_PROMPT_READY_TIMEOUT",
+    "BLOCKED_WORKER_START_TIMEOUT",
+    "USER_SKIPPED_GENERATION",
 }
 
 
@@ -113,7 +121,17 @@ def validate(trace: dict[str, Any]) -> dict[str, Any]:
     prompt_elapsed = integer(prompt_publication.get("elapsed_ms"), "prompt_publication.elapsed_ms")
     if prompt_publication.get("published_sha256") != sha256(prompt_path):
         raise TraceError("blocked_prompt_publication_hash", "published prompt bytes do not match the frozen prompt")
-    if prompt_elapsed > PROMPT_TOTAL_LIMIT_MS or prompt_elapsed - release_elapsed > PROMPT_AFTER_GATE_LIMIT_MS:
+    prompt_deadline_missed = (
+        prompt_elapsed > PROMPT_TOTAL_LIMIT_MS
+        or prompt_elapsed - release_elapsed > PROMPT_AFTER_GATE_LIMIT_MS
+    )
+    if terminal_status == "BLOCKED_PROMPT_READY_TIMEOUT":
+        if not prompt_deadline_missed:
+            raise TraceError(
+                "blocked_dispatch_terminal_status",
+                "BLOCKED_PROMPT_READY_TIMEOUT requires an actually missed prompt deadline",
+            )
+    elif prompt_deadline_missed:
         raise TraceError("blocked_prompt_ready_timeout", "complete prompt missed its publication deadline")
     terminal_elapsed = integer(trace.get("terminal_elapsed_ms"), "terminal_elapsed_ms")
     if terminal_elapsed < prompt_elapsed:
@@ -136,6 +154,28 @@ def validate(trace: dict[str, Any]) -> dict[str, Any]:
             raise TraceError("blocked_generation_reference_count", "imagegen provider pack must contain one to five references")
 
     worker = trace.get("worker")
+    generation_authorization = trace.get("generation_authorization")
+    if terminal_status == "USER_SKIPPED_GENERATION":
+        if generation_authorization != "user_prompt_only_override":
+            raise TraceError(
+                "blocked_generation_authorization",
+                "USER_SKIPPED_GENERATION requires an explicit user prompt-only override",
+            )
+        if worker is not None and worker != {}:
+            raise TraceError("blocked_generation_authorization", "prompt-only override must not spawn a worker")
+    elif terminal_status == "BLOCKED_PROMPT_READY_TIMEOUT":
+        if generation_authorization not in {"explicit_board_generation", "user_prompt_only_override"}:
+            raise TraceError(
+                "blocked_generation_authorization",
+                "prompt deadline terminal must record either board-generation or prompt-only authorization",
+            )
+    elif generation_authorization != "explicit_board_generation":
+        raise TraceError(
+            "blocked_generation_authorization",
+            "board generation states require explicit board-generation authorization",
+        )
+    if terminal_status in NO_WORKER_STATUSES and worker is not None and worker != {}:
+        raise TraceError("blocked_worker_trace_unexpected", f"{terminal_status} must not contain a spawned worker")
     if terminal_status in WORKER_STATUSES:
         if not isinstance(worker, dict):
             raise TraceError("blocked_worker_trace_missing", "worker dispatch evidence is required")
@@ -185,9 +225,17 @@ def validate(trace: dict[str, Any]) -> dict[str, Any]:
             raise TraceError("blocked_orphan_retry", "do not retry while the first image call state is unknown")
 
     automatic_elapsed = integer(trace.get("automatic_generation_elapsed_ms"), "automatic_generation_elapsed_ms")
+    if generation_authorization == "user_prompt_only_override" and automatic_elapsed != 0:
+        raise TraceError("blocked_generation_authorization", "prompt-only override must record zero generation time")
     if automatic_elapsed > TOTAL_AUTOMATIC_LIMIT_MS:
         raise TraceError("blocked_total_generation_budget", "automatic generation work exceeded 20 minutes")
-    validate_update_cadence(trace, prompt_elapsed, terminal_elapsed)
+    updates = trace.get("user_visible_update_elapsed_ms")
+    if not isinstance(updates, list) or prompt_elapsed not in updates:
+        raise TraceError(
+            "blocked_dispatch_update_cadence",
+            "the complete prompt publication time must be one user-visible update milestone",
+        )
+    validate_update_cadence(trace, 0, terminal_elapsed)
     return {
         "ok": True,
         "terminal_status": terminal_status,

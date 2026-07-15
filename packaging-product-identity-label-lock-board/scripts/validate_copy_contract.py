@@ -69,6 +69,7 @@ def main() -> int:
     if not isinstance(board_regions, list) or not board_regions:
         raise CopyContractError("blocked_copy_qa_invalid", "board_regions must be a non-empty array")
     covered: set[str] = set()
+    source_backed_covered: set[str] = set()
     for row in board_regions:
         if not isinstance(row, dict):
             raise CopyContractError("blocked_copy_qa_invalid", "board region QA entry is invalid")
@@ -84,6 +85,8 @@ def main() -> int:
         if row.get("visual_status") == "source_reprojected" and row.get("source_backed_pixels") is not True:
             raise CopyContractError("blocked_copy_qa_binding", "source_reprojected status requires source_backed_pixels=true")
         covered.update(region_ids)
+        if row.get("source_backed_pixels") is True and row.get("visual_status") in {"exact_match", "source_reprojected"}:
+            source_backed_covered.update(region_ids)
 
     approved_regions = {
         region["region_id"]
@@ -97,6 +100,12 @@ def main() -> int:
         all_lines = [line for region in ledger["regions"] for line in region.get("lines", [])]
         if ledger.get("ocr_status") != "reviewed" or any(line.get("status") != "approved_exact" for line in all_lines):
             raise CopyContractError("blocked_exact_copy_authority", "exact authority requires reviewed OCR and no uncertain lines")
+        if not approved_regions.issubset(source_backed_covered):
+            missing = sorted(approved_regions - source_backed_covered)
+            raise CopyContractError(
+                "blocked_exact_copy_authority",
+                f"exact authority requires source/artwork-backed final pixels for every approved region: {missing}",
+            )
 
     result = {
         "ok": True,

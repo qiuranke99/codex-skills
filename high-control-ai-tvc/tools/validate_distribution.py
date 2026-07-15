@@ -223,9 +223,13 @@ def validate() -> List[str]:
         "references/generation_prompt_values.template.json",
         "references/copy_ledger.template.json",
         "references/copy_qa.template.json",
+        "references/raw_board_qa.template.json",
+        "references/prompt_dispatch_trace.template.json",
         "references/composition_plan.template.json",
         "references/asset_board_manifest.template.json",
         "scripts/freeze_reference_bundle.py",
+        "scripts/build_generation_reference_pack.py",
+        "scripts/validate_prompt_dispatch_trace.py",
         "scripts/resolve_worker_image.py",
         "scripts/compose_asset_board.py",
         "scripts/compile_copy_prompt.py",
@@ -254,6 +258,9 @@ def validate() -> List[str]:
             "scripts/compile_copy_prompt.py",
             "scripts/render_generation_prompt.py",
             "scripts/validate_copy_contract.py",
+            "raw-board-qa.json",
+            "references/raw_board_qa.template.json",
+            "USER_SKIPPED_GENERATION",
             "board_wide_invented_or_corrupted_visible_copy",
             "never request a fixed 8/12/16/24-angle capture set",
             "The main agent must not call imagegen directly",
@@ -288,6 +295,40 @@ def validate() -> List[str]:
                 errors.append("packaging asset-board manifest must require all_regions_populated")
             if board_manifest.get("qa", {}).get("no_visible_frames") != "pass":
                 errors.append("packaging asset-board manifest must reject visible frames")
+            for field in ("raw_board_qa_path", "raw_board_qa_sha256"):
+                if field not in board_manifest:
+                    errors.append(f"packaging asset-board manifest must bind {field}")
+    raw_board_qa_template = packaging_root / "references/raw_board_qa.template.json"
+    if raw_board_qa_template.is_file():
+        try:
+            raw_board_qa = json.loads(raw_board_qa_template.read_text(encoding="utf-8"))
+        except (OSError, UnicodeDecodeError, json.JSONDecodeError) as exc:
+            errors.append(f"packaging raw-board QA template is invalid: {exc}")
+        else:
+            if raw_board_qa.get("schema_version") != "packaging_raw_board_qa.v1":
+                errors.append("packaging raw-board QA template has the wrong schema")
+            if raw_board_qa.get("inspected") is not False or raw_board_qa.get("overall_status") != "pending":
+                errors.append("packaging raw-board QA template must default to a fail-closed pending state")
+            if raw_board_qa.get("complete_view_count") != 7:
+                errors.append("packaging raw-board QA must require exactly seven complete views")
+            if raw_board_qa.get("detail_region_count") not in {2, 3}:
+                errors.append("packaging raw-board QA must require two or three details")
+            if raw_board_qa.get("total_region_count") not in {9, 10}:
+                errors.append("packaging raw-board QA must require nine or ten regions")
+            flags = raw_board_qa.get("failure_flags")
+            if not isinstance(flags, dict) or any(value is not False for value in flags.values()):
+                errors.append("packaging raw-board QA failure flags must default to false")
+    dispatch_validator = packaging_root / "scripts/validate_prompt_dispatch_trace.py"
+    if dispatch_validator.is_file():
+        dispatch_text = dispatch_validator.read_text(encoding="utf-8")
+        for marker in (
+            "prompt_elapsed not in updates",
+            "validate_update_cadence(trace, 0, terminal_elapsed)",
+            "USER_SKIPPED_GENERATION",
+            "BLOCKED_PROMPT_READY_TIMEOUT",
+        ):
+            if marker not in dispatch_text:
+                errors.append(f"packaging dispatch validator is missing end-to-end cadence marker: {marker}")
     composition_plan_template = packaging_root / "references/composition_plan.template.json"
     if composition_plan_template.is_file():
         try:

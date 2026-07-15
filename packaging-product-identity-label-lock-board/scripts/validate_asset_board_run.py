@@ -26,6 +26,15 @@ EXPECTED_VIEWS = {
 }
 EVIDENCE = {"source_observed", "source_crop", "deterministic_reprojection", "bounded_inferred", "unknown"}
 SOURCE_DERIVED = {"source_observed", "source_crop", "deterministic_reprojection"}
+RAW_FAILURE_FLAGS = {
+    "cropped_full_product",
+    "duplicate_merged_or_overlapping_product",
+    "lying_down_product",
+    "blank_placeholder_or_unused_region",
+    "visible_frame_card_grid_divider_or_evidence_strip",
+    "identity_closure_fill_label_or_embossing_drift",
+    "invented_or_corrupted_visible_copy",
+}
 SHA_RE = re.compile(r"[0-9a-f]{64}")
 STAGING_PROMPT_PATTERNS = [
     re.compile(r"\bwill be replaced\b", re.IGNORECASE),
@@ -117,6 +126,19 @@ def load_json(path: Path, code: str) -> tuple[dict[str, Any], bytes]:
     if not isinstance(value, dict):
         raise ValidationError(code, f"JSON artifact must be an object: {path}")
     return value, data
+
+
+def parse_json_object(data: bytes, code: str, label: str) -> dict[str, Any]:
+    """Parse a hash-bound JSON artifact and reject non-object roots deterministically."""
+    if data.startswith(b"\xef\xbb\xbf") or b"\r" in data:
+        raise ValidationError(code, f"{label} must be UTF-8/LF without BOM")
+    try:
+        value = json.loads(data.decode("utf-8"))
+    except (UnicodeDecodeError, json.JSONDecodeError) as exc:
+        raise ValidationError(code, f"{label}: {exc}") from exc
+    if not isinstance(value, dict):
+        raise ValidationError(code, f"{label} must be a JSON object")
+    return value
 
 
 def inside(root: Path, value: Any, field: str) -> Path:
@@ -214,10 +236,7 @@ def main() -> int:
         root, manifest, "copy_prompt_receipt_path", "copy_prompt_receipt_sha256"
     )
     copy_qa_path, _ = require_file_hash(root, manifest, "copy_qa_path", "copy_qa_sha256")
-    try:
-        copy_ledger = json.loads(copy_ledger_bytes.decode("utf-8"))
-    except (UnicodeDecodeError, json.JSONDecodeError) as exc:
-        raise ValidationError("blocked_copy_ledger_invalid", str(exc)) from exc
+    copy_ledger = parse_json_object(copy_ledger_bytes, "blocked_copy_ledger_invalid", "copy ledger")
     if copy_ledger.get("schema_version") != "packaging_copy_ledger.v1" or not isinstance(copy_ledger.get("regions"), list):
         raise ValidationError("blocked_copy_ledger_invalid", "unexpected copy-ledger schema")
     for region in copy_ledger["regions"]:
@@ -245,13 +264,14 @@ def main() -> int:
             "generation prompt must require a fully populated board and explicitly ban blank cells",
         )
     worker_path, worker_bytes = require_file_hash(root, manifest, "worker_result_path", "worker_result_sha256")
+    raw_qa_path, raw_qa_bytes = require_file_hash(root, manifest, "raw_board_qa_path", "raw_board_qa_sha256")
     plan_path, plan_bytes = require_file_hash(root, manifest, "composition_plan_path", "composition_plan_sha256")
     receipt_path, receipt_bytes = require_file_hash(
         root, manifest, "composition_receipt_path", "composition_receipt_sha256"
     )
     final_path, final_bytes = require_file_hash(root, manifest, "final_board_path", "final_board_sha256")
 
-    worker = json.loads(worker_bytes.decode("utf-8"))
+    worker = parse_json_object(worker_bytes, "blocked_worker_provenance_invalid", "worker result")
     reference_mode = worker.get("reference_mode")
     if reference_mode in {None, "frozen_manifest", "frozen_source_manifest"}:
         worker_reference_binding_valid = all(
@@ -267,10 +287,7 @@ def main() -> int:
             "generation_reference_pack_path",
             "generation_reference_pack_sha256",
         )
-        try:
-            pack = json.loads(pack_bytes.decode("utf-8"))
-        except (UnicodeDecodeError, json.JSONDecodeError) as exc:
-            raise ValidationError("blocked_reference_manifest_invalid", str(exc)) from exc
+        pack = parse_json_object(pack_bytes, "blocked_reference_manifest_invalid", "provider reference pack")
         provider_entries = pack.get("provider_references")
         provider_count = pack.get("provider_reference_count")
         source_manifest_path = Path(str(pack.get("source_reference_manifest_path", "")))
@@ -301,8 +318,8 @@ def main() -> int:
     ):
         raise ValidationError("blocked_worker_provenance_invalid", "worker result does not bind prompt and references")
 
-    plan = json.loads(plan_bytes.decode("utf-8"))
-    receipt = json.loads(receipt_bytes.decode("utf-8"))
+    plan = parse_json_object(plan_bytes, "blocked_composition_plan_invalid", "composition plan")
+    receipt = parse_json_object(receipt_bytes, "blocked_composition_receipt_invalid", "composition receipt")
     if plan.get("schema_version") != "packaging_board_composition_plan.v2":
         raise ValidationError("blocked_composition_plan_invalid", "unexpected composition-plan schema")
     if receipt.get("schema_version") != "packaging_board_composition_receipt.v2":
@@ -312,6 +329,42 @@ def main() -> int:
         raise ValidationError("blocked_worker_raw_board_mismatch", "worker image does not bind composition raw board")
     if not same_path(worker.get("run_image_path"), raw_path):
         raise ValidationError("blocked_worker_raw_board_mismatch", "worker run_image_path differs from raw board")
+    raw_qa = parse_json_object(raw_qa_bytes, "blocked_raw_board_qa", "raw-board QA")
+    raw_view_ids = raw_qa.get("complete_view_ids")
+    raw_detail_count = raw_qa.get("detail_region_count")
+    raw_total_count = raw_qa.get("total_region_count")
+    failure_flags = raw_qa.get("failure_flags")
+    raw_view_ids_valid = (
+        isinstance(raw_view_ids, list)
+        and len(raw_view_ids) == 7
+        and all(isinstance(view_id, str) for view_id in raw_view_ids)
+        and set(raw_view_ids) == EXPECTED_VIEWS
+    )
+    raw_detail_count_valid = isinstance(raw_detail_count, int) and not isinstance(raw_detail_count, bool) and raw_detail_count in (2, 3)
+    raw_total_count_valid = isinstance(raw_total_count, int) and not isinstance(raw_total_count, bool) and raw_total_count in (9, 10)
+    failure_flags_valid = (
+        isinstance(failure_flags, dict)
+        and set(failure_flags) == RAW_FAILURE_FLAGS
+        and all(failure_flags.get(key) is False for key in RAW_FAILURE_FLAGS)
+    )
+    if not all(
+        [
+            raw_qa.get("schema_version") == "packaging_raw_board_qa.v1",
+            raw_qa.get("raw_board_sha256") == sha256_bytes(raw_path.read_bytes()),
+            raw_qa.get("inspected") is True,
+            raw_qa.get("overall_status") == "passed",
+            raw_view_ids_valid,
+            raw_qa.get("complete_view_count") == 7,
+            raw_detail_count_valid,
+            raw_total_count_valid,
+            raw_detail_count_valid and raw_total_count_valid and raw_total_count == 7 + raw_detail_count,
+            failure_flags_valid,
+        ]
+    ):
+        raise ValidationError(
+            "blocked_raw_board_qa",
+            "raw board must be directly inspected and pass the exact seven-view, two/three-detail, borderless, populated, identity, and copy gates before composition",
+        )
     if not all(
         [
             receipt.get("plan_sha256") == sha256_bytes(plan_bytes),
@@ -406,6 +459,11 @@ def main() -> int:
     total_regions = len(views) + len(details)
     if total_regions not in {9, 10} or manifest.get("region_count") != total_regions:
         raise ValidationError("blocked_region_count", "the board must contain nine regions by default and never more than ten")
+    if raw_detail_count != len(details) or raw_total_count != total_regions:
+        raise ValidationError(
+            "blocked_raw_board_qa",
+            "raw-board QA topology differs from the accepted manifest topology",
+        )
     if manifest.get("layout_style") != "borderless_continuous_background":
         raise ValidationError("blocked_visible_frames", "manifest must declare borderless_continuous_background")
     if plan.get("layout_style") != "borderless_continuous_background" or plan.get("drawn_borders") is not False:

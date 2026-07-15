@@ -17,6 +17,8 @@
   "generation_prompt_sha256": "<sha256>",
   "worker_result_path": "attempts/01/worker-result.json",
   "worker_result_sha256": "<sha256>",
+  "raw_board_qa_path": "attempts/01/raw-board-qa.json",
+  "raw_board_qa_sha256": "<sha256>",
   "composition_plan_path": "attempts/01/composition-plan.json",
   "composition_plan_sha256": "<sha256>",
   "composition_receipt_path": "attempts/01/composition-receipt.json",

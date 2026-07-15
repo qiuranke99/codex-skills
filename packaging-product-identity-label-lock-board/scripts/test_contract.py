@@ -129,6 +129,7 @@ def dispatch_trace_fixture(base: Path, terminal_status: str = "ACCEPTED") -> dic
         newline="\n",
     )
     prompt_elapsed = 70_000
+    generation_authorization = "explicit_board_generation"
     worker: dict[str, Any] = {
         "spawned_elapsed_ms": 80_000,
         "fork_turns": "none",
@@ -156,6 +157,16 @@ def dispatch_trace_fixture(base: Path, terminal_status: str = "ACCEPTED") -> dic
     elif terminal_status == "BLOCKED_IMAGEGEN_TIMEOUT":
         terminal_elapsed = 990_000
         automatic_elapsed = 920_000
+    elif terminal_status == "BLOCKED_PROMPT_READY_TIMEOUT":
+        prompt_elapsed = 200_001
+        terminal_elapsed = 210_000
+        automatic_elapsed = 0
+        worker = None
+    elif terminal_status == "USER_SKIPPED_GENERATION":
+        terminal_elapsed = 75_000
+        automatic_elapsed = 0
+        generation_authorization = "user_prompt_only_override"
+        worker = None
     else:
         raise AssertionError(f"unsupported test status: {terminal_status}")
     value = {
@@ -166,13 +177,14 @@ def dispatch_trace_fixture(base: Path, terminal_status: str = "ACCEPTED") -> dic
         "generation_prompt_sha256": sha(prompt),
         "generation_reference_pack_path": str(references["pack_manifest"]),
         "generation_reference_pack_sha256": sha(references["pack_manifest"]),
+        "generation_authorization": generation_authorization,
         "prompt_publication": {
             "mode": "inline_complete_prompt",
             "elapsed_ms": prompt_elapsed,
             "published_sha256": sha(prompt),
         },
         "worker": worker,
-        "user_visible_update_elapsed_ms": update_timeline(prompt_elapsed, terminal_elapsed),
+        "user_visible_update_elapsed_ms": sorted(set(update_timeline(0, terminal_elapsed) + [prompt_elapsed])),
         "automatic_generation_elapsed_ms": automatic_elapsed,
         "terminal_status": terminal_status,
         "terminal_elapsed_ms": terminal_elapsed,
@@ -382,6 +394,37 @@ def valid_fixture(base: Path, exact_copy: bool = False) -> dict[str, Any]:
     )
     raw = attempt / "raw-board.png"
     make_image(raw, (1600, 900), (246, 246, 246))
+    raw_board_qa = attempt / "raw-board-qa.json"
+    write_json(
+        raw_board_qa,
+        {
+            "schema_version": "packaging_raw_board_qa.v1",
+            "raw_board_sha256": sha(raw),
+            "inspected": True,
+            "overall_status": "passed",
+            "complete_view_ids": [
+                "front",
+                "back",
+                "side",
+                "high_side_45",
+                "low_side_45",
+                "top_down",
+                "low_up",
+            ],
+            "complete_view_count": 7,
+            "detail_region_count": 2,
+            "total_region_count": 9,
+            "failure_flags": {
+                "cropped_full_product": False,
+                "duplicate_merged_or_overlapping_product": False,
+                "lying_down_product": False,
+                "blank_placeholder_or_unused_region": False,
+                "visible_frame_card_grid_divider_or_evidence_strip": False,
+                "identity_closure_fill_label_or_embossing_drift": False,
+                "invented_or_corrupted_visible_copy": False,
+            },
+        },
+    )
     worker = attempt / "worker-result.json"
     worker_value = {
         "ok": True,
@@ -500,6 +543,8 @@ def valid_fixture(base: Path, exact_copy: bool = False) -> dict[str, Any]:
         "generation_prompt_sha256": sha(prompt),
         "worker_result_path": str(worker),
         "worker_result_sha256": sha(worker),
+        "raw_board_qa_path": str(raw_board_qa),
+        "raw_board_qa_sha256": sha(raw_board_qa),
         "composition_plan_path": str(plan),
         "composition_plan_sha256": sha(plan),
         "composition_receipt_path": str(receipt),
@@ -544,6 +589,7 @@ def valid_fixture(base: Path, exact_copy: bool = False) -> dict[str, Any]:
         "copy_block": copy_block,
         "copy_receipt": copy_receipt,
         "copy_qa": copy_qa,
+        "raw_board_qa": raw_board_qa,
         "prompt_values": prompt_values,
         "prompt_receipt": prompt_receipt,
     }
@@ -730,6 +776,61 @@ class ContractTests(unittest.TestCase):
             result = run([sys.executable, "-X", "utf8", str(DISPATCH_VALIDATOR), "--trace", str(fixture["trace"])])
             self.assertEqual(error_code(result), "blocked_prompt_not_inline")
 
+    def test_truthful_prompt_ready_timeout_is_a_valid_terminal_state(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            fixture = dispatch_trace_fixture(Path(tmp), "BLOCKED_PROMPT_READY_TIMEOUT")
+            result = run([sys.executable, "-X", "utf8", str(DISPATCH_VALIDATOR), "--trace", str(fixture["trace"])])
+            self.assertEqual(result.returncode, 0, result.stderr)
+            value = copy.deepcopy(fixture["value"])
+            value["prompt_publication"]["elapsed_ms"] = 70_000
+            value["terminal_elapsed_ms"] = 75_000
+            value["user_visible_update_elapsed_ms"] = sorted(set(update_timeline(0, 75_000) + [70_000]))
+            write_json(fixture["trace"], value)
+            false_timeout = run(
+                [sys.executable, "-X", "utf8", str(DISPATCH_VALIDATOR), "--trace", str(fixture["trace"])]
+            )
+            self.assertEqual(error_code(false_timeout), "blocked_dispatch_terminal_status")
+
+    def test_prompt_only_override_can_truthfully_end_on_prompt_timeout(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            fixture = dispatch_trace_fixture(Path(tmp), "BLOCKED_PROMPT_READY_TIMEOUT")
+            value = copy.deepcopy(fixture["value"])
+            value["generation_authorization"] = "user_prompt_only_override"
+            write_json(fixture["trace"], value)
+            result = run([sys.executable, "-X", "utf8", str(DISPATCH_VALIDATOR), "--trace", str(fixture["trace"])])
+            self.assertEqual(result.returncode, 0, result.stderr)
+            value["worker"] = {"spawned_elapsed_ms": 205_000}
+            write_json(fixture["trace"], value)
+            unexpected_worker = run(
+                [sys.executable, "-X", "utf8", str(DISPATCH_VALIDATOR), "--trace", str(fixture["trace"])]
+            )
+            self.assertEqual(error_code(unexpected_worker), "blocked_worker_trace_unexpected")
+
+    def test_user_prompt_only_override_never_spawns_a_worker(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            fixture = dispatch_trace_fixture(Path(tmp), "USER_SKIPPED_GENERATION")
+            result = run([sys.executable, "-X", "utf8", str(DISPATCH_VALIDATOR), "--trace", str(fixture["trace"])])
+            self.assertEqual(result.returncode, 0, result.stderr)
+            value = copy.deepcopy(fixture["value"])
+            value["worker"] = {
+                "spawned_elapsed_ms": 71_000,
+                "imagegen_tool_call_count": 0,
+            }
+            write_json(fixture["trace"], value)
+            spawned = run([sys.executable, "-X", "utf8", str(DISPATCH_VALIDATOR), "--trace", str(fixture["trace"])])
+            self.assertEqual(error_code(spawned), "blocked_generation_authorization")
+
+    def test_progress_updates_cover_the_pre_prompt_period(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            fixture = dispatch_trace_fixture(Path(tmp), "BLOCKED_PROMPT_READY_TIMEOUT")
+            value = copy.deepcopy(fixture["value"])
+            value["user_visible_update_elapsed_ms"] = update_timeline(
+                value["prompt_publication"]["elapsed_ms"], value["terminal_elapsed_ms"]
+            )
+            write_json(fixture["trace"], value)
+            result = run([sys.executable, "-X", "utf8", str(DISPATCH_VALIDATOR), "--trace", str(fixture["trace"])])
+            self.assertEqual(error_code(result), "blocked_dispatch_update_cadence")
+
     def test_worker_cannot_spawn_before_complete_prompt_publication(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
             fixture = dispatch_trace_fixture(Path(tmp))
@@ -878,6 +979,69 @@ class ContractTests(unittest.TestCase):
             result = run([sys.executable, "-X", "utf8", str(VALIDATOR), "--manifest", str(fixture["manifest"])])
             self.assertEqual(result.returncode, 2)
             self.assertEqual(error_code(result), "blocked_exact_copy_authority")
+
+    def test_exact_copy_authority_requires_source_backed_final_pixels(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            fixture = valid_fixture(Path(tmp), exact_copy=True)
+            copy_qa = json.loads(fixture["copy_qa"].read_text(encoding="utf-8"))
+            copy_qa["board_regions"][0]["visual_status"] = "exact_match"
+            copy_qa["board_regions"][0]["source_backed_pixels"] = False
+            write_json(fixture["copy_qa"], copy_qa)
+            value = copy.deepcopy(fixture["value"])
+            value["copy_qa_sha256"] = sha(fixture["copy_qa"])
+            write_json(fixture["manifest"], value)
+            result = run([sys.executable, "-X", "utf8", str(VALIDATOR), "--manifest", str(fixture["manifest"])])
+            self.assertEqual(result.returncode, 2)
+            self.assertEqual(error_code(result), "blocked_copy_contract")
+            self.assertIn("blocked_exact_copy_authority", result.stderr)
+
+    def test_compositor_cannot_mask_a_failed_raw_board(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            fixture = valid_fixture(Path(tmp))
+            raw_qa = json.loads(fixture["raw_board_qa"].read_text(encoding="utf-8"))
+            raw_qa["failure_flags"]["visible_frame_card_grid_divider_or_evidence_strip"] = True
+            write_json(fixture["raw_board_qa"], raw_qa)
+            value = copy.deepcopy(fixture["value"])
+            value["raw_board_qa_sha256"] = sha(fixture["raw_board_qa"])
+            write_json(fixture["manifest"], value)
+            result = run([sys.executable, "-X", "utf8", str(VALIDATOR), "--manifest", str(fixture["manifest"])])
+            self.assertEqual(result.returncode, 2)
+            self.assertEqual(error_code(result), "blocked_raw_board_qa")
+
+    def test_raw_board_qa_template_is_fail_closed(self) -> None:
+        template = json.loads(
+            (PACKAGE_DIR / "references" / "raw_board_qa.template.json").read_text(encoding="utf-8")
+        )
+        self.assertIs(template["inspected"], False)
+        self.assertEqual(template["overall_status"], "pending")
+
+    def test_raw_board_qa_must_bind_the_exact_worker_png(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            fixture = valid_fixture(Path(tmp))
+            raw_qa = json.loads(fixture["raw_board_qa"].read_text(encoding="utf-8"))
+            raw_qa["raw_board_sha256"] = "0" * 64
+            write_json(fixture["raw_board_qa"], raw_qa)
+            value = copy.deepcopy(fixture["value"])
+            value["raw_board_qa_sha256"] = sha(fixture["raw_board_qa"])
+            write_json(fixture["manifest"], value)
+            result = run([sys.executable, "-X", "utf8", str(VALIDATOR), "--manifest", str(fixture["manifest"])])
+            self.assertEqual(result.returncode, 2)
+            self.assertEqual(error_code(result), "blocked_raw_board_qa")
+
+    def test_malformed_raw_board_qa_types_are_rejected_without_crashing(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            fixture = valid_fixture(Path(tmp))
+            raw_qa = json.loads(fixture["raw_board_qa"].read_text(encoding="utf-8"))
+            raw_qa["complete_view_ids"] = [{"not": "hashable"}]
+            raw_qa["detail_region_count"] = [2]
+            raw_qa["total_region_count"] = [9]
+            write_json(fixture["raw_board_qa"], raw_qa)
+            value = copy.deepcopy(fixture["value"])
+            value["raw_board_qa_sha256"] = sha(fixture["raw_board_qa"])
+            write_json(fixture["manifest"], value)
+            result = run([sys.executable, "-X", "utf8", str(VALIDATOR), "--manifest", str(fixture["manifest"])])
+            self.assertEqual(result.returncode, 2)
+            self.assertEqual(error_code(result), "blocked_raw_board_qa")
 
     def test_copy_compiler_emits_every_line_in_declared_order(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:

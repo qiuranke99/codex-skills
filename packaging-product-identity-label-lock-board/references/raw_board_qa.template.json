@@ -1,0 +1,27 @@
+{
+  "schema_version": "packaging_raw_board_qa.v1",
+  "raw_board_sha256": "<sha256>",
+  "inspected": false,
+  "overall_status": "pending",
+  "complete_view_ids": [
+    "front",
+    "back",
+    "side",
+    "high_side_45",
+    "low_side_45",
+    "top_down",
+    "low_up"
+  ],
+  "complete_view_count": 7,
+  "detail_region_count": 2,
+  "total_region_count": 9,
+  "failure_flags": {
+    "cropped_full_product": false,
+    "duplicate_merged_or_overlapping_product": false,
+    "lying_down_product": false,
+    "blank_placeholder_or_unused_region": false,
+    "visible_frame_card_grid_divider_or_evidence_strip": false,
+    "identity_closure_fill_label_or_embossing_drift": false,
+    "invented_or_corrupted_visible_copy": false
+  }
+}

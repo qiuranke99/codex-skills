@@ -29,6 +29,8 @@ Executable acceptance suite: `python -B scripts/test_contract.py`.
    - Fail `no_visible_frames`; a compositor plan with `border_px > 0` also fails deterministically.
 6. A declared region is blank, near-blank, reserved, or unused.
    - Fail raw-board inspection or composition mapping.
+7. A raw board contains a visible card/grid/blank region, but later source overlays cover it.
+   - Fail `blocked_raw_board_qa`; final composition cannot upgrade a failed raw board.
 
 ## Copy pixel QA
 
@@ -42,6 +44,8 @@ Executable acceptance suite: `python -B scripts/test_contract.py`.
    - Fail `blocked_copy_qa_coverage`.
 5. All claimed exact lines are reviewed and source/artwork-backed with no candidates or unknowns.
    - `exact_copy_evidence` may pass.
+6. All lines visually match, but the final pixels are model-rendered rather than source/artwork-backed.
+   - The normal `video_reference` path may pass; `exact_copy_evidence` fails.
 
 ## Prompt and worker behavior
 
@@ -55,6 +59,14 @@ Executable acceptance suite: `python -B scripts/test_contract.py`.
    - Re-resolve the same PNG; do not regenerate.
 5. No image arrives within 15 minutes.
    - Stop `BLOCKED_IMAGEGEN_TIMEOUT`, do not create an orphan retry, and return the complete prompt.
+6. The complete prompt is compiled only after the 180/120-second deadline.
+   - Return it truthfully with `BLOCKED_PROMPT_READY_TIMEOUT`; do not continue to generation.
+7. The user explicitly overrides the Skill to request prompt/evidence only.
+   - Record `USER_SKIPPED_GENERATION`, spawn no worker, and record zero generation time.
+8. The same prompt-only override misses the prompt-publication deadline.
+   - Record `BLOCKED_PROMPT_READY_TIMEOUT`, preserve `user_prompt_only_override`, spawn no worker, and record zero generation time.
+9. Raw-board QA uses arrays/objects where view IDs or numeric counts are required.
+   - Reject deterministically with `blocked_raw_board_qa`; never crash with a Python type error.
 
 ## Forbidden legacy behavior
 

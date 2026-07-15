@@ -45,6 +45,8 @@ The complete reusable generation prompt is the first user deliverable.
 
 Persist these milestones in `prompt-dispatch-trace.json` from `references/prompt_dispatch_trace.template.json` and validate it with `scripts/validate_prompt_dispatch_trace.py`.
 
+If the user explicitly overrides this Skill to request the complete prompt/evidence only and forbids image generation, record `generation_authorization: user_prompt_only_override`, do not spawn a worker, and return the complete prompt and artifacts. Terminate `USER_SKIPPED_GENERATION` when the prompt met its deadline; if it missed the deadline but was later compiled, terminate `BLOCKED_PROMPT_READY_TIMEOUT` while preserving the prompt-only authorization, no-worker state, and zero generation time. This is an override path, not an implicit trigger or a new default route. The trace validator must accept a truthful timeout state only when the deadline was actually missed.
+
 ## Input sufficiency and evidence limits
 
 One front, one back, and one three-quarter/side photograph are a normal sufficient set. One or two complete views are also legal. Additional close-ups or approved artwork may be used when already supplied.
@@ -96,7 +98,7 @@ python -X utf8 scripts/compile_copy_prompt.py --ledger <run-dir>/copy-ledger.jso
 
 The compiler emits every approved, candidate, and unresolved line in ledger order. Approved lines are separated from audit-only candidates. It also binds the ledger and block hashes and proves all lines were emitted in order.
 
-Render the final prompt with `scripts/render_generation_prompt.py`, using `references/generation_prompt_values.template.json` for product-specific substitutions. The renderer embeds `copy-prompt-block.md` verbatim at `{{copy_contract_block}}`, rejects missing values or surviving placeholders, and writes a prompt receipt. Do not summarize the block as “preserve all text.” The final prompt must contain the actual strings, region mapping, format, and reading order.
+Render the final prompt with `scripts/render_generation_prompt.py`, using `references/generation_prompt_values.template.json` for product-specific substitutions. The renderer embeds `copy-prompt-block.md` verbatim at the required `copy_contract_block` slot, rejects missing values or surviving placeholders, and writes a prompt receipt. Do not summarize the block as “preserve all text.” The final prompt must contain the actual strings, region mapping, format, and reading order.
 
 ### 4. Respect the pixel-authority boundary
 
@@ -204,7 +206,9 @@ Before deterministic overlays, inspect the actual raw board and reject it if:
 - product identity, closure, liquid level, label architecture, graphics, or embossing drift;
 - any invented/corrupted readable copy is visible.
 
-Do not let later source overlays turn a failed raw layout into a pass.
+Before any overlay, write `raw-board-qa.json` from `references/raw_board_qa.template.json`. Bind the exact raw PNG SHA-256, enumerate the seven complete view IDs, record the two/three detail count and nine/ten total count, and set every bounded failure flag from the direct main-agent inspection. `overall_status: passed` is legal only when all flags are false. The final manifest must bind this artifact and the package validator must reject a missing, stale, failed, or raw-image-mismatched record.
+
+Do not let later source overlays turn a failed raw layout into a pass. A passing final-board QA cannot override a failed or absent raw-board QA.
 
 ## Deterministic composition
 
@@ -260,6 +264,7 @@ Acceptance requires:
 - no invented/corrupted visible copy;
 - no non-product annotations or blank regions;
 - frozen prompt/reference/worker/composition/final-image hashes all valid.
+- bound pre-composition `raw-board-qa.json` passes against the exact worker raw PNG before any overlay;
 
 ## Repair limits
 
@@ -285,6 +290,8 @@ Return:
 - terminal status.
 
 Valid bounded failures are `BLOCKED_RELEASE_GATE`, `BLOCKED_REFERENCE_MATERIALIZATION`, `BLOCKED_PROMPT_READY_TIMEOUT`, `BLOCKED_WORKER_START_TIMEOUT`, `BLOCKED_WORKER_SUBMIT_TIMEOUT`, `BLOCKED_IMAGEGEN_TIMEOUT`, `BLOCKED_VALIDATION`, and `REJECTED_AFTER_MAX_ATTEMPTS`. Every state after prompt compilation still returns the complete prompt. Sparse angles, OCR disagreement, or hidden copy alone do not block a normal `video_reference` board.
+
+`USER_SKIPPED_GENERATION` is the only non-generation terminal state after on-time prompt publication and is legal only for an explicit user prompt-only override with no worker and zero generation time. The same override uses `BLOCKED_PROMPT_READY_TIMEOUT` instead when prompt publication was late, still with no worker and zero generation time.
 
 On every terminal success or failure after compilation, repeat the complete frozen prompt inline with its hashes and truthful terminal status.
 
