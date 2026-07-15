@@ -1,23 +1,26 @@
 # Generation And Packaging Contract
 
-## Per-Asset Terminal State Machine
+## Prompt-First Six-Asset Runtime
+
+Freeze Scene Canon, neutral appearance, motion envelope, coverage graph, and all six generation prompts before any image call. Publish the complete six-prompt document inline and bind the publication receipt. Then generate one asset at a time through one fresh non-decision worker per attempt.
 
 For each machine asset:
 
-1. Freeze the asset-specific generation specification and set `terminal_generation_call: pending`.
-2. Call built-in image generation. The image call is the final action of that turn.
-3. Treat the returned result as `stage_complete`, not package or task completion.
-4. In a later continuation, set `terminal_generation_call: executed`, verify file/provenance, record actual pixel dimensions, and set `pending_post_generation_inspection`.
-5. Perform later-turn visual QA. On failure, set `repair_required`, invalidate the asset's old 4K prompt, repair the earliest affected canon/appearance state, and regenerate only that asset.
-6. Set `assistant_qa_status: approved` only after inspection. Keep `production_approval_status` separate.
+1. Confirm every predecessor is QA-approved and hash-current.
+2. Freeze the ordered reference manifest and set `generation_status: spec_frozen`.
+3. Spawn one fresh worker and set the queue to the current dependency stage.
+4. Resolve the single image call into a runtime-bound worker result.
+5. Inspect the real image in the still-running main agent and write an independent inspection receipt.
+6. On failure, set `repair_required`, invalidate descendants and stale 4K prompts, repair the earliest affected canon/graph state, and retry only with a new worker and revision.
+7. On approval, advance to the next stage without user continuation.
 
-Never emit additional assistant text after the terminal image call. Never mark `packaged` merely because the generator returned an image. Generate and inspect one machine asset at a time when the active runtime requires terminal calls.
+The worker's image call is terminal only for the worker turn. It never terminates the main-agent finalizer.
 
 ## Independent Generation Rule
 
-Generate every Canonical Diagnostic Master, Spatial / Relational Master, Coverage Plate, Scale/Landmark asset, and Intrinsic Scene State asset as an independent full-frame image. Set `independently_generated: true` and `derived_from_multipanel: false`.
+Generate `CDM_001`, `SRM_001`, `COV_001`, `COV_002`, `COV_003`, and `SCL_001` as independent full-frame images. Set `independently_generated: true` and `derived_from_multipanel: false`.
 
-Do not generate a grid/contact sheet and crop tiles into machine assets. The Human Review Overview Board is a derived human-only montage of approved independent assets; set `generation_mode: approved_asset_composite` and `is_machine_asset: false`, exclude it from 4K one-to-one mapping, and never use it as a primary generation reference.
+Do not generate a grid and crop tiles. `HRB_001` is a derived human-only montage of the six approved assets; set `generation_mode: approved_asset_composite`, `is_machine_asset: false`, exclude it from coverage and 4K mapping, and never use it as a generation reference.
 
 ## Required Output Tree
 
@@ -28,6 +31,7 @@ scene-canon-output/
 │   ├── SCENE_CANON.json
 │   ├── SOURCE_APPEARANCE_DECOMPOSITION.md
 │   ├── SOURCE_APPEARANCE_DECOMPOSITION.json
+│   ├── GENERATION_PROMPTS.md
 │   ├── ASSET_INDEX.md
 │   ├── ASSET_MANIFEST.json
 │   └── actual_image_dimensions.json
@@ -39,55 +43,69 @@ scene-canon-output/
 ├── 03_spatial_relational_master/
 ├── 04_coverage_plates/
 ├── 05_scale_landmarks/
-├── 06_intrinsic_scene_state/        # only when required
 ├── 07_review_board/
 ├── 08_4k_regeneration/
 │   └── 4K_ASSET_REGENERATION_PROMPTS.md
-└── 09_qa/
-    ├── QA_REPORT.md
-    ├── failed_asset_log.md
-    ├── look_contamination_report.md
-    └── 4k_prompt_mapping_report.md
+├── 09_qa/
+│   ├── QA_REPORT.md
+│   ├── failed_asset_log.md
+│   ├── look_contamination_report.md
+│   ├── coverage_graph_report.md
+│   └── 4k_prompt_mapping_report.md
+└── 10_runtime/
+    ├── prompt-publication-receipt.json
+    └── <asset-id-lower>/
+        ├── reference-manifest.json
+        ├── worker-result.json
+        └── inspection-receipt.json
 ```
 
-Do not create empty image placeholders for conditional modules. Treat JSON files as machine SSOT; render Markdown indexes and reports from the same records rather than maintaining contradictory copies.
+JSON is machine SSOT. Markdown reports render from the same records. Do not create empty conditional image placeholders.
 
-## Asset Naming
-
-Use stable uppercase asset IDs and lowercase filenames:
+## Stable Asset Paths
 
 - `CDM_001` → `02_diagnostic_master/canonical_diagnostic_master.png`
-- `SRM_001` → `03_spatial_relational_master/spatial_or_relational_master.png`
-- `COV_001` → `04_coverage_plates/coverage_001_<view-role>.png`
-- `LND_001` → `05_scale_landmarks/landmark_001_<landmark>.png`
-- `SCL_001` → `05_scale_landmarks/scale_001_<relation>.png`
-- `STA_001` → `06_intrinsic_scene_state/state_001_<state>.png`
+- `SRM_001` → `03_spatial_relational_master/spatial_relational_master.png`
+- `COV_001` → `04_coverage_plates/coverage_001_left_adjacent.png`
+- `COV_002` → `04_coverage_plates/coverage_002_right_adjacent.png`
+- `COV_003` → `04_coverage_plates/coverage_003_motion_reveal.png`
+- `SCL_001` → `05_scale_landmarks/scale_landmark_depth.png`
 - `HRB_001` → `07_review_board/scene_asset_overview_board.png`
-- `4K_<ASSET_ID>` → corresponding prompt record.
 
-Never reuse an asset ID for a regenerated file version. Increment `scene_canon_version` or `neutral_appearance_version` when the governing facts change and mark previous prompt mappings stale.
+Never reuse an asset revision after regeneration. Increment the asset revision and invalidate descendants when its governing bytes change.
 
-## Pixel Evidence
+## Pixel And Duplicate Evidence
 
-Request the highest native resolution exposed by the active tool, but treat the returned dimensions as facts. Verify each local image's pixels and write them to `actual_image_dimensions.json` and `ASSET_MANIFEST.json`. Set `native_4k_claim: true` only with explicit runtime/file evidence; width or height labels, requested size, or a 4K prompt are not evidence.
+Request the highest native resolution exposed by the active tool, but treat returned pixels as facts. Verify local pixels and record them in both the manifest and `actual_image_dimensions.json`. Set `native_4k_claim: true` only with explicit runtime/file evidence.
 
-## Default Ratios And Cleanliness
+Strict delivery rejects identical file bytes and near-identical decoded image content across machine assets. A recolor, re-encode, crop-only, or focal-only variation cannot satisfy a second graph role.
 
-Default ordinary plates to horizontal 16:9. Use 2:1 only for a true panorama; use an information-appropriate ratio for plan, topology, or multi-scale system assets. Machine assets contain no text, title, number, arrow, legend, watermark, border, collage, grid, UI, palette, logo, person, product, production equipment, temporary prop, or unsupported object.
+## Cleanliness
+
+Default to horizontal 16:9. Machine assets contain no text, title, number, arrow, legend, watermark, border, collage, grid, UI, palette, logo, person, product, production equipment, temporary prop, or unsupported object.
+
+## State Validation Versus Delivery Validation
+
+`--mode state` validates schema and in-progress consistency. It prints `STATE_VALID_NOT_COMPLETE` for any non-packaged state.
+
+`--mode delivery` is the only completion gate. It requires `package_status: packaged`, queue complete, exactly six approved machine assets, graph closure, prompt-first runtime proof, six bound worker results, six independent main-agent inspections, six actual files, six finalized 4K prompts, and one derived review board. Any planned, awaiting, failed, blocked, stale, duplicate, placeholder, or self-attested-only record exits non-zero.
 
 ## Package Status
 
 Use only:
 
 - `draft`
+- `prompts_frozen`
+- `prompts_published`
 - `generating`
-- `awaiting_post_generation_continuation`
-- `pending_post_generation_inspection`
 - `repair_required`
+- `graph_qa_pending`
 - `four_k_mapping_failed`
 - `packaged`
 - `blocked_missing_scene_reference`
 - `blocked_exactness_evidence`
+- `blocked_prompt_publication`
+- `blocked_worker_runtime`
 - `hard_blocked_generation_runtime`
 
-`packaged` requires all approved machine assets to have actual-dimension evidence, passed QA, and exactly one finalized 4K prompt.
+`packaged` means delivery validation passed. It does not imply production approval.

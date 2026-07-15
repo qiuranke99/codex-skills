@@ -46,4 +46,6 @@ Lock invariants, permitted transformation rules, connectivity, anchors, repetiti
 
 ## Adaptive Coverage Decision
 
-For every planned view, record `information_gain`. Reject a view when it is only a crop, focal-length change, or near duplicate. Require high/low coverage only when those angles can expose a structural or state error. Do not add people, vehicles, spacecraft, animals, boats, or other unapproved objects merely to communicate scale.
+Every delivery uses the six `scene_motion_six.v1` roles, but the roles are semantic rather than a rigid architectural turntable. For bounded rooms, left/right/high/depth retain their literal spatial meaning. For landscapes they become lateral terrain continuity, elevated topology, reveal, and scale-depth evidence. For fluid, volumetric, cosmic, or non-Euclidean scenes they bind stable axes, flow or hierarchy, reveal order, and rule-consistency instead of inventing ordinary walls or a false back side.
+
+For every planned view, record `information_gain`, a unique normalized camera tuple, visible landmarks, newly revealed regions, overlap invariants, and the movement edge it supports. Reject a view when it is only a crop, focal-length change, re-encode, or near duplicate. The fixed six-image delivery profile does not authorize unsupported 360-degree, overhead, back-side, or travel-through coverage; list those limits in `unsupported_camera_motion`. Do not add people, vehicles, spacecraft, animals, boats, or other unapproved objects merely to communicate scale.

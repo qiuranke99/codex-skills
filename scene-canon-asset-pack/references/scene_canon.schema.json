@@ -1,65 +1,31 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "scene_canon.schema.json",
-  "title": "Scene Canon",
+  "title": "Scene Canon With Motion Coverage",
   "type": "object",
   "additionalProperties": false,
   "required": [
-    "schema_version",
-    "scene_id",
-    "project_name",
-    "scene_name",
-    "scene_type",
-    "secondary_scene_types",
-    "source_reference_list",
-    "primary_reference",
-    "source_locked_elements",
-    "source_corroborated_elements",
-    "canonical_completion_elements",
-    "conflicts",
-    "out_of_scope_unknowns",
-    "minimum_complete_scene_boundary",
-    "fixed_architecture",
-    "fixed_natural_structures",
-    "fixed_set_dressing",
-    "conditional_scene_elements",
-    "temporary_or_unwanted_objects",
-    "prohibited_elements",
-    "fixed_content_exclusion_map",
-    "landmark_list",
-    "material_identity",
-    "observed_rendered_colors",
-    "intrinsic_base_colors",
-    "estimated_intrinsic_colors",
-    "appearance_confidence",
-    "source_color_cast",
-    "source_exposure_characteristics",
-    "source_lighting_characteristics",
-    "removable_lighting_components",
-    "removable_camera_effects",
-    "removable_postprocess_components",
-    "intrinsic_emissive_structures",
-    "neutral_appearance_rules",
-    "scale_relationships",
-    "topology_relationships",
-    "entrances_and_exits",
-    "orientation_system",
-    "horizon_or_vertical_reference",
-    "intrinsic_scene_state",
-    "camera_coverage_plan",
-    "inferred_regions",
-    "confidence_level",
-    "unresolved_hard_blockers",
-    "canon_revision",
-    "canon_freeze_status",
-    "source_asset_dimensions",
-    "target_4k_dimensions",
-    "generated_asset_index",
-    "four_k_prompt_index",
-    "QA_status"
+    "schema_version", "scene_id", "project_name", "scene_name", "scene_type",
+    "secondary_scene_types", "source_reference_list", "primary_reference",
+    "source_locked_elements", "source_corroborated_elements", "canonical_completion_elements",
+    "conflicts", "out_of_scope_unknowns", "minimum_complete_scene_boundary",
+    "fixed_architecture", "fixed_natural_structures", "fixed_set_dressing",
+    "conditional_scene_elements", "temporary_or_unwanted_objects", "prohibited_elements",
+    "fixed_content_exclusion_map", "landmark_list", "material_identity",
+    "observed_rendered_colors", "intrinsic_base_colors", "estimated_intrinsic_colors",
+    "appearance_confidence", "source_color_cast", "source_exposure_characteristics",
+    "source_lighting_characteristics", "removable_lighting_components",
+    "removable_camera_effects", "removable_postprocess_components",
+    "intrinsic_emissive_structures", "neutral_appearance_rules", "scale_relationships",
+    "topology_relationships", "entrances_and_exits", "orientation_system",
+    "horizon_or_vertical_reference", "intrinsic_scene_state",
+    "supported_camera_motion_envelope", "unsupported_camera_motion", "coverage_graph",
+    "inferred_regions", "confidence_level", "unresolved_hard_blockers", "canon_revision",
+    "canon_freeze_status", "source_asset_dimensions", "target_4k_dimensions",
+    "generated_asset_index", "four_k_prompt_index", "QA_status"
   ],
   "properties": {
-    "schema_version": {"const": "scene-canon.v1"},
+    "schema_version": {"const": "scene-canon.v2"},
     "scene_id": {"type": "string", "minLength": 1},
     "project_name": {"type": "string"},
     "scene_name": {"type": "string", "minLength": 1},
@@ -73,8 +39,7 @@
     "conflicts": {"type": "array", "items": {"$ref": "#/$defs/conflict"}},
     "out_of_scope_unknowns": {"type": "array", "items": {"type": "string"}},
     "minimum_complete_scene_boundary": {
-      "type": "object",
-      "additionalProperties": false,
+      "type": "object", "additionalProperties": false,
       "required": ["included_regions", "excluded_regions", "coverage_rationale"],
       "properties": {
         "included_regions": {"type": "array", "minItems": 1, "items": {"type": "string"}},
@@ -89,8 +54,7 @@
     "temporary_or_unwanted_objects": {"type": "array", "items": {"type": "string"}},
     "prohibited_elements": {"type": "array", "items": {"type": "string"}},
     "fixed_content_exclusion_map": {
-      "type": "object",
-      "additionalProperties": false,
+      "type": "object", "additionalProperties": false,
       "required": ["fixed_architecture_or_natural", "fixed_set_dressing", "conditional_scene_elements", "temporary_objects", "prohibited_additions", "prohibited_look_components"],
       "properties": {
         "fixed_architecture_or_natural": {"type": "array", "items": {"type": "string"}},
@@ -101,7 +65,7 @@
         "prohibited_look_components": {"type": "array", "items": {"type": "string"}}
       }
     },
-    "landmark_list": {"type": "array", "items": {"$ref": "#/$defs/landmark"}},
+    "landmark_list": {"type": "array", "minItems": 1, "items": {"$ref": "#/$defs/landmark"}},
     "material_identity": {"type": "array", "items": {"$ref": "#/$defs/material"}},
     "observed_rendered_colors": {"type": "array", "items": {"$ref": "#/$defs/colorRecord"}},
     "intrinsic_base_colors": {"type": "array", "items": {"$ref": "#/$defs/colorRecord"}},
@@ -121,7 +85,9 @@
     "orientation_system": {"type": "string", "minLength": 1},
     "horizon_or_vertical_reference": {"type": "string", "minLength": 1},
     "intrinsic_scene_state": {"type": "array", "items": {"$ref": "#/$defs/stateElement"}},
-    "camera_coverage_plan": {"type": "array", "minItems": 2, "items": {"$ref": "#/$defs/coverageItem"}},
+    "supported_camera_motion_envelope": {"$ref": "#/$defs/motionEnvelope"},
+    "unsupported_camera_motion": {"type": "array", "minItems": 1, "uniqueItems": true, "items": {"type": "string"}},
+    "coverage_graph": {"$ref": "#/$defs/coverageGraph"},
     "inferred_regions": {"type": "array", "items": {"$ref": "#/$defs/completionElement"}},
     "confidence_level": {"enum": ["high", "medium", "low", "mixed"]},
     "unresolved_hard_blockers": {"type": "array", "items": {"type": "string"}},
@@ -135,97 +101,119 @@
   },
   "$defs": {
     "sceneType": {"enum": ["bounded_rigid_space", "architectural_exterior", "open_terrain_landscape", "fluid_open_medium", "volumetric_dynamic", "astronomical_cosmic", "surreal_non_euclidean"]},
-    "dimensions": {
-      "type": "object",
-      "additionalProperties": false,
-      "required": ["width", "height"],
-      "properties": {"width": {"type": "integer", "minimum": 1}, "height": {"type": "integer", "minimum": 1}}
-    },
+    "dimensions": {"type": "object", "additionalProperties": false, "required": ["width", "height"], "properties": {"width": {"type": "integer", "minimum": 1}, "height": {"type": "integer", "minimum": 1}}},
     "sourceReference": {
-      "type": "object",
-      "additionalProperties": false,
-      "required": ["reference_id", "source_locator", "role"],
+      "type": "object", "additionalProperties": false, "required": ["reference_id", "source_locator", "role"],
       "properties": {
-        "reference_id": {"type": "string", "minLength": 1},
-        "source_locator": {"type": "string", "minLength": 1},
+        "reference_id": {"type": "string", "minLength": 1}, "source_locator": {"type": "string", "minLength": 1},
         "role": {"enum": ["primary_scene_evidence", "corroborating_scene_evidence", "material_detail", "state_reference", "style_only_excluded", "conflicting_candidate"]},
         "dimensions": {"$ref": "#/$defs/dimensions"}
       }
     },
     "evidenceElement": {
-      "type": "object",
-      "additionalProperties": false,
-      "required": ["element_id", "description", "source_reference_ids", "confidence"],
-      "properties": {
-        "element_id": {"type": "string"},
-        "description": {"type": "string"},
-        "source_reference_ids": {"type": "array", "minItems": 1, "uniqueItems": true, "items": {"type": "string"}},
-        "confidence": {"enum": ["high", "medium", "low"]}
-      }
+      "type": "object", "additionalProperties": false, "required": ["element_id", "description", "source_reference_ids", "confidence"],
+      "properties": {"element_id": {"type": "string"}, "description": {"type": "string"}, "source_reference_ids": {"type": "array", "minItems": 1, "uniqueItems": true, "items": {"type": "string"}}, "confidence": {"enum": ["high", "medium", "low"]}}
     },
     "completionElement": {
-      "type": "object",
-      "additionalProperties": false,
-      "required": ["element_id", "description", "rationale", "constraints", "status"],
-      "properties": {
-        "element_id": {"type": "string"},
-        "description": {"type": "string"},
-        "rationale": {"type": "string"},
-        "constraints": {"type": "array", "minItems": 1, "items": {"type": "string"}},
-        "status": {"enum": ["candidate", "approved", "rejected", "reopened_for_repair"]}
-      }
+      "type": "object", "additionalProperties": false, "required": ["element_id", "description", "rationale", "constraints", "status"],
+      "properties": {"element_id": {"type": "string"}, "description": {"type": "string"}, "rationale": {"type": "string"}, "constraints": {"type": "array", "minItems": 1, "items": {"type": "string"}}, "status": {"enum": ["candidate", "approved", "rejected", "reopened_for_repair"]}}
     },
     "conflict": {
-      "type": "object",
-      "additionalProperties": false,
-      "required": ["conflict_id", "description", "source_reference_ids", "resolution_status"],
-      "properties": {
-        "conflict_id": {"type": "string"},
-        "description": {"type": "string"},
-        "source_reference_ids": {"type": "array", "minItems": 2, "items": {"type": "string"}},
-        "resolution_status": {"enum": ["unresolved", "resolved_source_priority", "resolved_state_split", "resolved_excluded_reference", "hard_blocker"]},
-        "resolution": {"type": "string"}
-      }
+      "type": "object", "additionalProperties": false, "required": ["conflict_id", "description", "source_reference_ids", "resolution_status"],
+      "properties": {"conflict_id": {"type": "string"}, "description": {"type": "string"}, "source_reference_ids": {"type": "array", "minItems": 2, "items": {"type": "string"}}, "resolution_status": {"enum": ["unresolved", "resolved_source_priority", "resolved_state_split", "resolved_excluded_reference", "hard_blocker"]}, "resolution": {"type": "string"}}
     },
     "landmark": {
-      "type": "object",
-      "additionalProperties": false,
-      "required": ["landmark_id", "description", "orientation", "source_state"],
-      "properties": {
-        "landmark_id": {"type": "string"},
-        "description": {"type": "string"},
-        "orientation": {"type": "string"},
-        "source_state": {"enum": ["source_locked", "source_corroborated", "canonical_completion"]}
-      }
+      "type": "object", "additionalProperties": false, "required": ["landmark_id", "description", "orientation", "source_state"],
+      "properties": {"landmark_id": {"type": "string"}, "description": {"type": "string"}, "orientation": {"type": "string"}, "source_state": {"enum": ["source_locked", "source_corroborated", "canonical_completion"]}}
     },
     "material": {
-      "type": "object",
-      "additionalProperties": false,
-      "required": ["surface_id", "material_class", "base_color_status", "confidence"],
-      "properties": {
-        "surface_id": {"type": "string"},
-        "material_class": {"type": "string"},
-        "base_color_status": {"enum": ["intrinsic_confirmed", "intrinsic_estimated", "rendered_only_unknown"]},
-        "confidence": {"enum": ["high", "medium", "low"]}
-      }
+      "type": "object", "additionalProperties": false, "required": ["surface_id", "material_class", "base_color_status", "confidence"],
+      "properties": {"surface_id": {"type": "string"}, "material_class": {"type": "string"}, "base_color_status": {"enum": ["intrinsic_confirmed", "intrinsic_estimated", "rendered_only_unknown"]}, "confidence": {"enum": ["high", "medium", "low"]}}
     },
     "colorRecord": {
-      "type": "object",
-      "additionalProperties": false,
-      "required": ["surface_id", "description", "confidence"],
+      "type": "object", "additionalProperties": false, "required": ["surface_id", "description", "confidence"],
       "properties": {"surface_id": {"type": "string"}, "description": {"type": "string"}, "confidence": {"enum": ["high", "medium", "low"]}}
     },
     "stateElement": {
-      "type": "object",
-      "additionalProperties": false,
-      "required": ["state_id", "description", "identity_defining", "preservation_rule"],
+      "type": "object", "additionalProperties": false, "required": ["state_id", "description", "identity_defining", "preservation_rule"],
       "properties": {"state_id": {"type": "string"}, "description": {"type": "string"}, "identity_defining": {"type": "boolean"}, "preservation_rule": {"type": "string"}}
     },
-    "coverageItem": {
-      "type": "object",
-      "additionalProperties": false,
-      "required": ["asset_id", "view_role", "camera_height", "direction", "information_gain"],
-      "properties": {"asset_id": {"type": "string"}, "view_role": {"type": "string"}, "camera_height": {"enum": ["low", "eye", "elevated", "overhead", "system_not_camera_based"]}, "direction": {"type": "string"}, "information_gain": {"type": "string"}}
+    "range": {"type": "object", "additionalProperties": false, "required": ["min", "max"], "properties": {"min": {"type": "number"}, "max": {"type": "number"}}},
+    "translationBounds": {"type": "object", "additionalProperties": false, "required": ["x", "y", "z"], "properties": {"x": {"$ref": "#/$defs/range"}, "y": {"$ref": "#/$defs/range"}, "z": {"$ref": "#/$defs/range"}}},
+    "motionEnvelope": {
+      "type": "object", "additionalProperties": false,
+      "required": ["profile_id", "supported_movement_types", "azimuth_degrees", "elevation_degrees", "translation_bounds_normalized", "supported_path_ids", "included_reveal_region_ids", "backside_truth_status"],
+      "properties": {
+        "profile_id": {"const": "scene_motion_six.v1"},
+        "supported_movement_types": {"type": "array", "minItems": 1, "uniqueItems": true, "items": {"enum": ["locked_off", "digital_push_no_new_reveal", "pan", "tilt", "truck", "crane", "orbit", "approach", "departure"]}},
+        "azimuth_degrees": {"$ref": "#/$defs/range"}, "elevation_degrees": {"$ref": "#/$defs/range"},
+        "translation_bounds_normalized": {"$ref": "#/$defs/translationBounds"},
+        "supported_path_ids": {"type": "array", "minItems": 1, "uniqueItems": true, "items": {"type": "string"}},
+        "included_reveal_region_ids": {"type": "array", "minItems": 1, "uniqueItems": true, "items": {"type": "string"}},
+        "backside_truth_status": {"enum": ["source_supported", "canonical_completion", "outside_envelope"]}
+      }
+    },
+    "cameraPose": {
+      "type": "object", "additionalProperties": false,
+      "required": ["x", "y", "z", "yaw_degrees", "pitch_degrees", "roll_degrees", "lens_fov_class", "distance_framing_class"],
+      "properties": {
+        "x": {"type": "number"}, "y": {"type": "number"}, "z": {"type": "number"},
+        "yaw_degrees": {"type": "number"}, "pitch_degrees": {"type": "number"}, "roll_degrees": {"type": "number"},
+        "lens_fov_class": {"enum": ["ultra_wide", "wide", "normal", "long"]},
+        "distance_framing_class": {"enum": ["near_detail", "near_context", "mid_context", "wide_context", "system_view"]}
+      }
+    },
+    "coverageNode": {
+      "type": "object", "additionalProperties": false,
+      "required": ["node_id", "asset_id", "role", "camera_pose", "visible_landmark_ids", "revealed_region_ids", "occluded_region_ids", "source_evidence_ids", "canonical_completion_ids", "adjacent_node_ids", "overlap_invariant_ids", "mandatory"],
+      "properties": {
+        "node_id": {"type": "string", "minLength": 1}, "asset_id": {"type": "string", "minLength": 1},
+        "role": {"enum": ["source_aligned_diagnostic", "elevated_spatial_relation", "left_adjacent_continuity", "right_adjacent_continuity", "motion_reveal", "scale_landmark_depth"]},
+        "camera_pose": {"$ref": "#/$defs/cameraPose"},
+        "visible_landmark_ids": {"type": "array", "minItems": 1, "uniqueItems": true, "items": {"type": "string"}},
+        "revealed_region_ids": {"type": "array", "minItems": 1, "uniqueItems": true, "items": {"type": "string"}},
+        "occluded_region_ids": {"type": "array", "uniqueItems": true, "items": {"type": "string"}},
+        "source_evidence_ids": {"type": "array", "minItems": 1, "uniqueItems": true, "items": {"type": "string"}},
+        "canonical_completion_ids": {"type": "array", "uniqueItems": true, "items": {"type": "string"}},
+        "adjacent_node_ids": {"type": "array", "minItems": 1, "uniqueItems": true, "items": {"type": "string"}},
+        "overlap_invariant_ids": {"type": "array", "minItems": 1, "uniqueItems": true, "items": {"type": "string"}},
+        "mandatory": {"const": true}
+      }
+    },
+    "coverageEdge": {
+      "type": "object", "additionalProperties": false,
+      "required": ["edge_id", "from_node_id", "to_node_id", "movement_type", "direction", "translation_baseline_normalized", "parallax_expected", "parallax_evidence_status", "reveal_order_region_ids", "handedness", "overlap_invariant_ids", "path_ids"],
+      "properties": {
+        "edge_id": {"type": "string"}, "from_node_id": {"type": "string"}, "to_node_id": {"type": "string"},
+        "movement_type": {"enum": ["pan", "tilt", "truck", "crane", "orbit", "approach", "departure", "digital_push_no_new_reveal"]},
+        "direction": {"type": "string", "minLength": 1}, "translation_baseline_normalized": {"type": "number", "minimum": 0},
+        "parallax_expected": {"type": "boolean"}, "parallax_evidence_status": {"enum": ["not_applicable", "required_pending", "verified"]},
+        "reveal_order_region_ids": {"type": "array", "minItems": 1, "items": {"type": "string"}},
+        "handedness": {"enum": ["left_to_right", "right_to_left", "upward", "downward", "forward", "backward", "none"]},
+        "overlap_invariant_ids": {"type": "array", "minItems": 1, "uniqueItems": true, "items": {"type": "string"}},
+        "path_ids": {"type": "array", "minItems": 1, "uniqueItems": true, "items": {"type": "string"}}
+      }
+    },
+    "coveragePath": {
+      "type": "object", "additionalProperties": false, "required": ["path_id", "node_ids", "edge_ids", "supported_movement_types"],
+      "properties": {"path_id": {"type": "string"}, "node_ids": {"type": "array", "minItems": 2, "items": {"type": "string"}}, "edge_ids": {"type": "array", "minItems": 1, "items": {"type": "string"}}, "supported_movement_types": {"type": "array", "minItems": 1, "uniqueItems": true, "items": {"type": "string"}}}
+    },
+    "coverageLoop": {
+      "type": "object", "additionalProperties": false, "required": ["loop_id", "node_ids", "edge_ids", "closure_landmark_ids", "convergence_status"],
+      "properties": {"loop_id": {"type": "string"}, "node_ids": {"type": "array", "minItems": 3, "items": {"type": "string"}}, "edge_ids": {"type": "array", "minItems": 3, "items": {"type": "string"}}, "closure_landmark_ids": {"type": "array", "minItems": 1, "uniqueItems": true, "items": {"type": "string"}}, "convergence_status": {"enum": ["pending", "failed", "verified"]}}
+    },
+    "coverageGraph": {
+      "type": "object", "additionalProperties": false,
+      "required": ["graph_id", "profile_id", "required_asset_ids", "nodes", "edges", "paths", "loops", "graph_status"],
+      "properties": {
+        "graph_id": {"type": "string", "minLength": 1}, "profile_id": {"const": "scene_motion_six.v1"},
+        "required_asset_ids": {"type": "array", "minItems": 6, "uniqueItems": true, "items": {"type": "string"}},
+        "nodes": {"type": "array", "minItems": 6, "items": {"$ref": "#/$defs/coverageNode"}},
+        "edges": {"type": "array", "minItems": 6, "items": {"$ref": "#/$defs/coverageEdge"}},
+        "paths": {"type": "array", "minItems": 1, "items": {"$ref": "#/$defs/coveragePath"}},
+        "loops": {"type": "array", "minItems": 1, "items": {"$ref": "#/$defs/coverageLoop"}},
+        "graph_status": {"enum": ["draft", "frozen", "repair_required", "verified"]}
+      }
     }
   }
 }

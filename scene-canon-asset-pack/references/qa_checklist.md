@@ -39,10 +39,11 @@ When applicable, inspect ceilings, floors, roofs, bases, furniture tops, valley 
 
 - Verify bidirectional expansions converge.
 - Return to the source direction and confirm the same scene, dimensions, landmarks, completion, materials, and orientation.
+- Require a structured loop QA record bound to the declared loop ID; prose alone is not authoritative.
 
 ## 9. Duplicate View
 
-- Fail near-identical views, crop-only changes, uniform camera height, or views with no new spatial information.
+- Fail exact byte duplicates, perceptual near-duplicates after re-encoding, crop/focal-only changes, duplicate camera tuples, uniform directions, or views with no new spatial information.
 
 ## 10. Content And Layout Contamination
 
@@ -58,6 +59,7 @@ Run `look_contamination_checklist.md`. Fail both inherited cinematic look and ac
 - Verify actual pixels from the returned/local file.
 - Fail unverified dimension records or unsupported native-4K claims.
 - Confirm the asset was independently generated and not cropped from a multi-panel source.
+- Bind every machine asset to one audited v3 worker result and one later main-agent inspection receipt; reject self-attested turns or reused worker/thread/nonce/call IDs.
 
 ## 13. 4K Mapping
 
@@ -65,4 +67,4 @@ Run `4k_prompt_qa_checklist.md` after every asset passes visual QA. A regenerate
 
 ## Package Gate
 
-Approve only when every required asset passes all applicable checks, no hard blocker remains inside the minimum-complete boundary, and the package validator exits zero. Keep assistant QA distinct from user or external production approval.
+Approve only when all six complete prompts were publicly disclosed in one pre-spawn assistant event, the serialized queue finished without a user-continuation gate, every required asset and graph edge/path/loop has a passed structured QA record, no hard blocker remains inside the minimum-complete boundary, and strict delivery validation exits zero. Deterministic fixture receipts may test the validator but can never satisfy production delivery. Keep assistant QA distinct from user or external production approval.

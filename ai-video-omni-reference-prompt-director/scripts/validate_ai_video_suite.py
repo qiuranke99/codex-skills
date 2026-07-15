@@ -163,6 +163,7 @@ MARKERS = {
 }
 
 TEST_COMMANDS = (
+    ("scene canon", "scene-canon-asset-pack", "scripts/test_contract.py"),
     ("shot contract", "ai-video-shot-script-director", "scripts/test_contract.py"),
     ("source ingestion", "ai-video-shot-script-director", "scripts/test_source_ingestion.py"),
     ("project canon manifest", "ai-video-shot-script-director", "scripts/test_project_canon_manifest.py"),

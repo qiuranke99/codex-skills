@@ -57,6 +57,8 @@ Never use only the previous generated image or only a text summary. Record each 
 
 ## Bidirectional And Loop Closure Tests
 
-For important directions, expand from both sides and test convergence. Check landmark position, counts, left/right relation, doors/windows, dimensions, roads/coastlines/ridges/horizon, celestial relations, fixed objects, materials/base colors, completion stability, and neutral appearance.
+For important directions, expand from both sides and test convergence through declared coverage-graph paths. Each path must name its directed edges, supported motion types, reveal order, overlap invariants, and any required translated parallax. A loop must return to its initial landmark identity and handedness with every directed edge present.
+
+Check landmark position, counts, left/right relation, doors/windows, dimensions, roads/coastlines/ridges/horizon, celestial relations, fixed objects, materials/base colors, completion stability, and neutral appearance. The generation dependency DAG is separate: it controls when a frozen prompt can bind approved predecessor images, not whether a camera path exists.
 
 If the paths do not converge, set `repair_required`; rebuild the conflicting region and invalidate dependent views and prompts. Do not preserve two contradictory versions.

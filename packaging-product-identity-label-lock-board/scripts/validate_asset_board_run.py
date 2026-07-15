@@ -98,7 +98,10 @@ def worker_prompt_binding_is_valid(worker: dict[str, Any], prompt_bytes: bytes) 
 
 
 def normalized(path: Path) -> str:
-    return os.path.normcase(os.path.abspath(os.fspath(path)))
+    # Compare filesystem identity after resolving symlinks/junctions and platform
+    # aliases (for example macOS /var -> /private/var). Lexical abspath alone
+    # rejected valid worker/compositor receipts on non-Linux CI runners.
+    return os.path.normcase(os.path.realpath(os.path.abspath(os.fspath(path))))
 
 
 def load_json(path: Path, code: str) -> tuple[dict[str, Any], bytes]:
