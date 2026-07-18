@@ -3796,9 +3796,12 @@ def test_package_standalone_gate() -> None:
         "function Invoke-PythonCommand",
         '$ErrorActionPreference = "Continue"',
         "$Command.Path",
+        "run_name='__main__'",
     ):
         if marker not in powershell_text:
             raise AssertionError(f"PowerShell 5.1 compatibility guard is missing: {marker}")
+    if 'run_name="__main__"' in powershell_text:
+        raise AssertionError("PowerShell 5.1 strips nested double quotes from the Python -c argument")
     skill_text = (PACKAGE_ROOT / "SKILL.md").read_text(encoding="utf-8")
     preflight = "\n".join(skill_text.splitlines()[:35])
     for marker in (

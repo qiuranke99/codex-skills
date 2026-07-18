@@ -108,7 +108,7 @@ if ($VersionResult.ExitCode -ne 0) {
 
 $ContractArguments = @($PythonPrefix) + @(
     "-I", "-B", "-c",
-    'import runpy, sys; sys.path.insert(0, sys.argv[1]); runpy.run_path(sys.argv[2], run_name="__main__")',
+    "import runpy, sys; sys.path.insert(0, sys.argv[1]); runpy.run_path(sys.argv[2], run_name='__main__')",
     $ScriptDirectory,
     (Join-Path $ScriptDirectory "test_contract.py")
 )
