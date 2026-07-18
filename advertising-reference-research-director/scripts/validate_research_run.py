@@ -14,7 +14,15 @@ from datetime import date, datetime, timedelta, timezone
 from pathlib import Path
 from typing import Any
 
-from _contract_utils import ContractError, parse_timestamp, read_json, read_jsonl, same_artifact, write_json
+from _contract_utils import (
+    ContractError,
+    canonical_relative_path,
+    parse_timestamp,
+    read_json,
+    read_jsonl,
+    same_artifact,
+    write_json,
+)
 from _evidence_binding import (
     CANONICALIZATION,
     REPORT_TRUST_STATEMENT,
@@ -2597,8 +2605,14 @@ class PackValidator:
             declared[resolved] = (row, purposes)
 
         if set(declared) != set(required):
-            missing = sorted(str(path.relative_to(self.run_root.resolve())) for path in set(required) - set(declared))
-            extra = sorted(str(path.relative_to(self.run_root.resolve())) for path in set(declared) - set(required))
+            missing = sorted(
+                canonical_relative_path(path, self.run_root.resolve())
+                for path in set(required) - set(declared)
+            )
+            extra = sorted(
+                canonical_relative_path(path, self.run_root.resolve())
+                for path in set(declared) - set(required)
+            )
             self.fail(
                 "ARTIFACT_INTEGRITY",
                 f"referenced_evidence_contract does not exactly cover validator-read evidence; missing={missing}, extra={extra}",
@@ -2608,7 +2622,7 @@ class PackValidator:
             if entry is None:
                 continue
             row, declared_purposes = entry
-            expected_relative = str(path.relative_to(self.run_root.resolve()))
+            expected_relative = canonical_relative_path(path, self.run_root.resolve())
             if row.get("path") != expected_relative:
                 self.fail(
                     "ARTIFACT_INTEGRITY",
@@ -2708,7 +2722,7 @@ class PackValidator:
                 continue
             declared = (self.run_root / entry["path"]).resolve()
             try:
-                expected_relative = path.resolve().relative_to(self.run_root.resolve()).as_posix()
+                expected_relative = canonical_relative_path(path.resolve(), self.run_root.resolve())
             except ValueError:
                 self.fail("ARTIFACT_INTEGRITY", f"core artifact escapes the run root: {artifact_type}")
                 continue

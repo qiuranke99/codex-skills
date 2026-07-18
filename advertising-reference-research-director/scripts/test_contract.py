@@ -12,7 +12,7 @@ import shutil
 import sys
 import tempfile
 from datetime import datetime, timedelta, timezone
-from pathlib import Path
+from pathlib import Path, PureWindowsPath
 from typing import Any
 
 import _contract_utils as contract_utils
@@ -752,7 +752,7 @@ def _referenced_evidence_contract(run_root: Path, pack_root: Path) -> list[dict[
 
     return [
         {
-            "path": str(path.relative_to(run_root)),
+            "path": contract_utils.canonical_relative_path(path, run_root),
             "sha256": hashlib.sha256(path.read_bytes()).hexdigest(),
             "purposes": sorted(purposes),
         }
@@ -1162,7 +1162,7 @@ def _make_pack(run_root: Path, pack_root: Path, run_id: str, pack_id: str, modal
         artifact_contract.append(
             {
                 "artifact_type": artifact_type,
-                "path": str(path.relative_to(run_root)),
+                "path": contract_utils.canonical_relative_path(path, run_root),
                 "sha256": hashlib.sha256(path.read_bytes()).hexdigest(),
                 "schema_id": schema_map[artifact_type],
             }
@@ -3785,6 +3785,12 @@ def test_schema_keyword_enforcement() -> None:
 
 
 def test_package_standalone_gate() -> None:
+    windows_relative = contract_utils.canonical_relative_path(
+        PureWindowsPath(r"C:\research\run\packs\image_pack\06_output\reference_board.html"),
+        PureWindowsPath(r"C:\research\run"),
+    )
+    if windows_relative != "packs/image_pack/06_output/reference_board.html":
+        raise AssertionError(f"contract path is not platform-neutral: {windows_relative}")
     skill_text = (PACKAGE_ROOT / "SKILL.md").read_text(encoding="utf-8")
     preflight = "\n".join(skill_text.splitlines()[:35])
     for marker in (

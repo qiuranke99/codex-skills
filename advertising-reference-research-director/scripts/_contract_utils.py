@@ -8,12 +8,23 @@ import math
 import os
 import tempfile
 from datetime import datetime, timezone
-from pathlib import Path
+from pathlib import Path, PurePath
 from typing import Any, Iterable
 
 
 class ContractError(ValueError):
     """Raised when an artifact cannot be parsed as a contract artifact."""
+
+
+def canonical_relative_path(path: str | PurePath, root: str | PurePath) -> str:
+    """Render one root-relative contract path with platform-neutral separators."""
+
+    candidate = path if isinstance(path, PurePath) else Path(path)
+    base = root if isinstance(root, PurePath) else Path(root)
+    try:
+        return candidate.relative_to(base).as_posix()
+    except ValueError as exc:
+        raise ContractError(f"artifact path {candidate} is outside root {base}") from exc
 
 
 def _reject_constant(token: str) -> Any:
