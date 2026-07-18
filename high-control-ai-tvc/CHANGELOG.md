@@ -10,6 +10,8 @@
   单包仍不依赖 High-Control。
 - 可选聚合验证器将根级 standalone validator 的单包上限显式设为 180 秒，
   避免声明了较长确定性测试的独立包被 30 秒 CLI 默认值误判为无效配置。
+- GitHub 的 standalone authority job 现在从 material 单包自己的
+  `requirements.txt` 安装 Pillow，再运行其声明的隔离确定性测试。
 
 ## 2.0.0 — 2026-07-18
 

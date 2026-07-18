@@ -20,6 +20,9 @@ jobs:
         with:
           python-version: "3.12"
 
+      - name: Install standalone test dependency
+        run: python -m pip install --disable-pip-version-check -r material-sensitive-product-master-asset-board/requirements.txt
+
       - name: Test the repository-level standalone validator
         run: python .github/scripts/test_validate_standalone_skills.py
 
