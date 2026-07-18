@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Freeze one source-bound material_board_qa.v3 from the main-agent decision draft."""
+"""Freeze one source-bound v3/v4 material board QA record."""
 
 from __future__ import annotations
 

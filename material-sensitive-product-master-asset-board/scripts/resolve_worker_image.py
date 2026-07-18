@@ -212,6 +212,46 @@ def is_call_like(payload: dict[str, Any]) -> bool:
     )
 
 
+def bind_exec_transport(expected_exec_bytes: bytes, observed_exec_source: str) -> dict[str, Any]:
+    """Bind a rollout exec call without mistaking one file-terminal LF for JS body drift.
+
+    Codex rollout transport can omit the sole final LF that terminates a frozen text
+    artifact.  That omission is accepted only when the frozen file uses LF (not CR),
+    ends in exactly one LF, and every preceding UTF-8 byte is identical.  No general
+    whitespace, newline, Unicode, or syntax normalization is permitted.
+    """
+    try:
+        recorded_bytes = observed_exec_source.encode("utf-8")
+    except UnicodeEncodeError as exc:
+        raise MaterialContractError("blocked_worker_exec_source_mismatch", str(exc)) from exc
+    has_single_terminal_lf = all(
+        (
+            expected_exec_bytes.endswith(b"\n"),
+            not expected_exec_bytes.endswith(b"\n\n"),
+            b"\r" not in expected_exec_bytes,
+        )
+    )
+    if recorded_bytes == expected_exec_bytes:
+        mode = "exact"
+    elif (
+        has_single_terminal_lf
+        and recorded_bytes == expected_exec_bytes[:-1]
+        and not recorded_bytes.endswith(b"\n")
+    ):
+        mode = "single_terminal_lf_omitted"
+    else:
+        raise MaterialContractError(
+            "blocked_worker_exec_source_mismatch",
+            "rollout exec source differs beyond omission of the frozen file's sole terminal LF",
+        )
+    return {
+        "frozen_exec_file_sha256": sha256_bytes(expected_exec_bytes),
+        "recorded_exec_content_sha256": sha256_bytes(recorded_bytes),
+        "exec_transport_mode": mode,
+        "exec_body_match": True,
+    }
+
+
 def validate_worker_rollout(
     events: list[dict[str, Any]],
     *,
@@ -334,15 +374,7 @@ def validate_worker_rollout(
     actual_source = exec_call.get("input")
     if not isinstance(actual_source, str):
         raise MaterialContractError("blocked_worker_exec_source_mismatch", "exec input is not text")
-    try:
-        actual_exec_bytes = actual_source.encode("utf-8")
-    except UnicodeEncodeError as exc:
-        raise MaterialContractError("blocked_worker_exec_source_mismatch", str(exc)) from exc
-    if actual_exec_bytes != expected_exec_bytes:
-        raise MaterialContractError(
-            "blocked_worker_exec_source_mismatch",
-            "rollout exec source bytes do not equal the frozen deterministic exec source",
-        )
+    exec_transport = bind_exec_transport(expected_exec_bytes, actual_source)
 
     exec_call_id = exec_call.get("call_id")
     if not isinstance(exec_call_id, str) or not exec_call_id:
@@ -416,8 +448,11 @@ def validate_worker_rollout(
         and call_index < end_index
         and call_index < exec_outputs[0][0] < end_index
         and all(call_index < index < end_index for index, _ in wait_calls)
-        and all(call_index < index < end_index for index in wait_output_indices)
-        and last_tool_index < max(agent_final_index, response_final_index)
+        # The image-generation end event is emitted while the final wait call
+        # is still in flight, so that wait's matching tool output may follow
+        # the image event.  A wait *call* after the image event remains fatal.
+        and all(call_index < index < min(agent_final_index, response_final_index) for index in wait_output_indices)
+        and last_tool_index < min(agent_final_index, response_final_index)
         and end_index < agent_final_index < completion_index
         and end_index < response_final_index < completion_index
     ):
@@ -446,7 +481,10 @@ def validate_worker_rollout(
         "worker_turn_id": turn_id,
         "image_generation_call_id": image_call_id,
         "saved_path": saved_path,
-        "exec_source_sha256": sha256_bytes(actual_exec_bytes),
+        # Keep the legacy field canonical: downstream publication binds the
+        # immutable frozen file, not the rollout transport representation.
+        "exec_source_sha256": exec_transport["frozen_exec_file_sha256"],
+        **exec_transport,
     }
 
 
@@ -676,9 +714,11 @@ def main() -> int:
         "png_validation": "pillow_verify_and_full_load",
         "generation_prompt_sha256": sha256_bytes(prompt_bytes),
         "prompt_sha_match": True,
+        "prompt_bytes_match": True,
         "reference_mode": "frozen_manifest_v2",
         "reference_count": len(manifest_record["paths"]),
         "reference_bytes_verified": True,
+        "reference_bytes_match": True,
         "reference_manifest_path": str(manifest_path),
         "reference_manifest_sha256": manifest_record["sha256"],
         "ordered_reference_bundle_sha256": manifest_record["ordered_bundle_sha256"],
@@ -689,6 +729,10 @@ def main() -> int:
         "worker_spawn_sha256": sha256_bytes(spawn_bytes),
         "worker_exec_source_path": str(exec_path),
         "worker_exec_source_sha256": sha256_bytes(exec_bytes),
+        "frozen_exec_file_sha256": evidence["frozen_exec_file_sha256"],
+        "recorded_exec_content_sha256": evidence["recorded_exec_content_sha256"],
+        "exec_transport_mode": evidence["exec_transport_mode"],
+        "exec_body_match": evidence["exec_body_match"],
         "worker_exec_receipt_path": str(receipt_path),
         "worker_exec_receipt_sha256": sha256_bytes(receipt_bytes),
         "output_distinct_from_all_sources": True,

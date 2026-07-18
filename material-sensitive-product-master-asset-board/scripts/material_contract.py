@@ -1,5 +1,10 @@
 #!/usr/bin/env python3
-"""Shared, package-local validators for the material board v5 artifact chain."""
+"""Shared, package-local validators for the material board artifact chain.
+
+The v1 source contract remains readable for immutable v5 runs.  New runs use
+the v2 source contract, whose panel topology is derived from observed source
+coverage and whose hidden-view authority is explicit and hash-bound.
+"""
 
 from __future__ import annotations
 
@@ -37,6 +42,79 @@ FORMAT_METADATA: dict[str, tuple[str, str]] = {
 }
 
 ALLOWED_SOURCE_AUTHORITIES = {"authoritative_source", "supporting_source"}
+SOURCE_COVERAGE_PROFILES = {
+    "clear_front_only",
+    "partial_multiview",
+    "full_multiview",
+}
+SUBJECT_MATCH_CLASSES = {
+    "user_source_exact_visible",
+    "exact_variant",
+}
+EXACT_SUBJECT_MATCH_CLASSES = {"user_source_exact_visible", "exact_variant"}
+OBSERVED_SURFACES = {
+    "front",
+    "rear",
+    "left_side",
+    "right_side",
+    "top",
+    "bottom",
+    "open_cap",
+    "interior",
+    "through_body",
+}
+VIEW_BINS = {
+    "front",
+    "front_three_quarter_left",
+    "front_three_quarter_right",
+    "left_side",
+    "right_side",
+    "rear",
+    "top",
+    "bottom",
+    "open_cap",
+    "macro",
+}
+FRONT_VIEW_BINS = {"front", "front_three_quarter_left", "front_three_quarter_right"}
+FULL_MULTIVIEW_REQUIRED_BINS = {"front", "rear", "top", "bottom"}
+VIEW_AUTHORITIES = {
+    "direct_source",
+    "source_crop",
+    "exact_variant_hidden_surface",
+    "same_family_reconstruction",
+    "packaging_archetype_reconstruction",
+}
+RECONSTRUCTION_VIEW_AUTHORITIES = {
+    "same_family_reconstruction",
+    "packaging_archetype_reconstruction",
+}
+V2_EVIDENCE_JOBS: dict[str, tuple[set[str], set[str]]] = {
+    "front_identity_anchor": ({"primary_anchor"}, {"direct_source", "source_crop"}),
+    "front_material_response": ({"material_response"}, {"direct_source", "source_crop"}),
+    "front_visible_structure": ({"critical_structure"}, {"direct_source", "source_crop"}),
+    "front_label_micro": ({"label_micro"}, {"direct_source", "source_crop"}),
+    "source_observed_multi_angle": ({"multi_angle"}, {"direct_source", "source_crop"}),
+    "exact_hidden_surface": (
+        {"multi_angle", "critical_structure", "label_micro", "state_window"},
+        {"exact_variant_hidden_surface"},
+    ),
+    "same_family_geometry_reconstruction": (
+        {"multi_angle", "critical_structure"},
+        {"same_family_reconstruction"},
+    ),
+    "packaging_archetype_structure_reconstruction": (
+        {"multi_angle", "critical_structure"},
+        {"packaging_archetype_reconstruction"},
+    ),
+    "source_crop_detail": (
+        {"material_response", "critical_structure", "label_micro"},
+        {"source_crop"},
+    ),
+    "state_evidence_window": (
+        {"state_window"},
+        {"direct_source", "source_crop", "exact_variant_hidden_surface"},
+    ),
+}
 ALLOWED_SOURCE_USES = {
     "identity",
     "silhouette",
@@ -474,7 +552,7 @@ def _string_list(
     return result
 
 
-def normalize_source_contract_draft(
+def _normalize_source_contract_draft_v1(
     draft: dict[str, Any], manifest_record: dict[str, Any]
 ) -> dict[str, Any]:
     code = "blocked_material_source_contract_invalid"
@@ -724,6 +802,492 @@ def normalize_source_contract_draft(
     }
 
 
+def _optional_one_line(value: Any, code: str, label: str) -> str:
+    if value == "":
+        return ""
+    return _one_line(value, code, label)
+
+
+def _derive_source_coverage_profile(source_authority: list[dict[str, Any]]) -> str:
+    exact_view_bins = {
+        view_bin
+        for source in source_authority
+        if source["subject_match_class"] in EXACT_SUBJECT_MATCH_CLASSES
+        for view_bin in source["view_bins"]
+    }
+    exact_observed_surfaces = {
+        surface
+        for source in source_authority
+        if source["subject_match_class"] in EXACT_SUBJECT_MATCH_CLASSES
+        for surface in source["observed_surfaces"]
+    }
+    if "front" not in exact_view_bins:
+        raise MaterialContractError(
+            "blocked_material_source_contract_invalid",
+            "v2 requires an exact-subject front view for the primary anchor",
+        )
+    if exact_view_bins <= FRONT_VIEW_BINS and exact_observed_surfaces <= {"front", "through_body"}:
+        return "clear_front_only"
+    has_side = bool(exact_view_bins & {"left_side", "right_side"})
+    if FULL_MULTIVIEW_REQUIRED_BINS <= exact_view_bins and has_side:
+        return "full_multiview"
+    return "partial_multiview"
+
+
+def _normalize_source_contract_draft_v2(
+    draft: dict[str, Any], manifest_record: dict[str, Any]
+) -> dict[str, Any]:
+    code = "blocked_material_source_contract_invalid"
+    required = {
+        "schema_version",
+        "asset_id",
+        "source_coverage_profile",
+        "research_path",
+        "research_sha256",
+        "source_authority",
+        "fact_registry",
+        "critical_invariants",
+        "panel_plan",
+    }
+    require_exact_keys(draft, required, code, "material source contract draft")
+    if draft["schema_version"] != "material_source_contract_draft.v2":
+        raise MaterialContractError(code, "unexpected source-contract draft schema")
+    asset_id = _one_line(draft["asset_id"], code, "asset_id")
+    if not ID_RE.fullmatch(asset_id):
+        raise MaterialContractError(code, "asset_id must use lowercase identifier syntax")
+    declared_coverage = _one_line(
+        draft["source_coverage_profile"], code, "source_coverage_profile"
+    )
+    if declared_coverage not in SOURCE_COVERAGE_PROFILES:
+        raise MaterialContractError(code, f"unsupported source coverage profile: {declared_coverage}")
+    research_path = _optional_one_line(draft["research_path"], code, "research_path")
+    research_sha256 = _optional_one_line(draft["research_sha256"], code, "research_sha256")
+    if bool(research_path) != bool(research_sha256):
+        raise MaterialContractError(code, "research_path and research_sha256 must be set together")
+    if not research_path:
+        raise MaterialContractError(
+            code,
+            "material_source_contract.v2 requires a hash-bound sources/material-research.json artifact",
+        )
+    if research_sha256 and not SHA256_RE.fullmatch(research_sha256):
+        raise MaterialContractError(code, "research_sha256 must be a lowercase SHA-256")
+
+    source_authority_raw = draft["source_authority"]
+    if not isinstance(source_authority_raw, list) or not source_authority_raw:
+        raise MaterialContractError(code, "source_authority must be non-empty")
+    source_authority: list[dict[str, Any]] = []
+    authority_aliases: list[str] = []
+    for entry in source_authority_raw:
+        if not isinstance(entry, dict):
+            raise MaterialContractError(code, "source authority entry must be an object")
+        require_exact_keys(
+            entry,
+            {
+                "alias",
+                "authority",
+                "subject_match_class",
+                "observed_surfaces",
+                "view_bins",
+                "generation_reference_use_allowed",
+                "research_claim_ids",
+                "allowed_uses",
+                "exclusions",
+            },
+            code,
+            "source authority entry",
+        )
+        alias = _one_line(entry["alias"], code, "source alias")
+        authority = _one_line(entry["authority"], code, "source authority")
+        subject_match_class = _one_line(
+            entry["subject_match_class"], code, "subject_match_class"
+        )
+        if authority not in ALLOWED_SOURCE_AUTHORITIES:
+            raise MaterialContractError(code, f"unsupported source authority: {authority}")
+        if subject_match_class not in SUBJECT_MATCH_CLASSES:
+            raise MaterialContractError(
+                code, f"unsupported subject_match_class: {subject_match_class}"
+            )
+        observed_surfaces = _string_list(
+            entry["observed_surfaces"],
+            code=code,
+            label="observed_surfaces",
+            allow_empty=False,
+            allowed=OBSERVED_SURFACES,
+        )
+        view_bins = _string_list(
+            entry["view_bins"],
+            code=code,
+            label="view_bins",
+            allow_empty=False,
+            allowed=VIEW_BINS,
+        )
+        if entry["generation_reference_use_allowed"] is not True:
+            raise MaterialContractError(
+                code,
+                f"manifest source {alias} is a provider reference and must set "
+                "generation_reference_use_allowed=true; keep research-only captures in material-research.json",
+            )
+        research_claim_ids = _string_list(
+            entry["research_claim_ids"],
+            code=code,
+            label="source research_claim_ids",
+            allow_empty=True,
+        )
+        if not all(ID_RE.fullmatch(item) for item in research_claim_ids):
+            raise MaterialContractError(code, f"source {alias} has an invalid research claim id")
+        allowed_uses = _string_list(
+            entry["allowed_uses"],
+            code=code,
+            label="allowed_uses",
+            allow_empty=False,
+            allowed=ALLOWED_SOURCE_USES,
+        )
+        exclusions = _string_list(
+            entry["exclusions"], code=code, label="exclusions", allow_empty=True
+        )
+        source_authority.append(
+            {
+                "alias": alias,
+                "authority": authority,
+                "subject_match_class": subject_match_class,
+                "observed_surfaces": sorted(observed_surfaces),
+                "view_bins": sorted(view_bins),
+                "generation_reference_use_allowed": True,
+                "research_claim_ids": research_claim_ids,
+                "allowed_uses": sorted(allowed_uses),
+                "exclusions": exclusions,
+            }
+        )
+        authority_aliases.append(alias)
+    if authority_aliases != manifest_record["aliases"]:
+        raise MaterialContractError(
+            code,
+            "source_authority aliases must exactly equal manifest order with one entry per source",
+        )
+    derived_coverage = _derive_source_coverage_profile(source_authority)
+    if declared_coverage != derived_coverage:
+        raise MaterialContractError(
+            code,
+            f"source_coverage_profile must be derived from exact observed view bins: {derived_coverage}",
+        )
+    authority_by_alias = {entry["alias"]: entry for entry in source_authority}
+
+    registry = draft["fact_registry"]
+    if not isinstance(registry, dict):
+        raise MaterialContractError(code, "fact_registry must be an object")
+    require_exact_keys(registry, {"verified", "inferred", "needs_source"}, code, "fact_registry")
+    normalized_registry: dict[str, list[dict[str, Any]]] = {}
+    fact_classes: dict[str, str] = {}
+    fact_sources: dict[str, list[str]] = {}
+    for classification in ("verified", "inferred", "needs_source"):
+        raw_entries = registry[classification]
+        if not isinstance(raw_entries, list):
+            raise MaterialContractError(code, f"fact_registry.{classification} must be a list")
+        normalized_entries: list[dict[str, Any]] = []
+        for fact in raw_entries:
+            if not isinstance(fact, dict):
+                raise MaterialContractError(code, "fact entry must be an object")
+            require_exact_keys(
+                fact,
+                {"fact_id", "statement", "source_aliases", "research_claim_ids"},
+                code,
+                "fact entry",
+            )
+            fact_id = _one_line(fact["fact_id"], code, "fact_id")
+            if not ID_RE.fullmatch(fact_id) or fact_id in fact_classes:
+                raise MaterialContractError(code, f"fact_id is invalid or duplicated: {fact_id}")
+            statement = _one_line(fact["statement"], code, "fact statement")
+            aliases = _string_list(
+                fact["source_aliases"],
+                code=code,
+                label="fact source_aliases",
+                allow_empty=classification == "needs_source",
+            )
+            research_claim_ids = _string_list(
+                fact["research_claim_ids"],
+                code=code,
+                label="fact research_claim_ids",
+                allow_empty=True,
+            )
+            if not all(ID_RE.fullmatch(item) for item in research_claim_ids):
+                raise MaterialContractError(code, f"fact {fact_id} has an invalid research claim id")
+            if not set(aliases) <= set(manifest_record["aliases"]):
+                raise MaterialContractError(code, f"fact {fact_id} references an unknown source alias")
+            fact_classes[fact_id] = classification
+            fact_sources[fact_id] = aliases
+            normalized_entries.append(
+                {
+                    "fact_id": fact_id,
+                    "statement": statement,
+                    "source_aliases": aliases,
+                    "research_claim_ids": research_claim_ids,
+                }
+            )
+        normalized_registry[classification] = normalized_entries
+    if not normalized_registry["verified"]:
+        raise MaterialContractError(code, "at least one verified fact is required")
+
+    raw_invariants = draft["critical_invariants"]
+    if not isinstance(raw_invariants, list) or not raw_invariants:
+        raise MaterialContractError(code, "critical_invariants must be non-empty")
+    invariants: list[dict[str, Any]] = []
+    invariant_ids: list[str] = []
+    for invariant in raw_invariants:
+        if not isinstance(invariant, dict):
+            raise MaterialContractError(code, "critical invariant must be an object")
+        require_exact_keys(
+            invariant,
+            {"invariant_id", "category", "fact_id", "required_for_acceptance"},
+            code,
+            "critical invariant",
+        )
+        invariant_id = _one_line(invariant["invariant_id"], code, "invariant_id")
+        category = _one_line(invariant["category"], code, "invariant category")
+        fact_id = _one_line(invariant["fact_id"], code, "invariant fact_id")
+        if not ID_RE.fullmatch(invariant_id) or invariant_id in invariant_ids:
+            raise MaterialContractError(code, f"invariant_id is invalid or duplicated: {invariant_id}")
+        if category not in INVARIANT_CATEGORIES or fact_id not in fact_classes:
+            raise MaterialContractError(code, f"invariant {invariant_id} has invalid category or fact")
+        if fact_classes[fact_id] != "verified":
+            raise MaterialContractError(
+                code,
+                f"critical invariant {invariant_id} must bind a verified fact, not {fact_classes[fact_id]}",
+            )
+        if not fact_sources[fact_id]:
+            raise MaterialContractError(code, f"critical invariant {invariant_id} has no source evidence")
+        unsupported_fact_sources = [
+            alias
+            for alias in fact_sources[fact_id]
+            if category not in authority_by_alias[alias]["allowed_uses"]
+        ]
+        if unsupported_fact_sources:
+            raise MaterialContractError(
+                code,
+                f"critical invariant {invariant_id} uses sources not authorized for {category}: "
+                f"{unsupported_fact_sources}",
+            )
+        if invariant["required_for_acceptance"] is not True:
+            raise MaterialContractError(code, "every critical invariant must be required_for_acceptance=true")
+        invariants.append(
+            {
+                "invariant_id": invariant_id,
+                "category": category,
+                "fact_id": fact_id,
+                "evidence_classification": "verified",
+                "required_for_acceptance": True,
+            }
+        )
+        invariant_ids.append(invariant_id)
+
+    raw_panels = draft["panel_plan"]
+    if not isinstance(raw_panels, list) or not 4 <= len(raw_panels) <= 10:
+        raise MaterialContractError(code, "panel_plan must contain 4-10 evidence-authorized panels")
+    panel_plan: list[dict[str, Any]] = []
+    panel_ids: list[str] = []
+    roles: list[str] = []
+    covered_invariants: set[str] = set()
+    invariant_by_id = {item["invariant_id"]: item for item in invariants}
+    for panel in raw_panels:
+        if not isinstance(panel, dict):
+            raise MaterialContractError(code, "panel entry must be an object")
+        require_exact_keys(
+            panel,
+            {
+                "panel_id",
+                "role",
+                "evidence_job",
+                "source_aliases",
+                "invariant_ids",
+                "view_authority",
+                "target_surfaces",
+                "research_claim_ids",
+                "required_for_acceptance",
+            },
+            code,
+            "panel entry",
+        )
+        panel_id = _one_line(panel["panel_id"], code, "panel_id")
+        role = _one_line(panel["role"], code, "panel role")
+        evidence_job = _one_line(panel["evidence_job"], code, "panel evidence_job")
+        source_aliases = _string_list(
+            panel["source_aliases"], code=code, label="panel source_aliases", allow_empty=False
+        )
+        panel_invariants = _string_list(
+            panel["invariant_ids"], code=code, label="panel invariant_ids", allow_empty=False
+        )
+        view_authority = _one_line(panel["view_authority"], code, "panel view_authority")
+        target_surfaces = _string_list(
+            panel["target_surfaces"],
+            code=code,
+            label="panel target_surfaces",
+            allow_empty=False,
+            allowed=OBSERVED_SURFACES,
+        )
+        research_claim_ids = _string_list(
+            panel["research_claim_ids"],
+            code=code,
+            label="panel research_claim_ids",
+            allow_empty=True,
+        )
+        if not all(ID_RE.fullmatch(item) for item in research_claim_ids):
+            raise MaterialContractError(code, f"panel {panel_id} has an invalid research claim id")
+        if (
+            not ID_RE.fullmatch(panel_id)
+            or panel_id in panel_ids
+            or role not in PANEL_ROLES
+            or view_authority not in VIEW_AUTHORITIES
+        ):
+            raise MaterialContractError(code, f"panel id, role, or view authority is invalid: {panel_id}")
+        job_contract = V2_EVIDENCE_JOBS.get(evidence_job)
+        if (
+            not ID_RE.fullmatch(evidence_job)
+            or job_contract is None
+            or role not in job_contract[0]
+            or view_authority not in job_contract[1]
+        ):
+            raise MaterialContractError(
+                "blocked_panel_evidence_job_invalid",
+                f"panel {panel_id} evidence_job must be a bounded token compatible with "
+                f"role={role} and view_authority={view_authority}",
+            )
+        if panel["required_for_acceptance"] is not True:
+            raise MaterialContractError(code, "every planned panel must be required_for_acceptance=true")
+        if not set(source_aliases) <= set(manifest_record["aliases"]):
+            raise MaterialContractError(code, f"panel {panel_id} references an unknown source alias")
+        if not set(panel_invariants) <= set(invariant_ids):
+            raise MaterialContractError(code, f"panel {panel_id} references an unknown invariant")
+        unauthorized_composition_sources = [
+            alias
+            for alias in source_aliases
+            if "panel_composition" not in authority_by_alias[alias]["allowed_uses"]
+        ]
+        if unauthorized_composition_sources:
+            raise MaterialContractError(
+                code,
+                f"panel {panel_id} uses sources excluded from panel composition: "
+                f"{unauthorized_composition_sources}",
+            )
+        panel_allowed_uses = {
+            use for alias in source_aliases for use in authority_by_alias[alias]["allowed_uses"]
+        }
+        role_required = ROLE_REQUIRED_USES[role]
+        role_supported = (
+            bool(panel_allowed_uses & role_required)
+            if role == "critical_structure"
+            else role_required <= panel_allowed_uses
+        )
+        if not role_supported:
+            raise MaterialContractError(
+                code,
+                f"panel {panel_id} sources do not authorize the {role} evidence job; "
+                f"required uses={sorted(role_required)}",
+            )
+        required_fact_sources = {
+            alias
+            for invariant_id in panel_invariants
+            for alias in fact_sources[invariant_by_id[invariant_id]["fact_id"]]
+        }
+        if not required_fact_sources <= set(source_aliases):
+            raise MaterialContractError(
+                code,
+                f"panel {panel_id} omits source aliases required by its invariants: "
+                f"{sorted(required_fact_sources - set(source_aliases))}",
+            )
+
+        exact_sources = [
+            authority_by_alias[alias]
+            for alias in source_aliases
+            if authority_by_alias[alias]["subject_match_class"] in EXACT_SUBJECT_MATCH_CLASSES
+        ]
+        directly_observed = {
+            surface for source in exact_sources for surface in source["observed_surfaces"]
+        }
+        if view_authority in {"direct_source", "source_crop"}:
+            if not set(target_surfaces) <= directly_observed:
+                raise MaterialContractError(
+                    "blocked_panel_view_authority_laundering",
+                    f"panel {panel_id} requests unobserved surfaces as direct source/crop: "
+                    f"{sorted(set(target_surfaces) - directly_observed)}",
+                )
+        elif view_authority == "exact_variant_hidden_surface":
+            exact_variant_observed = {
+                surface
+                for source in exact_sources
+                if source["subject_match_class"] == "exact_variant"
+                for surface in source["observed_surfaces"]
+            }
+            if not set(target_surfaces) <= exact_variant_observed:
+                raise MaterialContractError(
+                    "blocked_panel_view_authority_laundering",
+                    f"panel {panel_id} has no exact-product observation for: "
+                    f"{sorted(set(target_surfaces) - exact_variant_observed)}",
+                )
+        else:
+            if not research_claim_ids:
+                raise MaterialContractError(
+                    "blocked_reconstruction_evidence_missing",
+                    f"panel {panel_id} {view_authority} requires hash-bound research claims",
+                )
+        if role == "primary_anchor":
+            if view_authority not in {"direct_source", "source_crop"} or "front" not in target_surfaces:
+                raise MaterialContractError(
+                    code, "primary_anchor must be an exact directly observed front panel"
+                )
+        panel_plan.append(
+            {
+                "panel_id": panel_id,
+                "role": role,
+                "evidence_job": evidence_job,
+                "source_aliases": source_aliases,
+                "invariant_ids": panel_invariants,
+                "view_authority": view_authority,
+                "target_surfaces": sorted(target_surfaces),
+                "research_claim_ids": research_claim_ids,
+                "required_for_acceptance": True,
+            }
+        )
+        panel_ids.append(panel_id)
+        roles.append(role)
+        covered_invariants.update(panel_invariants)
+
+    if roles.count("primary_anchor") != 1:
+        raise MaterialContractError(code, "panel_plan requires exactly one primary_anchor")
+    if roles.count("multi_angle") > 5:
+        raise MaterialContractError(code, "panel_plan permits at most five evidence-authorized multi_angle panels")
+    if roles.count("material_response") < 1 or roles.count("label_micro") > 1 or roles.count("state_window") > 1:
+        raise MaterialContractError(code, "panel role cardinality is invalid")
+    if covered_invariants != set(invariant_ids):
+        raise MaterialContractError(code, "every critical invariant must be covered by at least one panel")
+    return {
+        "schema_version": "material_source_contract.v2",
+        "asset_id": asset_id,
+        "source_coverage_profile": derived_coverage,
+        "reference_manifest_path": "",
+        "reference_manifest_sha256": manifest_record["sha256"],
+        "ordered_reference_bundle_sha256": manifest_record["ordered_bundle_sha256"],
+        "research_path": research_path,
+        "research_sha256": research_sha256,
+        "source_authority": source_authority,
+        "fact_registry": normalized_registry,
+        "critical_invariants": invariants,
+        "panel_plan": panel_plan,
+    }
+
+
+def normalize_source_contract_draft(
+    draft: dict[str, Any], manifest_record: dict[str, Any]
+) -> dict[str, Any]:
+    schema_version = draft.get("schema_version")
+    if schema_version == "material_source_contract_draft.v1":
+        return _normalize_source_contract_draft_v1(draft, manifest_record)
+    if schema_version == "material_source_contract_draft.v2":
+        return _normalize_source_contract_draft_v2(draft, manifest_record)
+    raise MaterialContractError(
+        "blocked_material_source_contract_invalid",
+        "unexpected source-contract draft schema",
+    )
+
+
 def source_contract_core(contract: dict[str, Any]) -> dict[str, Any]:
     keys = {
         "schema_version",
@@ -736,22 +1300,43 @@ def source_contract_core(contract: dict[str, Any]) -> dict[str, Any]:
         "critical_invariants",
         "panel_plan",
     }
+    if contract.get("schema_version") == "material_source_contract.v2":
+        keys.update({"source_coverage_profile", "research_path", "research_sha256"})
     return {key: contract[key] for key in sorted(keys)}
 
 
 def render_material_prompt_block(core: dict[str, Any], core_sha256: str) -> bytes:
+    is_v2 = core.get("schema_version") == "material_source_contract.v2"
+    marker = "MATERIAL_SOURCE_CONTRACT_V2" if is_v2 else "MATERIAL_SOURCE_CONTRACT_V1"
     lines = [
-        "[MATERIAL_SOURCE_CONTRACT_V1]",
+        f"[{marker}]",
         f"asset_id: {core['asset_id']}",
         f"contract_core_sha256: {core_sha256}",
         f"reference_manifest_sha256: {core['reference_manifest_sha256']}",
-        "SOURCE_AUTHORITY:",
     ]
+    if is_v2:
+        lines.extend(
+            [
+                f"source_coverage_profile: {core['source_coverage_profile']}",
+                f"research_sha256: {core['research_sha256'] or 'none'}",
+            ]
+        )
+    lines.append("SOURCE_AUTHORITY:")
     for source in core["source_authority"]:
         exclusions = "; ".join(source["exclusions"]) if source["exclusions"] else "none"
-        lines.append(
-            f"- {source['alias']} | authority={source['authority']} | allowed_uses={','.join(source['allowed_uses'])} | exclusions={exclusions}"
-        )
+        if is_v2:
+            claims = ",".join(source["research_claim_ids"]) or "none"
+            lines.append(
+                f"- {source['alias']} | authority={source['authority']} | "
+                f"subject_match={source['subject_match_class']} | "
+                f"observed_surfaces={','.join(source['observed_surfaces'])} | "
+                f"view_bins={','.join(source['view_bins'])} | research_claims={claims} | "
+                f"allowed_uses={','.join(source['allowed_uses'])} | exclusions={exclusions}"
+            )
+        else:
+            lines.append(
+                f"- {source['alias']} | authority={source['authority']} | allowed_uses={','.join(source['allowed_uses'])} | exclusions={exclusions}"
+            )
     for classification, heading in (
         ("verified", "VERIFIED_FACTS"),
         ("inferred", "INFERRED_FACTS_DO_NOT_UPGRADE"),
@@ -763,7 +1348,15 @@ def render_material_prompt_block(core: dict[str, Any], core_sha256: str) -> byte
             lines.append("- none")
         for fact in facts:
             aliases = ",".join(fact["source_aliases"]) if fact["source_aliases"] else "none"
-            lines.append(f"- {fact['fact_id']} | sources={aliases} | {fact['statement']}")
+            claims = (
+                ",".join(fact.get("research_claim_ids", [])) or "none"
+                if is_v2
+                else "not_applicable"
+            )
+            claim_suffix = f" | research_claims={claims}" if is_v2 else ""
+            lines.append(
+                f"- {fact['fact_id']} | sources={aliases}{claim_suffix} | {fact['statement']}"
+            )
     lines.append("CRITICAL_INVARIANTS:")
     for invariant in core["critical_invariants"]:
         lines.append(
@@ -771,17 +1364,252 @@ def render_material_prompt_block(core: dict[str, Any], core_sha256: str) -> byte
         )
     lines.append("PANEL_PLAN:")
     for panel in core["panel_plan"]:
-        lines.append(
-            f"- {panel['panel_id']} | role={panel['role']} | sources={','.join(panel['source_aliases'])} | invariants={','.join(panel['invariant_ids'])} | {panel['evidence_job']}"
-        )
+        if is_v2:
+            claims = ",".join(panel["research_claim_ids"]) or "none"
+            lines.append(
+                f"- {panel['panel_id']} | role={panel['role']} | "
+                f"view_authority={panel['view_authority']} | "
+                f"target_surfaces={','.join(panel['target_surfaces'])} | "
+                f"sources={','.join(panel['source_aliases'])} | "
+                f"research_claims={claims} | invariants={','.join(panel['invariant_ids'])} | "
+                f"{panel['evidence_job']}"
+            )
+        else:
+            lines.append(
+                f"- {panel['panel_id']} | role={panel['role']} | sources={','.join(panel['source_aliases'])} | invariants={','.join(panel['invariant_ids'])} | {panel['evidence_job']}"
+            )
     lines.extend(
         [
             "Do not invent, merge, upgrade, or visually repair inferred or needs_source facts.",
-            "[/MATERIAL_SOURCE_CONTRACT_V1]",
+            *(
+                [
+                    "same_family_reconstruction and packaging_archetype_reconstruction are non-exact geometry guidance only.",
+                    "Never transfer identity, readable copy, label layout, color, material, or product state from a reconstruction source.",
+                    "Never render readable rear/side/bottom copy without exact-variant hidden-surface authority.",
+                ]
+                if is_v2
+                else []
+            ),
+            f"[/{marker}]",
             "",
         ]
     )
     return "\n".join(lines).encode("utf-8")
+
+
+def render_reconstruction_fact_statement(claims: Iterable[dict[str, Any]]) -> str:
+    """Render the only prompt-eligible v2 statement for inferred structure claims."""
+    claim_cores = [
+        {
+            "claim_id": claim["claim_id"],
+            "component": claim["component"],
+            "property": claim["property"],
+            "normalized_value": claim["normalized_value"],
+            "forbidden_exact_claims": sorted(claim["forbidden_exact_claims"]),
+        }
+        for claim in claims
+    ]
+    claim_cores.sort(key=lambda item: item["claim_id"])
+    return "evidence_supported_reconstruction=" + canonical_json_bytes(claim_cores).decode("utf-8")
+
+
+def validate_source_contract_research_binding(
+    contract: dict[str, Any],
+    run_dir: Path,
+    manifest_record: dict[str, Any] | None = None,
+) -> dict[str, Any] | None:
+    """Verify the optional v2 research artifact and all cited structure claims."""
+    if contract.get("schema_version") != "material_source_contract.v2":
+        return None
+    code = "blocked_material_source_contract_invalid"
+    research_path_raw = contract["research_path"]
+    research_sha256 = contract["research_sha256"]
+    cited_claim_ids = {
+        claim_id
+        for source in contract["source_authority"]
+        for claim_id in source["research_claim_ids"]
+    }
+    cited_claim_ids.update(
+        claim_id
+        for classification in ("verified", "inferred", "needs_source")
+        for fact in contract["fact_registry"][classification]
+        for claim_id in fact["research_claim_ids"]
+    )
+    cited_claim_ids.update(
+        claim_id
+        for panel in contract["panel_plan"]
+        for claim_id in panel["research_claim_ids"]
+    )
+    if not research_path_raw:
+        if research_sha256 or cited_claim_ids:
+            raise MaterialContractError(
+                code, "empty research binding cannot carry a hash or research claim ids"
+            )
+        return None
+    research_path = require_exact_path(
+        Path(research_path_raw),
+        run_dir.expanduser().resolve(strict=False) / "sources" / "material-research.json",
+        code,
+        "material research artifact",
+    )
+    if not research_path.is_file():
+        raise MaterialContractError(code, f"material research artifact is missing: {research_path}")
+    research_bytes = research_path.read_bytes()
+    if sha256_bytes(research_bytes) != research_sha256:
+        raise MaterialContractError(code, "material research artifact hash mismatch")
+    research, loaded_bytes = load_json_file(research_path, code, "material research artifact")
+    if loaded_bytes != research_bytes or research.get("schema") != "material_research.v1":
+        raise MaterialContractError(code, "unexpected material research artifact schema")
+    try:
+        from material_research import ResearchContractError, validate_frozen_research_document
+    except ImportError as exc:
+        raise MaterialContractError(code, f"material research validator is unavailable: {exc}") from exc
+    try:
+        research = validate_frozen_research_document(research)
+    except ResearchContractError as exc:
+        raise MaterialContractError(
+            code, f"material research validation failed: {exc.detail}"
+        ) from exc
+    if manifest_record is not None and "entries" in manifest_record:
+        selected_by_alias = {
+            evidence["reference_alias"]: evidence
+            for evidence in research["evidence"]
+            if evidence["selected_generation_reference"]
+        }
+        manifest_by_alias = {
+            entry["alias"]: entry for entry in manifest_record["entries"]
+        }
+        if set(selected_by_alias) != set(manifest_by_alias):
+            raise MaterialContractError(
+                "blocked_reference_generation_rights",
+                "provider reference aliases must exactly equal research-selected generation references",
+            )
+        for alias, entry in manifest_by_alias.items():
+            capture = selected_by_alias[alias]["capture"]
+            if capture is None or capture["sha256"] != entry["sha256"]:
+                raise MaterialContractError(
+                    "blocked_reference_generation_rights",
+                    f"provider reference bytes are not the rights-approved research capture: {alias}",
+                )
+    structure_claims = research["structure_claims"]
+    claim_by_id = {claim["claim_id"]: claim for claim in structure_claims}
+    available_claim_ids = set(claim_by_id)
+    unknown_claim_ids = cited_claim_ids - available_claim_ids
+    if unknown_claim_ids:
+        raise MaterialContractError(
+            code,
+            f"source contract cites unknown material research claims: {sorted(unknown_claim_ids)}",
+        )
+    coverage_by_surface = {
+        coverage["surface"]: coverage for coverage in research["surface_coverage"]
+    }
+    for source in contract["source_authority"]:
+        invalid_source_claims = [
+            claim_id
+            for claim_id in source["research_claim_ids"]
+            if claim_by_id[claim_id]["scope"]
+            not in {"source_visible_exact", "exact_variant_verified"}
+        ]
+        if invalid_source_claims:
+            raise MaterialContractError(
+                "blocked_reconstruction_reference_contamination",
+                f"provider source {source['alias']} cites reconstruction claims: {invalid_source_claims}",
+            )
+    for fact in contract["fact_registry"]["verified"]:
+        invalid_verified_claims = [
+            claim_id
+            for claim_id in fact["research_claim_ids"]
+            if claim_by_id[claim_id]["scope"]
+            not in {"source_visible_exact", "exact_variant_verified"}
+        ]
+        if invalid_verified_claims:
+            raise MaterialContractError(
+                "blocked_research_fact_authority",
+                f"verified target fact {fact['fact_id']} cites reconstruction claims: {invalid_verified_claims}",
+            )
+    for fact in contract["fact_registry"]["inferred"]:
+        claim_ids = fact["research_claim_ids"]
+        if not claim_ids:
+            raise MaterialContractError(
+                "blocked_reconstruction_statement_invalid",
+                f"v2 inferred fact {fact['fact_id']} must cite research structure claims",
+            )
+        claims = [claim_by_id[claim_id] for claim_id in claim_ids]
+        if any(claim["scope"] != "evidence_supported_reconstruction" for claim in claims):
+            raise MaterialContractError(
+                "blocked_research_fact_authority",
+                f"v2 inferred fact {fact['fact_id']} cites a non-reconstruction claim",
+            )
+        expected_statement = render_reconstruction_fact_statement(claims)
+        if fact["statement"] != expected_statement:
+            raise MaterialContractError(
+                "blocked_reconstruction_statement_invalid",
+                f"v2 inferred fact {fact['fact_id']} statement is not the deterministic claim rendering",
+            )
+    for panel in contract["panel_plan"]:
+        authority = panel["view_authority"]
+        target_surfaces = panel["target_surfaces"]
+        panel_claims = set(panel["research_claim_ids"])
+        if authority in RECONSTRUCTION_VIEW_AUTHORITIES:
+            covered_panel_claims: set[str] = set()
+            for surface in target_surfaces:
+                coverage = coverage_by_surface.get(surface)
+                coverage_claims = (
+                    set(coverage["structure_claim_ids"]) if coverage is not None else set()
+                )
+                if (
+                    coverage is None
+                    or coverage["authority"] != authority
+                    or coverage["usable_for"] != "reconstruction_only"
+                    or not panel_claims
+                    or not panel_claims & coverage_claims
+                ):
+                    raise MaterialContractError(
+                        "blocked_reconstruction_evidence_missing",
+                        f"panel {panel['panel_id']} lacks {authority} coverage/claims for {surface}",
+                    )
+                covered_panel_claims.update(coverage_claims)
+            if not panel_claims <= covered_panel_claims:
+                raise MaterialContractError(
+                    "blocked_reconstruction_evidence_missing",
+                    f"panel {panel['panel_id']} cites claims not bound to its target surfaces",
+                )
+            invalid_claim_scopes = [
+                claim_id
+                for claim_id in panel_claims
+                if claim_by_id[claim_id]["scope"] != "evidence_supported_reconstruction"
+            ]
+            if invalid_claim_scopes:
+                raise MaterialContractError(
+                    "blocked_research_fact_authority",
+                    f"reconstruction panel {panel['panel_id']} cites exact claims: {invalid_claim_scopes}",
+                )
+        elif authority == "exact_variant_hidden_surface":
+            for surface in target_surfaces:
+                coverage = coverage_by_surface.get(surface)
+                if (
+                    coverage is None
+                    or coverage["authority"] != "exact_variant_hidden_surface"
+                    or coverage["usable_for"] != "exact_render"
+                ):
+                    raise MaterialContractError(
+                        "blocked_panel_view_authority_laundering",
+                        f"panel {panel['panel_id']} lacks exact-variant hidden coverage for {surface}",
+                    )
+        elif authority in {"direct_source", "source_crop"}:
+            for surface in target_surfaces:
+                coverage = coverage_by_surface.get(surface)
+                if coverage is None or coverage["authority"] != "direct_exact_source":
+                    raise MaterialContractError(
+                        "blocked_panel_view_authority_laundering",
+                        f"panel {panel['panel_id']} lacks direct exact research coverage for {surface}",
+                    )
+    return {
+        "path": research_path,
+        "bytes": research_bytes,
+        "sha256": research_sha256,
+        "claim_ids": sorted(available_claim_ids),
+    }
 
 
 def load_source_contract(
@@ -798,7 +1626,8 @@ def load_source_contract(
         "material source contract",
     )
     contract, contract_bytes = load_json_file(contract_path, code, "material source contract")
-    if contract.get("schema_version") != "material_source_contract.v1":
+    schema_version = contract.get("schema_version")
+    if schema_version not in {"material_source_contract.v1", "material_source_contract.v2"}:
         raise MaterialContractError(code, "unexpected material source contract schema")
     required = {
         "schema_version",
@@ -815,6 +1644,8 @@ def load_source_contract(
         "prompt_block_sha256",
         "immutability_contract",
     }
+    if schema_version == "material_source_contract.v2":
+        required.update({"source_coverage_profile", "research_path", "research_sha256"})
     require_exact_keys(contract, required, code, "material source contract")
     if normalized_path(Path(contract["reference_manifest_path"])) != normalized_path(
         run_dir / "sources" / "reference-manifest.json"
@@ -843,9 +1674,14 @@ def load_source_contract(
         raise MaterialContractError(code, "material prompt block bytes/hash do not match the source contract")
     if contract["immutability_contract"] != "create_only_idempotent;rehash_at_every_transition":
         raise MaterialContractError(code, "unexpected source-contract immutability contract")
+    validate_source_contract_research_binding(contract, run_dir, manifest_record)
     # Re-run semantic normalization from the frozen fields so mutated ledgers fail closed.
-    draft_view = {
-        "schema_version": "material_source_contract_draft.v1",
+    draft_view: dict[str, Any] = {
+        "schema_version": (
+            "material_source_contract_draft.v2"
+            if schema_version == "material_source_contract.v2"
+            else "material_source_contract_draft.v1"
+        ),
         "asset_id": contract["asset_id"],
         "source_authority": contract["source_authority"],
         "fact_registry": {
@@ -854,6 +1690,11 @@ def load_source_contract(
                     "fact_id": fact["fact_id"],
                     "statement": fact["statement"],
                     "source_aliases": fact["source_aliases"],
+                    **(
+                        {"research_claim_ids": fact["research_claim_ids"]}
+                        if schema_version == "material_source_contract.v2"
+                        else {}
+                    ),
                 }
                 for fact in contract["fact_registry"][classification]
             ]
@@ -870,10 +1711,25 @@ def load_source_contract(
         ],
         "panel_plan": contract["panel_plan"],
     }
+    if schema_version == "material_source_contract.v2":
+        draft_view.update(
+            {
+                "source_coverage_profile": contract["source_coverage_profile"],
+                "research_path": contract["research_path"],
+                "research_sha256": contract["research_sha256"],
+            }
+        )
     normalized = normalize_source_contract_draft(draft_view, manifest_record)
     normalized["reference_manifest_path"] = str(run_dir / "sources" / "reference-manifest.json")
-    if source_contract_core(normalized) != core:
-        raise MaterialContractError(code, "source contract semantic normalization mismatch")
+    normalized_core = source_contract_core(normalized)
+    if normalized_core != core:
+        mismatched_keys = sorted(
+            key for key in set(core) | set(normalized_core) if core.get(key) != normalized_core.get(key)
+        )
+        raise MaterialContractError(
+            code,
+            f"source contract semantic normalization mismatch: {mismatched_keys}",
+        )
     return {
         "value": contract,
         "bytes": contract_bytes,

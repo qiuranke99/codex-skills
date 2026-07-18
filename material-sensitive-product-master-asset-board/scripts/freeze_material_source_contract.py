@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Freeze material_source_contract.v1 and its hash-locked prompt block."""
+"""Freeze a v1/v2 material source contract and its hash-locked prompt block."""
 
 from __future__ import annotations
 
@@ -20,6 +20,7 @@ from material_contract import (
     require_exact_path,
     sha256_bytes,
     source_contract_core,
+    validate_source_contract_research_binding,
 )
 
 
@@ -58,6 +59,7 @@ def main() -> int:
     normalized["reference_manifest_path"] = str(
         run_dir / "sources" / "reference-manifest.json"
     )
+    validate_source_contract_research_binding(normalized, run_dir, manifest_record)
     core = source_contract_core(normalized)
     core_sha = sha256_bytes(canonical_json_bytes(core))
     block_bytes = render_material_prompt_block(core, core_sha)

@@ -85,6 +85,15 @@ def main() -> int:
     )
     manifest_record = load_reference_manifest(args.reference_manifest, run_dir)
     contract_record = load_source_contract(args.source_contract, run_dir, manifest_record)
+    expected_prompt_name = (
+        f"{contract_record['value']['asset_id']}_{attempt_id}_generation_prompt.md"
+    )
+    if prompt_path.name != expected_prompt_name:
+        raise MaterialContractError(
+            "blocked_worker_prompt_sidecar_invalid",
+            "generation prompt must use the finalizer-compatible asset/attempt filename: "
+            f"{expected_prompt_name}",
+        )
     prompt_bytes = read_prompt_bytes(
         prompt_path, "blocked_worker_prompt_sidecar_invalid", "generation prompt"
     )

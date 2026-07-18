@@ -22,7 +22,7 @@ from material_contract import (
     require_exact_path,
     sha256_bytes,
 )
-from material_decision_records import BOARD_GATE_KEYS, QA_KEYS, validate_observed_defects
+from material_decision_records import QA_KEYS, board_gate_keys, validate_observed_defects
 
 
 def same_path(value: object, expected: Path) -> bool:
@@ -106,8 +106,13 @@ def main() -> int:
         inspection_path, "blocked_board_inspection_invalid", "board inspection"
     )
     require_exact_keys(inspection, QA_KEYS, "blocked_board_inspection_invalid", "board inspection")
+    expected_qa_schema = (
+        "material_board_qa.v4"
+        if contract_record["value"].get("schema_version") == "material_source_contract.v2"
+        else "material_board_qa.v3"
+    )
     if (
-        inspection["schema_version"] != "material_board_qa.v3"
+        inspection["schema_version"] != expected_qa_schema
         or inspection["attempt_id"] != attempt_id
         or inspection["inspected"] is not True
         or not same_path(inspection["board_path"], board)
@@ -122,7 +127,12 @@ def main() -> int:
     gates = inspection["board_gates"]
     if not isinstance(gates, dict):
         raise MaterialContractError("blocked_board_inspection_invalid", "board_gates must be object")
-    require_exact_keys(gates, BOARD_GATE_KEYS, "blocked_board_inspection_invalid", "board gates")
+    require_exact_keys(
+        gates,
+        board_gate_keys(contract_record["value"]),
+        "blocked_board_inspection_invalid",
+        "board gates",
+    )
     if any(
         value != "pass"
         for key, value in gates.items()

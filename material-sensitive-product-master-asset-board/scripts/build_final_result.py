@@ -31,7 +31,7 @@ from material_contract import (
 from resolve_worker_image import read_rollout, validate_worker_rollout
 from material_decision_records import (
     ACCEPTED_KEYS as ACCEPTED_V5_KEYS,
-    BOARD_GATE_KEYS,
+    board_gate_keys,
     EXTERNAL_STATE_MATRIX,
     HANDOFF_KEYS as HANDOFF_V5_KEYS,
     QA_KEYS as QA_V5_KEYS,
@@ -39,6 +39,7 @@ from material_decision_records import (
     build_accepted_record,
     build_handoff_record,
     build_qa_record,
+    panel_result_keys,
     render_record_bytes,
     one_line_list,
     validate_observed_defects,
@@ -103,9 +104,11 @@ RESULT_KEYS = {
     "png_validation",
     "generation_prompt_sha256",
     "prompt_sha_match",
+    "prompt_bytes_match",
     "reference_mode",
     "reference_count",
     "reference_bytes_verified",
+    "reference_bytes_match",
     "reference_manifest_path",
     "reference_manifest_sha256",
     "ordered_reference_bundle_sha256",
@@ -116,6 +119,10 @@ RESULT_KEYS = {
     "worker_spawn_sha256",
     "worker_exec_source_path",
     "worker_exec_source_sha256",
+    "frozen_exec_file_sha256",
+    "recorded_exec_content_sha256",
+    "exec_transport_mode",
+    "exec_body_match",
     "worker_exec_receipt_path",
     "worker_exec_receipt_sha256",
     "output_distinct_from_all_sources",
@@ -426,9 +433,11 @@ def main() -> int:
         "png_validation": "pillow_verify_and_full_load",
         "generation_prompt_sha256": generation_sha,
         "prompt_sha_match": True,
+        "prompt_bytes_match": True,
         "reference_mode": "frozen_manifest_v2",
         "reference_count": len(manifest_record["paths"]),
         "reference_bytes_verified": True,
+        "reference_bytes_match": True,
         "reference_manifest_path": str(manifest_path),
         "reference_manifest_sha256": manifest_record["sha256"],
         "ordered_reference_bundle_sha256": manifest_record["ordered_bundle_sha256"],
@@ -439,6 +448,8 @@ def main() -> int:
         "worker_spawn_sha256": sha256_bytes(spawn_bytes),
         "worker_exec_source_path": str(exec_path),
         "worker_exec_source_sha256": sha256_bytes(exec_bytes),
+        "frozen_exec_file_sha256": sha256_bytes(exec_bytes),
+        "exec_body_match": True,
         "worker_exec_receipt_path": str(receipt_path),
         "worker_exec_receipt_sha256": sha256_bytes(receipt_bytes),
         "output_distinct_from_all_sources": True,
@@ -522,6 +533,11 @@ def main() -> int:
         or rollout_evidence["image_generation_call_id"] != worker["image_generation_call_id"]
         or normalized_path(Path(rollout_evidence["saved_path"])) != normalized_path(saved_path)
         or rollout_evidence["exec_source_sha256"] != worker["worker_exec_source_sha256"]
+        or rollout_evidence["frozen_exec_file_sha256"] != worker["frozen_exec_file_sha256"]
+        or rollout_evidence["recorded_exec_content_sha256"]
+        != worker["recorded_exec_content_sha256"]
+        or rollout_evidence["exec_transport_mode"] != worker["exec_transport_mode"]
+        or rollout_evidence["exec_body_match"] is not worker["exec_body_match"]
     ):
         raise MaterialContractError(
             "blocked_publication_provenance_mismatch",
@@ -547,8 +563,14 @@ def main() -> int:
             "board inspection is not the deterministic rendering of qa_decision.json",
         )
     require_exact_keys(inspection, QA_V5_KEYS, "blocked_board_inspection_invalid", "board inspection")
+    research_aware = contract_record["value"].get("schema_version") == "material_source_contract.v2"
+    expected_qa_schema = (
+        "material_board_qa.v4"
+        if research_aware
+        else "material_board_qa.v3"
+    )
     if (
-        inspection["schema_version"] != "material_board_qa.v3"
+        inspection["schema_version"] != expected_qa_schema
         or inspection["attempt_id"] != attempt_id
         or inspection["inspected"] is not True
         or inspection["inspection_method"] != "main_agent_source_to_board_visual_inspection"
@@ -571,7 +593,13 @@ def main() -> int:
     board_gates = inspection["board_gates"]
     if not isinstance(board_gates, dict):
         raise MaterialContractError("blocked_board_inspection_invalid", "board_gates must be an object")
-    require_exact_keys(board_gates, BOARD_GATE_KEYS, "blocked_board_inspection_invalid", "board gates")
+    expected_gate_keys = board_gate_keys(contract_record["value"])
+    require_exact_keys(
+        board_gates,
+        expected_gate_keys,
+        "blocked_board_inspection_invalid",
+        "board gates",
+    )
     if any(board_gates[field] != "pass" for field in ("identity_fidelity", "topology_fidelity", "structure_fidelity")):
         raise MaterialContractError(
             "blocked_repair_required_identity_topology_structure",
@@ -646,15 +674,7 @@ def main() -> int:
             raise MaterialContractError("blocked_board_inspection_invalid", "panel result must be object")
         require_exact_keys(
             actual,
-            {
-                "panel_id",
-                "source_aliases",
-                "status",
-                "source_fidelity",
-                "source_observation",
-                "board_observation",
-                "invariant_ids",
-            },
+            panel_result_keys(contract_record["value"]),
             "blocked_board_inspection_invalid",
             "panel result",
         )
@@ -671,7 +691,17 @@ def main() -> int:
             raise MaterialContractError(
                 "blocked_board_inspection_invalid", f"panel failed: {expected['panel_id']}"
             )
-    non_state_gate_fields = BOARD_GATE_KEYS - {"state_window_source_supported"}
+        if research_aware and (
+            actual["view_authority"] != expected["view_authority"]
+            or actual["target_surfaces"] != expected["target_surfaces"]
+            or actual["research_claim_ids"] != expected["research_claim_ids"]
+            or actual["research_grade_status"] != "pass"
+        ):
+            raise MaterialContractError(
+                "blocked_board_inspection_invalid",
+                f"panel research authority failed: {expected['panel_id']}",
+            )
+    non_state_gate_fields = expected_gate_keys - {"state_window_source_supported"}
     if any(board_gates[field] != "pass" for field in non_state_gate_fields) or board_gates[
         "state_window_source_supported"
     ] not in {"pass", "not_used"}:

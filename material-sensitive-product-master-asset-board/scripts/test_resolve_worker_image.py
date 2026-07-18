@@ -548,8 +548,20 @@ def assert_resolver_red_without_new_outputs(
     return result
 
 
-def build_publication_fixture(base: Path, external_status: str = "not_ready") -> dict[str, Any]:
+def build_publication_fixture(
+    base: Path,
+    external_status: str = "not_ready",
+    *,
+    omit_exec_terminal_lf: bool = False,
+) -> dict[str, Any]:
     fixture = build_fixture(base)
+    if omit_exec_terminal_lf:
+        exec_event = image_exec_event(fixture)
+        self_source = exec_event["payload"]["input"]
+        if not self_source.endswith("\n") or self_source.endswith("\n\n"):
+            raise AssertionError("fixture exec source must end in exactly one LF")
+        exec_event["payload"]["input"] = self_source[:-1]
+        write_events(fixture["rollout"], fixture["events"])
     resolved = run(fixture["resolve_command"])
     if resolved.returncode != 0:
         raise AssertionError(resolved.stderr)
@@ -840,6 +852,44 @@ def update_accepted_hash(fixture: dict[str, Any], field: str, path: Path) -> Non
 
 
 class ReferenceAndSourceContractTests(unittest.TestCase):
+    def test_exec_renderer_rejects_nonfinalizer_prompt_name_before_worker_artifacts(self) -> None:
+        with tempfile.TemporaryDirectory(prefix="material-v4-prompt-name-") as temp:
+            fixture = build_fixture(Path(temp))
+            attempt = fixture["run"] / "attempts" / "02"
+            attempt.mkdir(parents=True)
+            wrong_prompt = attempt / "generation-prompt.txt"
+            wrong_prompt.write_bytes(fixture["prompt"].read_bytes())
+            exec_source = attempt / "worker_exec.js"
+            exec_receipt = attempt / "worker_exec.json"
+            result = run(
+                [
+                    sys.executable,
+                    "-X",
+                    "utf8",
+                    str(EXEC_RENDERER),
+                    "--run-dir",
+                    str(fixture["run"]),
+                    "--attempt-dir",
+                    str(attempt),
+                    "--worker-run-nonce",
+                    NONCE,
+                    "--expected-prompt",
+                    str(wrong_prompt),
+                    "--reference-manifest",
+                    str(fixture["manifest"]),
+                    "--source-contract",
+                    str(fixture["contract"]),
+                    "--exec-source",
+                    str(exec_source),
+                    "--exec-receipt",
+                    str(exec_receipt),
+                ]
+            )
+            self.assertNotEqual(result.returncode, 0)
+            self.assertEqual(error_code(result), "blocked_worker_prompt_sidecar_invalid")
+            self.assertFalse(exec_source.exists())
+            self.assertFalse(exec_receipt.exists())
+
     def test_reference_v2_uses_real_format_metadata_and_is_idempotent(self) -> None:
         with tempfile.TemporaryDirectory(prefix="material-v4-freeze-") as temp:
             fixture = build_fixture(Path(temp))
@@ -977,6 +1027,96 @@ class ResolverV4Tests(unittest.TestCase):
             self.assertEqual((record["width_px"], record["height_px"]), (1672, 941))
             self.assertFalse(record["exact_16_9"])
             self.assertTrue(record["output_distinct_from_all_sources"])
+            self.assertTrue(record["prompt_bytes_match"])
+            self.assertTrue(record["reference_bytes_match"])
+            self.assertEqual(record["exec_transport_mode"], "exact")
+            self.assertTrue(record["exec_body_match"])
+            self.assertEqual(
+                record["frozen_exec_file_sha256"], record["worker_exec_source_sha256"]
+            )
+            self.assertEqual(
+                record["recorded_exec_content_sha256"], record["worker_exec_source_sha256"]
+            )
+
+    def test_single_terminal_lf_omission_binds_existing_png_without_regeneration(self) -> None:
+        with tempfile.TemporaryDirectory(prefix="material-v5-terminal-lf-green-") as temp:
+            fixture = build_fixture(Path(temp))
+            exec_event = image_exec_event(fixture)
+            frozen_source = exec_event["payload"]["input"]
+            self.assertTrue(frozen_source.endswith("\n"))
+            self.assertFalse(frozen_source.endswith("\n\n"))
+            exec_event["payload"]["input"] = frozen_source[:-1]
+            write_events(fixture["rollout"], fixture["events"])
+            source_stat = fixture["source_image"].stat()
+
+            result = run(fixture["resolve_command"])
+            self.assertEqual(result.returncode, 0, result.stderr)
+            self.assertTrue(fixture["board"].is_file())
+            record = json.loads(fixture["result_json"].read_text(encoding="utf-8"))
+            self.assertEqual(record["exec_transport_mode"], "single_terminal_lf_omitted")
+            self.assertTrue(record["exec_body_match"])
+            self.assertEqual(
+                record["frozen_exec_file_sha256"], record["worker_exec_source_sha256"]
+            )
+            self.assertNotEqual(
+                record["recorded_exec_content_sha256"], record["frozen_exec_file_sha256"]
+            )
+            after_stat = fixture["source_image"].stat()
+            self.assertEqual(after_stat.st_size, source_stat.st_size)
+            self.assertEqual(after_stat.st_mtime_ns, source_stat.st_mtime_ns)
+            self.assertEqual(fixture["board"].read_bytes(), fixture["source_image"].read_bytes())
+
+    def test_exec_transport_rejects_every_variance_beyond_one_terminal_lf(self) -> None:
+        mutations = {
+            "terminal_crlf": lambda source: source[:-1] + "\r\n",
+            "extra_terminal_lf": lambda source: source + "\n",
+            "terminal_space": lambda source: source[:-1] + " \n",
+            "two_bytes_omitted": lambda source: source[:-2],
+            "internal_byte": lambda source: source.replace("generatedImage(result);", "generatedImage(other);", 1),
+        }
+        for name, mutate in mutations.items():
+            with self.subTest(name=name), tempfile.TemporaryDirectory(
+                prefix=f"material-v5-exec-transport-{name}-"
+            ) as temp:
+                fixture = build_fixture(Path(temp))
+                exec_event = image_exec_event(fixture)
+                exec_event["payload"]["input"] = mutate(exec_event["payload"]["input"])
+                write_events(fixture["rollout"], fixture["events"])
+                assert_resolver_red_without_new_outputs(
+                    self, fixture, "blocked_worker_exec_source_mismatch"
+                )
+
+    def test_terminal_wait_output_after_image_end_is_a_valid_completed_trace(self) -> None:
+        with tempfile.TemporaryDirectory(prefix="material-v5-image-end-before-wait-output-") as temp:
+            fixture = build_fixture(Path(temp))
+            fixture["events"][5]["payload"]["output"] = (
+                "Script running with cell ID image_cell_terminal"
+            )
+            fixture["events"][6:6] = [
+                {
+                    "type": "response_item",
+                    "payload": {
+                        "type": "function_call",
+                        "name": "wait",
+                        "call_id": "call_wait_terminal",
+                        "arguments": json.dumps({"cell_id": "image_cell_terminal"}),
+                    },
+                }
+            ]
+            fixture["events"][8:8] = [
+                {
+                    "type": "response_item",
+                    "payload": {
+                        "type": "function_call_output",
+                        "call_id": "call_wait_terminal",
+                        "output": "Script completed\nOutput:\n",
+                    },
+                }
+            ]
+            write_events(fixture["rollout"], fixture["events"])
+            result = run(fixture["resolve_command"])
+            self.assertEqual(result.returncode, 0, result.stderr)
+            self.assertTrue(fixture["board"].is_file())
 
     def test_comment_and_bracket_exec_bypasses_are_red_without_outputs(self) -> None:
         for suffix in ("\n// decoy comment", "\n[]"):
@@ -1364,6 +1504,20 @@ class FinalBuilderV5Tests(unittest.TestCase):
             self.assertIn("external_4k_status: not_ready", payload)
             self.assertIn("observed_pixel_dimensions: 1672x941", payload)
             self.assertIn("main_result_prompt_pair_status: published", payload)
+
+    def test_builder_accepts_canonical_frozen_hash_after_terminal_lf_transport_omission(
+        self,
+    ) -> None:
+        with tempfile.TemporaryDirectory(prefix="material-v5-builder-terminal-lf-") as temp:
+            fixture = build_publication_fixture(Path(temp), omit_exec_terminal_lf=True)
+            worker = json.loads(fixture["result_json"].read_text(encoding="utf-8"))
+            self.assertEqual(worker["exec_transport_mode"], "single_terminal_lf_omitted")
+            self.assertEqual(
+                worker["frozen_exec_file_sha256"], worker["worker_exec_source_sha256"]
+            )
+            result = run(fixture["builder_command"])
+            self.assertEqual(result.returncode, 0, result.stderr)
+            self.assertTrue(fixture["output"].is_file())
 
     def test_enhancement_renderer_is_exact_and_idempotent(self) -> None:
         with tempfile.TemporaryDirectory(prefix="material-v4-4k-render-") as temp:

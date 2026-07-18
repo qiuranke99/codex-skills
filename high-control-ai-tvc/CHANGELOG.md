@@ -2,6 +2,15 @@
 
 ## Unreleased — 2026-07-18
 
+- `material-sensitive-product-master-asset-board` 升级到 v6：新增 Browser-first
+  `exact_variant → same_package_family → packaging_archetype` 研究合同、证据等级、
+  生成使用权隔离、身份冲突裁决、逐 surface 覆盖与受限三维结构重建；来源覆盖
+  现在决定 4–10 区版式，单张清晰正面图不再被固定多角度门迫使伪造隐藏面；
+  新增 research-aware QA v4，并把历史 Belle/GLISS 真实运行中唯一末尾 LF 丢失
+  修复为严格可审计的 exec transport mode，其他任何字节变化仍 fail closed；
+  生成提示词文件名现在在 worker 启动前验证，最终构建器与 QA v4 共享逐 panel
+  authority 字段合同，避免生图成功后才发现 sidecar 名称或 schema 漂移；单包依旧
+  不依赖 High-Control、Studio 或兄弟包。
 - `material-sensitive-product-master-asset-board` 升级到 v5：从真实历史使用中
   识别并移除手工拼接 QA、4K handoff 与 accepted attempt 的剩余维护面；新增
   来源对板决策 scaffold、`material_board_qa.v3` 确定性冻结器，以及先全量

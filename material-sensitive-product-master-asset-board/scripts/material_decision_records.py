@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Canonical v5 schemas and deterministic renderers for post-generation records."""
+"""Canonical deterministic renderers for v5 and research-aware v6 records."""
 
 from __future__ import annotations
 
@@ -68,6 +68,12 @@ BOARD_GATE_KEYS = {
     "topology_fidelity",
     "structure_fidelity",
     "state_window_source_supported",
+}
+RESEARCH_BOARD_GATE_KEYS = {
+    "identity_conflict_resolved",
+    "research_grade_compliant",
+    "hidden_copy_non_fabricated",
+    "reconstruction_authority_disclosed",
 }
 HANDOFF_KEYS = {
     "schema_version",
@@ -140,6 +146,36 @@ EXTERNAL_STATE_MATRIX = {
     "rejected": {("failed", "rejected")},
 }
 RECORD_COMPILER = "material_post_generation_records.v1"
+
+
+def board_gate_keys(contract: dict[str, Any]) -> set[str]:
+    """Return the exact QA gates for the bound source-contract generation."""
+    if contract.get("schema_version") == "material_source_contract.v2":
+        return BOARD_GATE_KEYS | RESEARCH_BOARD_GATE_KEYS
+    return set(BOARD_GATE_KEYS)
+
+
+def panel_result_keys(contract: dict[str, Any]) -> set[str]:
+    """Return the exact panel-result keys for the bound source-contract generation."""
+    keys = {
+        "panel_id",
+        "source_aliases",
+        "invariant_ids",
+        "status",
+        "source_fidelity",
+        "source_observation",
+        "board_observation",
+    }
+    if contract.get("schema_version") == "material_source_contract.v2":
+        keys.update(
+            {
+                "view_authority",
+                "target_surfaces",
+                "research_claim_ids",
+                "research_grade_status",
+            }
+        )
+    return keys
 
 
 def _one_line(value: Any, code: str, label: str) -> str:
@@ -223,7 +259,11 @@ def normalize_decision(
 ) -> dict[str, Any]:
     code = "blocked_board_inspection_invalid"
     require_exact_keys(decision, DECISION_KEYS, code, "board inspection decision")
-    if decision["schema_version"] != "material_board_qa_decision.v1":
+    research_aware = contract.get("schema_version") == "material_source_contract.v2"
+    expected_decision_schema = (
+        "material_board_qa_decision.v2" if research_aware else "material_board_qa_decision.v1"
+    )
+    if decision["schema_version"] != expected_decision_schema:
         raise MaterialContractError(code, "unexpected board inspection decision schema")
     if decision["attempt_id"] not in {"01", "02", "03"}:
         raise MaterialContractError(code, "invalid attempt_id")
@@ -233,7 +273,8 @@ def normalize_decision(
     gates = decision["board_gates"]
     if not isinstance(gates, dict):
         raise MaterialContractError(code, "board_gates must be an object")
-    require_exact_keys(gates, BOARD_GATE_KEYS, code, "board gates")
+    expected_gate_keys = board_gate_keys(contract)
+    require_exact_keys(gates, expected_gate_keys, code, "board gates")
     for key, value in gates.items():
         allowed = {"pass", "fail", "not_used"} if key == "state_window_source_supported" else {"pass", "fail"}
         if value not in allowed:
@@ -244,10 +285,7 @@ def normalize_decision(
     expected_panels = contract["panel_plan"]
     if not isinstance(panels, list) or [item.get("panel_id") for item in panels if isinstance(item, dict)] != [item["panel_id"] for item in expected_panels]:
         raise MaterialContractError(code, "panel results must match panel plan order exactly")
-    panel_keys = {
-        "panel_id", "source_aliases", "invariant_ids", "status", "source_fidelity",
-        "source_observation", "board_observation",
-    }
+    panel_keys = panel_result_keys(contract)
     for expected, actual in zip(expected_panels, panels, strict=True):
         if not isinstance(actual, dict):
             raise MaterialContractError(code, "panel result must be an object")
@@ -256,6 +294,19 @@ def normalize_decision(
             raise MaterialContractError(code, f"panel evidence binding mismatch: {expected['panel_id']}")
         if actual["status"] not in {"pass", "fail"} or actual["source_fidelity"] not in {"pass", "fail"}:
             raise MaterialContractError(code, f"panel status invalid: {expected['panel_id']}")
+        if research_aware:
+            if (
+                actual["view_authority"] != expected["view_authority"]
+                or actual["target_surfaces"] != expected["target_surfaces"]
+                or actual["research_claim_ids"] != expected["research_claim_ids"]
+            ):
+                raise MaterialContractError(
+                    code, f"panel research authority binding mismatch: {expected['panel_id']}"
+                )
+            if actual["research_grade_status"] not in {"pass", "fail"}:
+                raise MaterialContractError(
+                    code, f"panel research grade is invalid: {expected['panel_id']}"
+                )
         source_obs = _one_line(actual["source_observation"], code, "panel source observation")
         board_obs = _one_line(actual["board_observation"], code, "panel board observation")
         if source_obs == board_obs:
@@ -302,7 +353,12 @@ def normalize_decision(
     green = (
         all(value == "pass" for key, value in gates.items() if key != "state_window_source_supported")
         and gates["state_window_source_supported"] in {"pass", "not_used"}
-        and all(item["status"] == "pass" and item["source_fidelity"] == "pass" for item in panels)
+        and all(
+            item["status"] == "pass"
+            and item["source_fidelity"] == "pass"
+            and (not research_aware or item["research_grade_status"] == "pass")
+            for item in panels
+        )
         and all(item["status"] == "pass" and item["source_fidelity"] == "pass" for item in invariants)
         and all(item["cleanup_eligible"] for item in defects)
     )
@@ -332,7 +388,11 @@ def build_qa_record(
 ) -> dict[str, Any]:
     normalized = normalize_decision(decision, contract=contract, manifest=manifest)
     return {
-        "schema_version": "material_board_qa.v3",
+        "schema_version": (
+            "material_board_qa.v4"
+            if contract.get("schema_version") == "material_source_contract.v2"
+            else "material_board_qa.v3"
+        ),
         "attempt_id": normalized["attempt_id"],
         "inspected": True,
         "inspection_method": "main_agent_source_to_board_visual_inspection",

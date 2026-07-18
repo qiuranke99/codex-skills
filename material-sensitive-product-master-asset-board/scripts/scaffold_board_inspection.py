@@ -17,7 +17,7 @@ from material_contract import (
     pretty_json_bytes,
     require_exact_path,
 )
-from material_decision_records import BOARD_GATE_KEYS, fact_sources
+from material_decision_records import board_gate_keys, fact_sources
 
 
 def build_parser() -> argparse.ArgumentParser:
@@ -50,14 +50,19 @@ def main() -> int:
     manifest = load_reference_manifest(args.reference_manifest, run_dir)
     contract_record = load_source_contract(args.source_contract, run_dir, manifest)
     contract = contract_record["value"]
+    research_aware = contract.get("schema_version") == "material_source_contract.v2"
     sources_by_fact = fact_sources(contract)
     scaffold = {
-        "schema_version": "material_board_qa_decision.v1",
+        "schema_version": (
+            "material_board_qa_decision.v2"
+            if research_aware
+            else "material_board_qa_decision.v1"
+        ),
         "attempt_id": attempt_dir.name,
         "comparison_mode": "source_to_board_visual_comparison",
         "assistant_qa_status": "pending",
         "production_approval_status": "not_granted",
-        "board_gates": {key: "pending" for key in sorted(BOARD_GATE_KEYS)},
+        "board_gates": {key: "pending" for key in sorted(board_gate_keys(contract))},
         "panel_results": [
             {
                 "panel_id": panel["panel_id"],
@@ -67,6 +72,16 @@ def main() -> int:
                 "source_fidelity": "pending",
                 "source_observation": "",
                 "board_observation": "",
+                **(
+                    {
+                        "view_authority": panel["view_authority"],
+                        "target_surfaces": panel["target_surfaces"],
+                        "research_claim_ids": panel["research_claim_ids"],
+                        "research_grade_status": "pending",
+                    }
+                    if research_aware
+                    else {}
+                ),
             }
             for panel in contract["panel_plan"]
         ],
