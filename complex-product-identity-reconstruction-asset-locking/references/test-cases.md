@@ -1,38 +1,112 @@
-# Test Cases
+# Test Cases And Historical Regressions
 
-Use these cases for description routing, package-state tests, and forward tests. Do not use them as hidden expected answers in a fresh-context evaluation.
+Use these cases for routing, package validation, and fresh-context evaluation. Do not treat them as hidden expected answers.
 
 ## Should Trigger
 
-1. Multiple wheelchair references show frame, wheels, brakes, footrests, folding mechanism, fabric, logos, and folded/deployed states; user needs video-continuity assets.
-2. Industrial robotic arm references show multiple joints, cable routing, end-effector interfaces, mixed metal/polymer surfaces, and several observed operating poses.
-3. A stroller manual plus official photos show chassis, wheel assemblies, latch nodes, canopy, folded storage state, and marking locations.
-4. A cinema camera rig has body, lens mount, ports, cage, handles, battery plate, buttons, textured grips, and detachable components that must stay consistent across keyframes.
+1. Multiple wheelchair references show frame, wheels, brakes, footrests, folding mechanism, materials, markings, and several cameras; user needs reusable video-continuity views.
+2. A wheelchair has only one front three-quarter source, and the user asks why no multi-camera coverage; produce one truthful source camera, a six-target plan, and exact missing-capture/render requests without inventing the rear.
+3. An industrial robot has joint, cable, end-effector, and several verified 3D-render sources that can support deterministic camera coverage.
+4. A stroller manual and official photos show chassis, wheel assemblies, latches, canopy, folded state, and marking locations.
+5. A cinema camera rig has a body, mount, ports, cage, handles, battery plate, controls, and detachable components that must agree across shots.
 
 ## Should Not Trigger
 
-1. One simple opaque speaker with clear silhouette and non-critical text needs one six-view board: route to a simple-product multi-angle identity workflow when available.
-2. A perfume bottle's glass, liquid, and refraction are the primary risk: route to a material-response-first product workflow when available.
-3. A label-heavy box requires exact copy and barcode layout: route to a packaging-copy-first identity workflow when available.
-4. User wants a lifestyle ad, poster, or cinematic product scene: use ordinary creative production, not an identity package.
-5. User wants prompts only, a simple upscale, source search, 3D CAD engineering, safety certification, or product redesign.
+1. A simple opaque speaker only needs a low-risk six-view board.
+2. Glass, liquid, refraction, or reflection is the primary product risk.
+3. Exact packaging copy/barcode/layout is the primary risk.
+4. User wants a lifestyle ad, poster, scene, redesign, ordinary retouch, source search, prompt-only result, or engineering certification.
+5. No usable visual product reference exists.
 
-These routing alternatives are scope guidance, not runtime dependencies. Their absence never blocks an in-scope complex-product package; for an out-of-scope request, explain the mismatch without claiming that an unavailable workflow ran.
+## Camera Evidence Boundaries
 
-## Blocked And Boundary Cases
+- One front photo: accept at most one `source_copy` or source-aligned auxiliary camera; block rear, opposite-side, underside, and hidden-node targets with exact requests.
+- Multiple crops of one front three-quarter photo: one pose bin only, never multiple cameras.
+- Two photos show opposite sides but neither rear: accept supported cameras; keep rear target blocked instead of blocking all Geometry.
+- Existing verified 3D/CAD plus runnable renderer: source renders may carry hard authority only with frozen model/render provenance.
+- A filename says “large wheel” but pixels show the small-wheel variant: pixels win; separate or block the variant.
+- Generative novel rear view looks plausible: it remains auxiliary and cannot prove hidden topology.
 
-- Single front photo of a folding wheelchair: complete Stage 1, mark rear/underside/fold topology unknown, block Geometry and State boards, and do not generate a final lock board.
-- Mixed references from two wheelchair revisions: return `blocked_identity_conflict` unless the variants can be separated.
-- Logo is visible but unreadable: Marking may be `reference_locked`; never claim exact text.
-- Open and closed states are shown, but the transition mechanics are hidden: endpoints may be recorded; block any depiction that invents intermediate mechanics.
-- Material colors conflict under different grades: keep observed rendered colors separate, infer no base color without corroboration, and block Material Lock when unresolved.
+## Historical Wheelchair Regressions
+
+### Repeated-Angle Multi-Panel Board
+
+Input: many D08T wheelchair references. Output: one board with seven whole-product cells, including near-duplicate side profiles and near-duplicate three-quarter views; geometry differs across cells.
+
+Required result:
+
+- reject duplicate pose bins and cross-camera Critical Node drift;
+- do not count a crowded board as independent camera coverage;
+- create one full-resolution asset per accepted camera;
+- derive any contact sheet only after camera acceptance.
+
+### Excessive Boards And Upload Ambiguity
+
+Input: Geometry, detail, interface, and material boards with repeated content. User cannot tell which to upload.
+
+Required result:
+
+- camera coverage remains primary;
+- each diagnostic board has one named risk job;
+- approve a one-to-five-asset Primary Upload Bundle with explicit selection reasons;
+- do not generate another final collage that can drift.
+
+### Attractive But Wrong Large-Wheel Variant
+
+Input source: silver wheelchair with a large rear wheel, coarse spoke system, separate handrim, specific caster/fork, frame, cross-brace, and footrest relationships. Generated material board increases spoke count and changes the caster/fork, brace, and footrest topology.
+
+Required result:
+
+- fail Critical Node comparison with `spoke_count_drift`, `wheel_axle_handrim_drift`, `caster_fork_drift`, and/or `frame_crossbrace_drift`;
+- set only the affected asset to repair;
+- do not approve on visual attractiveness or color similarity.
+
+### Single-Angle Small-Wheel Variant
+
+Input source: wine-red frame, black small rear wheels, no handrim, one front three-quarter view. Generated diagnostic board repeats the same whole-product angle plus details.
+
+Required result:
+
+- one source camera may be accepted;
+- repeated details do not increase camera count;
+- Geometry is `partial_approved`, not fully blocked and not complete;
+- report exact missing opposite, side, rear, and high camera evidence.
+
+### Semantic Derailment
+
+Input: wheelchair references. Returned images: a “GEOMETRIC SHAPES” education poster and a “LIFE CYCLE OF A BUTTERFLY” infographic.
+
+Required result:
+
+- `subject_match: fail` with `subject_absent`/`infographic_semantics`;
+- package/asset status `blocked_generation_semantic_mismatch`;
+- audit prompt/reference transport before any retry;
+- do not retry by adding more prompt adjectives.
+
+## Diagnostic Boundaries
+
+- Logo visible but unreadable: placement may be reference-locked; exact text remains blocked.
+- Open/closed states shown but intermediate mechanics hidden: record endpoints; do not invent transition travel.
+- Material colors conflict under different grades: separate observed rendered colors; do not infer base color without corroboration.
+- Component closeup omits neighboring attachment: block the detail that would require invention.
 
 ## Package Contract Cases
 
-- Full valid: all required boards and final board approved, all files/dimensions/hashes/QA present, one 4K mapping per approved asset.
-- Partial valid: one evidence-supported board approved and mapped, required board blocked, final board blocked, package status `partial_approved`.
-- Blocked valid: specification exists, Geometry blocked for missing source, no generated assets, status `blocked_source_insufficient`.
-- Invalid complete: an approved asset lacks a 4K mapping.
-- Invalid complete: a board remains `awaiting_post_generation_continuation`.
-- Invalid source gate: State board is approved while its `source_gate` is blocked.
-- Invalid 4K claim: `native_4k_claimed: true` without observed dimensions and provenance evidence.
+Valid:
+
+- complete v2 with six unique hard-authority cameras, required diagnostics, an approved five-or-fewer upload bundle, observed byte hashes/dimensions, and one 4K mapping per accepted asset;
+- partial v2 with one exact source camera, five specifically blocked cameras, a one-asset upload recommendation, and matching 4K mapping;
+- blocked v2 with no accepted asset, exact blockers, and no placeholders.
+
+Invalid:
+
+- v1 monolithic Geometry relabeled as v2;
+- declared dimensions differ from decoded pixels;
+- two accepted cameras share bytes or the same pose bin;
+- bounded reconstruction claims hard authority;
+- an unrelated poster passes subject QA;
+- one camera claims approved multi-camera Geometry;
+- upload bundle selects a non-approved asset;
+- accepted asset lacks a one-to-one 4K mapping;
+- source-gate-blocked camera or diagnostic is approved;
+- complete package retains pending, continuation, QA, or repair state.

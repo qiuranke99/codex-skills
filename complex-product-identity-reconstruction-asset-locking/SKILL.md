@@ -1,158 +1,174 @@
 ---
 name: complex-product-identity-reconstruction-asset-locking
-description: "Reconstruct and lock a source-evidenced Visual Product Identity Model for complex multi-part, multi-material, stateful products, then directly generate and validate a geometry/material/component/state/marking asset package plus one minimal-dense final identity board and per-asset 4K enhancement handoff. Use for wheelchairs, medical or industrial equipment, robots, cameras, fitness machines, complex furniture, strollers, bicycles, motorcycles, electronics, and other products whose topology, interfaces, moving parts, or state changes make a simple product board unsafe. Do not use for simple low-risk products, packaging-copy-first work, material-response-first glass/liquid products, ads or lifestyle scenes, source search, ordinary retouching, prompt-only delivery, or products without a usable visual reference."
+description: "Reconstruct and lock a source-evidenced Visual Product Identity Model for complex multi-part, mechanical, multi-material, or stateful products, then build independent non-redundant camera assets, risk-specific diagnostic boards, a clear primary upload bundle, and per-asset 4K handoff. Use for wheelchairs, medical or industrial equipment, robots, cameras, fitness machines, complex furniture, strollers, bicycles, motorcycles, electronics, and other products whose topology, interfaces, moving parts, occlusion, or state changes make a simple multi-view collage unsafe. Do not use for simple low-risk products, packaging-copy-first work, material-response-first glass/liquid products, ads or lifestyle scenes, source search, ordinary retouching, prompt-only delivery, or products without a usable visual reference."
 ---
 
 # Complex Product Identity Reconstruction & Asset Locking
 
 ## Standalone Runtime Contract
 
-Run this Skill directly from its own package. Its evidence contracts, initializer, validator, deterministic tests, and package templates are package-local and require no release manager or sibling Skill. Built-in image generation remains the only host production capability; the package's core scripts otherwise use the Python standard library.
+Run this Skill directly from its own package. Its evidence contracts, v2 initializer, validator, deterministic tests, and templates are package-local and require no release manager or sibling Skill. Built-in image generation is optional: direct source plates and verified source renders are preferred when they carry stronger identity truth. Package scripts use only the Python standard library.
 
-The accepted `partial_approved` or `complete` package is a portable downstream input artifact. Other workflows may consume its frozen specification, approved boards, manifest, and 4K handoff, but no exporter or downstream package is required for identity analysis, board generation, validation, or delivery. A supplied upstream evidence ledger is treated as input and must still pass this Skill's source gates.
+The accepted `partial_approved` or `complete` package is a portable downstream input. No downstream integrator is required. A supplied evidence ledger still has to pass this Skill's source and camera gates.
 
 Chinese name: 复杂产品身份重建与资产锁定 Skill
 
-`runtime_contract_version: complex_product_identity_asset_package_v1`
+`runtime_contract_version: complex_product_identity_asset_package_v2`
 
-Build a reusable product identity system for downstream AI video, keyframes, TVC, and commercial visual production. Treat the input as evidence for one Visual Product Identity Model, never as a request for an attractive multi-angle product collage.
+Build a reusable product identity system for downstream AI video, keyframes, TVC, and commercial visual production. Do not confuse a crowded multi-view collage with verified camera coverage.
 
-The main agent owns identity resolution, evidence classification, board eligibility, visual QA, repair decisions, package validation, and final delivery. This Skill does not authorize subagents, external model calls, product redesign, or unsupported completion.
+The main agent owns identity resolution, camera planning, evidence classification, visual QA, repair, package validation, and final delivery. This Skill does not authorize subagents, external paid generation, product redesign, engineering certification, or unsupported completion.
 
 ## Input Gate
 
-Require at least one usable image of the target product. Accept single or multiple product photographs, official images, detail-page screenshots, manual illustrations, documentation images, and local component crops.
+Require at least one usable image of one target product variant. Accept photographs, official images, detail screenshots, manual illustrations, local crops, and existing verified 3D/CAD source or renders as optional evidence. Existing 3D/CAD may support a deterministic render lane when a compatible renderer is actually available; this Skill does not create, repair, or certify engineering geometry.
 
-Resolve one product variant before generation. If references show conflicting models, revisions, accessories, colorways, or states that cannot be separated, return `blocked_identity_conflict`. A single image may pass analysis while failing one or more board source gates.
+Resolve one variant before asset creation. If references mix revisions, wheel systems, handrims, frame colors, controls, accessories, or folding topology and cannot be separated, return `blocked_identity_conflict`.
 
-Do not require the user to restate downstream purpose, aspect ratio, or folder structure. Default to video-continuity assets, horizontal 16:9, neutral studio treatment, and the package contract below.
+A single view can produce one truthful source camera and a coverage-gap report. It cannot authorize unseen rear, underside, internal, interface, marking, or motion truth.
+
+Default to video-continuity assets, neutral product treatment, and the camera coverage plan below. Do not ask the user to restate folder structure or aspect ratio.
 
 ## Output Contract
 
-Create `Complex_Product_Identity_Asset_Package/` with:
+Initialize `Complex_Product_Identity_Asset_Package/` with:
 
 1. `01_Product_Identity_Specification.md`
-2. `02_Geometry_Lock_Board/`
-3. `03_Material_Surface_Lock/`
-4. `04_Component_Detail_Lock/`
-5. `05_State_Transition_Lock/`
-6. `06_Marking_Identity_Lock/`
-7. `07_Final_Product_Identity_Lock_Board/`
-8. `08_4K_Upscale_Prompts.md`
-9. `asset_package_manifest.json`
+2. `02_Geometry_Camera_Coverage/camera_assets/`
+3. `02_Geometry_Camera_Coverage/camera_coverage_report.md`
+4. `03_Material_Surface_Lock/`
+5. `04_Component_Detail_Lock/`
+6. `05_State_Transition_Lock/`
+7. `06_Marking_Identity_Lock/`
+8. `07_Primary_Upload_Bundle/`
+9. `08_4K_Upscale_Prompts.md`
+10. `asset_package_manifest.json`
 
-Use `scripts/init_asset_package.py --output <exact-package-path> --asset-id <stable-id>` before analysis. Read `references/package-contract.md` before writing manifests, generating 4K prompts, or claiming completion.
+Run `scripts/init_asset_package.py --output <exact-package-path> --asset-id <stable-id>` before analysis. Read `references/package-contract.md` before editing the manifest or claiming completion.
+
+Version 1 packages used one monolithic Geometry board. They do not prove independent camera coverage and must be re-analyzed into v2; the v2 validator fails them closed.
 
 ## Required References
 
-- Read `references/product-identity-contract.md` before identity analysis, part-tree construction, confidence labeling, or board eligibility decisions.
-- Read `references/generation-runtime-and-qa.md` before composing any built-in image-generation call, inspecting a returned board, or repairing a failure.
-- Read `references/package-contract.md` before initializing, validating, or delivering a package.
-- Read `references/test-cases.md` when validating trigger behavior or revising the Skill.
+- Read `references/product-identity-contract.md` before identity analysis, Critical Node Ledger, View Evidence Matrix, or camera eligibility decisions.
+- Read `references/generation-runtime-and-qa.md` before preserving or generating a camera asset, generating a diagnostic board, inspecting pixels, or repairing a failure.
+- Read `references/package-contract.md` before initialization, manifest updates, upload selection, 4K mapping, validation, or delivery.
+- Read `references/test-cases.md` when revising trigger behavior or regression gates.
 
-## Stage 1 — Product Identity Analysis
+## Stage 1 — Evidence-Bounded Product Identity
 
-Inspect every input before any image-generation call.
+Inspect every input at original available resolution before image generation.
 
-1. Build a source ledger with stable source IDs, file paths or conversation references, source role, crop/state/variant notes, and conflicts.
-2. Separate product-intrinsic facts from camera perspective, lighting, reflections, environment color, grade, motion blur, and compression artifacts.
-3. Write one Product Identity Specification covering overall geometry, proportions, silhouette, frame/support system, primary components, component count, connection topology, materials, colors, surface response, texture direction, markings, interfaces, and supported states.
-4. Build a Product Part Tree with parent/child relationships, detachable parts, connectors, attachment method, interface location, symmetry, count, and identity risk.
-5. Build an evidence-bounded State Graph. Include a state or transition only when directly observed or cross-validated. Do not infer a motion mechanism merely because the product category commonly has one.
-6. Label every atomic claim exactly `Observed`, `Cross Validated`, `Inferred`, `Unknown`, or `Conflicting`. Never promote `Inferred` or `Unknown` into source truth.
-7. Freeze the specification and source bundle hashes before Stage 2. If a newly found conflict changes identity truth, return to this stage and invalidate affected downstream boards.
+1. Build a stable source ledger with paths/references, hashes when local, source role, camera/view, state, variant, crop, resolution, and conflicts.
+2. Separate product-intrinsic facts from perspective, lighting, reflection, environment color, grade, blur, and compression.
+3. Freeze one Product Identity Specification covering silhouette, proportions, frame/support system, part count, connection topology, materials, markings, interfaces, asymmetry, supported states, and forbidden completion zones.
+4. Build a Product Part Tree with parent/child relationships, count, side, attachment, interface, material, and identity risk.
+5. Build a Critical Node Ledger. For a wheelchair, explicitly cover rear-wheel/axle/handrim, caster/fork, frame/cross-brace/support links, seat/back/arm/footrest, brake/control side, accessories, cables/modules, and state-dependent topology when present. Use equivalent nodes for other product classes.
+6. Build an evidence-bounded State Graph. Category familiarity is not evidence of a mechanism.
+7. Label atomic claims exactly `Observed`, `Cross Validated`, `Inferred`, `Unknown`, or `Conflicting`. Never promote the last three into source truth.
+8. Build a View Evidence Matrix mapping every source to azimuth/elevation, visible critical nodes, occluded zones, whole-product completeness, and variant confidence.
+9. Freeze the source bundle, specification, and camera-plan SHA-256 values. New identity conflicts invalidate affected downstream assets.
 
-Do not generate while `01_Product_Identity_Specification.md` lacks the five evidence classes, a Product Part Tree, a State Graph, board-source decisions, or unresolved-conflict disclosure.
+Do not create assets while the specification lacks the five evidence classes, Part Tree, Critical Node Ledger, State Graph, View Evidence Matrix, Camera Coverage Plan, exact coverage-gap requests, or unresolved-conflict disclosure.
 
-## Stage 2 — Identity Reconstruction
+## Stage 2 — Independent Camera Coverage
 
-Generate boards sequentially by risk, never as one all-in-one generation. Every board uses the frozen original reference bundle plus the frozen specification as authority. Do not use a previously generated board as the sole or higher product-identity authority for another board.
+### Default Camera Plan
 
-For every generation request:
+Plan these six independent whole-product targets unless the product or downstream shot risk justifies an explicit change:
 
-- call Codex built-in image generation directly;
-- request one horizontal 16:9 image;
-- use high-quality commercial product photography under neutral, soft, color-controlled studio lighting;
-- preserve exact source-supported geometry, component count, proportions, materials, markings, and state;
-- exclude titles, labels, captions, arrows, legends, measurements, watermarks, UI, product names, people, props, scenes, posters, and decorative backgrounds;
-- keep every product view complete, non-overlapping, consistently scaled, and grounded by subtle neutral shadows;
-- keep the complete internal generation prompt private; write only its SHA-256 to the manifest and never publish the prompt in chat or the asset package.
+1. `CAM_FRONT_3Q_LEFT`
+2. `CAM_FRONT_3Q_RIGHT`
+3. `CAM_LEFT_PROFILE`
+4. `CAM_RIGHT_PROFILE`
+5. `CAM_REAR_3Q`
+6. `CAM_HIGH_FRONT_3Q`
 
-### Phase A — Geometry Lock
+Each target has one unique azimuth/elevation/shot-size bin, expected critical nodes, unique coverage value, source IDs, evidence mode, and exact blocker. Add front, rear, low, underside, folded, or control-side cameras only when they close a named risk.
 
-Treat Geometry Lock as required for a complete package. Generate one Canonical Geometry Asset Board containing exactly eight complete, non-redundant views: front, rear, left, right, front three-quarter, rear three-quarter, high-angle, and low-angle.
+Never place multiple camera targets into one generative board. Each accepted camera is a separate full-resolution, complete, uncropped product asset. A contact sheet is optional, deterministic, derived only from accepted camera assets, and has no identity authority.
 
-Approve the board source gate only when the inputs support every high-risk surface, component count, and connection relationship needed by those views. If hidden or underside structure would require invention, block this board instead of generating a partial or fabricated eight-view board.
+### Per-Camera Evidence Priority
 
-### Phase B — Material & Surface Lock
+Use the strongest feasible lane for each target:
 
-Set relevance to `required` when mixed materials, coatings, reflective response, fabric direction, rubber/plastic/metal boundaries, transparent parts, wear, or surface texture materially affect identity. Set it to `not_applicable` only for genuinely homogeneous low-risk products.
+1. `source_copy` — exact source bytes with a directly observed complete view; hard identity authority.
+2. `verified_source_render` — deterministic render from a verified existing 3D/CAD source with frozen model/render provenance; hard identity authority.
+3. `source_aligned_generation` — same-camera cleanup or neutralization bound to the original sources; auxiliary authority only.
+4. `bounded_reconstruction` — a candidate novel view only when visible critical topology is cross-validated; auxiliary authority only and never proof of hidden geometry.
+5. `blocked` — the view would invent a critical node, hidden topology, variant fact, or unsupported camera reveal.
 
-Generate neutral diagnostic whole-product views plus source-supported material/detail windows. Separate intrinsic base color, roughness, metalness, translucency, reflectivity, texture, and coating from photographic lighting effects. Exclude cinematic contrast, environment color contamination, stylized grade, bloom, dramatic haze, and colored rim light.
+Do not generate a new view when copying a usable source plate is more faithful. Do not pretend a generative reconstruction is an observation. A missing rear or underside view blocks only the affected camera, not all observed cameras.
 
-### Phase C — Component Detail Lock
+If an existing verified 3D/CAD source is available but no compatible renderer can run, record a source-render handoff with exact camera roles and keep those targets blocked. Do not silently fall back to hallucinated views.
 
-Set relevance to `required` when identity or function depends on joints, hinges, fasteners, pivots, wheel hubs/axles, brakes, controls, buttons, ports, mounts, latches, cables, interfaces, or structural connection nodes.
+### Coverage Tiers
 
-Generate only evidence-supported component closeups that preserve part-to-part relationships, orientation, attachment, scale, and material boundaries. Do not show internal construction that the sources do not reveal.
+- `none`: no accepted camera.
+- `source_aligned`: at least one accepted camera, but no video-ready hard-authority coverage.
+- `multi_camera`: at least four hard-authority cameras, at least four unique pose bins, front/rear/side sector coverage, and zero duplicate hashes or pose bins.
+- `full`: every frozen target camera is accepted with hard authority.
 
-### Phase D — State & Motion Lock
+`partial_approved` may deliver truthful source-aligned cameras plus exact missing-capture requests. `complete` requires `multi_camera` or `full`; multiple renderings of the same three-quarter pose do not count.
 
-Set relevance to `required` only when the product has source-supported operational or storage states such as open/closed, folded/deployed, raised/lowered, attached/detached, rotated, adjusted, or working/idle.
+## Stage 3 — Risk-Specific Diagnostic Assets
 
-Generate one State Transition Asset Board only when every depicted state and transition endpoint is `Observed` or `Cross Validated`. An `Inferred`, `Unknown`, or `Conflicting` mechanism blocks the affected state board. Do not invent intermediate mechanics or impossible part travel.
+Geometry camera coverage is primary. Generate the following as separate diagnostic assets only when relevant and source-approved:
 
-### Phase E — Marking Identity Lock
+- **Material & Surface Lock** — intrinsic material regions and response, not cinematic lighting contamination.
+- **Component Detail Lock** — evidence-supported joints, axles, brakes, controls, latches, interfaces, and attachment nodes.
+- **State & Motion Lock** — only observed/cross-validated endpoints and mechanics; no invented intermediate travel.
+- **Marking Identity Lock** — only legible, resolved logos/copy/patterns at the exactness level the sources support.
 
-Set relevance to `required` when logos, brand text, labels, graphics, stitch patterns, symbols, control legends, serial plates, or directional patterns are identity-critical.
+Every diagnostic asset has one identity job. Prefer a complete source-aligned product view plus only the minimum necessary details. It cannot substitute for a missing camera and is not selected for upload merely because space exists.
 
-Generate a Marking Identity Asset only from legible, sufficiently resolved evidence. Preserve placement, scale, orientation, color, hierarchy, and pattern relationship. Never redesign a logo or fill unreadable copy. Record `marking_exactness_status: reference_locked | visually_verified | blocked_exactness_evidence`; generative resemblance alone cannot establish exact copy.
+## Source Gate And Generation State
 
-## Board-Scoped Source Gate
+Camera source gates are independent. Diagnostic source gates remain board-scoped. Generate only when the relevant gate is approved.
 
-For each A–E board, record:
+Before any built-in image call, persist the target, attempt, source/specification/camera-plan hashes, prompt hash, and `generation_pending`. After the tool returns, bind the exact file, observed SHA-256 and dimensions, then inspect it in the same task when the host continues. Never ask the user to type “continue” merely to run QA. If the host ends at the image call, keep `awaiting_post_generation_continuation` and resume automatically at the next available continuation without requesting a new creative decision.
 
-- `relevance: required | conditional | not_applicable`;
-- `source_gate: approved | blocked | not_applicable`;
-- evidence IDs and unsupported zones;
-- `status: planned | generation_pending | awaiting_post_generation_continuation | qa_pending | repair_required | approved | blocked | not_applicable`.
+Keep complete built-in generation prompts private and store only their SHA-256. The explicit external 4K prompts remain deliverables.
 
-Generate only when `source_gate: approved`. A blocked conditional board does not invalidate approved boards, but the package remains `partial_approved` unless the complete-package gate is satisfied. Never describe a partial set as the final Product Identity Lock Board package.
+## Comparison-Based Visual QA
 
-## Terminal Image-Generation State
+Inspect the exact pixels at original resolution. For each camera require:
 
-Before each built-in image call, persist `generation_pending` and `terminal_generation_call: pending`. The image call is the final action of that turn. After the returned image exists, persist `awaiting_post_generation_continuation`; do not claim QA or package completion.
+- target product present and no infographic/poster semantic substitution;
+- whole product complete, uncropped, unoccluded, and free of people/props/text;
+- declared camera pose and unique coverage contribution;
+- source comparison of silhouette, proportions, part count, and every visible Critical Node;
+- wheel/spoke/axle/handrim, caster/fork, frame/joint/support, seat/control/accessory, and asymmetry fingerprints when applicable;
+- cross-camera agreement for all overlapping nodes and immutable features;
+- no exact duplicate file or duplicate pose bin.
 
-On the next continuation, bind the exact returned image, record actual dimensions, set `qa_pending`, visually inspect it, and either approve it or set `repair_required`. If the host does not continue automatically, resume from the manifest on the next user continuation. Never reconstruct completion from memory alone.
+Diagnostic QA also checks geometry, material, identity, subject presence, and text pollution. Reject attractive-but-wrong redesign, identity averaging, added/missing/fused parts, spoke-count drift, changed joints, mirrored controls, unsupported state, crop, overlap, or board-cell contamination.
 
-## Automatic QA And Local Repair
+The validator independently checks actual image dimensions and SHA-256 against the manifest. Declared dimensions alone are not evidence.
 
-Inspect the exact pixels of every returned board. Check:
+## Causal Repair Policy
 
-- geometry consistency: silhouette, proportions, part count, topology, interfaces, symmetry, and view agreement;
-- material consistency: base color, material assignment, texture direction, roughness, metalness, reflectivity, transparency, and coating boundaries;
-- identity consistency: logo/marking placement, patterns, stitch lines, fasteners, controls, ports, and distinctive details;
-- failure flags: added part, missing part, fused structure, mirrored asymmetry, left/right swap, duplicated component, material drift, color drift, marking drift, unsupported state, deformation, crop, overlap, or text pollution.
+Classify failures before retrying:
 
-On failure, diagnose the smallest affected board, update only the relevant constraints, and regenerate only that board from the frozen original sources and specification. Do not regenerate approved boards unless their source truth changed. Limit repairs to two attempts per board; after two failed repairs, set that board to `blocked_generation_quality` and keep the accepted remainder explicitly partial.
+- `reference_transport_or_subject_mismatch` — target absent, geometric-shape poster, butterfly infographic, wrong product, or wrong variant. Stop generation, set `blocked_generation_semantic_mismatch`, and audit prompt/reference binding. Do not inflate the prompt and retry blindly.
+- `topology_overload` — split the job to one independent camera or one critical-node diagnostic; do not add more panels.
+- `view_evidence_gap` — request the exact missing capture or verified source render; do not invent the occluded zone.
+- `camera_redundancy` — change the pose bin and coverage objective, not cosmetic phrasing.
+- `local_identity_drift` — repair only the failed camera/diagnostic asset from frozen original sources and named Critical Nodes.
 
-## Stage 3 — Final Asset Packaging
+Allow at most two attempts per camera and two repairs per diagnostic board. Record the causal variable changed. After repeated quality failure, set `blocked_generation_quality` and preserve the accepted remainder as partial.
 
-### Internal Product Asset Package
+## Primary Upload Bundle
 
-Package every approved relevant A–E board, its manifest record, actual dimensions, source-evidence IDs, prompt hash, QA result, and repair lineage. Preserve `blocked` and `not_applicable` decisions in the root manifest; do not create decorative placeholder images.
+Select one to five approved assets and record why each is needed. Prefer non-redundant hard-authority cameras; add at most the diagnostic asset that closes a real downstream identity risk. Never make the user infer the upload set from a directory of boards.
 
-### Final Product Identity Lock Board
-
-Generate the final board only when Geometry Lock is approved, every `required` board is approved, no hard identity conflict remains, and the selected references meet the minimum downstream coverage in `references/package-contract.md`.
-
-Use the frozen original sources as the highest authority and approved A–E boards as secondary layout/detail support. Include only the smallest non-redundant set that carries maximum identity information. Exclude repeated views, decorative backgrounds, advertising design, titles, captions, and product-name text. Inspect and repair the final board with the same QA gate.
+A complete package requires at least two selected independent camera assets. The bundle references accepted package assets; it does not create another generative “final board” that can redesign the product.
 
 ## 4K Enhancement Handoff
 
-After each generated asset passes QA, add exactly one independent section to `08_4K_Upscale_Prompts.md`. Bind the accepted Codex asset and original source references. Permit only resolution, edge definition, realistic micro-texture, and source-supported fine-detail enhancement. Require preservation of original product geometry, component count, proportions, logos/markings, materials, colors, board topology, camera views, and state. Forbid redesign, re-layout, new parts, removed parts, reframing, material substitution, text invention, and state invention.
+After each accepted camera or diagnostic asset passes QA, add exactly one section to `08_4K_Upscale_Prompts.md`. Bind the accepted asset and original sources. Permit only resolution, edge definition, realistic micro-texture, and source-supported fine detail. Preserve geometry, part count, proportions, camera pose, Critical Nodes, markings, materials, and colors. Forbid redesign, new/removed parts, reframing, pose change, material substitution, text invention, and state invention.
 
-Do not claim a Codex board or third-party output is native 4K without observed file evidence. The 4K file is a handoff, not proof that external generation occurred.
+Do not claim native 4K or external 4K success without observed returned-file evidence.
 
 ## Completion Gate
 
@@ -160,13 +176,14 @@ Run `scripts/validate_asset_package.py <Complex_Product_Identity_Asset_Package>`
 
 Claim `complete` only when:
 
-- the specification and root manifest exist and their hashes are frozen;
-- Geometry Lock, all required boards, and the Final Product Identity Lock Board are approved;
-- no board is awaiting generation, continuation, QA, or repair;
-- no unresolved hard identity conflict remains;
-- every approved generated image has actual dimensions and passing board-specific QA;
-- approved final-board sources are approved A–E boards only;
-- every approved generated image maps to exactly one valid 4K enhancement prompt;
+- specification, hashes, camera plan, coverage report, and manifest are frozen;
+- Geometry reaches `multi_camera` or `full` using hard-authority assets;
+- all required diagnostic boards are approved;
+- no asset awaits generation, continuation, QA, or repair;
+- no hard identity conflict remains;
+- every accepted image has observed byte hash, observed dimensions, and passing comparison QA;
+- the Primary Upload Bundle is approved and contains at least two independent cameras;
+- every accepted asset has exactly one valid 4K mapping;
 - the validator exits zero.
 
-Use `partial_approved` for a truthful board-scoped subset and `blocked_source_insufficient`, `blocked_identity_conflict`, `blocked_generation_runtime`, or `four_k_mapping_failed` for the corresponding hard stop. Validator success proves package-contract consistency, not production approval, product safety, engineering correctness, usage rights, external 4K success, or user approval.
+Use `partial_approved` for truthful lower coverage. Use the exact blocked status for source, identity, runtime, semantic-mismatch, or mapping failures. Validator success proves package consistency, not engineering/safety correctness, rights clearance, product approval, external 4K success, or user approval. Keep `production_approval_status` separate from technical QA.

@@ -1,0 +1,9 @@
+{
+  "deterministic_test": {
+    "command": [
+      "{python}",
+      "scripts/test_contract.py"
+    ],
+    "timeout_seconds": 30
+  }
+}

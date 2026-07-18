@@ -1,7 +1,7 @@
 interface:
   display_name: "Complex Product Identity Reconstruction & Asset Locking"
-  short_description: "Build standalone complex product identity assets from evidence"
-  default_prompt: "Use $complex-product-identity-reconstruction-asset-locking with my complex product references to build a source-evidenced, QA-validated product identity asset package."
+  short_description: "Build evidence-bound multi-camera assets for complex products"
+  default_prompt: "Use $complex-product-identity-reconstruction-asset-locking with my complex product references to build independent non-redundant camera assets, critical-node QA, exact coverage-gap requests, and a clear primary upload bundle without inventing hidden topology."
 
 policy:
   allow_implicit_invocation: true

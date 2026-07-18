@@ -1,48 +1,79 @@
-# Generation Runtime And QA
+# Generation Runtime And Comparison QA
 
-Read this file before every built-in image-generation call and every post-generation inspection.
-
-## Contents
-
-1. Authority order
-2. Prompt privacy and freeze
-3. Independent board generation
-4. Terminal-call state machine
-5. Visual QA
-6. Repair policy
-7. Final-board generation
+Read this file before preserving or generating a camera asset, generating a diagnostic board, inspecting pixels, or repairing a failure.
 
 ## 1. Authority Order
 
-Use this order for every board:
+Use this order:
 
-1. frozen original reference bundle;
-2. frozen Product Identity Specification and Part Tree;
-3. board-specific evidence IDs and exclusions;
-4. approved earlier boards only as secondary composition/detail support;
-5. layout conventions.
+1. frozen original source bytes and direct observations;
+2. verified existing 3D/CAD source plus deterministic render provenance;
+3. frozen Product Identity Specification, Part Tree, Critical Node Ledger, and View Evidence Matrix;
+4. target-specific source IDs, exclusions, and camera plan;
+5. accepted generated assets only for cross-comparison or composition support, never as higher identity truth;
+6. layout conventions.
 
-Never let a generated board overwrite contradictory original evidence.
+A generated image never overwrites contradictory source evidence.
 
-## 2. Prompt Privacy And Freeze
+## 2. Reference Transport And Prompt Freeze
 
-Compose one complete board-specific prompt immediately before the image call. Include product identity, board topology, required views/details, evidence exclusions, neutral appearance, and negative constraints.
+Before a built-in image call:
 
-Freeze its UTF-8/LF bytes and SHA-256. Record only `generation_prompt_sha256` in `asset_package_manifest.json`. Do not save the complete prompt in the deliverable package, print it in commentary, or publish it in the final response. Repair prompts are new attempts with new hashes and lineage.
+- select the smallest sufficient ordered reference set, normally no more than five;
+- prioritize whole-product views and Critical Nodes required by the target;
+- record omitted evidence and block if omitted evidence is necessary;
+- bind exact source IDs, local paths/content identity when available, source/specification/camera-plan hashes, target camera/board ID, attempt, and prompt hash;
+- compose one target-specific prompt and freeze its UTF-8/LF SHA-256.
 
-This privacy rule does not apply to the user-requested external prompts in `08_4K_Upscale_Prompts.md`.
+Store only the prompt hash in the package. The private prompt must state target product identity, target camera or diagnostic topology, visible Critical Nodes, forbidden completion zones, neutral appearance, and negative constraints.
 
-## 3. Independent Board Generation
+If the returned pixels omit the product, show another subject, or become an educational poster/infographic, classify `reference_transport_or_subject_mismatch`. Do not treat it as ordinary visual drift.
 
-Generate Geometry, Material, Component, State, and Marking boards as separate image calls. Do not generate a giant package sheet and crop it. Do not generate front, side, rear sequentially and use each output as the next identity source.
+## 3. Camera Asset Lanes
 
-For each call, attach the same frozen original evidence needed by that board. If reference capacity is limited, prioritize identity-critical sources and record omitted evidence. Block the board when required evidence cannot be transported.
+### Source Copy
 
-Use a clean light-gray or white seamless background, neutral soft studio light, controlled highlights, subtle grounding shadows, consistent product scale, and no environment narrative. Keep all non-product text out of pixels.
+Copy exact usable source bytes into `02_Geometry_Camera_Coverage/camera_assets/`. Do not re-encode, crop, erase the background, or claim neutralization. The package asset hash must equal the frozen source asset hash.
 
-## 4. Terminal-Call State Machine
+Source copies are preferred over AI restaging because they retain observed topology. Background/style inconsistency is acceptable in a hard-authority evidence plate and can be addressed downstream without changing its authority.
 
-Use this sequence:
+### Verified Source Render
+
+Use only when an existing 3D/CAD source is verified as the target variant and a compatible renderer is actually available. Freeze model/source hash or equivalent content identity, renderer/version, camera role, render settings, and provenance hash. A render from an unverified model or approximate reconstruction is not hard authority.
+
+When rendering cannot execute, write the exact camera handoff and keep the target blocked. Do not substitute generative unseen views.
+
+### Source-Aligned Generation
+
+Use a built-in image call only for same-camera cleanup/neutralization or a closely source-aligned asset. Attach original evidence for that camera. Keep authority `auxiliary` even after QA because the model may alter topology.
+
+### Bounded Reconstruction
+
+Use for a candidate novel view only when every Critical Node expected to be visible is cross-validated. Explicitly exclude hidden or unknown zones. Keep authority `auxiliary`; it can support creative downstream work but cannot prove geometry or satisfy the hard multi-camera gate.
+
+## 4. Independent Camera Generation
+
+Generate one camera per image call. It is safe to create front/side/rear candidates sequentially when every call binds the same frozen original authority and no generated view becomes the source for the next.
+
+Do not:
+
+- generate all cameras as one collage;
+- crop a generative collage into apparent camera assets;
+- make a same-angle detail crop count as another camera;
+- use a failed or accepted generated camera as the sole source for another camera;
+- include multiple products, panels, labels, legends, arrows, measurements, people, props, or scene narrative.
+
+Request one complete uncropped product, neutral seamless background, soft color-controlled light, controlled highlights, subtle ground shadow, and the frozen pose bin.
+
+## 5. Diagnostic Board Generation
+
+Material, Component, State, and Marking assets are separate calls. Give each one job and one bounded layout. Use a complete source-aligned product view when useful, plus only non-redundant evidence-supported details.
+
+Do not let material/detail windows fill space that should have been useful camera coverage. Do not regenerate a whole package sheet and crop it.
+
+## 6. Runtime State Machine
+
+For a generative camera or diagnostic asset:
 
 ```text
 planned
@@ -52,70 +83,77 @@ planned
   -> approved
       or repair_required -> generation_pending
       or blocked_generation_quality
+      or blocked_generation_semantic_mismatch
 ```
 
-Before the image call, persist:
+Persist `generation_pending`, attempt, source/specification/camera-plan hashes, prompt hash, ordered references, and target path before the image call.
 
-- `terminal_generation_call: pending`;
-- attempt number;
-- source bundle hash;
-- specification hash;
-- private prompt hash;
-- target asset path.
+After the image call returns, bind the exact file and immediately record observed byte hash and dimensions. Inspect in the same task whenever the host continues. Do not ask the user for a “continue” message just to run QA. If the image call ends the current host turn, persist `awaiting_post_generation_continuation` and resume at the next automatic/user continuation without asking for a new decision.
 
-The built-in image call is the last action of that turn. On a later continuation, bind the exact returned asset, copy or reference it at the manifest path, record actual dimensions, set `terminal_generation_call: executed`, and inspect the pixels. A returned image means generation succeeded, not QA or package completion.
+For `source_copy` and `verified_source_render`, do not fabricate a built-in generation call. Use `terminal_generation_call: not_applicable` unless an actual render tool call is recorded.
 
-If the tool call fails, set `blocked_generation_runtime`; do not create an awaiting state. If the host does not auto-continue, the next user continuation resumes from the persisted manifest without requesting a new decision.
+## 7. Per-Camera Pixel QA
 
-## 5. Visual QA
+Inspect at original resolution and compare against the frozen sources.
 
-Inspect at original available resolution. Record `pass`, `fail`, or `not_applicable` for:
+Require all of these to pass:
 
-- `geometry_consistency`;
-- `material_consistency`;
-- `identity_consistency`.
+- `subject_match`: the target product/variant is present; no unrelated poster, infographic, geometric-shape chart, butterfly, or wrong product;
+- `complete_product`: one entire product, uncropped and unobstructed;
+- `pose_match`: asset matches the declared azimuth/elevation/shot-size bin and has unique coverage value;
+- `critical_node_consistency`: every visible node matches count, relationship, side, and attachment evidence;
+- `cross_camera_consistency`: overlapping nodes, silhouette landmarks, materials, and immutable features agree with every accepted camera;
+- `text_pollution`: no non-product titles, labels, arrows, legends, measurements, watermarks, UI, or invented copy.
 
-Check every panel or detail window for:
+Record exact failure flags such as:
 
-- added, removed, duplicated, or fused parts;
-- wrong component count or spacing;
-- topology, attachment, hinge-axis, interface, cable, wheel, or support errors;
-- silhouette or proportion drift;
-- mirrored asymmetry, left/right swap, or wrong control side;
-- deformation, impossible articulation, collision, or unsupported state;
-- material reassignment, base-color drift, roughness/metalness/reflection drift, or texture-direction drift;
-- logo, label, pattern, stitch, fastener, button, port, or marking drift;
-- crop, overlap, inconsistent scale, missing required view, duplicate view, poster styling, props, people, or text pollution.
+- `subject_absent`, `wrong_subject`, `wrong_variant`, `infographic_semantics`;
+- `added_part`, `missing_part`, `duplicated_part`, `fused_structure`;
+- `spoke_count_drift`, `wheel_axle_handrim_drift`, `caster_fork_drift`;
+- `frame_crossbrace_drift`, `seat_support_drift`, `control_side_swap`;
+- `topology_drift`, `proportion_drift`, `material_drift`, `marking_drift`;
+- `unsupported_state`, `deformation`, `collision`;
+- `crop`, `overlap`, `duplicate_asset`, `duplicate_pose_bin`, `text_pollution`.
 
-Compare across views as one 3D identity, not as isolated attractive panels.
+An attractive render fails when its Critical Node fingerprint differs from the source.
 
-## 6. Repair Policy
+## 8. Cross-Camera Coverage QA
 
-Diagnose the root cause and regenerate only the failed board. Keep approved boards unchanged unless the frozen source truth changes.
+Recompute from accepted files, not self-attestation:
 
-For repair:
+- observed SHA-256 and actual dimensions;
+- unique file hashes;
+- unique azimuth/elevation/shot-size tuples;
+- front/rear/left/right/side/high/low sector coverage;
+- hard-authority camera count;
+- overlapping Critical Node agreement;
+- exact blocked-camera requests.
 
-1. cite the exact failed panel, part IDs, and failure flags;
-2. strengthen only the relevant identity constraints;
-3. reuse the frozen original sources and specification;
-4. do not use the failed board as identity authority;
-5. generate one replacement board;
-6. rerun the entire board QA and affected cross-board checks.
+Multiple crops or scales of the same source camera remain one pose. A contact sheet cannot create coverage. Any contact sheet must be derived after approval, list its camera IDs, and have `identity_authority: none`.
 
-Allow at most two repair attempts per board. After the limit, set `blocked_generation_quality`. Never hide rejected attempts by renaming the latest file as accepted without QA evidence.
+## 9. Diagnostic QA
 
-## 7. Final-Board Generation
+Require geometry, material, identity, subject, and text-pollution checks. Compare every detail with its cited source and adjacent parts. For states, inspect endpoint topology and part travel. For markings, inspect placement and claimed exactness.
 
-Generate the Final Product Identity Lock Board only after upstream gates pass. Use original sources as highest authority and approved boards as secondary support.
+Diagnostic approval never increases camera count.
 
-Minimum information density normally includes:
+## 10. Causal Repair
 
-- one dominant front three-quarter or primary identity view;
-- front and rear evidence;
-- at least one side showing asymmetric controls/interfaces;
-- one high-information component detail;
-- one material/surface detail when relevant;
-- one state pair when state is required;
-- one marking detail when marking is required.
+Use the smallest causal change:
 
-Remove any redundant view. Do not include a category merely because space is available. Use no titles, captions, arrows, labels, product names, or decorative poster elements.
+1. identify the exact camera/board, Critical Node, and failure flag;
+2. classify transport mismatch, topology overload, evidence gap, camera redundancy, or local drift;
+3. reuse frozen original sources and authority;
+4. change representation, reference selection, target pose, or one relevant constraint;
+5. never use the failed image as identity authority;
+6. rerun full target QA and affected cross-camera checks.
+
+Stop immediately on semantic subject mismatch until reference/prompt binding is audited. Do not spend two retries adding prompt adjectives.
+
+Limit a camera to two total attempts and a diagnostic board to the original plus two repairs. Preserve rejected attempts and lineage. After the limit, mark `blocked_generation_quality` and continue truthfully with the accepted remainder.
+
+## 11. Primary Upload Selection
+
+Choose one to five approved assets. Prioritize non-redundant hard-authority cameras that expose complementary sectors and Critical Nodes. Add a diagnostic board only when it closes a specific downstream risk.
+
+Write a selection reason per asset and one overall rationale. A complete package selects at least two independent cameras. Do not create a new generative final collage; the selected original assets are the upload authority.
