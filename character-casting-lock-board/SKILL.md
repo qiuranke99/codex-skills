@@ -1,13 +1,18 @@
 ---
 name: character-casting-lock-board
-description: "Use when the user provides character references and needs text-free horizontal 16:9-requested casting-board assets for one selected character: one large frontal portrait plus complete front, back, and side full-body views, with narrowly justified extension boards when source-backed continuity risk requires them. Resolve identity ambiguity before generation; freeze each generation prompt before its terminal image call, then inspect every board and publish every complete generation and image-specific 4K prompt pair in one later final main result. Do not use for candidate comparison, general character sheets, poster or lookbook layouts, or prompt-only delivery."
+description: "Use when the user provides character references and needs text-free horizontal 16:9-requested casting-board assets for one selected character: one large frontal portrait plus complete front, back, and side full-body views, with narrowly justified extension boards when source-backed continuity risk requires them. Resolve identity ambiguity before generation; freeze each generation prompt before its terminal image call, then inspect every board and publish every complete generation and image-specific 4K prompt pair in one later final main result. Run directly from this package; downstream AI-video project handoff is optional. Do not use for candidate comparison, general character sheets, poster or lookbook layouts, or prompt-only delivery."
 ---
 
 # Character Casting Lock Board
 
-## HIGH_CONTROL_RELEASE_GATE_V2
+## Standalone Runtime Boundary
 
-Before any action or production output, resolve this `SKILL.md` directory and execute the sibling OS-native launcher: on Windows, `& ..\\high-control-ai-tvc\\tools\\release-control.ps1 -Action check -Format json`; on macOS/Linux, `../high-control-ai-tvc/tools/release-control.sh check --format json`. The launcher must resolve the pinned runtime from the validated release receipt; never invoke `release_control.py` through an unverified global Python. Proceed only when `ready_latest=true`. On any failure, stop and run the same launcher with `sync`, then start a new Codex task. Bind the returned `release_commit` to this stage; never substitute a mutable Windows/Mac authoring checkout.
+Run this Skill from its own package. Resolve every bundled path from this
+`SKILL.md` directory. Core routing, prompt freezing, generation, QA, and
+publication must not probe, synchronize, import, or require any neighboring
+Skill package. A downstream AI-video project may consume accepted artifacts
+only after this Skill completes and production approval is explicit; that
+optional integration never changes this Skill's input status or completion.
 
 Contract version: `asset_board_contract_version: built_in_nonblocking_prompt_pair_v2`.
 
@@ -343,41 +348,28 @@ A pre-generation draft presented as final, a reused cross-board prompt or hash, 
 
 For maintained acceptance scenarios, read [test_cases.md](test_cases.md).
 
-## Optional AI-Video Project Canon Export
+## Optional AI-Video Artifact Handoff
 
-This is a downstream-only integration and changes none of the board topology,
-terminal generation, later-turn inspection, 4K handoff, or complete prompt-pair
-publication rules above. Use it only when the current accepted board has
-`assistant_qa_status: passed`, both accepted prompt sidecars have passed byte
-readback, and production approval is explicitly `user_granted` or
-`external_pipeline_granted`.
+This package ends with the accepted board and its verified prompt-pair
+artifacts. It does not write project Canon, import another Skill, or assume a
+neighboring package exists.
 
-After that explicit decision, this owner may write a strict approval JSON
-conforming to
-`../ai-video-shot-script-director/references/ai_video_owner_asset_approval.schema.json`.
-It must bind this Skill name, asset key, primary board SHA-256, the exact
-`generation_prompt` and `four_k_enhancement_prompt` hashes, approved Shot UIDs,
-QA pass, and production decision. Then run only this package's fixed-owner
-`scripts/export_ai_video_canon.py`; it has no owner override. Supply
-project-relative primary/prompt/approval locators and their exact hashes plus
-every affected Shot UID. This owner exports only
-`authority_mode: identity_and_wardrobe` with
-`control_roles_authorized: [identity, wardrobe]`; the hashed approval evidence
-must bind the same values.
-The export runtime requires Pillow to `verify()` and fully `load()` the primary
-PNG/JPEG/WebP board; missing Pillow, decode failure, mismatched extension, or a
-board below 64×64 fails closed before Canon mutation.
+Only after `assistant_qa_status: passed`, exact byte/hash readback of both
+accepted prompt sidecars, and explicit `user_granted` or
+`external_pipeline_granted` production approval may the main agent offer these
+artifacts to an external AI-video project integrator:
 
-The wrapper writes the owner-produced `ai-video-artifact-v1` record, four-lock
-Canon entry, immutable base snapshot, entry delta, receipt, and validated
-pre/post transition. Prompt Director must consume this real Canon owner record;
-it may not manufacture an authority projection. Export failure does not alter
-or demote the accepted visual asset.
+- this exact Skill ID and asset key;
+- the accepted board locator and SHA-256;
+- both prompt roles, locators, and SHA-256 values;
+- affected Shot UIDs;
+- `authority_mode: identity_and_wardrobe` and
+  `control_roles_authorized: [identity, wardrobe]`;
+- `authority_stage: terminal_character_canon` and
+  `terminal_route_decision: casting_as_terminal`.
 
-This casting board remains pre-Canon by default. Export is forbidden unless it
-is deliberately selected as the terminal character route and the wrapper is
-invoked with `--casting-as-terminal`. Approval and export records must bind
-`authority_stage: terminal_character_canon` and
-`terminal_route_decision: casting_as_terminal`. For one `asset_key`, this route
-is mutually exclusive with both final-character owners. Install the pinned
-decoder with `python3 -m pip install -r ../ai-video-shot-script-director/requirements.txt`.
+The external integrator owns its schemas, dependencies, transaction safety,
+and Canon mutation. It must deliberately select this casting board as the
+terminal route and keep that route mutually exclusive with other terminal
+character owners for the same asset key. Missing or failed integration never
+blocks, upgrades, or demotes this Skill's accepted board.

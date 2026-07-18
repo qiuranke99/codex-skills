@@ -15,6 +15,8 @@
 11. **Final main result**: the board, complete `final_generation_prompt`, `generation_prompt_sha256`, complete `final_4k_enhancement_prompt`, `4k_enhancement_prompt_sha256`, and both publication states appear together in one non-empty `final` response.
 12. **External controls**: the handoff requests only `aspect_ratio: "16:9"` and `image_size: "4K"`; external readiness remains independent of prompt-pair publication.
 13. **Repair isolation**: one repair uses a fresh uniquely named worker and a newly frozen attempt prompt; the main agent never calls imagegen.
+14. **Standalone package**: copy only this Skill directory to a fresh root; bundled source-freezing, worker-binding, final-result commands, and entrypoint routing remain available without any neighboring Skill.
+15. **Optional project handoff**: absent AI-video integration cannot block or demote an accepted board; only an external integrator may consume the worker-bound board and locked prompt artifacts after assistant QA, byte/hash readback, and explicit production approval.
 
 ## Red Scenarios
 
@@ -36,6 +38,8 @@
 - A prompt is reconstructed after a sidecar or hash mismatch: fail.
 - A 1672x941 board is repaired only because the pixels are not exact 16:9: fail.
 - Enhancement creates a head or face in either body panel: fail.
+- The entrypoint probes or synchronizes an unrelated suite before checking the package's real local worker capabilities: fail.
+- This package attempts to import or invoke a project-Canon writer: fail; the explicit one-worker authorization and main-agent decision boundary remain unchanged.
 
 ## Required Runtime Proof
 

@@ -1,5 +1,9 @@
 # 审批、返工与失效传播
 
+本文件描述显式选择 High-Control aggregate workflow 后的跨阶段审批与返工
+合同。它不参与判断任一顶层 Skill 的安装、发现、调用或 package-local
+validation；独立调用单包时，以该包自己的 `SKILL.md` 为准。
+
 ## 1. 谁负责批准什么
 
 系统有三种完全不同的判断，不能互相代替：

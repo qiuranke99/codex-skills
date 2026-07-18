@@ -27,11 +27,11 @@ if ($null -eq $launcherSource -and $null -ne $launcher) {
         & $launcherSource $candidate -c "import sys" 2>$null
         if ($LASTEXITCODE -eq 0) { $version = $candidate; break }
     }
-    if ($null -eq $version) { throw "Install Python 3.11 or 3.12 before creating the suite runtime." }
+    if ($null -eq $version) { throw "Install Python 3.11 or 3.12 before creating the optional aggregate maintenance environment." }
     $arguments += $version
 } elseif ($null -eq $launcherSource) {
     $launcher = Get-Command "python" -ErrorAction SilentlyContinue
-    if ($null -eq $launcher) { throw "Install Python 3.11 or 3.12 before creating the suite runtime." }
+    if ($null -eq $launcher) { throw "Install Python 3.11 or 3.12 before creating the optional aggregate maintenance environment." }
     $launcherSource = $launcher.Source
 }
 

@@ -41,6 +41,8 @@
 37. **External-state independence**: a verified prompt pair may become task-ready while external status remains `not_ready`; set per-board `handoff_ready` only after provider controls, original references, Codex board, and handoff sidecar are all ready.
 38. **Accepted repair binding**: a failed A attempt followed by accepted A repair yields `generation_attempt_count: 2`, `generated_board_count: 1`, and publishes only the accepted repair prompt/hash with its `accepted_attempt_id`.
 39. **Output capacity**: if one final response cannot contain every accepted board's complete pair, return `blocked_final_output_capacity`; never truncate, summarize, or split while claiming `published`.
+40. **Standalone package**: copy only this Skill directory to a fresh root; routing, prompt planning, and completion-state evaluation proceed without probing or synchronizing any neighboring package.
+41. **Optional project handoff**: absent AI-video integration cannot block or demote an accepted board; only an external integrator may consume the locked artifacts after assistant QA, byte/hash readback, and explicit production approval.
 
 ## Quick Validation Checklist
 
@@ -61,3 +63,5 @@
 - `published_prompt_pair_count == generated_board_count` before package finalization.
 - `published_board_ids == accepted_board_ids`; no rejected or superseded attempt prompt is published.
 - Built-in ratio mismatch never fails content QA or blocks handoff; external exact 16:9 and 4K controls remain mandatory.
+- The entrypoint has no external suite preflight, neighboring-package import, or package-sync prerequisite.
+- This package contains no project-Canon writer; the optional handoff exports only locked artifact locators, hashes, authority metadata, and explicit approval evidence to an external integrator.

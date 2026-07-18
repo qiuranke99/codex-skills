@@ -42,7 +42,7 @@ if (-not $PythonExecutable) {
 }
 
 if (-not $PythonExecutable -or -not (Test-Path -LiteralPath $PythonExecutable -PathType Leaf)) {
-    throw "Pinned High-Control runtime is unavailable. Run setup-runtime.ps1 and release sync before production."
+    throw "Optional aggregate maintenance runtime is unavailable. Run setup-runtime.ps1 and aggregate release sync before using the aggregate profile."
 }
 
 $env:PYTHONDONTWRITEBYTECODE = "1"

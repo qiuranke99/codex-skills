@@ -10,7 +10,8 @@
   ],
   "gaps": [],
   "validation_commands": [
-    "python3 ai-video-omni-reference-prompt-director/scripts/validate_ai_video_suite.py --suite-root ."
+    "python3 scripts/validate_preflight_package.py --help",
+    "python3 scripts/validate_prompt_package.py --help"
   ],
   "exit_gate": {
     "all_accepted_gaps_verified": false,

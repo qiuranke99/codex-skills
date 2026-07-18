@@ -1,44 +1,67 @@
-# Installation, update, audit, and removal
+# Optional aggregate installation, update, audit, and removal
 
-## Production authority
+## Scope and authority
+
+The 16 top-level Skills in this repository are independent packages. Each can
+be copied or linked directly into a Codex discovery root and validated with its
+own package-local instructions. An individual Skill does not require
+`high-control-ai-tvc`, `SUITE_MANIFEST.json`, an aggregate receipt, a release
+launcher, a pinned aggregate runtime, or sibling packages.
+
+The commands in this document are for a user who explicitly opts into the
+High-Control aggregate compatibility and maintenance profile. They provide
+bulk installation, immutable snapshots, aggregate preflight, and coordinated
+updates. Their receipts describe only entries managed by this profile and
+never decide whether an unmanaged standalone Skill is available.
+
+## Aggregate snapshot authority
 
 GitHub repository id `1264973746`, `qiuranke99/codex-skills`, branch `main` is
-the only cross-machine publication authority. A company Windows checkout and a
-home Mac checkout are authoring workspaces only. Production discovery must
-point to an immutable `releases/<GitHub OID>/repo` snapshot produced by the
-OS-native `release-control.ps1` / `release-control.sh` launcher.
+the cross-machine update source for an explicitly selected aggregate snapshot.
+The aggregate discovery entries point to an immutable
+`releases/<GitHub OID>/repo` snapshot produced by the OS-native
+`release-control.ps1` / `release-control.sh` launcher.
 Activation removes write access from that snapshot (Windows current-user RX
-ACL; macOS/Linux no-write permission modes). Every production check proves
+ACL; macOS/Linux no-write permission modes). Every aggregate check proves
 that creating a file and opening an existing file for writing are rejected,
 then independently re-verifies every Git blob. A hash-only or writable
-snapshot is not production-ready.
+snapshot is not ready for this aggregate-managed workflow.
 
 `install`, `adopt`, and `status` remain safety/migration tools. They do not
-prove GitHub-latest and cannot make preflight production-ready. Only `sync`
-followed by a new Codex task and passing `check` can do that. Offline or an
-advanced/unstable remote is `NOT_READY_LATEST`; no silent fallback is allowed.
+prove GitHub-latest aggregate state. Only `sync` followed by a new Codex task
+and passing `check` can produce `AGGREGATE_READY_LATEST` for this profile. Offline or an
+advanced/unstable remote is `AGGREGATE_NOT_READY_LATEST` for the profile; that status
+does not revoke a standalone package that still passes its own validation.
 
 ## What “installed” means
 
-The `high-control-ai-tvc/` subsystem inside `qiuranke99/codex-skills` is the
-installation/control surface, while the 15 suite Skill directories plus any
-manifest-declared independent publication Skill remain sibling packages at
-repository root. Installation exposes those Skill directories to
+When explicitly selected, `high-control-ai-tvc/` is the aggregate bulk
+installation/control surface. The top-level Skill directories remain
+independent packages; physical sibling layout inside an aggregate snapshot is
+an implementation detail of that profile, not a single-package runtime
+requirement. Aggregate installation exposes selected Skill directories to
 Codex under the user discovery root. It does not copy
 customer assets, initialize Project Canon, call a paid video API, or claim that
 the machine is production-ready.
 
 - Default discovery root: `$HOME/.agents/skills`
-- Default production release: 16 publication Skills (15 suite members: 13 core + 2 optional explorers; plus 1 manifest-declared independent production Skill)
-- Single inventory SSOT: [`../SUITE_MANIFEST.json`](../SUITE_MANIFEST.json)
-- Runtime SSOT: [`../config/runtime-requirements.json`](../config/runtime-requirements.json)
+- Explicit aggregate `all` profile: 15 managed workflow members
+  (13 core + 2 optional explorers); `excluded_from_aggregate_profile` keeps the
+  16th standalone Skill outside aggregate installation and receipts only. All
+  16 top-level packages remain standalone.
+- Aggregate inventory: [`../SUITE_MANIFEST.json`](../SUITE_MANIFEST.json)
+- Aggregate runtime requirements: [`../config/runtime-requirements.json`](../config/runtime-requirements.json)
+
+Neither aggregate file is an authority for direct installation, invocation, or
+validation of an individual top-level Skill.
 
 Do not expose the same Skill names in both `.agents/skills` and the legacy
 `.codex/skills`. The installer detects that collision and stops before writing.
 
-If an older installation already contains exact symlinks/junctions from one
-discovery root to the 15 current repository Skill directories, explicitly adopt
-them before normal status/update operations. Adoption is never automatic:
+If a user wants this aggregate profile to manage an older installation that
+already contains exact symlinks/junctions from one discovery root to the
+selected repository Skill directories, explicitly adopt them. Adoption is
+never automatic and is not required for ordinary standalone use:
 
 ```bash
 ./tools/install.sh adopt --target "$HOME/.codex/skills" --allow-missing
@@ -48,12 +71,14 @@ them before normal status/update operations. Adoption is never automatic:
 .\tools\install.ps1 adopt -Target "$HOME\.codex\skills" -AllowMissing
 ```
 
-The command succeeds only when every selected entry is a symlink/junction whose
+The command succeeds only when every selected aggregate entry is a
+symlink/junction whose
 resolved target is exactly `<codex-skills>/<skill-name>`. It validates source
-identity/digests and writes a suite receipt without changing links. It refuses
+identity/digests and writes an aggregate receipt without changing links. It refuses
 copies, ordinary directories, links to only part of a Skill, other checkouts, or any parallel
 same-name entries in `.agents/skills`. Use `--profile core` / `-Profile core`
-only when the older installation intentionally contains the 13 core Skills.
+only when the user explicitly wants the aggregate tool to manage the 13-entry
+core profile.
 
 If the old installation predates the six workflow Skills and therefore contains
 only a subset of the current 15, use the explicit partial-adoption flag, then
@@ -73,14 +98,18 @@ install the missing entries into the same legacy root:
 directory, copy or wrong link target still rejects the complete adoption before
 writing a receipt.
 
-## One-time setup
+## One-time aggregate setup
 
-1. Clone `qiuranke99/codex-skills` to a stable local path. Do not install from a
-   temporary download folder that will later be moved or deleted. Change into
+Run this section only after explicitly choosing aggregate management. A direct
+single-Skill install does not perform these steps.
+
+1. Clone `qiuranke99/codex-skills` to a stable local path. Do not bootstrap the
+   aggregate profile from a temporary download folder that will later be moved
+   or deleted. Change into
    `<codex-skills>/high-control-ai-tvc` before running the commands below.
 2. Install Python 3.11 or 3.12 and FFmpeg/ffprobe with `libx264` through an
    organization-approved package source.
-3. Create the pinned repository-local Python runtime:
+3. Create the aggregate compatibility-validation runtime:
 
    macOS:
 
@@ -94,11 +123,14 @@ writing a receipt.
    .\tools\setup-runtime.ps1
    ```
 
-   This creates `high-control-ai-tvc/.venv` and installs exactly
-   `Pillow==11.3.0`. It does not modify system Python. `.venv` is local runtime
-   state and must not be committed.
+   The bootstrap helper installs exactly `Pillow==11.3.0` without modifying
+   system Python. This environment is aggregate maintenance state, not an
+   individual Skill authority and not part of an immutable Skill tree. Do not
+   hard-code an authoring-checkout path into project artifacts; subsequent
+   commands consume the validated `runtime_python` returned by the aggregate
+   launcher/readback. Runtime state must not be committed.
 4. Fetch GitHub `main`, validate its exact Git object snapshot, and atomically
-   activate every Skill:
+   activate the selected aggregate profile:
 
    macOS:
 
@@ -148,14 +180,16 @@ writing a receipt.
      -Confirm codex_image_generation,control_previs_path,provider_platform_access
    ```
 
-7. Confirm in a real fresh Codex task—not only a debug catalog—that
+7. For the aggregate workflow, confirm in a real fresh Codex task—not only a
+   debug catalog—that
    `$ai-video-shot-script-director` resolves from the receipt's snapshot before
    starting a customer project.
 
-The audit is fail-closed. `NOT_READY` or `NEEDS_MANUAL_CONFIRMATION` is not a
-successful production preflight.
+The aggregate audit is fail-closed. `NOT_READY` or
+`NEEDS_MANUAL_CONFIRMATION` is not a successful aggregate preflight; it is not
+a general statement about any independently installed Skill.
 
-## Install modes
+## Aggregate install modes
 
 | Mode | Default | Behavior | Use when |
 |---|---|---|---|
@@ -187,12 +221,13 @@ Paths containing spaces are supported when quoted:
 .\tools\install.ps1 sync -Target "$HOME\My Codex\skills"
 ```
 
-The production `sync` command activates all 16 publication Skills. Legacy
-`--profile core` / `-Profile core` installs only the 13 suite core Skills and is
-never production-ready; it does not remove optional/independent Skills from a
-previous all-profile run.
+The explicit aggregate `sync` command activates all 15 aggregate members for
+the `all` profile. `--profile core` / `-Profile core` manages only the 13 core
+entries and does not satisfy the full aggregate profile; it does not remove
+the two optional entries from a previous `all` run. Neither profile constrains
+standalone entries outside its receipt.
 
-## Status and machine-readable evidence
+## Aggregate status and machine-readable evidence
 
 Human-readable GitHub-latest status:
 
@@ -216,21 +251,23 @@ JSON status or audit evidence:
 .\tools\preflight.ps1 -AutomaticOnly -Format json
 ```
 
-JSON output is suitable for a machine/IT readiness record. It contains no
-customer assets or credentials.
+JSON output is suitable for an aggregate maintenance/readiness record. It
+contains no customer assets or credentials and must not be presented as a
+single-Skill availability certificate.
 
-## Create a new production project
+## Create a new aggregate-managed production project
 
-Create projects outside the repository. The helper creates only empty package
+This helper opts the project into the documented aggregate workflow. Create
+projects outside the repository. The helper creates only empty package
 directories, a local README, and a non-authoritative project marker. It does not
 copy client material or fabricate `PROJECT_CANON_MANIFEST.json`.
 
 ```bash
-./tools/new-project.sh "/path/to/client projects/bath-oil-tvc" --name "Bath Oil TVC"
+./tools/new-project.sh "/path/to/client projects/bath-oil-tvc" --name "Bath Oil TVC" --aggregate-managed
 ```
 
 ```powershell
-.\tools\new-project.ps1 -Destination "D:\Client Projects\Bath Oil TVC" -Name "Bath Oil TVC"
+.\tools\new-project.ps1 -Destination "D:\Client Projects\Bath Oil TVC" -Name "Bath Oil TVC" -AggregateManaged
 ```
 
 Place the original script under `01_sources/script/original/`; place the brief,
@@ -238,28 +275,29 @@ licensed references, and source notes in the matching `01_sources/` category. Th
 it has produced and validated the Professional Shot Contract. Then use the
 prompts in [`CODEX_PROMPTS.md`](CODEX_PROMPTS.md).
 
-## Safe update
+## Safe aggregate update
 
 1. Stop active mutations to a customer Project Canon.
-2. Run `sync`. It queries canonical GitHub directly and never resets, stashes,
+2. Run aggregate `sync`. It queries canonical GitHub directly and never resets, stashes,
    rebases, or overwrites either machine's authoring checkout.
 3. `sync` validates the exact new snapshot and activates only if the remote
    remains stable before and after validation.
-4. Restart Codex or open a new task; run `check`, automatic/full preflight, and
-   verify one real Skill trigger.
+4. Restart Codex or open a new task; run aggregate `check`, automatic/full
+   preflight, and verify one real Skill trigger from the activated profile.
 
 The updater refuses to overwrite:
 
-- an entry without this suite's install receipt;
+- an entry without this aggregate profile's install receipt;
 - a link/junction whose target no longer matches its receipt;
 - a managed copy that contains local edits;
 - a same-name entry in the other known discovery root.
 
-Do not edit installed copies or release snapshots. Make source changes in an
-authoring checkout, commit and push them to GitHub `main`, then run `sync` on
-each machine.
+Do not edit aggregate-managed copies or release snapshots. Make source changes
+in an authoring checkout, commit and push them, then run aggregate `sync` on
+each participating machine. Standalone packages follow their own update and
+readback contract.
 
-## Safe migration from legacy discovery
+## Safe migration into aggregate management
 
 There is no silent one-command migration. Use an auditable two-step move:
 
@@ -267,12 +305,14 @@ There is no silent one-command migration. Use an auditable two-step move:
    legacy root contains the historical 9-Skill subset, use `--allow-missing`
    and then run `install` against that same legacy root to add the six missing
    workflow Skills under the new receipt.
-2. Run `status` against that legacy target, then use `sync` to converge on all
-   16 current publication entries. Legacy `READY` is not production readiness.
+2. Run `status` against that legacy target, then use `sync` to converge on the
+   explicitly selected aggregate profile. Legacy `READY` is not
+   `AGGREGATE_READY_LATEST` for that profile.
 3. Run suite `uninstall` against the legacy target. It removes only the links
    proven by the new receipt.
 4. Run `sync` with the default `$HOME/.agents/skills` target.
-5. Run the full audit, restart Codex, and trigger one Skill explicitly.
+5. Run the full aggregate audit, restart Codex, and trigger one profile Skill
+   explicitly.
 
 macOS:
 
@@ -311,9 +351,10 @@ For the historical 9-entry legacy root, replace the first two commands with:
 If adoption refuses any entry, stop. Do not mass-delete the legacy discovery
 root; first identify which checkout or installer owns the collision.
 
-## Safe uninstall
+## Safe aggregate uninstall
 
-Remove all entries proven to be owned by this suite:
+Remove only entries proven by the receipt to be owned by this aggregate
+profile:
 
 ```bash
 ./tools/install.sh uninstall
@@ -328,25 +369,29 @@ It preserves unmanaged entries, changed copies, the repository, `.venv`, and all
 customer project directories. A refusal is a safety result, not an instruction
 to delete the whole discovery directory.
 
-## Direct Python fallback
+## Aggregate launcher fallback
 
-If an organization blocks shell or PowerShell scripts, the same guarded tools
-can be called with the repository-local Python executable:
+If an organization blocks wrapper scripts but permits an approved equivalent
+route, use the same aggregate tools with the profile runtime shown below. This
+does not establish a Python requirement for standalone Skill validators:
 
 ```text
 Windows: tools\release-control.ps1 -Action sync -Format json
 Windows: tools\release-control.ps1 -Action check -Format json
 macOS/Linux: tools/release-control.sh sync --format json
 macOS/Linux: tools/release-control.sh check --format json
-<repo>/high-control-ai-tvc/.venv/.../python tools/preflight.py --automatic-only --format json
+<runtime_python returned by aggregate check> tools/preflight.py --automatic-only --format json
 ```
 
-Use `.venv/bin/python` on macOS and `.venv\Scripts\python.exe` on Windows.
+Do not infer `runtime_python` from the current checkout path. Consume the
+launcher result so a moved or removed authoring checkout cannot silently become
+snapshot authority.
 
-## Production boundary
+## Boundary
 
-GitHub-latest release activation plus a passing preflight makes the local SOP tooling ready. It
-does not verify a future provider claim, submit video generations, or replace
-human approvals. Each run still needs source-backed identities/claims, an
-actual provider capability snapshot, and the approval gates defined in the six
-workflow Skills.
+GitHub-latest aggregate activation plus a passing aggregate preflight makes the
+coordinated SOP tooling ready for the selected profile. It does not certify
+individual Skill availability, verify a future provider claim, submit video
+generations, or replace human approvals. Each run still needs source-backed
+identities/claims, an actual provider capability snapshot, and the approval
+gates defined by the packages that participate in that run.

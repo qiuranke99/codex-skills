@@ -1,6 +1,6 @@
 interface:
   display_name: "Scene Canon Asset Pack"
-  short_description: "Build neutral, consistent scene asset packs from references."
+  short_description: "Build standalone, neutral scene canon asset packs."
   default_prompt: "Use $scene-canon-asset-pack to turn these scene references into a neutral, consistent, QA-approved scene asset package."
 policy:
   allow_implicit_invocation: false

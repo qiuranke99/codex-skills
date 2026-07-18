@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Safely install, inspect, update, or uninstall this suite's Codex skills."""
+"""Safely manage an explicitly selected optional aggregate Skill profile."""
 
 from __future__ import annotations
 
@@ -107,6 +107,16 @@ def _state_paths(target: Path, suite_id: str) -> Tuple[Path, Path]:
     return state_root, state_root / "install-receipt.json"
 
 
+def _retain_aggregate_receipt_entries(
+    entries: Dict[str, Any], managed_names: Iterable[str]
+) -> Tuple[Dict[str, Any], List[str]]:
+    """Drop obsolete aggregate ownership without touching any discovery entry."""
+    names = set(managed_names)
+    retained = {name: entry for name, entry in entries.items() if name in names}
+    released = sorted(name for name in entries if name not in names)
+    return retained, released
+
+
 def _validate_receipt_storage(receipt_path: Path) -> None:
     """Reject redirected or unrelated suite state before reading or mutating it."""
     state_root = receipt_path.parent
@@ -120,7 +130,7 @@ def _validate_receipt_storage(receipt_path: Path) -> None:
             raise InstallSafetyError(f"suite state root is not a directory: {state_root}")
     if _lexists(receipt_path):
         if receipt_path.is_symlink() or _is_windows_junction(receipt_path) or not receipt_path.is_file():
-            raise InstallSafetyError(f"suite receipt must be a real regular file: {receipt_path}")
+            raise InstallSafetyError(f"aggregate receipt must be a real regular file: {receipt_path}")
     elif _lexists(state_root):
         try:
             unexpected = [item.name for item in state_root.iterdir()]
@@ -307,7 +317,7 @@ def _remove_managed_path(path: Path, kind: str) -> None:
 def _commit_staged_entry(stage: Path, destination: Path, old_kind: str) -> Path | None:
     """Swap one staged entry into place while retaining the prior entry.
 
-    The caller owns the returned backup until the suite receipt has committed.
+    The caller owns the returned backup until the aggregate receipt has committed.
     This makes a multi-Skill install reversible as one transaction.
     """
     if old_kind == "missing":
@@ -503,6 +513,10 @@ def inspect_installation(
         receipt = {"entries": {}}
         errors.append(str(exc))
     receipt_entries = receipt.get("entries", {})
+    managed_names = {skill["name"] for skill in skills}
+    released_receipt_entries = sorted(
+        name for name in receipt_entries if name not in managed_names
+    )
     results = []
 
     for skill in selected:
@@ -514,7 +528,7 @@ def inspect_installation(
         detail = "not installed"
         if kind != "missing" and not isinstance(entry, dict):
             state = "collision"
-            detail = "entry exists but is not owned by this suite receipt"
+            detail = "entry exists but is not owned by this aggregate receipt"
         elif isinstance(entry, dict):
             safe, detail = _managed_entry_is_safe(
                 destination, entry, suite_id, name, require_unchanged_copy=False
@@ -562,8 +576,13 @@ def inspect_installation(
         "repo_root": str(repo_root.resolve()),
         "target_root": str(target.expanduser().absolute()),
         "profile": profile,
+        "scope": "optional_aggregate_profile",
+        "controls_individual_skill_availability": False,
         "ready": ready,
+        "aggregate_profile_ready": ready,
         "errors": errors,
+        "receipt_entries_outside_aggregate": released_receipt_entries,
+        "standalone_entries_preserved": True,
         "parallel_discovery_duplicates": duplicates,
         "skills": results,
     }
@@ -591,7 +610,10 @@ def install(repo_root: Path, target: Path, profile: str, requested_mode: str) ->
     state_root, receipt_path = _state_paths(target, suite_id)
     recovery = _recover_install_transaction(target, suite_id)
     receipt = _load_receipt(receipt_path, suite_id)
-    entries = receipt["entries"]
+    managed_names = {skill["name"] for skill in skills}
+    entries, released_receipt_entries = _retain_aggregate_receipt_entries(
+        receipt["entries"], managed_names
+    )
 
     # Complete the safety scan before making the first change.
     for skill in selected:
@@ -601,7 +623,7 @@ def install(repo_root: Path, target: Path, profile: str, requested_mode: str) ->
             continue
         entry = entries.get(name)
         if not isinstance(entry, dict):
-            raise InstallSafetyError(f"collision at {destination}; no suite ownership receipt, so nothing was changed")
+            raise InstallSafetyError(f"collision at {destination}; no aggregate ownership receipt, so nothing was changed")
         safe, detail = _managed_entry_is_safe(
             destination, entry, suite_id, name, require_unchanged_copy=True
         )
@@ -682,6 +704,8 @@ def install(repo_root: Path, target: Path, profile: str, requested_mode: str) ->
     new_receipt["updated_at"] = now
     new_receipt["schema_version"] = RECEIPT_SCHEMA_VERSION
     new_receipt["suite_id"] = suite_id
+    new_receipt["scope"] = "optional_aggregate_profile"
+    new_receipt["controls_individual_skill_availability"] = False
     new_receipt["repo_root"] = str(repo_root.resolve())
     new_receipt["entries"] = new_entries
     new_receipt["transaction_id"] = transaction_id
@@ -773,15 +797,22 @@ def install(repo_root: Path, target: Path, profile: str, requested_mode: str) ->
         "suite_id": suite_id,
         "mode": mode,
         "profile": profile,
+        "scope": "optional_aggregate_profile",
+        "controls_individual_skill_availability": False,
         "target_root": str(target),
         "changed": changed,
         "unchanged": unchanged,
         "receipt": str(receipt_path),
         "cleanup_warnings": cleanup_warnings,
         "recovery": recovery,
+        "released_legacy_receipt_entries": released_receipt_entries,
+        "standalone_entries_preserved": True,
         "transaction_id": transaction_id,
         "success": True,
-        "next_required_action": "run the audit/preflight command before production use",
+        "next_required_action": (
+            "run the optional aggregate audit/preflight before aggregate-profile use; "
+            "individual Skills do not require this gate"
+        ),
     }
 
 
@@ -816,7 +847,10 @@ def adopt_exact_links(
         raise InstallSafetyError(f"adoption target does not exist: {target}")
     _state_root, receipt_path = _state_paths(target, suite_id)
     receipt = _load_receipt(receipt_path, suite_id)
-    entries = receipt["entries"]
+    managed_names = {skill["name"] for skill in skills}
+    entries, released_receipt_entries = _retain_aggregate_receipt_entries(
+        receipt["entries"], managed_names
+    )
 
     planned = []
     unchanged = []
@@ -881,6 +915,8 @@ def adopt_exact_links(
     receipt.update({
         "schema_version": RECEIPT_SCHEMA_VERSION,
         "suite_id": suite_id,
+        "scope": "optional_aggregate_profile",
+        "controls_individual_skill_availability": False,
         "repo_root": str(repo_root.resolve()),
         "updated_at": now,
         "entries": entries,
@@ -892,10 +928,14 @@ def adopt_exact_links(
         "action": "adopt",
         "suite_id": suite_id,
         "profile": profile,
+        "scope": "optional_aggregate_profile",
+        "controls_individual_skill_availability": False,
         "target_root": str(target),
         "adopted": [item[0]["name"] for item in planned],
         "unchanged": unchanged,
         "missing_preserved": missing,
+        "released_legacy_receipt_entries": released_receipt_entries,
+        "standalone_entries_preserved": True,
         "receipt": str(receipt_path),
         "success": True,
     }
@@ -909,7 +949,7 @@ def adopt_content_equivalent_links(
     """Receipt only unowned links whose bytes exactly equal a validated release.
 
     This is a narrow migration bridge for a newly managed Skill that predates
-    suite ownership. Ordinary directories, copies, changed links, and wrong
+    aggregate ownership. Ordinary directories, copies, changed links, and wrong
     content remain collisions and are never adopted.
     """
     manifest, _requirements, skills, errors = load_distribution(repo_root)
@@ -929,7 +969,10 @@ def adopt_content_equivalent_links(
     _state_root, receipt_path = _state_paths(target, suite_id)
     _recover_install_transaction(target, suite_id)
     receipt = _load_receipt(receipt_path, suite_id)
-    entries = receipt["entries"]
+    managed_names = {skill["name"] for skill in skills}
+    entries, released_receipt_entries = _retain_aggregate_receipt_entries(
+        receipt["entries"], managed_names
+    )
     planned = []
     for skill in selected:
         name = skill["name"]
@@ -953,8 +996,16 @@ def adopt_content_equivalent_links(
             )
         planned.append((skill, source, destination, kind, actual_digest))
 
-    if not planned:
-        return {"schema_version": "1.0.0", "action": "adopt-content-equivalent", "adopted": []}
+    if not planned and not released_receipt_entries:
+        return {
+            "schema_version": "1.0.0",
+            "action": "adopt-content-equivalent",
+            "scope": "optional_aggregate_profile",
+            "controls_individual_skill_availability": False,
+            "adopted": [],
+            "released_legacy_receipt_entries": [],
+            "standalone_entries_preserved": True,
+        }
     for skill, source, destination, kind, digest in planned:
         name = skill["name"]
         entries[name] = {
@@ -972,6 +1023,8 @@ def adopt_content_equivalent_links(
     receipt.update({
         "schema_version": RECEIPT_SCHEMA_VERSION,
         "suite_id": suite_id,
+        "scope": "optional_aggregate_profile",
+        "controls_individual_skill_availability": False,
         "updated_at": now,
         "entries": entries,
         "migration_id": uuid.uuid4().hex,
@@ -981,7 +1034,11 @@ def adopt_content_equivalent_links(
     return {
         "schema_version": "1.0.0",
         "action": "adopt-content-equivalent",
+        "scope": "optional_aggregate_profile",
+        "controls_individual_skill_availability": False,
         "adopted": [item[0]["name"] for item in planned],
+        "released_legacy_receipt_entries": released_receipt_entries,
+        "standalone_entries_preserved": True,
         "receipt": str(receipt_path),
     }
 
@@ -998,7 +1055,10 @@ def uninstall(repo_root: Path, target: Path, profile: str) -> Dict[str, Any]:
     state_root, receipt_path = _state_paths(target, suite_id)
     receipt = _load_receipt(receipt_path, suite_id)
     had_receipt = receipt_path.is_file()
-    entries = receipt["entries"]
+    managed_names = {skill["name"] for skill in skills}
+    entries, released_receipt_entries = _retain_aggregate_receipt_entries(
+        receipt["entries"], managed_names
+    )
 
     # Prove all removals before deleting anything.
     planned = []
@@ -1064,9 +1124,13 @@ def uninstall(repo_root: Path, target: Path, profile: str) -> Dict[str, Any]:
         "action": "uninstall",
         "suite_id": suite_id,
         "profile": profile,
+        "scope": "optional_aggregate_profile",
+        "controls_individual_skill_availability": False,
         "target_root": str(target),
         "removed": removed,
         "receipt_owned_missing_recovered": already_missing,
+        "released_legacy_receipt_entries": released_receipt_entries,
+        "standalone_entries_preserved": True,
         "preserved_unmanaged_entries": True,
         "success": True,
     }
@@ -1075,16 +1139,16 @@ def uninstall(repo_root: Path, target: Path, profile: str) -> Dict[str, Any]:
 def _print_text(result: Dict[str, Any]) -> None:
     action = result.get("action", "status")
     if action == "install":
-        print(f"OK: installed/updated {len(result['changed'])} skill(s); {len(result['unchanged'])} already current")
+        print(f"OK: aggregate profile installed/updated {len(result['changed'])} skill(s); {len(result['unchanged'])} already current")
         print(f"Target: {result['target_root']}")
         print(f"Method: {result['mode']}; profile: {result['profile']}")
         for warning in result.get("cleanup_warnings", []):
             print(f"WARN: {warning}")
-        print("Next: run tools/install.sh audit (macOS) or tools\\install.ps1 audit (Windows).")
+        print("Next (aggregate profile only): run tools/install.sh audit (macOS) or tools\\install.ps1 audit (Windows).")
         return
     if action == "uninstall":
-        print(f"OK: removed {len(result['removed'])} suite-owned skill entry/entries")
-        print("Unmanaged entries and changed managed copies were not removed.")
+        print(f"OK: removed {len(result['removed'])} aggregate-owned skill entry/entries")
+        print("Standalone/unmanaged entries and changed managed copies were not removed.")
         return
     if action == "adopt":
         print(f"OK: explicitly adopted {len(result['adopted'])} exact link(s); {len(result['unchanged'])} already receipt-owned")
@@ -1092,14 +1156,14 @@ def _print_text(result: Dict[str, Any]) -> None:
             print(f"Missing entries preserved for a later install: {len(result['missing_preserved'])}")
         print("No link target or Skill content was changed.")
         return
-    print(f"Suite: {result['suite_id']}")
+    print(f"Optional aggregate profile: {result['suite_id']}")
     print(f"Target: {result['target_root']}")
     for item in result["skills"]:
         symbol = "OK" if item["state"] == "installed" else "FAIL"
         print(f"[{symbol}] {item['name']}: {item['state']} ({item['method']})")
     for error in result["errors"]:
         print(f"[FAIL] {error}")
-    print("READY" if result["ready"] else "NOT READY")
+    print("AGGREGATE PROFILE READY" if result["ready"] else "AGGREGATE PROFILE NOT READY")
 
 
 def main() -> int:
@@ -1132,6 +1196,8 @@ def main() -> int:
             "schema_version": "1.0.0",
             "action": args.action,
             "success": False,
+            "scope": "optional_aggregate_profile",
+            "controls_individual_skill_availability": False,
             "error": str(exc),
         }
         if args.format == "json":

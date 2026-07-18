@@ -1,9 +1,11 @@
 #!/usr/bin/env python3
-"""Fixed-owner bridge from approved legacy assets into AI-video Project Canon.
+"""Aggregate bridge from approved owner assets into AI-video Project Canon.
 
-This module intentionally has no generic command-line entry point and no
-``--owner`` option.  Each legacy owner package exposes a tiny wrapper whose
-location and profile are checked before any bytes are read or written.
+This bridge belongs to the explicitly selected High-Control aggregate profile.
+It keeps the seven asset-owner profiles and six workflow Canon writers fixed,
+but exposes them through one auditable CLI whose ``--profile`` value is always
+explicit.  Independently installable owner packages do not import this module
+and do not need package-local bridge wrappers.
 """
 
 from __future__ import annotations
@@ -23,6 +25,14 @@ from contextlib import contextmanager
 from dataclasses import dataclass
 from pathlib import Path, PurePosixPath
 from typing import Any, Iterator, Sequence
+
+# The aggregate is allowed to consume the installed Shot Director's canonical
+# Project Canon validators.  Resolve them from the immutable aggregate release
+# root instead of relying on PYTHONPATH or an independently installed owner.
+AGGREGATE_REPO_ROOT = Path(__file__).resolve().parents[2]
+SHOT_VALIDATOR_ROOT = AGGREGATE_REPO_ROOT / "ai-video-shot-script-director" / "scripts"
+if str(SHOT_VALIDATOR_ROOT) not in sys.path:
+    sys.path.insert(0, str(SHOT_VALIDATOR_ROOT))
 
 from validate_manifest_update_receipt import validate_receipt
 from validate_project_canon_manifest import (
@@ -1869,8 +1879,91 @@ def run_fixed_owner_cli(profile_id: str, wrapper_path: Path, argv: Sequence[str]
     return 0
 
 
+def run_aggregate_cli(argv: Sequence[str] | None = None) -> int:
+    """Run the optional aggregate bridge with an explicit fixed profile."""
+    parser = argparse.ArgumentParser(description=__doc__)
+    subparsers = parser.add_subparsers(dest="operation", required=True)
+
+    asset = subparsers.add_parser(
+        "asset", description="Register one approved fixed-owner visual asset in Project Canon"
+    )
+    asset.add_argument("--profile", required=True, choices=sorted(OWNER_PROFILES))
+    asset.add_argument("--project-root", required=True, type=Path)
+    asset.add_argument("--package-root", required=True, type=Path)
+    asset.add_argument("--asset-key", required=True)
+    asset.add_argument("--version", required=True)
+    asset.add_argument("--authority-mode", required=True)
+    asset.add_argument("--primary-asset", required=True)
+    asset.add_argument("--primary-asset-sha256", required=True)
+    asset.add_argument(
+        "--prompt-evidence", action="append", required=True, type=_parse_prompt_spec,
+        metavar="ROLE=LOCATOR=SHA256",
+    )
+    asset.add_argument("--approval-evidence", required=True)
+    asset.add_argument("--approval-evidence-sha256", required=True)
+    asset.add_argument("--affected-shot-uid", action="append", required=True)
+    asset.add_argument(
+        "--packaging-exact-copy-evidence", type=_parse_file_lock_spec,
+        metavar="LOCATOR=SHA256",
+    )
+    asset.add_argument("--casting-as-terminal", action="store_true")
+
+    workflow = subparsers.add_parser(
+        "workflow", description="Atomically apply one fixed workflow-owner Canon transition"
+    )
+    workflow.add_argument("--profile", required=True, choices=sorted(WORKFLOW_CANON_WRITERS))
+    workflow.add_argument("--project-root", required=True, type=Path)
+    workflow.add_argument("--package-root", required=True, type=Path)
+    workflow.add_argument("--transaction-id", required=True)
+    workflow.add_argument("--expected-registered-artifact-id", action="append", required=True)
+    workflow.add_argument("--preserved-artifact-id", action="append", default=[])
+
+    args = parser.parse_args(argv)
+    try:
+        if args.operation == "asset":
+            profile = OWNER_PROFILES[args.profile]
+            if args.casting_as_terminal and profile.profile_id != "character_casting":
+                raise ExportError("--casting-as-terminal is only valid for character_casting")
+            result = apply_fixed_owner_export(
+                profile=profile,
+                project_root=args.project_root,
+                package_root=args.package_root,
+                asset_key=args.asset_key,
+                version=args.version,
+                primary_asset_locator=args.primary_asset,
+                primary_asset_sha256=args.primary_asset_sha256,
+                prompt_specs=args.prompt_evidence,
+                authority_mode=args.authority_mode,
+                approval_evidence_locator=args.approval_evidence,
+                approval_evidence_sha256=args.approval_evidence_sha256,
+                requested_shot_uids=args.affected_shot_uid,
+                explicit_terminal_route=args.casting_as_terminal,
+                packaging_exact_copy_evidence_spec=args.packaging_exact_copy_evidence,
+            )
+        else:
+            result = apply_workflow_canon_transition(
+                args.profile,
+                args.project_root,
+                args.package_root,
+                args.transaction_id,
+                set(args.expected_registered_artifact_id),
+                set(args.preserved_artifact_id),
+            )
+    except (ExportError, OSError, TypeError, ValueError) as exc:
+        print(f"ERROR: {exc}")
+        return 1
+    print(json.dumps(result, ensure_ascii=False, sort_keys=True))
+    return 0
+
+
 __all__ = [
     "ExportError", "OWNER_PROFILES", "OwnerProfile", "apply_fixed_owner_export",
-    "run_fixed_owner_cli", "validate_approval_evidence", "validate_canon_delta",
+    "WORKFLOW_CANON_WRITERS", "apply_workflow_canon_transition", "run_aggregate_cli",
+    "run_fixed_owner_cli", "run_fixed_workflow_canon_writer_cli",
+    "validate_approval_evidence", "validate_canon_delta",
     "validate_export_record", "validate_packaging_exact_copy_evidence",
 ]
+
+
+if __name__ == "__main__":
+    raise SystemExit(run_aggregate_cli())

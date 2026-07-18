@@ -5,9 +5,10 @@ description: "Upgrade a user's rough idea, structured creative shot draft, or pa
 
 # AI Video Shot Script Director
 
-## HIGH_CONTROL_RELEASE_GATE_V2
-
-Before any action or production output, resolve this `SKILL.md` directory and execute the sibling OS-native launcher: on Windows, `& ..\\high-control-ai-tvc\\tools\\release-control.ps1 -Action check -Format json`; on macOS/Linux, `../high-control-ai-tvc/tools/release-control.sh check --format json`. The launcher must resolve the pinned runtime from the validated release receipt; never invoke `release_control.py` through an unverified global Python. Proceed only when `ready_latest=true`. On any failure, stop and run the same launcher with `sync`, then start a new Codex task. Bind the returned `release_commit` to this stage; never substitute a mutable Windows/Mac authoring checkout.
+This Skill is a self-contained entrypoint. It can create and validate the
+Professional Shot Contract directly from user material without a release
+receipt, workflow-suite installation, or sibling package. Downstream handoffs
+are optional consumers of its artifact, not prerequisites for using it.
 
 中文名：AI 视频广告专业分镜脚本导演
 
@@ -80,12 +81,6 @@ Read these files completely before producing the contract:
 - `references/project_canon_manifest.template.json`
 - `references/manifest_update_receipt.schema.json`
 - `references/manifest_update_receipt.template.json`
-- `references/ai_video_owner_asset_export.schema.json`
-- `references/ai_video_owner_asset_approval.schema.json`
-- `references/ai_video_asset_canon_delta.schema.json`
-- `references/ai_video_asset_canon_pending_transaction.schema.json`
-- `references/ai_video_workflow_canon_pending_transaction.schema.json`
-
 Use `scripts/validate_shot_contract.py --verify-files-root <project_root>` before claiming completion whenever any source is marked `verified_bytes`.
 Use `scripts/validate_project_canon_manifest.py` before writing the shared project registry.
 Use `scripts/validate_project_canon_transition.py` with the immutable base snapshot, its raw file SHA-256, the post manifest and bound receipt before claiming any atomic Canon update.
@@ -164,9 +159,16 @@ These maps express need and risk. They do not create the downstream artifacts.
 
 During drafting, keep `sha256: null` and `approval_status: draft`. When content is frozen, calculate SHA-256 over canonical UTF-8 JSON after removing only the envelope's top-level `sha256`; nested dependency hashes remain part of the content. Serialize with `sort_keys=True`, `separators=(',', ':')`, `ensure_ascii=False`, and `allow_nan=False`. Write the result into the root `sha256` field. Run the validator. `assistant_validated` means the contract passes machine and reasoning gates; only an explicit user action may set `user_approved`.
 
-### 8. Initialize or update PROJECT_CANON_MANIFEST
+### 8. Optionally initialize or update PROJECT_CANON_MANIFEST
 
-This Skill owns the shared registry schema and initializes the canonical file at `<project_root>/00_project_canon/PROJECT_CANON_MANIFEST.json`. Register the current Shot Contract, canonical Shot UID set, artifact hash, approval state, and any open change request. Initial creation is the only no-base exception and is legal only when neither the canonical manifest nor `PENDING_PROJECT_CANON_TRANSACTION.json` exists. Every revision of an existing Canon—including selective/global Shot Contract repair—must preserve exact base bytes as `<package_root>/00_manifest/BASE_PROJECT_CANON_SNAPSHOT.json`, materialize the validated post candidate as `<package_root>/00_manifest/CANDIDATE_PROJECT_CANON_POST.json`, and invoke `scripts/apply_project_canon_transition.py`. Later Skills follow the same shared gate and may mutate only their owned scope.
+The Shot Contract is complete and independently usable without a project
+registry. If the caller explicitly requests Project Canon integration, this
+Skill owns the registry schema and may initialize
+`<project_root>/00_project_canon/PROJECT_CANON_MANIFEST.json` or update it with
+the current Shot Contract, stable Shot UID set, artifact hash, approval state,
+and open change requests. Every update of an existing registry preserves exact
+base bytes, validates the candidate post state, and uses the package-local
+writer. Do not initialize a registry merely to make this Skill runnable.
 
 The manifest indexes artifacts but is never an upstream dependency. Keep its envelope `dependencies` empty and forbid every production artifact from depending on the manifest ID/hash. This prevents a manifest update from changing the hash of every artifact it lists.
 
@@ -182,7 +184,7 @@ For `selective_revision`:
 4. record `actually_changed_shot_uids`, exact `changed_json_pointers`, and any expanded dependency with reason;
 5. let the validator derive the real field and stable-UID diff; self-reported scope is not authority;
 6. keep unaffected shot content and hashes byte-stable where stored separately;
-7. list invalidated downstream artifacts and prove every preserved artifact against the immutable Project Canon base/post transition;
+7. list invalidated downstream artifacts and, when optional Project Canon integration exists, prove every preserved artifact against its immutable base/post transition;
 8. recompute adjacent continuity only where an edge touches a changed shot.
 
 Changing only `display_no` is a reorder, not a new identity. A reorder invalidates affected adjacency, cut logic, timing animatic, control previs, keyframe timecodes, and generated prompts. Global duration, global directing grammar, creative mode, or claim-boundary changes are `global_revision` and may invalidate the whole project.
@@ -191,7 +193,7 @@ Follow `references/revision_and_invalidation_contract.md` exactly.
 
 ## Output Contract
 
-Deliver one JSON artifact conforming to `shot_contract.schema.json`, a concise human-readable rendering generated from that JSON, and an atomic `PROJECT_CANON_MANIFEST` initialization/update. The Shot Contract JSON is the directing authority; the manifest is the registry.
+Deliver one JSON artifact conforming to `shot_contract.schema.json` and a concise human-readable rendering generated from that JSON. The Shot Contract JSON is the directing authority. Add an atomic `PROJECT_CANON_MANIFEST` initialization/update only when the caller requested registry integration.
 
 - shared artifact envelope: `contract_version`, `artifact_id`, `owner_skill`, `version`, `sha256`, `approval_status`, `dependencies`, `affected_shot_uids`, `stale_reason`;
 - stable `source_inputs` with integrity and extraction status;
@@ -221,9 +223,9 @@ Claim `assistant_validated` only when:
 - no unsupported product claim or exact copy was invented;
 - shared artifact fields are present and the frozen hash is correct;
 - every `verified_bytes` source locator resolves under the supplied project/source root and its bytes re-hash exactly;
-- the canonical Shot UID set and current Shot Contract hash are registered in one valid `PROJECT_CANON_MANIFEST` with no reverse dependency;
+- when optional Project Canon integration was requested, the canonical Shot UID set and current Shot Contract hash are registered in one valid `PROJECT_CANON_MANIFEST` with no reverse dependency;
 - every non-initial revision is bound to one real frozen predecessor, has increasing SemVer, exact field-level diff evidence and validator-derived changed Shot UIDs;
-- every Canon mutation passes immutable `BASE_PROJECT_CANON_SNAPSHOT.json` raw-file-hash plus real pre/post transition validation; a result receipt alone is insufficient;
+- every performed Canon mutation passes immutable `BASE_PROJECT_CANON_SNAPSHOT.json` raw-file-hash plus real pre/post transition validation; a result receipt alone is insufficient;
 - approval and stale status are honest.
 
 Validator success proves contract integrity, not legal clearance, product-claim substantiation, user taste, storyboard quality, or model output quality.
@@ -232,102 +234,11 @@ Validator success proves contract integrity, not legal clearance, product-claim 
 
 `Use $ai-video-shot-script-director to upgrade this structured creative shot draft into a director-grade Professional Shot Contract. Infer ordinary directing decisions, preserve its poetic or functional mode, and do not invent product claims.`
 
-## Shared Legacy-Asset Canon Bridge
+## Optional Project Canon Write Gate
 
-This Skill owns the strict downstream interface that allows the seven maintained
-character, product, packaging, material, and scene asset owners to enter the
-AI-video Project Canon without Prompt Director projections or a seventh router
-Skill. The shared implementation is
-`scripts/build_asset_canon_export.py`; it deliberately exposes no generic owner
-CLI. Each source Skill owns a package-local
-`scripts/export_ai_video_canon.py` wrapper whose package path and frozen owner
-profile must agree.
-
-An export is legal only after the original owner has completed its unchanged
-visual workflow, passed assistant QA, retained the primary asset bytes and its
-required prompt sidecars, and recorded an explicit `user_granted` or
-`external_pipeline_granted` production decision conforming to
-`ai_video_owner_asset_approval.schema.json`. The bridge then verifies:
-
-- primary asset locator plus byte SHA-256, fully decodable PNG/JPEG/WebP
-  type, matching extension, and verified dimensions of at least 64×64 pixels;
-  Pillow must successfully run both `verify()` and full `load()` and the export
-  fails closed when that decoder is unavailable;
-- the owner-profile-specific prompt roles, UTF-8/LF bytes, and SHA-256 values;
-- approval evidence owner, asset key, exact prompt hash map, primary hash, QA
-  result, production decision, fixed `authority_stage`, fixed
-  `terminal_route_decision`, and canonical affected Shot UID scope;
-- deterministic artifact ID, slot, type, SemVer, canonical artifact hash and
-  fixed owner identity;
-- one owner-approved `authority_mode` and its exact
-  `control_roles_authorized`; downstream Prompt compilation reads these fields
-  from the hashed owner record instead of guessing from a filename or broad
-  artifact type;
-- a strict project-relative package root and every no-traversal file locator.
-
-On success the original owner—not Prompt Director—writes one complete
-`ai-video-artifact-v1` record under
-`owned_artifacts/<artifact_id>.json`. The canonical entry binds the independent
-four locks `locator/file_sha256` and
-`artifact_record_locator/artifact_record_file_sha256`. The owner wrapper also
-preserves exact base bytes as
-`00_manifest/BASE_PROJECT_CANON_SNAPSHOT.json`, writes a canonical
-`CANON_ENTRY_DELTA.json`, applies one owner-scoped manifest revision, writes the
-bound `MANIFEST_UPDATE_RECEIPT.json`, and revalidates the durable pre/post
-transition. Replacing a registered asset atomically moves the old entry to
-immutable history, preserves historical dependency locks/edges, and applies an
-event-bound stale/ineligible registry overlay to every direct and transitive
-consumer. The consumer owner record remains byte-locked and approved; only its
-derived Canon usability state changes, and its owner must rebuild it before
-downstream reuse.
-
-The exporter holds a project-level cross-process lock from Canon read through
-candidate validation, compare-and-swap replacement and durable readback. It
-rechecks the exact raw base bytes immediately before replacement. Primary,
-record, base and delta referents are published first; the mutable Canon is then
-atomically replaced and read back; only after that may an `applied` receipt be
-written. If execution stops after Canon replacement but before receipt, an
-identical fixed-owner rerun reconstructs the receipt only when the immutable
-base/delta/record and the exact current post manifest prove the same legal
-transition. Thus no receipt may claim `applied` while Canon still contains the
-base state, and concurrent exporters cannot silently overwrite one another.
-The global
-`00_project_canon/PENDING_PROJECT_CANON_TRANSACTION.json` journal prevents a
-second owner from advancing the registry across an unfinished transaction. A
-later writer must first reconstruct the prior committed receipt and clear the
-journal, or it is blocked while the prior transaction is still only prepared.
-If execution stops earlier—after base/delta preparation or after owner-record
-publication but before Canon replacement—the same invocation reuses only
-exactly identical immutable bytes and resumes the original compare-and-swap;
-any byte difference fails closed.
-
-Use `scripts/validate_asset_canon_export.py` to validate an exported sidecar
-and its exact Canon binding. This bridge changes no source Skill's trigger,
-board topology, generation ordering, visual QA, 4K handoff, or final prompt-pair
-publication rule.
-
-Character route selection is fail-closed. `character-casting-lock-board` is a
-pre-Canon selection artifact by default and may export only with the explicit
-`--casting-as-terminal` decision bound as
-`authority_stage: terminal_character_canon` and
-`terminal_route_decision: casting_as_terminal`. Otherwise choose exactly one
-terminal alternative: `character-final-lock-board` or
-`single-face-character-lock-board`. All three share the same deterministic
-`character_asset:<asset_key>` slot, so one terminal owner can never replace a
-different terminal owner under the same key.
-
-Install the decoder dependency from this Skill's `requirements.txt` before any
-legacy asset export. Its exact Pillow pin must remain identical to Prompt
-Director's atlas runtime pin.
-
-## Shared Project Canon Write Gate
-
-The six suite owners use their package-local
-`scripts/apply_project_canon_transition.py` wrapper for every mutation of an
-existing Canon. The wrapper alone owns the project `.canon.lock`, global
-`PENDING_PROJECT_CANON_TRANSACTION.json` recovery/block decision, raw-byte
-compare-and-swap, durable post readback, and post-readback receipt publication.
-No Skill may write the canonical manifest or an `applied` receipt directly.
-An unfinished prepared transaction blocks every other writer; a committed
-transaction missing only its receipt is reconstructed from its immutable
-evidence before a successor may advance Canon.
+Project Canon is not required to create, revise, validate, or approve a Shot
+Contract. When registry integration is explicitly requested, use this package's
+`scripts/apply_project_canon_transition.py` for every mutation of an existing
+registry. The writer owns locking, pending-transaction recovery/blocking,
+compare-and-swap, durable readback, and only then receipt publication. Never
+write the registry or an `applied` receipt directly.

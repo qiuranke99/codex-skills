@@ -5,9 +5,11 @@ description: "Reconstruct and lock a source-evidenced Visual Product Identity Mo
 
 # Complex Product Identity Reconstruction & Asset Locking
 
-## HIGH_CONTROL_RELEASE_GATE_V2
+## Standalone Runtime Contract
 
-Before any action or production output, resolve this `SKILL.md` directory and execute the sibling OS-native launcher: on Windows, `& ..\\high-control-ai-tvc\\tools\\release-control.ps1 -Action check -Format json`; on macOS/Linux, `../high-control-ai-tvc/tools/release-control.sh check --format json`. The launcher must resolve the pinned runtime from the validated release receipt; never invoke `release_control.py` through an unverified global Python. Proceed only when `ready_latest=true`. On any failure, stop and run the same launcher with `sync`, then start a new Codex task. Bind the returned `release_commit` to this stage; never substitute a mutable Windows/Mac authoring checkout.
+Run this Skill directly from its own package. Its evidence contracts, initializer, validator, deterministic tests, and package templates are package-local and require no release manager or sibling Skill. Built-in image generation remains the only host production capability; the package's core scripts otherwise use the Python standard library.
+
+The accepted `partial_approved` or `complete` package is a portable downstream input artifact. Other workflows may consume its frozen specification, approved boards, manifest, and 4K handoff, but no exporter or downstream package is required for identity analysis, board generation, validation, or delivery. A supplied upstream evidence ledger is treated as input and must still pass this Skill's source gates.
 
 Chinese name: 复杂产品身份重建与资产锁定 Skill
 

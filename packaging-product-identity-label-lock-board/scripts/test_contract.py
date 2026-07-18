@@ -136,7 +136,6 @@ def dispatch_trace_fixture(base: Path, terminal_status: str = "ACCEPTED") -> dic
         "task_mentions_skill": False,
         "first_tool": "imagegen",
         "pre_imagegen_tool_call_count": 0,
-        "reran_release_gate": False,
         "imagegen_submitted_elapsed_ms": 90_000,
         "imagegen_tool_call_count": 1,
         "imagegen_reference_count": 5,
@@ -170,9 +169,8 @@ def dispatch_trace_fixture(base: Path, terminal_status: str = "ACCEPTED") -> dic
     else:
         raise AssertionError(f"unsupported test status: {terminal_status}")
     value = {
-        "schema_version": "packaging_prompt_dispatch_trace.v1",
+        "schema_version": "packaging_prompt_dispatch_trace.v2",
         "run_id": "dispatch-fixture",
-        "release_gate_completed_elapsed_ms": 20_000,
         "generation_prompt_path": str(prompt),
         "generation_prompt_sha256": sha(prompt),
         "generation_reference_pack_path": str(references["pack_manifest"]),
@@ -596,6 +594,19 @@ def valid_fixture(base: Path, exact_copy: bool = False) -> dict[str, Any]:
 
 
 class ContractTests(unittest.TestCase):
+    def test_package_entrypoint_is_standalone(self) -> None:
+        skill_text = (PACKAGE_DIR / "SKILL.md").read_text(encoding="utf-8").lower()
+        for forbidden in (
+            "high" + "_control_" + "release" + "_gate",
+            "high-" + "control ai tvc",
+            "release-" + "control.ps1",
+            "release-" + "control.sh",
+            "blocked_" + "release" + "_gate",
+            "." * 2 + "/ai-video-" + "shot-script-director",
+        ):
+            self.assertNotIn(forbidden, skill_text)
+        self.assertFalse((SCRIPT_DIR / "export_ai_video_canon.py").exists())
+
     def test_skill_declares_one_board_and_nonblocking_ocr(self) -> None:
         skill = (PACKAGE_DIR / "SKILL.md").read_text(encoding="utf-8")
         for token in [

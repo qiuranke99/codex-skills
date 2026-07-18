@@ -5,9 +5,11 @@ description: Use when the user wants cinematic shot exploration that turns an id
 
 # Cinematic Shot Image Explorer / 电影镜头探索与生图器
 
-## HIGH_CONTROL_RELEASE_GATE_V2
+## Standalone Runtime Contract
 
-Before any action or production output, resolve this `SKILL.md` directory and execute the sibling OS-native launcher: on Windows, `& ..\\high-control-ai-tvc\\tools\\release-control.ps1 -Action check -Format json`; on macOS/Linux, `../high-control-ai-tvc/tools/release-control.sh check --format json`. The launcher must resolve the pinned runtime from the validated release receipt; never invoke `release_control.py` through an unverified global Python. Proceed only when `ready_latest=true`. On any failure, stop and run the same launcher with `sync`, then start a new Codex task. Bind the returned `release_commit` to this stage; never substitute a mutable Windows/Mac authoring checkout.
+Run this Skill directly from its own package. Prompt design, the exact-ten output contract, examples, tests, and metadata are package-local; no release manager or sibling Skill is required. The only production capability outside the package is the host's built-in image-generation tool.
+
+The ten disclosed prompts are a complete, portable handoff artifact. Generate the ten matching images when the built-in tool is available. If the host cannot execute image generation, preserve the ten valid prompts, return `blocked_image_generation_runtime`, and do not claim that any image was generated. A downstream workflow may consume the prompt artifact, but it is never a prerequisite for this Skill.
 
 ## Purpose
 

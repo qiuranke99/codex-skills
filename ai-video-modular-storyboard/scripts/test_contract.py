@@ -16,15 +16,12 @@ from pathlib import Path
 from typing import Any, Callable
 
 from validate_storyboard_package import canonical_artifact_hash, sha256_file, validate_package
-from validate_global_look import canonical_sha256 as canonical_look_hash, render_shot_look_delta_prompt
-from validate_project_canon_manifest import canonical_hash as canonical_project_canon_hash
-from validate_shot_contract import canonical_sha256 as canonical_shot_hash
+from ai_video_input_contracts import canonical_hash
 
 HERE = Path(__file__).resolve().parent
 SKILL_ROOT = HERE.parent
-SUITE_ROOT = SKILL_ROOT.parent
-SHOT_TEMPLATE = json.loads((SUITE_ROOT / "ai-video-shot-script-director/references/shot_contract.template.json").read_text(encoding="utf-8"))
-LOOK_TEMPLATE = json.loads((SUITE_ROOT / "ai-video-global-look-lock/references/global_look_contract.template.json").read_text(encoding="utf-8"))
+SHOT_TEMPLATE = json.loads((SKILL_ROOT / "references/input_fixtures/shot_contract.template.json").read_text(encoding="utf-8"))
+LOOK_TEMPLATE = json.loads((SKILL_ROOT / "references/input_fixtures/global_look_contract.template.json").read_text(encoding="utf-8"))
 DIRECTING = SHOT_TEMPLATE["global_directing_prompt_full"]
 LOOK_CORE = LOOK_TEMPLATE["global_look_prompt_full"]
 LOOK_STATE_ID = LOOK_TEMPLATE["look_states"][0]["state_id"]
@@ -32,6 +29,23 @@ LOOK_STATE = LOOK_TEMPLATE["look_states"][0]["state_prompt_full"]
 LOOK_REF_ID = LOOK_TEMPLATE["look_states"][0]["reference_ids"][0]
 LOOK_REF_ASSET_ID = LOOK_TEMPLATE["look_reference_set"][0]["artifact"]["artifact_id"]
 LOOK_DELTA = LOOK_TEMPLATE["shot_look_assignments"][0]["shot_look_delta_prompt_full"]
+
+
+def render_shot_look_delta_prompt(delta: dict[str, Any]) -> str:
+    active = "true" if delta.get("active") is True else "false"
+    preserves = "true" if delta.get("preserves_look_core") is True else "false"
+    scope = json.dumps(delta.get("scope"), ensure_ascii=False, separators=(",", ":"), allow_nan=False)
+    return "\n".join((
+        "SHOT LOOK DELTA — FROZEN STRUCTURED AUTHORITY",
+        f"active: {active}", f"scope: {scope}",
+        f"description: {delta.get('description')}", f"reason: {delta.get('reason')}",
+        f"preserves_look_core: {preserves}",
+    ))
+
+
+canonical_look_hash = canonical_hash
+canonical_project_canon_hash = canonical_hash
+canonical_shot_hash = canonical_hash
 OWNER = "ai-video-modular-storyboard"
 
 

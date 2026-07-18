@@ -1,5 +1,7 @@
 {
   "schema_version": "1.0.0",
+  "scope": "optional_aggregate_profile",
+  "controls_individual_skill_availability": false,
   "expected_distribution": {
     "skill_count": 15,
     "core_skill_count": 13,

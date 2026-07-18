@@ -14,12 +14,8 @@ from fractions import Fraction
 from pathlib import Path
 from typing import Any
 
-SUITE_ROOT = Path(__file__).resolve().parents[2]
-SHOT_SCRIPT_HELPERS = SUITE_ROOT / "ai-video-shot-script-director" / "scripts"
-if str(SHOT_SCRIPT_HELPERS) not in sys.path:
-    sys.path.insert(0, str(SHOT_SCRIPT_HELPERS))
-from validate_manifest_update_receipt import validate_receipt  # type: ignore  # noqa: E402
-from validate_project_canon_manifest import (  # type: ignore  # noqa: E402
+from ai_video_input_contracts import (
+    validate_receipt,
     validate_manifest as validate_project_canon,
     verify_artifact_files as verify_project_canon_files,
 )
@@ -570,10 +566,7 @@ def validate_project_canon_binding(
     project_root: Path | None,
     errors: list[str],
 ) -> None:
-    required = data.get("package_status") not in {"draft", "generating"}
     if canon_manifest is None:
-        if required:
-            errors.append("packaged/approved previs requires the actual Project Canon manifest")
         return
     canon_errors = validate_project_canon(canon_manifest)
     errors.extend(f"Project Canon invalid: {item}" for item in canon_errors)
@@ -1251,7 +1244,8 @@ def validate_manifest_receipt(
 ) -> None:
     path = root / "00_manifest/MANIFEST_UPDATE_RECEIPT.json"
     if not path.is_file():
-        errors.append("missing required output: 00_manifest/MANIFEST_UPDATE_RECEIPT.json")
+        if canon_manifest is not None:
+            errors.append("optional Project Canon integration requires 00_manifest/MANIFEST_UPDATE_RECEIPT.json")
         return
     try:
         receipt = json.loads(path.read_text(encoding="utf-8"))
@@ -1793,7 +1787,7 @@ def main() -> int:
     parser.add_argument("--ffprobe", default="ffprobe")
     parser.add_argument(
         "--project-canon-manifest", type=Path,
-        help="required for packaged/approved output; binds authorities, owned artifacts, and receipt to the actual registry",
+        help="optional integration input; binds authorities, owned artifacts, and receipt to an explicit registry",
     )
     parser.add_argument(
         "--project-root", type=Path,

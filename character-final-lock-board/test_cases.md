@@ -16,6 +16,8 @@
 12. **External controls**: third-party generation still requires exact `aspect_ratio: "16:9"` and `image_size: "4K"`; prompt-pair readiness does not imply `external_4k_status: handoff_ready` until controls, provider, references, and handoff sidecar are ready.
 13. **External fidelity**: external verification requires original references plus Codex board, identity/topology fidelity, runtime evidence, and a passed source-fidelity gate.
 14. **Output capacity**: if one final response cannot contain both complete prompts, return `blocked_final_output_capacity`; never truncate, summarize, link-only, or split while claiming `published`.
+15. **Standalone package**: copy only this Skill directory to a fresh root; identity routing, prompt planning, and completion-state evaluation proceed without probing or synchronizing any neighboring package.
+16. **Optional project handoff**: absent AI-video integration cannot block or demote an accepted board; only an external integrator may consume the locked artifacts after assistant QA, byte/hash readback, and explicit production approval.
 
 ## Counterexamples
 
@@ -24,3 +26,5 @@
 - A 1672x941 built-in board is repaired only because its pixels are not exact 16:9: fail.
 - A prompt is reconstructed from chat after its sidecar hash fails: fail.
 - A `final` response omits either publication-status field and promises to update it afterward: fail.
+- The entrypoint refuses to start because an unrelated suite checkout, neighboring Skill, or external project integrator is absent: fail.
+- This package attempts to import or invoke a project-Canon writer: fail; it may only hand locked artifacts to an external integrator after the existing approval gates pass.

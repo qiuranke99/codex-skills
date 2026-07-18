@@ -1,6 +1,6 @@
 interface:
   display_name: "Single-Face Character Lock Board"
-  short_description: "Runtime-gated one-face 16:9 board with a verified prompt pair."
-  default_prompt: "Use $single-face-character-lock-board with my references to request the horizontal 16:9 one-face topology. When the local Codex Desktop runtime gate passes, freeze the reference bytes, delegate the terminal image call to one isolated worker, inspect the bound board in the main agent, and publish the complete exact final_generation_prompt plus generation_prompt_sha256 and the complete image-specific final_4k_enhancement_prompt plus 4k_enhancement_prompt_sha256 in the same task's final main result; otherwise block before imagegen."
+  short_description: "Standalone one-face board with an explicit verified worker."
+  default_prompt: "Use $single-face-character-lock-board directly with my references to request the horizontal 16:9 one-face topology. When this package's local Codex Desktop worker-capability gate passes, freeze the reference bytes, delegate the terminal image call to one isolated worker, inspect the bound board in the main agent, and publish the complete exact final_generation_prompt plus generation_prompt_sha256 and the complete image-specific final_4k_enhancement_prompt plus 4k_enhancement_prompt_sha256 in the same task's final main result; otherwise block before imagegen. Treat any downstream AI-video project handoff as optional and external to this Skill."
 policy:
   allow_implicit_invocation: false

@@ -1,13 +1,14 @@
 ---
 name: ai-video-omni-reference-prompt-director
-description: "Use after the professional shot contract, approved canon assets, Global Look, modular storyboard, keyframe continuity pack, and any required Control Previs exist, to preflight, compile, or revise a provider-ready multimodal reference-to-video package. Read the entire approved project inventory, bind every relevant non-conflicting reference for each generation unit, compile a Seedance 2.5-first forward-compatible semantic prompt plus a strict Seedance 2.0 capability-aware render and provider payload, and route user feedback to the sole owning upstream skill when the defect is not prompt-owned. Do not use for story or asset creation, text-to-video, first/last-frame generation, music, editing, color mastering, independent video QC, or a standalone router/orchestrator."
+description: "Preflight, compile, or revise a provider-ready multimodal reference-to-video package from a supplied, hash-locked inventory containing the professional shot contract, identity assets, Global Look, modular storyboard, keyframe continuity records, and any required Control Previs. Bind every relevant non-conflicting reference for each generation unit, compile a Seedance 2.5-first forward-compatible semantic prompt plus a strict Seedance 2.0 capability-aware render and provider payload, and route non-prompt defects to the named fact owner in the input contract. Do not use for story or asset creation, text-to-video, first/last-frame generation, music, editing, color mastering, independent video QC, or a standalone router/orchestrator."
 ---
 
 # AI Video Omni-Reference Prompt Director
 
-## HIGH_CONTROL_RELEASE_GATE_V2
-
-Before any action or production output, resolve this `SKILL.md` directory and execute the sibling OS-native launcher: on Windows, `& ..\\high-control-ai-tvc\\tools\\release-control.ps1 -Action check -Format json`; on macOS/Linux, `../high-control-ai-tvc/tools/release-control.sh check --format json`. The launcher must resolve the pinned runtime from the validated release receipt; never invoke `release_control.py` through an unverified global Python. Proceed only when `ready_latest=true`. On any failure, stop and run the same launcher with `sync`, then start a new Codex task. Bind the returned `release_commit` to this stage; never substitute a mutable Windows/Mac authoring checkout.
+This Skill is a self-contained entrypoint. Consume a hash-locked inventory of
+the supplied production artifacts; do not require the packages that produced
+them, a suite release receipt, or a sibling directory. A shared Project Canon
+or multi-Skill pipeline may be attached as optional integration context.
 
 中文名：AI 视频全能参考提示词导演
 
@@ -31,7 +32,7 @@ Run exactly one mode at a time.
 
 Read every approved project artifact, verify target model/provider capabilities, plan generation units and reference budgets, detect conflicts, and produce the immutable `GENERATION_UNIT_PREFLIGHT_PLAN` (P1). P1 consumes K1 core keyframes but does not require or invent K2 boundary anchors or V2. No executable payload or final canonical IR is produced yet.
 
-P1 is independently executable as a validation stage. Its package contains only the frozen preflight Canon snapshot, P1 plan, model capability profile, provider capability profile, and provider-schema evidence. Run `scripts/validate_preflight_package.py` before registering or approving P1; it must not require any P2 IR, binding, prompt, payload, feedback, K2, or V2 file.
+P1 is independently executable as a validation stage. Its package contains only the frozen preflight input-inventory snapshot, P1 plan, model capability profile, provider capability profile, and provider-schema evidence. Run `scripts/validate_preflight_package.py` before approving or handing off P1; it must not require any P2 IR, binding, prompt, payload, feedback, K2, V2, or external registry file.
 
 ### `compile`
 
@@ -59,7 +60,6 @@ Before work, read:
 - `references/feedback_route.schema.json`
 - `references/seedance_prompt_template.md`
 - `references/feedback_routing.md`
-- `references/ai_video_suite_workflow.md`
 - `references/acceptance_gap_loop.md`
 - `references/acceptance_gap_report.schema.json`
 - `references/qa_checklist.md`
@@ -67,15 +67,37 @@ Before work, read:
 
 Do not invent provider limits from memory, a model name, a UI label, or a promotional claim.
 
-Use `scripts/validate_ai_video_suite.py` only to validate development/release integration of the six Skills. It is an acceptance harness, not a runtime generation orchestrator or experiment log.
-
 ## 3. Required Upstream Inputs
 
-Read the one canonical `<project_root>/00_project_canon/PROJECT_CANON_MANIFEST.json` in full, not only files the user mentions in the last message. `<package_root>` is a child of `<project_root>`; do not assume they are identical. Resolve Canon `locator` and `artifact_record_locator` values only against `<project_root>`, while resolving Prompt output locks and revision anchors only against `<package_root>`. Reject absolute paths and `..` traversal. For P1 and P2, persist separately named immutable input snapshots plus file hashes; snapshots are read evidence, never a second canonical registry. Inventory every active artifact and preserve its `ai-video-artifact-v1` identity/version/hash/status plus binary and artifact-record locators/hashes. Propose only Prompt-owned registry deltas and store a manifest update receipt.
+Build one complete, hash-locked input inventory from the artifacts supplied for
+this task, not merely the files named in the last message. The inventory may be
+a caller-provided Project Canon manifest or a package-local inventory snapshot
+materialized from direct inputs. `<package_root>` and `<input_root>` may differ.
+Resolve every input `locator` and `artifact_record_locator` only against the
+explicit `<input_root>` and every Prompt output lock only against
+`<package_root>`; reject absolute paths and `..` traversal. Persist separately
+named immutable P1/P2 input snapshots plus hashes. A Project Canon receipt is
+created only when optional registry integration was requested.
 
-Do not treat an IR field as evidence for itself and never create a Prompt-owned “authority projection” to self-validate. Read each required owner JSON from the active Canon entry's `artifact_record_locator`, verify its record-file hash, recompute its complete envelope hash, and match its identity/version/hash/dependencies/scope to Canon. An event-bound Canon stale/blocked registry overlay may demote a previously approved immutable owner record without rewriting it; this is the only permitted status divergence, and the artifact remains downstream-ineligible. Verify still/video/audio bytes separately through `locator` and `file_sha256`. For JSON roots the two locators may be identical; every binary needs a producer-materialized JSON artifact record. Compare action, camera, timing, copy, claims, Global Directing, Global Look Core, assigned State, the authoritative `shot_look_delta_prompt_full`, storyboard IDs/stage, keyframe IDs, and P1/K2/V2 membership against those original files before rendering prompts. A missing, unparsable, self-authored, or hash-inconsistent authority blocks compilation.
+Do not treat an IR field as evidence for itself and never create a Prompt-owned
+“authority projection” to self-validate. Read each required owner JSON from the
+input inventory's `artifact_record_locator`, verify its record-file hash,
+recompute its envelope hash, and match identity/version/hash/dependencies/scope
+to the inventory. Verify media bytes separately through `locator` and
+`file_sha256`. Compare action, camera, timing, copy, claims, Global Directing,
+Global Look Core/State/Delta, storyboard IDs/stage, keyframe IDs, and P1/K2/V2
+membership against the original supplied files. Return
+`blocked_missing_or_invalid_input_artifact` for a missing, unparsable,
+self-authored, stale, blocked, or hash-inconsistent authority; never search for
+the producer package.
 
-Use stable Canon slots: `previs_manifest` for the evolving Previs package root, `timing_animatic_v1` and `control_previs_v2:<generation_unit_id>` for media artifacts, and `generation_unit_preflight_plan` for P1. Do not accept aliases for the same semantic slot. A Global Look `reference_id` is an internal reference key, not an artifact ID: resolve it through `look_reference_set[].artifact.artifact_id`, then verify the nested envelope and corresponding Canon binary/record locks.
+Use stable inventory slots: `previs_manifest` for the evolving Previs package
+root, `timing_animatic_v1` and
+`control_previs_v2:<generation_unit_id>` for media artifacts, and
+`generation_unit_preflight_plan` for P1. Do not accept aliases for the same
+semantic slot. A Global Look `reference_id` is an internal key, not an artifact
+ID: resolve it through `look_reference_set[].artifact.artifact_id`, then verify
+the nested envelope and binary/record locks in the supplied inventory.
 
 Final compilation normally requires:
 
@@ -121,7 +143,7 @@ When two relevant references conflict:
 
 Produce `GENERATION_UNIT_PREFLIGHT_PLAN.json` from the preflight manifest snapshot, approved Shot Contract, final Storyboard, Global Look, V1, K1 core keyframes, current asset inventory, documented model backend, and verified provider profile. P1 is the sole authority for Generation Unit IDs, shot membership, target unit duration, reference budgets, required modalities, and V2 requirement.
 
-For every generation unit, classify every active preflight Canon artifact exactly once as `selected_direct`, `transported_via_atlas_planned`, `inline_text`, `irrelevant`, `conflict_blocked`, or `superseded`, with its complete artifact ref, Canon slot/type, complete `control_roles`, primary `control_role`, controlled Shot UIDs, transport modality, and reason. `planned_reference_artifact_ids` must equal the used decision records in order. The P1 envelope directly depends on every active preflight Canon artifact so a changed asset cannot leave the unit plan apparently current. Relevant shot-scoped and required global authorities cannot be classified away. Relevant image, video, voice, dialogue, or SFX media may not be collapsed into prose; bind the real matching modality or block.
+For every generation unit, classify every active preflight input-inventory artifact exactly once as `selected_direct`, `transported_via_atlas_planned`, `inline_text`, `irrelevant`, `conflict_blocked`, or `superseded`, with its complete artifact ref, stable slot/type, complete `control_roles`, primary `control_role`, controlled Shot UIDs, transport modality, and reason. `planned_reference_artifact_ids` must equal the used decision records in order. The P1 envelope directly depends on every active input artifact so a changed asset cannot leave the unit plan apparently current. Relevant shot-scoped and required global authorities cannot be classified away. Relevant image, video, voice, dialogue, or SFX media may not be collapsed into prose; bind the real matching modality or block.
 
 Counts are derived, never typed independently: direct image/video/audio selections count once regardless of how many semantic roles they carry; every unique planned atlas group counts as one image; inline text and irrelevant records count zero; future K2 boundary anchors and the required V2 control video are explicit `planned_future_inputs` and count by modality. Every `planned_atlas_group` freezes ordered sources, layout/background/policies, then performs a real dry-build and locks PNG hash, bytes, dimensions, codec, media type, Pillow decoder runtime, and encoder runtime. The derived counts and actual media properties must fit the strict model/provider intersection. A multi-shot or timing-sensitive unit reserves exactly one future Previs-owned V2 video input before K2/V2 production.
 
@@ -148,7 +170,7 @@ After K2 and V2 exist, create `CANONICAL_VIDEO_GENERATION_IR.json` as the model-
 - forbidden changes and claim boundaries;
 - inferred low-risk prompt decisions, visibly separated from sourced facts.
 
-The IR is not a prompt and contains no provider attachment numbering. Its full source inventory must equal the active compile-time Project Canon manifest set; deleting an asset from both IR and binding records cannot hide its earlier unsuperseded existence.
+The IR is not a prompt and contains no provider attachment numbering. Its full source inventory must equal the active compile-time input snapshot set; deleting an asset from both IR and binding records cannot hide an earlier unsuperseded input.
 
 ## 7. Preflight: Model And Provider Profiles
 
@@ -232,7 +254,7 @@ For every selected binding record:
 - priority and conflict exclusions;
 - artifact ID/owner/version/hash and binary hash when applicable.
 
-Control roles include identity, wardrobe, product geometry, exact label evidence, material behavior, scene canon, global look, storyboard, keyframe state, keyframe boundary, camera path, blocking, physical motion, Control Previs, source-approved dialogue voice, and synchronous SFX. Score, soundtrack, or music creation is outside this suite and cannot enter a binding role.
+Control roles include identity, wardrobe, product geometry, exact label evidence, material behavior, scene canon, global look, storyboard, keyframe state, keyframe boundary, camera path, blocking, physical motion, Control Previs, source-approved dialogue voice, and synchronous SFX. Score, soundtrack, or music creation is outside this package and cannot enter a binding role.
 
 When capacity is insufficient, use this order:
 
@@ -317,11 +339,14 @@ Validate it before K2/V2:
 
 ```bash
 python3 scripts/validate_preflight_package.py <package_root> \
-  --project-root <project_root> \
-  --project-canon-manifest <project_root>/00_project_canon/PROJECT_CANON_MANIFEST.json
+  --input-root <input_root> \
+  [--input-inventory <input_inventory.json>]
 ```
 
-At this moment the supplied Canon must be the exact source manifest frozen in the P1 snapshot. After P1 passes, register the approved P1 through the shared Canon transition protocol; K2 and V2 consume that registered artifact.
+At this moment the supplied input inventory must exactly equal the P1 snapshot.
+After P1 passes, K2 and V2 consume the approved, hash-locked P1 artifact
+directly. Register P1 in Project Canon only when that optional integration was
+explicitly requested.
 
 P2 adds the following compile outputs under the same package contract:
 
@@ -332,7 +357,6 @@ Write under:
 ```text
 00_manifest/PROJECT_CANON_PREFLIGHT_INPUT_SNAPSHOT.json
 00_manifest/PROJECT_CANON_COMPILE_INPUT_SNAPSHOT.json
-00_manifest/MANIFEST_UPDATE_RECEIPT.json
 00_manifest/GENERATION_UNIT_PREFLIGHT_PLAN.json
 00_manifest/CANONICAL_VIDEO_GENERATION_IR.json
 00_manifest/MODEL_CAPABILITY_PROFILE.json
@@ -351,9 +375,17 @@ Write under:
 owned_artifacts/<atlas_id>.json
 ```
 
+Add `00_manifest/MANIFEST_UPDATE_RECEIPT.json` only after an explicitly
+requested Project Canon handoff succeeds.
+
 `SHOT_LEVEL_REPAIR_PROMPTS.json` contains one self-contained repair prompt per canonical shot. A repair prompt repeats the full global directing/look blocks and all shot-relevant bindings; it never says only “fix Shot 5” or relies on hidden context.
 
-The update receipt is package-local write evidence, not proof by itself. Final validation also reads the actual post-write Project Canon supplied on the command line. The compile snapshot must directly descend from the P1 preflight snapshot; actual post-Canon `base_manifest_sha256` must equal the compile snapshot hash; its `updated_by_skill` must be this Skill; and receipt base/result/registered IDs must exactly match the compile snapshot, actual post-Canon hash, and active Prompt-owned entries including file and artifact-record locks. The two snapshots remain read-only evidence and never become competing canonical manifests.
+The P1 and compile snapshots are package-local read evidence, not competing
+registries. Standalone validation proves their ancestry and every direct input
+and output lock. When optional Project Canon integration is requested, final
+validation additionally reads the actual post-write registry and requires the
+receipt/base/result/registered IDs to match the compile snapshot and all
+Prompt-owned entries.
 
 ## 13. Revise: User Feedback And Upstream Routing
 
@@ -402,8 +434,8 @@ Never mutate an approved artifact in place. Use the shared envelope and exact de
 Claim P1 `ready_for_boundary_supplement` only when:
 
 - the standalone P1 validator exits zero without any P2 file;
-- its frozen snapshot exactly equals the supplied source Canon and every active primary/record byte lock resolves under the project root;
-- every active Canon artifact has one unit-local decision for every generation unit and the P1 dependencies lock all active refs directly;
+- its frozen snapshot exactly equals the supplied or package-materialized input inventory and every active primary/record byte lock resolves under the input root;
+- every active input artifact has one unit-local decision for every generation unit and the P1 dependencies lock all active refs directly;
 - relevant assets are selected directly, planned through a deterministic atlas, or consumed as exact inline authority rather than hidden as irrelevant;
 - planned reference IDs and modality counts are derived exactly from decisions, atlas groups, and future K2/V2 controls;
 - every atlas group has at least two supported sources, exact dry-build evidence, and provider-valid output media properties;
@@ -415,7 +447,7 @@ Claim `package_status: compiled` only when:
 - canonical IR covers every scripted shot exactly once and preserves order;
 - P1, K2, V2, and P2 form the approved acyclic artifact chain;
 - both manifest input snapshots are hash-valid, and P2 inventory exactly matches every active compile-manifest artifact;
-- the actual post-write Project Canon is inside `<project_root>`, directly descends from the compile snapshot, preserves all compile-active entries, and contains every registered Prompt-owned output with exact identity/binary/record locks;
+- when optional Project Canon integration was requested, the actual post-write registry is inside `<project_root>`, directly descends from the compile snapshot, preserves all compile-active entries, and contains every registered Prompt-owned output with exact identity/binary/record locks;
 - every upstream input is `user_approved`, hash-valid, and not stale;
 - every canonical IR fact named above matches the actually read, hash-locked upstream authority file;
 - every relevant non-conflicting reference is bound to each affected unit;
@@ -437,8 +469,8 @@ Run:
 
 ```bash
 python3 scripts/validate_prompt_package.py <package_root> \
-  --project-root <project_root> \
-  --project-canon-manifest <project_root>/00_project_canon/PROJECT_CANON_MANIFEST.json
+  --input-root <input_root> \
+  [--project-canon-manifest <input_root>/00_project_canon/PROJECT_CANON_MANIFEST.json]
 ```
 
 Validator success proves package integrity and capability consistency. It does not assert provider availability, generation success, or creative approval.
@@ -447,14 +479,13 @@ Validator success proves package integrity and capability consistency. It does n
 
 `Use $ai-video-omni-reference-prompt-director in preflight, compile, or revise mode to produce a Seedance 2.5-first, Seedance 2.0-aware multimodal reference-to-video package from all approved project assets.`
 
-## Shared Project Canon Write Gate
+## Optional Project Canon Handoff
 
-Before any Canon mutation, preserve the exact current bytes at
-`<package_root>/00_manifest/BASE_PROJECT_CANON_SNAPSHOT.json` and materialize
-the validated post bytes at
-`<package_root>/00_manifest/CANDIDATE_PROJECT_CANON_POST.json`. Invoke only this
-package's `scripts/apply_project_canon_transition.py`. The shared writer owns
-the project `.canon.lock`, `PENDING_PROJECT_CANON_TRANSACTION.json` recovery or
-blocking, raw-byte compare-and-swap, durable post readback, and only then
-`MANIFEST_UPDATE_RECEIPT.json`. Never write Canon or an applied receipt
-directly.
+Do not require Project Canon for input inventory construction, P1, P2, revise,
+or package validation. If registry mutation is explicitly requested, preserve
+exact base/candidate bytes and invoke
+`scripts/apply_project_canon_transition.py` with an explicit compatible
+`--transition-runner`. Without that input the wrapper returns
+`blocked_missing_project_canon_transition_input`; the standalone Prompt
+package remains valid. Never locate a sibling package or write Canon/receipt
+bytes directly.

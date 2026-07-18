@@ -50,11 +50,17 @@ The root should stay sparse. Keep durable root files limited to project coordina
 
 ## High-Control AI TVC Production System
 
-- Treat `high-control-ai-tvc/SUITE_MANIFEST.json` as the installation inventory
-  for the 15 unique Skill packages at repository root. Never duplicate those
-  packages inside the subsystem.
-- Keep the six workflow Skills and seven Canon Asset Owners under one common
-  parent. Their sibling imports are deliberate production dependencies.
+- Every top-level Skill is independently installable, discoverable, invocable,
+  and testable. Its own package is the runtime authority. No Skill may require
+  `high-control-ai-tvc`, a suite receipt, a release-control launcher, or a
+  sibling package before performing its declared core work.
+- Treat `high-control-ai-tvc/SUITE_MANIFEST.json` only as the inventory for the
+  explicitly selected 15-Skill aggregate compatibility profile. Never copy the
+  Skill packages into the subsystem, and never use that manifest to decide
+  whether an individual Skill is ready.
+- Cross-Skill transformations belong to the optional aggregate integrator.
+  Standalone packages emit portable, hash-bound artifacts; they do not import
+  sibling implementations at runtime.
 - The supported route is Omni / all-reference / multimodal
   reference-to-video. Do not substitute T2V, standalone single-image I2V,
   first/last-frame, endpoint-frame, or interpolation workflows.
@@ -65,10 +71,11 @@ The root should stay sparse. Keep durable root files limited to project coordina
   the user merely because it lacks professional camera, blocking, continuity,
   product-use, or timing language. Exact claims, packaging copy, regulated
   facts, identity, and mechanism evidence remain source-bound.
-- Before changing any production-system contract, read
-  `high-control-ai-tvc/docs/SOP.md` and the owning Skill in full. Run the root
-  distribution validator, the owning contract tests, and the 13-package suite
-  validator before sync.
+- Before changing the aggregate compatibility contract, installer, release
+  manager, or end-to-end SOP, read `high-control-ai-tvc/docs/SOP.md` in full
+  and run aggregate validation. A change confined to one Skill requires that
+  package's own tests plus the root standalone-isolation validator; aggregate
+  validation is integration regression, never an invocation gate.
 
 ## Public Repository Data Boundary
 

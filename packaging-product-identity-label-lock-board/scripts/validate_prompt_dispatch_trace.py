@@ -11,9 +11,7 @@ from pathlib import Path
 from typing import Any
 
 
-RELEASE_GATE_LIMIT_MS = 60_000
 PROMPT_TOTAL_LIMIT_MS = 180_000
-PROMPT_AFTER_GATE_LIMIT_MS = 120_000
 WORKER_SPAWN_LIMIT_MS = 30_000
 WORKER_SUBMIT_LIMIT_MS = 90_000
 IMAGEGEN_WAIT_LIMIT_MS = 900_000
@@ -23,7 +21,6 @@ UPDATE_GAP_LIMIT_MS = 60_000
 
 TERMINAL_STATUSES = {
     "ACCEPTED",
-    "BLOCKED_RELEASE_GATE",
     "BLOCKED_REFERENCE_MATERIALIZATION",
     "BLOCKED_PROMPT_READY_TIMEOUT",
     "BLOCKED_WORKER_START_TIMEOUT",
@@ -47,7 +44,6 @@ SUBMITTED_STATUSES = {
     "REJECTED_AFTER_MAX_ATTEMPTS",
 }
 NO_WORKER_STATUSES = {
-    "BLOCKED_RELEASE_GATE",
     "BLOCKED_REFERENCE_MATERIALIZATION",
     "BLOCKED_PROMPT_READY_TIMEOUT",
     "BLOCKED_WORKER_START_TIMEOUT",
@@ -106,14 +102,11 @@ def validate_update_cadence(trace: dict[str, Any], start: int, end: int) -> None
 
 
 def validate(trace: dict[str, Any]) -> dict[str, Any]:
-    if trace.get("schema_version") != "packaging_prompt_dispatch_trace.v1":
+    if trace.get("schema_version") != "packaging_prompt_dispatch_trace.v2":
         raise TraceError("blocked_dispatch_trace_schema", "unsupported prompt dispatch trace schema")
     terminal_status = trace.get("terminal_status")
     if terminal_status not in TERMINAL_STATUSES:
         raise TraceError("blocked_dispatch_terminal_status", f"unsupported terminal status: {terminal_status!r}")
-    release_elapsed = integer(trace.get("release_gate_completed_elapsed_ms"), "release_gate_completed_elapsed_ms")
-    if release_elapsed > RELEASE_GATE_LIMIT_MS:
-        raise TraceError("blocked_release_gate_timeout", "release gate exceeded 60 seconds")
     prompt_path = path_with_hash(trace, "generation_prompt_path", "generation_prompt_sha256")
     prompt_publication = trace.get("prompt_publication")
     if not isinstance(prompt_publication, dict) or prompt_publication.get("mode") != "inline_complete_prompt":
@@ -121,10 +114,7 @@ def validate(trace: dict[str, Any]) -> dict[str, Any]:
     prompt_elapsed = integer(prompt_publication.get("elapsed_ms"), "prompt_publication.elapsed_ms")
     if prompt_publication.get("published_sha256") != sha256(prompt_path):
         raise TraceError("blocked_prompt_publication_hash", "published prompt bytes do not match the frozen prompt")
-    prompt_deadline_missed = (
-        prompt_elapsed > PROMPT_TOTAL_LIMIT_MS
-        or prompt_elapsed - release_elapsed > PROMPT_AFTER_GATE_LIMIT_MS
-    )
+    prompt_deadline_missed = prompt_elapsed > PROMPT_TOTAL_LIMIT_MS
     if terminal_status == "BLOCKED_PROMPT_READY_TIMEOUT":
         if not prompt_deadline_missed:
             raise TraceError(
@@ -143,7 +133,7 @@ def validate(trace: dict[str, Any]) -> dict[str, Any]:
         raise TraceError("blocked_terminal_prompt_hash", "terminal prompt bytes do not match the frozen prompt")
 
     provider_count = None
-    if terminal_status != "BLOCKED_RELEASE_GATE" and terminal_status != "BLOCKED_REFERENCE_MATERIALIZATION":
+    if terminal_status != "BLOCKED_REFERENCE_MATERIALIZATION":
         pack_path = path_with_hash(trace, "generation_reference_pack_path", "generation_reference_pack_sha256")
         pack = read_json(pack_path)
         if pack.get("schema_version") != "packaging_generation_reference_pack.v1":
@@ -186,8 +176,6 @@ def validate(trace: dict[str, Any]) -> dict[str, Any]:
             raise TraceError("blocked_worker_context", "worker must use fork_turns=none and must not retrigger the Skill")
         if worker.get("first_tool") != "imagegen" or worker.get("pre_imagegen_tool_call_count") != 0:
             raise TraceError("blocked_worker_first_tool", "worker first tool must be imagegen with no preceding tool call")
-        if worker.get("reran_release_gate") is not False:
-            raise TraceError("blocked_worker_release_gate_repeat", "worker must not rerun the parent release gate")
         if terminal_status in SUBMITTED_STATUSES:
             submitted = integer(worker.get("imagegen_submitted_elapsed_ms"), "worker.imagegen_submitted_elapsed_ms")
             if submitted < worker_spawned or submitted - worker_spawned > WORKER_SUBMIT_LIMIT_MS:

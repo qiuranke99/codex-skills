@@ -5,9 +5,11 @@ description: "Create a reusable six-image Scene Canon Asset Pack from one or mor
 
 # Scene Canon Asset Pack
 
-## HIGH_CONTROL_RELEASE_GATE_V2
+## Standalone Runtime Contract
 
-Before any production action, resolve this `SKILL.md` directory and execute the sibling OS-native launcher. On Windows run `& ..\\high-control-ai-tvc\\tools\\release-control.ps1 -Action check -Format json`; on macOS/Linux run `../high-control-ai-tvc/tools/release-control.sh check --format json`. Use the pinned runtime returned by the validated receipt; never bypass it with an unverified global Python. Proceed only when `ready_latest=true`. On failure, run the same launcher with `sync`, then start a fresh Codex task. Bind `release_commit` for the entire run.
+Run this Skill directly from its own package. All required schemas, references, orchestration helpers, resolver logic, review-board builder, validator, tests, and Python dependency declarations are package-local. No release manager or sibling Skill is a prerequisite. Install this package's `requirements.txt` in the Python environment used for its image QA helpers.
+
+The accepted `packaged` tree is the complete terminal artifact of this Skill. A downstream workflow may consume that artifact through its own adapter, but no downstream exporter is required for Scene Canon generation, validation, acceptance, or delivery, and downstream absence or failure must not change this package's status.
 
 中文名：场景本体资产包
 
@@ -148,7 +150,3 @@ Validator success proves the executable package contract, not taste, rights, eng
 ## Minimal Invocation
 
 `Use $scene-canon-asset-pack to turn these scene references into one neutral six-image motion-bounded Scene Canon package; publish all six complete prompts before generation and finish automatically through dependency-staged non-decision workers.`
-
-## Optional AI-Video Project Canon Export
-
-After `packaged`, export an approved scene asset only with `scripts/export_ai_video_canon.py` and the existing fixed-owner approval schema. The shared export dependency marker is `../ai-video-shot-script-director/requirements.txt`, whose Pillow pin must match the validated release runtime; this Skill's image QA helpers carry the same exact pin in local `requirements.txt`. Preserve `authority_mode: scene_canon`, `control_roles_authorized: [scene_canon]`, `authority_stage: terminal_scene_canon`, and `terminal_route_decision: not_applicable`. Export failure leaves this package unchanged.

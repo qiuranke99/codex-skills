@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""GitHub-first, fail-closed release activation for High-Control AI TVC skills."""
+"""GitHub-first activation for the explicitly selected High-Control aggregate profile."""
 
 from __future__ import annotations
 
@@ -57,7 +57,7 @@ MAX_REMOTE_STABILITY_ATTEMPTS = 3
 
 
 class ReleaseControlError(RuntimeError):
-    """Raised when GitHub-latest production authority cannot be proved."""
+    """Raised when optional aggregate release evidence cannot be proved."""
 
 
 def _utc_now() -> str:
@@ -866,7 +866,9 @@ def _write_project_runtime_lock(
         "release_receipt_sha256": _sha256_file(release_receipt_path),
         "codex_thread_id": os.environ.get("CODEX_THREAD_ID"),
         "observed_at": _utc_now(),
-        "authority_status": "ready_latest",
+        "authority_status": "aggregate_ready_latest",
+        "scope": "optional_aggregate_profile",
+        "controls_individual_skill_availability": False,
     }
     _write_json_atomic(lock_path, value)
     return lock_path
@@ -884,7 +886,9 @@ def sync_release(
 ) -> Dict[str, Any]:
     suite_id = DEFAULT_SUITE_ID
     if profile != "all":
-        raise ReleaseControlError("production sync requires profile=all; partial releases are not production-ready")
+        raise ReleaseControlError(
+            "aggregate sync requires profile=all; core is an install-only compatibility subset"
+        )
     target = resolve_target(target, suite_id)
     paths = _prepare_release_state(target, suite_id)
     validation_runner = validation_runner or _default_validation
@@ -967,6 +971,8 @@ def sync_release(
             receipt = {
                 "schema_version": RELEASE_SCHEMA_VERSION,
                 "suite_id": suite_id,
+                "scope": "optional_aggregate_profile",
+                "controls_individual_skill_availability": False,
                 "repository": {
                     "github_repository_id": CANONICAL_REPOSITORY_ID,
                     "full_name": CANONICAL_REPOSITORY,
@@ -1007,12 +1013,15 @@ def sync_release(
                 ignore_lock=True,
                 remote_head_reader=remote_head_reader,
             )
-            if not result["ready_latest"]:
+            if not result.get("aggregate_profile_ready", result.get("ready_latest", False)):
                 raise ReleaseControlError(f"activation self-check failed: {result}")
             return {
                 "schema_version": "high-control-ai-tvc-sync-result.v2",
                 "success": True,
                 "ready_latest": True,
+                "aggregate_profile_ready": True,
+                "scope": "optional_aggregate_profile",
+                "controls_individual_skill_availability": False,
                 "release_commit": first,
                 "active_system_root": str(snapshot / "high-control-ai-tvc"),
                 "target_root": str(target),
@@ -1021,7 +1030,7 @@ def sync_release(
                 "validation": validation,
                 "remote_stability_attempt": stability_attempt,
                 "restart_required": True,
-                "restart_instruction": "Start a new Codex task before invoking a production Skill.",
+                "restart_instruction": "Start a new Codex task before using the updated aggregate profile.",
             }
         raise ReleaseControlError("REMOTE_UNSTABLE: no stable GitHub main revision was observed")
 
@@ -1040,8 +1049,13 @@ def production_check(
     ignore_lock: bool = False,
     remote_head_reader: Callable[[], str] | None = None,
 ) -> Dict[str, Any]:
+    """Check aggregate-profile activation; never decide standalone Skill availability."""
     checks: List[Dict[str, str]] = []
     try:
+        if profile != "all":
+            raise ReleaseControlError(
+                "aggregate check supports only profile=all; core is an install-only compatibility subset"
+            )
         target = resolve_target(target)
         paths = _release_state_paths(target, DEFAULT_SUITE_ID)
         if paths["lock"].exists() and not ignore_lock:
@@ -1056,6 +1070,13 @@ def production_check(
         }
         if repository != expected_repository:
             raise ReleaseControlError("RECEIPT_STALE_OR_TAMPERED: canonical repository identity differs")
+        if (
+            receipt.get("scope") != "optional_aggregate_profile"
+            or receipt.get("controls_individual_skill_availability") is not False
+        ):
+            raise ReleaseControlError(
+                "RECEIPT_STALE_OR_TAMPERED: release receipt is not explicitly aggregate-scoped"
+            )
         # Runtime gates execute inside Codex sandboxes.  On Windows those sandboxes
         # can deny Schannel credential acquisition even for a public Git
         # ls-remote, while direct HTTPS remains available.  Use the GitHub API
@@ -1105,8 +1126,8 @@ def production_check(
         suite_id = suite_id_from_manifest(manifest)
         if suite_id != receipt.get("suite_id"):
             raise ReleaseControlError("RECEIPT_STALE_OR_TAMPERED: suite identity differs")
-        if profile != "all" or receipt.get("activation", {}).get("profile") != "all":
-            raise ReleaseControlError("PARTIAL_RELEASE: production requires the all profile")
+        if receipt.get("activation", {}).get("profile") != "all":
+            raise ReleaseControlError("PARTIAL_RELEASE: aggregate validation requires the all profile")
         if receipt.get("manifest_sha256") != _sha256_file(snapshot / "high-control-ai-tvc" / "SUITE_MANIFEST.json"):
             raise ReleaseControlError("RECEIPT_STALE_OR_TAMPERED: manifest digest differs")
         if receipt.get("runtime_requirements_sha256") != _sha256_file(
@@ -1150,7 +1171,7 @@ def production_check(
         actual_records = _skill_release_records(paths["cache"], snapshot, first, selected)
         if receipt_skills != actual_records:
             raise ReleaseControlError("SOURCE_TREE_DRIFT: per-Skill release records differ")
-        _add_check(checks, "skill_inventory", "pass", f"all {len(selected)} skill trees match Git")
+        _add_check(checks, "aggregate_skill_inventory", "pass", f"all {len(selected)} aggregate member trees match Git")
 
         installation = inspect_installation(snapshot, target, "all")
         if not installation["ready"]:
@@ -1162,6 +1183,8 @@ def production_check(
         install_receipt = _load_receipt(install_receipt_path, suite_id)
         if (
             install_receipt.get("schema_version") != RECEIPT_SCHEMA_VERSION
+            or install_receipt.get("scope") != "optional_aggregate_profile"
+            or install_receipt.get("controls_individual_skill_availability") is not False
             or install_receipt.get("repo_root") != str(snapshot.resolve())
             or not isinstance(install_receipt.get("transaction_id"), str)
         ):
@@ -1175,19 +1198,19 @@ def production_check(
             raise ReleaseControlError("RECEIPT_STALE_OR_TAMPERED: install receipt path differs")
         if activation.get("install_receipt_sha256") != _sha256_file(install_receipt_path):
             raise ReleaseControlError("RECEIPT_STALE_OR_TAMPERED: install receipt digest differs")
-        _add_check(checks, "installed_release", "pass", "discovery entries and install receipt match the release")
+        _add_check(checks, "installed_aggregate_release", "pass", "aggregate discovery entries and receipt match the release")
 
         conflicts = _discovery_conflicts(target, expected_names, cwd)
         if conflicts:
             raise ReleaseControlError(f"DISCOVERY_AMBIGUOUS: {conflicts}")
-        _add_check(checks, "discovery_uniqueness", "pass", "each skill slug has exactly one active discovery entry")
+        _add_check(checks, "aggregate_discovery_uniqueness", "pass", "each aggregate-selected slug has one active discovery entry")
 
         current_thread = os.environ.get("CODEX_THREAD_ID")
         activated_at_ms = activation.get("activated_at_unix_ms")
         if not ignore_current_process:
             if not current_thread or not isinstance(activated_at_ms, int):
                 raise ReleaseControlError(
-                    "PROCESS_RESTART_REQUIRED: run the production gate inside a new Codex task"
+                    "PROCESS_RESTART_REQUIRED: run the aggregate check inside a new Codex task"
                 )
             thread_created_ms = _codex_thread_created_ms(current_thread)
             if thread_created_ms <= activated_at_ms:
@@ -1220,7 +1243,10 @@ def production_check(
         return {
             "schema_version": "high-control-ai-tvc-production-check.v2",
             "ready_latest": True,
-            "result": "ready_latest",
+            "aggregate_profile_ready": True,
+            "scope": "optional_aggregate_profile",
+            "controls_individual_skill_availability": False,
+            "result": "aggregate_ready_latest",
             "release_commit": first,
             "active_system_root": str(active_system_root),
             "runtime_python": receipt.get("validation", {}).get("python_executable"),
@@ -1231,11 +1257,14 @@ def production_check(
             "errors": [],
         }
     except (InstallSafetyError, OSError, ReleaseControlError, SuiteConfigurationError) as exc:
-        _add_check(checks, "release_authority", "fail", str(exc))
+        _add_check(checks, "aggregate_release_evidence", "fail", str(exc))
         return {
             "schema_version": "high-control-ai-tvc-production-check.v2",
             "ready_latest": False,
-            "result": "not_ready_latest",
+            "aggregate_profile_ready": False,
+            "scope": "optional_aggregate_profile",
+            "controls_individual_skill_availability": False,
+            "result": "aggregate_not_ready_latest",
             "release_commit": None,
             "active_system_root": None,
             "runtime_python": None,
@@ -1251,25 +1280,25 @@ def _print_text(result: Dict[str, Any]) -> None:
     for item in result.get("checks", []):
         symbol = "OK" if item.get("status") == "pass" else "FAIL"
         print(f"[{symbol}] {item.get('id')}: {item.get('detail')}")
-    if result.get("success") or result.get("ready_latest"):
-        print(f"READY_LATEST {result.get('release_commit')}")
+    if result.get("success") or result.get("aggregate_profile_ready") or result.get("ready_latest"):
+        print(f"AGGREGATE_READY_LATEST {result.get('release_commit')}")
         if result.get("restart_required"):
             print(result.get("restart_instruction"))
     else:
         for error in result.get("errors", []):
             print(f"ERROR: {error}")
-        print("NOT_READY_LATEST")
+        print("AGGREGATE_NOT_READY_LATEST")
 
 
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     subparsers = parser.add_subparsers(dest="action", required=True)
-    sync_parser = subparsers.add_parser("sync", help="fetch, validate, and atomically activate GitHub main")
+    sync_parser = subparsers.add_parser("sync", help="fetch, validate, and atomically activate the optional aggregate profile")
     sync_parser.add_argument("--target", type=Path)
     sync_parser.add_argument("--mode", choices=("auto", "junction", "symlink", "copy"), default="auto")
     sync_parser.add_argument("--profile", choices=("all",), default="all")
     sync_parser.add_argument("--format", choices=("text", "json"), default="text")
-    check_parser = subparsers.add_parser("check", help="prove the active release is still GitHub main")
+    check_parser = subparsers.add_parser("check", help="prove the active aggregate release is still GitHub main")
     check_parser.add_argument("--target", type=Path)
     check_parser.add_argument("--profile", choices=("all",), default="all")
     check_parser.add_argument("--project-root", type=Path)
@@ -1290,7 +1319,10 @@ def main() -> int:
         result = {
             "success": False,
             "ready_latest": False,
-            "result": "not_ready_latest",
+            "aggregate_profile_ready": False,
+            "scope": "optional_aggregate_profile",
+            "controls_individual_skill_availability": False,
+            "result": "aggregate_not_ready_latest",
             "errors": [str(exc)],
             "checks": [],
         }
@@ -1298,7 +1330,7 @@ def main() -> int:
         print(json.dumps(result, ensure_ascii=False, indent=2, sort_keys=True))
     else:
         _print_text(result)
-    return 0 if result.get("success") or result.get("ready_latest") else 1
+    return 0 if result.get("success") or result.get("aggregate_profile_ready") or result.get("ready_latest") else 1
 
 
 if __name__ == "__main__":

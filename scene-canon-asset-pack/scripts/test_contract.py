@@ -49,6 +49,54 @@ CHECKS = {
 }
 
 
+def assert_standalone_skill_contract() -> None:
+    required = (
+        "SKILL.md",
+        "requirements.txt",
+        "agents/openai.yaml",
+        "references/scene_canon.schema.json",
+        "references/asset_manifest.schema.json",
+        "scripts/freeze_reference_bundle.py",
+        "scripts/resolve_worker_image.py",
+        "scripts/build_review_board.py",
+        "scripts/validate_scene_package.py",
+    )
+    for relative in required:
+        if not (SKILL_DIR / relative).is_file():
+            raise AssertionError(f"standalone package is missing {relative}")
+
+    forbidden_text = (
+        "HIGH_CONTROL_" + "RELEASE_GATE_V2",
+        "high-control-" + "ai-tvc",
+        "release-" + "control.ps1",
+        "release-" + "control.sh",
+        "ready_" + "latest=true",
+        "ai-video-" + "shot-script-director",
+    )
+    text_suffixes = {".md", ".py", ".yaml", ".json", ".txt"}
+    for path in SKILL_DIR.rglob("*"):
+        if not path.is_file() or path.suffix.casefold() not in text_suffixes:
+            continue
+        text = path.read_text(encoding="utf-8")
+        for marker in forbidden_text:
+            if marker in text:
+                raise AssertionError(f"standalone package retains external runtime marker {marker!r} in {path.relative_to(SKILL_DIR)}")
+        if path.suffix.casefold() == ".py":
+            if ("sys.path." + "insert") in text or (".parents[" + "2]") in text:
+                raise AssertionError(f"standalone package retains a cross-package Python loader in {path.relative_to(SKILL_DIR)}")
+
+    removed_exporter = SKILL_DIR / "scripts" / ("export_ai_video_" + "canon.py")
+    if removed_exporter.exists():
+        raise AssertionError("suite-specific exporter must not be part of the standalone Scene package")
+
+    skill = (SKILL_DIR / "SKILL.md").read_text(encoding="utf-8")
+    metadata = (SKILL_DIR / "agents/openai.yaml").read_text(encoding="utf-8")
+    if "## Standalone Runtime Contract" not in skill:
+        raise AssertionError("SKILL.md is missing the standalone runtime contract")
+    if "allow_implicit_invocation: false" not in metadata:
+        raise AssertionError("Scene explicit-invocation metadata drifted")
+
+
 def write_json(path: Path, value: Any) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
     path.write_text(json.dumps(value, ensure_ascii=False, indent=2, allow_nan=False) + "\n", encoding="utf-8", newline="\n")
@@ -886,6 +934,8 @@ def mutate_unlisted_frozen_reference(root: Path) -> None:
 
 
 def run() -> int:
+    assert_standalone_skill_contract()
+    print("PASS standalone package contract")
     with tempfile.TemporaryDirectory(prefix="scene-canon-v2-") as temporary:
         base = Path(temporary) / "valid"
         create_fixture(base)

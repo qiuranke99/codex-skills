@@ -1,5 +1,26 @@
 # Changelog
 
+## 2.0.0 — 2026-07-18
+
+- 将仓库根目录 16 个 Skill 确立为独立安装、发现、调用和验证的包；移除
+  单包 `SKILL.md` 对 release gate、suite receipt、聚合 launcher、固定 suite
+  runtime 与 sibling package 的强制依赖；
+- High-Control 改为显式 opt-in 的 15-Skill 聚合兼容、批量安装、不可变发布
+  与端到端编排层；其 receipt 和 readiness 不再决定任何单包 availability；
+- 增加标准库实现的 16 包 standalone validator：逐包复制到空 discovery
+  root，清空环境路径，检查元数据、外链、越界路径、兄弟包 import 与 Python
+  编译，并提供稳定错误码和非变异反例；
+- 将七个资产 Owner 与六个 workflow Writer 共用的 Project Canon 原子事务桥
+  迁入可选聚合工具，保留全局锁、pending journal、崩溃恢复、CAS、批准/
+  哈希/媒体验证与传递 stale 传播，不再在单包内保留 sibling wrapper；
+- `material-sensitive-product-master-asset-board` 升级到 v4：完整解码 source
+  bundle、source semantics/invariant/panel contract、确定性 worker exec、whole-
+  rollout 绑定、逐 panel/invariant QA、确定性 4K prompt renderer、外部状态矩阵
+  与 40 项正反例；历史 topology-drift board 只保留为红样本；
+- CI 分离 16 包 standalone authority 与可选 aggregate compatibility，后者继续
+  覆盖 Python 3.11/3.12、Ubuntu/macOS/Windows、安装生命周期、发布回滚、
+  schema parity、Canon transaction 和 PowerShell/POSIX 语法。
+
 ## 1.0.0 — 2026-07-12
 
 - 无重复聚合 15 个 Codex Skill：6 个新 SOP Skill、7 个核心 Canon

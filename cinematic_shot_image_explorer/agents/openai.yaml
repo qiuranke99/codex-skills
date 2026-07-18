@@ -1,0 +1,7 @@
+interface:
+  display_name: "Cinematic Shot Image Explorer"
+  short_description: "Explore one idea as ten cinematic prompts and images"
+  default_prompt: "Use $cinematic_shot_image_explorer to turn this input into ten distinct film-still prompts and generate the matching images."
+
+policy:
+  allow_implicit_invocation: true

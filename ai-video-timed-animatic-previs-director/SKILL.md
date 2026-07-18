@@ -1,20 +1,21 @@
 ---
 name: ai-video-timed-animatic-previs-director
-description: "Design and package silent timing animatics and provider-bound control previs for high-control multimodal AI video generation. Use when a multi-shot generation unit needs explicit shot boundaries, timing, cuts, camera trajectory, subject blocking, object motion, or liquid/cloth/hair physics. Produce V1 Timing Animatic before keyframes, then V2 Control Previs after approved keyframes and provider preflight. Do not use for storyboards, identity/product/look ownership, text-to-video, first/last-frame generation, final editing, music, video-output QC, model routing, or orchestration."
+description: "Design and package silent timing animatics and provider-bound control previs for multimodal AI video generation from supplied artifact contracts. Use when a multi-shot sequence or generation unit needs explicit shot boundaries, timing, cuts, camera trajectory, subject blocking, object motion, or liquid/cloth/hair physics. Produce V1 Timing Animatic from a Shot Contract and storyboard; produce the optional V2 Control Previs only when approved keyframes, a generation-unit plan, boundary evidence, and provider capability evidence are supplied. Do not use for storyboards, identity/product/look ownership, text-to-video, first/last-frame generation, final editing, music, video-output QC, model routing, or orchestration."
 ---
 
 # AI Video Timed Animatic / Previs Director
 
-## HIGH_CONTROL_RELEASE_GATE_V2
-
-Before any action or production output, resolve this `SKILL.md` directory and execute the sibling OS-native launcher: on Windows, `& ..\\high-control-ai-tvc\\tools\\release-control.ps1 -Action check -Format json`; on macOS/Linux, `../high-control-ai-tvc/tools/release-control.sh check --format json`. The launcher must resolve the pinned runtime from the validated release receipt; never invoke `release_control.py` through an unverified global Python. Proceed only when `ready_latest=true`. On any failure, stop and run the same launcher with `sync`, then start a new Codex task. Bind the returned `release_commit` to this stage; never substitute a mutable Windows/Mac authoring checkout.
+This Skill is a self-contained entrypoint. Consume Shot, Storyboard, Keyframe,
+generation-unit, and provider evidence as supplied artifacts; do not locate the
+packages that produced them. V1 remains usable without P1/K2/provider inputs;
+those inputs gate only the optional V2 branch that needs them.
 
 中文名：AI 视频定时动画预演导演
 
 Create two distinct control layers:
 
 1. `timing_animatic_v1` — provider-neutral whole-ad timing and rough motion, produced after the modular storyboard and before high-cost keyframes.
-2. `control_previs_v2` — provider-bound control video per approved generation unit, produced after generation-ready keyframes and Prompt Director preflight.
+2. `control_previs_v2` — provider-bound control video per approved generation unit, produced after supplied generation-ready keyframes and an approved generation-unit preflight artifact.
 
 The Skill controls time and motion. It never becomes the authority for character identity, product geometry, packaging text, scene identity, or Global Look.
 
@@ -24,7 +25,11 @@ The Skill controls time and motion. It never becomes the authority for character
 
 Require an assistant-validated or user-approved Shot Contract and Modular Storyboard manifest. The Shot Contract owns shot count, order, target duration, advertising function, and continuity. The storyboard supplies one independent representative frame per shot.
 
-Read the single canonical `<project_root>/00_project_canon/PROJECT_CANON_MANIFEST.json`. Keep `<package_root>` distinct from `<project_root>`: the Previs package is contained by the project, while Shot/Storyboard/Look/Keyframe packages may be siblings. Propose only Previs-owned registry deltas and store one `MANIFEST_UPDATE_RECEIPT.json`; never create a second registry. An `assistant_validated`, `user_approved`, packaged repair, stale, or blocked result must be validated against the actual post-delta Project Canon file via explicit `--project-root` plus `--project-canon-manifest`. A copied or self-authored authority snapshot is not authority by itself: every source and every registered Previs artifact must match its exact active Canon entry and that entry's project-relative `locator` plus `file_sha256` bytes. Resolve package media/snapshots/owned artifacts under `package_root`; resolve Canon locators under `project_root`; reject every escape.
+Consume the supplied Shot Contract and Storyboard artifact records directly and
+verify their identities, hashes, scopes, and locators under an explicit input
+root. A Project Canon manifest may be supplied as an optional artifact index;
+it is not required for V1 or V2. Keep `package_root` distinct from `input_root`,
+reject every path escape, and never locate source packages by sibling path.
 
 Do not require final keyframes or provider selection for V1. V1 must remain provider-neutral. If the project has exactly one static or near-static shot and no complex camera, blocking, object, liquid, cloth, hair, smoke, or interaction requirement, emit a validated skip record instead of pretending a previs adds value.
 
@@ -34,7 +39,7 @@ Require all of:
 
 - approved V1 timing;
 - generation-ready keyframe pack;
-- Prompt Director `preflight` output containing the Generation Unit Map;
+- an approved preflight artifact containing the Generation Unit Map;
 - Keyframe `boundary_supplement` bound to that exact preflight plan, including the single-unit exemption when applicable;
 - actual model/provider capability profile confirming multimodal reference-video input;
 - no stale upstream dependency.
@@ -75,7 +80,7 @@ If timing is wrong, return to the Shot Contract or Storyboard owner. Do not comp
 
 ## Phase 2: Control Previs V2
 
-After Prompt Director preflight freezes actual generation units, consume the K2 Boundary Supplement bound to that exact plan and produce one silent control video per generation unit. The stage handshake is `K1 → P1 → K2 Boundary Supplement → V2`; V2 never asks K1 to predict Generation Unit IDs. V2 inherits V1 shot boundaries and uses approved keyframes as appearance anchors without owning their visual facts.
+After the supplied preflight artifact freezes actual generation units, consume the K2 Boundary Supplement bound to that exact plan and produce one silent control video per generation unit. The stage handshake is `K1 → P1 → K2 Boundary Supplement → V2`; V2 never asks K1 to predict Generation Unit IDs. V2 inherits V1 shot boundaries and uses approved keyframes as appearance anchors without owning their visual facts.
 
 Each unit must:
 
@@ -128,7 +133,6 @@ Envelope status is only `draft`, `assistant_validated`, `user_approved`, `stale`
 previs-package/
 ├── 00_manifest/
 │   ├── PREVIS_MANIFEST.json
-│   ├── MANIFEST_UPDATE_RECEIPT.json
 │   ├── source_snapshots/<authority_id>.json
 │   ├── source_inputs/<input_id>.<ext>
 │   └── owned_artifacts/<artifact_id>.json
@@ -147,11 +151,20 @@ previs-package/
     └── control_boundary_report.md
 ```
 
-For a legitimate skip, register only the manifest and skip artifact (plus mandatory Canon/receipt/source-evidence files). Do not create empty V1/V2 media or motion placeholders.
+For a legitimate skip, produce only the manifest, skip artifact, and required
+source evidence. Add `MANIFEST_UPDATE_RECEIPT.json` only after an explicitly
+requested Project Canon handoff succeeds. Do not create empty V1/V2 media or
+motion placeholders.
 
 The `owned_artifacts` JSON files are materialized exact copies of the root and every current nested artifact so Project Canon can bind each registered artifact ID to a complete record. They are registry evidence, not an additional creative stage. Canon `artifact_record_locator`/`artifact_record_file_sha256` point to these sidecars. Canon `locator`/`file_sha256` point separately to the primary bytes: root manifest JSON, V1/V2 MP4, or per-track motion JSON.
 
-Use stable Canon slots: root package `previs_manifest` (the same slot advances from V1 to V2), V1 `timing_animatic_v1`, each V2 unit `control_previs_v2:<generation_unit_id>`, and each motion track `motion_track:<track_id>`. V2 approval requires exactly one older V1-only root package in Canon `superseded_artifacts`, with a lower SemVer, slot `previs_manifest`, real locator bytes, and `superseded_by_artifact_id` pointing to the current root. Consume Prompt P1 only from `generation_unit_preflight_plan`; reject the legacy `prompt_preflight_ir` alias.
+For optional Project Canon integration, use stable slots: root package
+`previs_manifest`, V1 `timing_animatic_v1`, each V2 unit
+`control_previs_v2:<generation_unit_id>`, and each motion track
+`motion_track:<track_id>`. Without a registry, bind V2 directly to one immutable
+older V1 artifact with lower SemVer. Consume P1 only through the stable
+`generation_unit_preflight_plan` input role; reject the legacy
+`prompt_preflight_ir` alias.
 
 ## Ownership Boundaries
 
@@ -223,7 +236,7 @@ For V2 completion additionally require:
 - every control video exists, has verified file hash/duration, is silent, and is explicitly non-final;
 - all relevant liquid/cloth/hair/rigid-object tracks pass their class-specific contract;
 - forbidden identity/geometry/look/edit/music/QC dimensions are absent;
-- `python3 scripts/validate_previs_package.py <package_root> --project-root <project_root> --project-canon-manifest <project_root>/00_project_canon/PROJECT_CANON_MANIFEST.json` exits zero.
+- `python3 scripts/validate_previs_package.py <package_root>` exits zero; when optional Project Canon integration is supplied, add `--project-root <input_root> --project-canon-manifest <input_manifest>` and require the same result.
 
 Validator success proves package and timeline integrity, not that a generative video model will obey frame-exact cuts.
 
@@ -231,14 +244,12 @@ Validator success proves package and timeline integrity, not that a generative v
 
 `Use $ai-video-timed-animatic-previs-director to build V1 whole-ad timing now, then V2 provider-bound control previs after keyframes and generation-unit preflight.`
 
-## Shared Project Canon Write Gate
+## Optional Project Canon Handoff
 
-Before any Canon mutation, preserve the exact current bytes at
-`<package_root>/00_manifest/BASE_PROJECT_CANON_SNAPSHOT.json` and materialize
-the validated post bytes at
-`<package_root>/00_manifest/CANDIDATE_PROJECT_CANON_POST.json`. Invoke only this
-package's `scripts/apply_project_canon_transition.py`. The shared writer owns
-the project `.canon.lock`, `PENDING_PROJECT_CANON_TRANSACTION.json` recovery or
-blocking, raw-byte compare-and-swap, durable post readback, and only then
-`MANIFEST_UPDATE_RECEIPT.json`. Never write Canon or an applied receipt
-directly.
+Do not require Project Canon for V1/V2 creation, probing, approval, or package
+validation. If registry mutation is explicitly requested, preserve exact
+base/candidate bytes and invoke `scripts/apply_project_canon_transition.py`
+with an explicit compatible `--transition-runner`. Without that input the
+wrapper returns `blocked_missing_project_canon_transition_input`; the
+standalone Previs package remains valid. Never locate a sibling package or
+write Canon/receipt bytes directly.

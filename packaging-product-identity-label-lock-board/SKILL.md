@@ -1,6 +1,6 @@
 ---
 name: packaging-product-identity-label-lock-board
-description: Use when the user supplies usually one to three photos, optionally plus close-ups or artwork, of one packaged product with dense multilingual copy, labels, codes, transparent liquid, texture, or embossing and wants exactly one clean horizontal 16:9 identity asset board for downstream image or video models. Build a source-cited OCR/copy ledger, embed every transcribed line and its reading order in the generation prompt, produce seven complete views plus two or three source-grounded close-ups on one borderless continuous background, and reject visible gibberish; never demand a fixed multi-angle capture set.
+description: Use when the user supplies usually one to three photos, optionally plus close-ups or artwork, of one packaged product with dense multilingual copy, labels, codes, transparent liquid, texture, or embossing and wants exactly one clean horizontal 16:9 identity asset board for downstream image or video models. Build a source-cited OCR/copy ledger, embed every transcribed line and its reading order in the generation prompt, produce seven complete views plus two or three source-grounded close-ups on one borderless continuous background, and reject visible gibberish. Run directly from this package; downstream AI-video project handoff is optional. Never demand a fixed multi-angle capture set.
 ---
 
 # Packaging Product Identity Label Lock Board
@@ -21,22 +21,24 @@ The board contains:
 
 This board is a downstream video/image reference. It does not claim unseen geometry or unreadable copy has been measured.
 
-## Runtime release gate
+## Standalone runtime boundary
 
-This package belongs to the High-Control AI TVC release suite. Start one monotonic run clock, then run `HIGH_CONTROL_RELEASE_GATE_V2` exactly once through the OS-native pinned-runtime launcher:
-
-- Windows: `high-control-ai-tvc/tools/release-control.ps1 -Action check -Format json`
-- macOS/Linux: `high-control-ai-tvc/tools/release-control.sh check --format json`
-
-Give the gate 60 seconds. Continue only when `ready_latest=true`. Never rerun it inside the image worker and never use an unverified global Python to bypass the pinned runtime. If it fails or times out, compile and publish the complete prompt as `prompt_status: release_unverified`, do not generate, and terminate `BLOCKED_RELEASE_GATE`.
+Run this Skill from its own package. Resolve every bundled script, template,
+and requirement from this `SKILL.md` directory. Start one monotonic run clock,
+then proceed directly to source freezing and prompt compilation. Core OCR,
+composition, worker dispatch, QA, and publication must not probe, synchronize,
+import, or require any neighboring Skill package. A downstream AI-video
+project may consume accepted artifacts only after this Skill completes and
+production approval is explicit; that optional integration never changes this
+Skill's input sufficiency, copy authority, or completion.
 
 ## Prompt-first latency contract
 
 The complete reusable generation prompt is the first user deliverable.
 
-- Publish the complete frozen prompt within 180 seconds of invocation and within 120 seconds of a successful release gate.
+- Publish the complete frozen prompt within 180 seconds of invocation.
 - If OCR is requested, spend at most 45 seconds on the first OCR discovery pass. Mark unresolved lines rather than silently waiting.
-- Before prompt publication, do not run package tests, composition planning, project archiving, release maintenance, or deep copy cleanup.
+- Before prompt publication, do not run package tests, composition planning, project archiving, external integration maintenance, or deep copy cleanup.
 - Publish the complete prompt text inline before worker spawn, with prompt path, frozen-file SHA-256, provider-content SHA-256, ordered provider references, copy-ledger SHA-256, copy-block SHA-256, and `copy_authority`.
 - Spawn the image worker within 30 seconds after prompt publication. Require imagegen submission within 90 seconds after spawn.
 - Send truthful status at least every 60 seconds while generation runs.
@@ -289,21 +291,37 @@ Return:
 - asset-board manifest and validation result;
 - terminal status.
 
-Valid bounded failures are `BLOCKED_RELEASE_GATE`, `BLOCKED_REFERENCE_MATERIALIZATION`, `BLOCKED_PROMPT_READY_TIMEOUT`, `BLOCKED_WORKER_START_TIMEOUT`, `BLOCKED_WORKER_SUBMIT_TIMEOUT`, `BLOCKED_IMAGEGEN_TIMEOUT`, `BLOCKED_VALIDATION`, and `REJECTED_AFTER_MAX_ATTEMPTS`. Every state after prompt compilation still returns the complete prompt. Sparse angles, OCR disagreement, or hidden copy alone do not block a normal `video_reference` board.
+Valid bounded failures are `BLOCKED_REFERENCE_MATERIALIZATION`, `BLOCKED_PROMPT_READY_TIMEOUT`, `BLOCKED_WORKER_START_TIMEOUT`, `BLOCKED_WORKER_SUBMIT_TIMEOUT`, `BLOCKED_IMAGEGEN_TIMEOUT`, `BLOCKED_VALIDATION`, and `REJECTED_AFTER_MAX_ATTEMPTS`. Every state after prompt compilation still returns the complete prompt. Sparse angles, OCR disagreement, or hidden copy alone do not block a normal `video_reference` board.
 
 `USER_SKIPPED_GENERATION` is the only non-generation terminal state after on-time prompt publication and is legal only for an explicit user prompt-only override with no worker and zero generation time. The same override uses `BLOCKED_PROMPT_READY_TIMEOUT` instead when prompt publication was late, still with no worker and zero generation time.
 
 On every terminal success or failure after compilation, repeat the complete frozen prompt inline with its hashes and truthful terminal status.
 
-## Optional AI-Video Project Canon Export
+## Optional AI-Video Artifact Handoff
 
-This appendix is downstream compatibility for the already accepted board, not another board, angle set, or default deliverable. Run `scripts/export_ai_video_canon.py` only when an AI-video project explicitly needs a fixed-owner Canon record.
+This package ends with the accepted board and its validated run artifacts. It
+does not write project Canon, import another Skill, or assume a neighboring
+package exists. Only after the board passes this package's validator and
+production approval is explicitly `user_granted` or
+`external_pipeline_granted` may the main agent offer the following evidence to
+an external AI-video project integrator:
 
-- Runtime dependency: this package's `requirements.txt` pins `Pillow` for deterministic board and copy-evidence validation.
-- `authority_stage: terminal_packaging_canon`
-- `terminal_route_decision: not_applicable`
-- `geometry_layout_only` authorizes `[product_geometry]` from an accepted board.
-- `geometry_layout_exact_copy_verified` authorizes `[product_geometry, label_copy]` only when the bound v2 board manifest has `copy_authority: exact_copy_evidence`, reviewed copy ledger, zero unresolved claimed regions, verbatim prompt coverage, passed board-wide copy QA, source/artwork-backed pixels, and a live package-validator pass.
-- The export bridge never generates, repairs, expands, or upgrades the board by inference.
+- this exact Skill ID, asset key, final board locator, and SHA-256;
+- the generation prompt, copy ledger, copy block, copy QA, manifest, and their
+  exact hashes;
+- affected Shot UIDs;
+- `authority_stage: terminal_packaging_canon` and
+  `terminal_route_decision: not_applicable`;
+- `geometry_layout_only` with `[product_geometry]` for any accepted board;
+- `geometry_layout_exact_copy_verified` with
+  `[product_geometry, label_copy]` only when the bound v2 manifest has
+  `copy_authority: exact_copy_evidence`, a reviewed ledger, zero unresolved
+  claimed regions, verbatim prompt coverage, passed board-wide copy QA,
+  source/artwork-backed pixels, and a fresh package-validator pass.
+
+The external integrator owns its schemas, dependencies, transaction safety,
+and Canon mutation. It must not generate, repair, expand, or upgrade authority
+by inference. Missing or failed integration never blocks, upgrades, or demotes
+this Skill's accepted board.
 
 The Skill succeeds only when the board is compact, borderless, copy-auditable, and honest enough for downstream video generation. It does not succeed by filling the canvas with more views, by listing text without validating pixels, or by accepting visible gibberish.

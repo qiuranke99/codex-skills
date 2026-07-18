@@ -1,0 +1,160 @@
+{
+  "schema_version": "ai-video-shot-contract.v1",
+  "contract_version": "ai-video-artifact-v1",
+  "artifact_id": "SHOT_CONTRACT_PROJECT_001",
+  "owner_skill": "ai-video-shot-script-director",
+  "version": "0.1.0",
+  "sha256": null,
+  "approval_status": "draft",
+  "dependencies": [],
+  "affected_shot_uids": ["S001"],
+  "stale_reason": null,
+  "project_id": "PROJECT_001",
+  "source_inputs": [
+    {
+      "source_id": "SOURCE_SCRIPT_001",
+      "locator": "user-provided/structured-shot-draft.doc",
+      "source_type": "structured_script_document",
+      "file_sha256": null,
+      "integrity_status": "runtime_reference_bound",
+      "authority_scope": ["creative intent", "shot content", "supplied exact copy"],
+      "extraction_status": "complete"
+    }
+  ],
+  "source_classification": {
+    "source_type": "structured_creative_shot_draft",
+    "creative_mode": "poetic_brand_film",
+    "primary_mode": "poetic_brand_film",
+    "narrative_logic": "associative_montage",
+    "product_expression": "sensorial_symbolic",
+    "literal_usage_demo": false,
+    "source_intent_preserved": true
+  },
+  "director_intent": "Express bodily release and product sensoriality through restrained associative montage.",
+  "production_spec": {
+    "aspect_ratio": "16:9",
+    "distribution_context": ["brand film", "online advertising"],
+    "source_language": "zh-CN",
+    "copy_policy": "Preserve supplied exact copy; keep provisional non-claim copy explicitly provisional."
+  },
+  "global_directing_grammar": {
+    "lens_and_scale_tendencies": ["alternate environmental wides with tactile macro inserts"],
+    "camera_movement_principles": ["one calm motivated movement per shot"],
+    "composition_rules": ["keep product-readable negative space"],
+    "cutting_motivations": ["match gesture, texture or directional energy"],
+    "performance_restraint": ["no advertising smile; emotion appears through breath and posture"],
+    "product_reveal_strategy": ["progress from source world to tactile material to packshot"],
+    "motion_rhythm": ["release expands; tactile inserts slow; packshot settles"],
+    "immutable_core": ["restrained performance", "motivated cuts", "one primary camera movement"]
+  },
+  "global_directing_prompt_full": "GLOBAL DIRECTING GRAMMAR — alternate environmental wides with tactile macro inserts; one calm motivated movement per shot; keep product-readable negative space; match gesture, texture or directional energy; no advertising smile; emotion appears through breath and posture; progress from source world to tactile material to packshot; release expands; tactile inserts slow; packshot settles; restrained performance; motivated cuts; one primary camera movement.",
+  "timeline": {
+    "total_duration_seconds": 2.0,
+    "numerical_tolerance_seconds": 0.001,
+    "shot_count": 1
+  },
+  "shots": [
+    {
+      "shot_uid": "S001",
+      "display_no": 1,
+      "target_duration_seconds": 2.0,
+      "submode": "poetic_brand_film",
+      "narrative_function": "Move from anticipation into bodily release.",
+      "advertising_function": "Associate the product world with tactile calm.",
+      "subjects": ["lead character"],
+      "product_or_prop": ["hero product"],
+      "scene": "architectural glass atrium at late afternoon",
+      "initial_state": "shoulders held and gaze lowered",
+      "action_path": ["breath deepens", "shoulders release", "chin rises slightly"],
+      "ending_state": "body axis open, eyes softly closed",
+      "shot_size": "medium close-up",
+      "camera_height": "upper-chest height",
+      "camera_angle": "slight low angle",
+      "lens_intent": "portrait compression without flattening shoulder movement",
+      "composition": "face upper-left, open field to movement side",
+      "subject_placement": "lead on left third",
+      "primary_camera_movement": "slow coherent push-in",
+      "focus_behavior": "hold eyes and eyelashes, allow background softness",
+      "blocking": "subject remains planted while torso opens toward light",
+      "screen_direction": "neutral frontal axis",
+      "continuity_in": "conceptual continuation from prior natural texture",
+      "continuity_out": "raised chin motivates next skin-highlight macro",
+      "cut_motivation": "gesture-to-highlight match",
+      "transition_intent": "direct cut on completed inhale",
+      "visible_emotional_expression": "relief appears through softened jaw, released shoulders and slower breath",
+      "spoken_content": {
+        "mode": "none",
+        "text": "",
+        "copy_status": "not_used",
+        "source_reference_ids": [],
+        "claim_ids": []
+      },
+      "on_screen_copy": [
+        {
+          "text": "Source-supplied campaign line",
+          "copy_status": "supplied_exact",
+          "source_reference_ids": ["SOURCE_SCRIPT_001"],
+          "claim_ids": [],
+          "timing_intent": "enter after the visible action resolves"
+        }
+      ],
+      "must_preserve": ["restrained performance", "natural posture"],
+      "must_avoid": ["advertising smile", "literal usage instruction"],
+      "required_assets": ["approved character", "approved product", "approved scene"],
+      "storyboard_requirement": "required",
+      "keyframe_requirement": "required_single_anchor",
+      "previs_requirement": "recommended"
+    }
+  ],
+  "continuity_map": [],
+  "asset_requirement_map": [
+    {
+      "shot_uid": "S001",
+      "requirements": ["approved character", "approved product", "approved scene"],
+      "risk_note": "product identity must remain source-bound"
+    }
+  ],
+  "keyframe_requirement_map": [
+    {
+      "shot_uid": "S001",
+      "requirement": "required_single_anchor",
+      "reason": "performance and skin highlight need a generation-ready anchor"
+    }
+  ],
+  "previs_requirement_map": [
+    {
+      "shot_uid": "S001",
+      "requirement": "recommended",
+      "reason": "breath and push-in timing should align"
+    }
+  ],
+  "inferred_directing_decisions": [
+    {
+      "field_path": "shots[S001].visible_emotional_expression",
+      "decision": "externalize relief through breath, shoulders and jaw",
+      "rationale": "the source states a felt experience rather than a literal product procedure",
+      "confidence": "high",
+      "source_basis": "source creative intent plus conservative directing inference",
+      "reversible": true
+    }
+  ],
+  "claim_boundary": {
+    "supplied_claims": [],
+    "used_claim_ids": [],
+    "prohibited_unsourced_claims": ["clinical efficacy", "ingredient benefit", "skin-condition cure"],
+    "compliance_unknowns": [],
+    "claim_generation_status": "no_new_claims_added"
+  },
+  "isolated_blockers": [],
+  "revision_scope": {
+    "mode": "initial",
+    "requested_shot_uids": [],
+    "actually_changed_shot_uids": ["S001"],
+    "global_fields_changed": true,
+    "expanded_dependency_reasons": [],
+    "invalidated_artifact_ids": [],
+    "preserved_artifact_ids": [],
+    "predecessor_artifact": null,
+    "changed_json_pointers": []
+  }
+}

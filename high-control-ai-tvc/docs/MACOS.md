@@ -1,5 +1,10 @@
 # macOS workstation guide
 
+Each top-level Skill can be installed independently by copying or symlinking
+that package into a Codex discovery root and running its package-local
+validation. A standalone Skill does not require `high-control-ai-tvc`, a suite
+receipt, pinned runtime, sibling packages, or `AGGREGATE_READY_LATEST`.
+
 ## Required software
 
 - Git, or another verified way to obtain the exact public repository commit
@@ -9,14 +14,14 @@
 - A real V2 Control Previs production path
 - Access to the selected third-party video platform
 
-The local checkout is an authoring/bootstrap workspace, not production
-authority. Production symlinks point to a GitHub-commit-addressed immutable
-snapshot under the discovery root, so moving an authoring checkout cannot
-silently change the active release. Activation removes every write bit from the
-snapshot; the production gate must prove both the permission state and rejected
-write attempts before it accepts the release.
+The snapshot model below is an explicit opt-in aggregate compatibility and
+maintenance profile. Its symlinks point to a GitHub-commit-addressed immutable
+snapshot under the discovery root. Activation removes every write bit from the
+snapshot; the aggregate gate proves both the permission state and rejected
+write attempts before it accepts the profile. None of this controls unmanaged
+standalone packages.
 
-## Bootstrap
+## Optional aggregate bootstrap
 
 Obtain the public repository:
 
@@ -49,22 +54,25 @@ After independently checking the three real capabilities:
   --confirm provider_platform_access
 ```
 
-`sync` must print `READY_LATEST`. Restart Codex or open a new task; the final
-audit must print `READY_LATEST`, then test
-`$ai-video-shot-script-director`.
+After explicitly choosing aggregate management, `sync` must print
+`AGGREGATE_READY_LATEST`. Restart Codex or open a new task; the final aggregate audit must
+print `AGGREGATE_READY_LATEST`, then test one profile Skill such as
+`$ai-video-shot-script-director`. This status is not a single-Skill
+availability gate.
 
-## Python runtime
+## Aggregate Python runtime
 
 `setup-runtime.sh` searches Python 3.12 and then 3.11, creates
-`high-control-ai-tvc/.venv`, and installs the exact Pillow pin. The
-install/preflight helpers prefer that environment automatically. This avoids
-modifying the system Python.
+aggregate maintenance runtime state, and installs the exact Pillow pin without
+modifying the system Python. That runtime is compatibility-validation evidence,
+not an individual Skill or immutable snapshot authority.
 
-Release gates must use `tools/release-control.sh`; it resolves the validated
-pinned interpreter and disables bytecode writes. When Codex invokes a stage
-validator directly, use the same repository-local `.venv/bin/python` rather
-than an unrelated `python3` on PATH. This rule matters when Apple system Python
-and package-manager Python coexist.
+Aggregate release gates use `tools/release-control.sh`; it resolves the profile
+interpreter and disables bytecode writes. Aggregate compatibility validators
+consume the `runtime_python` returned by launcher readback rather than deriving
+a path from the mutable authoring checkout. Independently installed packages
+follow their own runtime and validator contracts; this profile pin does not
+override them.
 
 ## Legacy documents
 
@@ -74,8 +82,8 @@ home Mac and company Windows. Conversion must preserve the original content.
 
 ## macOS-specific failure interpretation
 
-- **Symlink points to a different snapshot:** rerun `sync`; no local checkout is
-  allowed to become production authority.
+- **Aggregate symlink points to a different snapshot:** rerun profile `sync`;
+  do not label the mixed aggregate state ready.
 - **Duplicate `.codex/skills` entry:** migrate or remove it through its owning
   installer before using `.agents/skills`; never keep both live.
 - **Pillow mismatch:** rerun `setup-runtime.sh`.
@@ -83,22 +91,25 @@ home Mac and company Windows. Conversion must preserve the original content.
   process and reopen the app.
 - **Managed copy contains edits:** the installer preserves it rather than
   overwriting or deleting it.
-- **`UPDATE_REQUIRED`:** GitHub `main` advanced; stop, rerun `sync`, and use a
-  new Codex task.
-- **`REMOTE_UNVERIFIED`:** latest cannot be proved; offline fallback is not
-  production-ready.
+- **`UPDATE_REQUIRED`:** the aggregate profile's GitHub `main` advanced; stop
+  that aggregate transaction, rerun `sync`, and use a new Codex task. This does
+  not invalidate a standalone package.
+- **`REMOTE_UNVERIFIED`:** aggregate latest cannot be proved; the fallback must
+  not be labeled `AGGREGATE_READY_LATEST`. This is not a standalone availability result.
 
 ## New project
 
 ```bash
 ./tools/new-project.sh \
   "$HOME/AI Video Projects/New TVC" \
-  --name "New TVC"
+  --name "New TVC" \
+  --aggregate-managed
 ```
 
-The helper is idempotent only for a directory carrying this suite's project
-marker. It refuses to adopt an unrelated non-empty directory and never creates
-a fake Project Canon.
+The helper explicitly opts the directory into the aggregate SOP and is
+idempotent only for a directory carrying this profile's project marker. It
+refuses to adopt an unrelated non-empty directory and never creates a fake
+Project Canon.
 
 See [`INSTALLATION.md`](INSTALLATION.md) for update/removal rules and
 [`CODEX_PROMPTS.md`](CODEX_PROMPTS.md) for the cross-platform Codex control

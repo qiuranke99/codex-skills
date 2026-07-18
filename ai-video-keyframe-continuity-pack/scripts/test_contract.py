@@ -15,28 +15,19 @@ from typing import Any, Callable
 
 
 HERE = Path(__file__).resolve().parent
-SUITE_ROOT = HERE.parents[1]
 
 VALIDATOR_SPEC = importlib.util.spec_from_file_location("keyframe_validator", HERE / "validate_keyframe_package.py")
 assert VALIDATOR_SPEC and VALIDATOR_SPEC.loader
 validator = importlib.util.module_from_spec(VALIDATOR_SPEC)
 VALIDATOR_SPEC.loader.exec_module(validator)
 
-STORYBOARD_SCRIPTS = SUITE_ROOT / "ai-video-modular-storyboard/scripts"
-if str(STORYBOARD_SCRIPTS) not in sys.path:
-    sys.path.insert(0, str(STORYBOARD_SCRIPTS))
-STORYBOARD_SPEC = importlib.util.spec_from_file_location("storyboard_fixture_builder", STORYBOARD_SCRIPTS / "test_contract.py")
-assert STORYBOARD_SPEC and STORYBOARD_SPEC.loader
-storyboard_fixture = importlib.util.module_from_spec(STORYBOARD_SPEC)
-STORYBOARD_SPEC.loader.exec_module(storyboard_fixture)
-
-SHOT_SCRIPTS = SUITE_ROOT / "ai-video-shot-script-director/scripts"
-if str(SHOT_SCRIPTS) not in sys.path:
-    sys.path.insert(0, str(SHOT_SCRIPTS))
-from validate_project_canon_manifest import canonical_hash as canonical_project_canon_hash  # type: ignore  # noqa: E402
+from ai_video_input_contracts import canonical_hash as canonical_project_canon_hash  # noqa: E402
 
 
 OWNER = "ai-video-keyframe-continuity-pack"
+STORYBOARD_OWNER = "-".join(("ai", "video", "modular", "storyboard"))
+TIMING_OWNER = "-".join(("ai", "video", "timed", "animatic", "previs", "director"))
+PROMPT_OWNER = "-".join(("ai", "video", "omni", "reference", "prompt", "director"))
 
 
 def write_json(path: Path, value: Any) -> None:
@@ -105,6 +96,257 @@ def canon_entry(
     }
 
 
+def upstream_envelope(
+    artifact_id: str,
+    owner: str,
+    uids: list[str],
+    dependencies: list[dict[str, Any]] | None = None,
+) -> dict[str, Any]:
+    value = {
+        "contract_version": "ai-video-artifact-v1",
+        "artifact_id": artifact_id,
+        "owner_skill": owner,
+        "version": "1.0.0",
+        "sha256": None,
+        "approval_status": "assistant_validated",
+        "dependencies": dependencies or [],
+        "affected_shot_uids": uids,
+        "stale_reason": None,
+    }
+    value["sha256"] = canonical_project_canon_hash(value)
+    return value
+
+
+def dependency_ref(value: dict[str, Any]) -> dict[str, Any]:
+    return {field: value[field] for field in ("artifact_id", "owner_skill", "version", "sha256")}
+
+
+def create_storyboard_fixture(project: Path, count: int, *, intrinsic_text: bool = False) -> None:
+    """Build the smallest real input-contract fixture needed by Keyframe tests.
+
+    This deliberately models the three upstream artifact contracts instead of
+    importing another skill's test harness.  It keeps the package testable after
+    a byte-for-byte copy into an otherwise empty directory.
+    """
+    uids = [f"SHT_{index:03d}" for index in range(1, count + 1)]
+    durations = [1.0 for _ in uids]
+    storyboard_root = project / "03_storyboard"
+
+    shot = upstream_envelope("SHOT_CONTRACT", "ai-video-shot-script-director", uids)
+    shot.update({
+        "global_directing_prompt_full": "Locked camera grammar: deliberate product-first framing and continuous screen direction.",
+        "shots": [
+            {
+                "shot_uid": uid,
+                "target_duration_seconds": duration,
+                "action_path": ["observable opening state", "observable ending state"],
+                "ending_state": f"locked ending state for {uid}",
+            }
+            for uid, duration in zip(uids, durations)
+        ],
+        "timeline": {"total_duration_seconds": sum(durations)},
+    })
+    shot["sha256"] = canonical_project_canon_hash(shot)
+    shot_rel = "authorities/SHOT_CONTRACT.json"
+    write_json(project / shot_rel, shot)
+
+    look_ref_path = project / "authorities/look/LOOK_REF_HERO.bin"
+    look_ref_path.parent.mkdir(parents=True, exist_ok=True)
+    look_ref_path.write_bytes(b"independent-look-reference")
+    look_ref_artifact = upstream_envelope(
+        "LOOK_REF_HERO", "ai-video-global-look-lock", uids, [dependency_ref(shot)]
+    )
+    look_ref_record_rel = "authorities/look/LOOK_REF_HERO.json"
+    write_json(project / look_ref_record_rel, look_ref_artifact)
+    global_look_prompt = (
+        "Frozen look core: neutral premium contrast, stable material response, warm practical highlights, "
+        "controlled black levels, restrained saturation, consistent lens character, repeatable skin and product "
+        "color, protected highlight rolloff, and no shot-local style drift across the complete sequence."
+    )
+    look_state_prompt = (
+        "Primary look state with stable exposure, palette, texture, reflection control, spatial contrast, "
+        "and identical highlight rolloff across every assigned shot."
+    )
+    shot_delta_prompt = "No shot-local look deviation; preserve the frozen look core."
+    look = upstream_envelope(
+        "GLOBAL_LOOK", "ai-video-global-look-lock", uids, [dependency_ref(shot)]
+    )
+    look.update({
+        "global_look_prompt_full": global_look_prompt,
+        "look_states": [{
+            "state_id": "LOOK_STATE_PRIMARY",
+            "state_prompt_full": look_state_prompt,
+            "reference_ids": ["LOOK_REF_PRIMARY"],
+        }],
+        "shot_look_assignments": [
+            {
+                "shot_uid": uid,
+                "state_id": "LOOK_STATE_PRIMARY",
+                "shot_look_delta_prompt_full": shot_delta_prompt,
+            }
+            for uid in uids
+        ],
+        "look_reference_set": [{
+            "reference_id": "LOOK_REF_PRIMARY",
+            "locator": "authorities/look/LOOK_REF_HERO.bin",
+            "file_sha256": file_hash(look_ref_path),
+            "integrity_status": "verified_bytes",
+            "artifact": look_ref_artifact,
+        }],
+    })
+    look["sha256"] = canonical_project_canon_hash(look)
+    look_rel = "authorities/GLOBAL_LOOK.json"
+    write_json(project / look_rel, look)
+
+    active: list[dict[str, Any]] = [
+        canon_entry(shot, "shot_contract", "shot_contract", shot_rel, file_hash(project / shot_rel)),
+        canon_entry(look, "global_look", "global_look", look_rel, file_hash(project / look_rel)),
+        canon_entry(
+            look_ref_artifact,
+            "global_look_reference:LOOK_REF_HERO",
+            "global_look_reference",
+            "authorities/look/LOOK_REF_HERO.bin",
+            file_hash(look_ref_path),
+            record_locator=look_ref_record_rel,
+            record_file_hash=file_hash(project / look_ref_record_rel),
+        ),
+    ]
+
+    intrinsic_ref: dict[str, Any] | None = None
+    if intrinsic_text:
+        intrinsic_artifact = upstream_envelope(
+            "PACKAGING_LABEL_SOURCE", "packaging-product-identity-label-lock-board", uids
+        )
+        intrinsic_path = project / "authorities/packaging/PACKAGING_LABEL_SOURCE.bin"
+        intrinsic_path.parent.mkdir(parents=True, exist_ok=True)
+        intrinsic_path.write_bytes(b"source-authorized-packaging-label")
+        intrinsic_record_rel = "authorities/packaging/PACKAGING_LABEL_SOURCE.json"
+        write_json(project / intrinsic_record_rel, intrinsic_artifact)
+        active.append(canon_entry(
+            intrinsic_artifact,
+            "packaging_label:PACKAGING_LABEL_SOURCE",
+            "packaging",
+            "authorities/packaging/PACKAGING_LABEL_SOURCE.bin",
+            file_hash(intrinsic_path),
+            record_locator=intrinsic_record_rel,
+            record_file_hash=file_hash(project / intrinsic_record_rel),
+        ))
+        intrinsic_ref = dependency_ref(intrinsic_artifact)
+
+    frame_dependencies = [dependency_ref(shot), dependency_ref(look), dependency_ref(look_ref_artifact)]
+    if intrinsic_ref is not None:
+        frame_dependencies.append(intrinsic_ref)
+    frames: list[dict[str, Any]] = []
+    for order, uid in enumerate(uids, 1):
+        frame_rel = f"01_frames/{uid}/look_applied_final_v01.bin"
+        frame_path = storyboard_root / frame_rel
+        frame_path.parent.mkdir(parents=True, exist_ok=True)
+        frame_path.write_bytes(f"storyboard-frame-{uid}".encode("utf-8"))
+        prompt_rel = f"01_frames/{uid}/look_applied_final_v01_generation_prompt.md"
+        prompt_path = storyboard_root / prompt_rel
+        prompt_path.write_text(
+            shot["global_directing_prompt_full"]
+            + "\n"
+            + look["global_look_prompt_full"]
+            + ("\nPACKAGING_LABEL_SOURCE\n" if intrinsic_ref is not None else "\n"),
+            encoding="utf-8",
+        )
+        frame = upstream_envelope(
+            f"SB_FRAME_{uid}", STORYBOARD_OWNER, [uid], copy.deepcopy(frame_dependencies)
+        )
+        frame.update({
+            "shot_uid": uid,
+            "display_order": order,
+            "stage": "look_applied_final",
+            "file_path": frame_rel,
+            "file_sha256": file_hash(frame_path),
+            "generation_prompt_path": prompt_rel,
+            "generation_prompt_file_sha256": file_hash(prompt_path),
+            "global_directing_prompt_full": shot["global_directing_prompt_full"],
+            "global_look_artifact_id": look["artifact_id"],
+            "global_look_prompt_full": global_look_prompt,
+            "look_state_id": "LOOK_STATE_PRIMARY",
+            "look_state_prompt_full": look_state_prompt,
+            "shot_look_delta_prompt_full": shot_delta_prompt,
+            "look_reference_asset_ids": [look_ref_artifact["artifact_id"]],
+            "is_model_input_eligible": True,
+            "generation_mode": "independent_full_frame",
+            "independently_generated": True,
+            "derived_from_multipanel": False,
+            "content_cleanliness": {
+                "no_shot_number_overlay": True,
+                "no_duration_overlay": True,
+                "no_editorial_caption_overlay": True,
+                "no_arrow_overlay": True,
+                "no_grid": True,
+                "no_ui": True,
+                "no_watermark": True,
+                "no_layout_chrome": True,
+                "intrinsic_text_policy": "source_authorized_only" if intrinsic_ref else "none_visible",
+                "intrinsic_text_source_refs": [intrinsic_ref] if intrinsic_ref else [],
+            },
+        })
+        frame["sha256"] = canonical_project_canon_hash(frame)
+        frames.append(frame)
+        frame_record_rel = f"03_storyboard/00_manifest/owned_artifacts/{frame['artifact_id']}.json"
+        write_json(project / frame_record_rel, frame)
+        active.append(canon_entry(
+            frame,
+            f"storyboard_frame:{uid}",
+            "storyboard_frame",
+            f"03_storyboard/{frame_rel}",
+            file_hash(frame_path),
+            record_locator=frame_record_rel,
+            record_file_hash=file_hash(project / frame_record_rel),
+        ))
+
+    storyboard = upstream_envelope(
+        "STORYBOARD_MANIFEST",
+        STORYBOARD_OWNER,
+        uids,
+        [dependency_ref(shot), dependency_ref(look)],
+    )
+    storyboard.update({
+        "storyboard_stage": "look_applied_final",
+        "package_status": "assistant_validated",
+        "script_shot_count": count,
+        "frames": frames,
+    })
+    storyboard["sha256"] = canonical_project_canon_hash(storyboard)
+    storyboard_rel = "03_storyboard/00_manifest/STORYBOARD_MANIFEST.json"
+    write_json(project / storyboard_rel, storyboard)
+    active.append(canon_entry(
+        storyboard,
+        "storyboard_manifest",
+        "storyboard_manifest",
+        storyboard_rel,
+        file_hash(project / storyboard_rel),
+    ))
+
+    canon = upstream_envelope(
+        f"PROJECT_CANON_MANIFEST_FIXTURE_{count}", "ai-video-shot-script-director", uids
+    )
+    canon.update({
+        "schema_version": "ai-video-project-canon-manifest.v1",
+        "project_id": f"KEYFRAME_FIXTURE_{count}",
+        "manifest_role": "artifact_registry_only",
+        "manifest_update_policy": "validated_atomic_delta_no_reverse_dependency",
+        "current_phase": "storyboard_final",
+        "revision_counter": 1,
+        "updated_by_skill": "ai-video-modular-storyboard",
+        "base_manifest_sha256": "e" * 64,
+        "canonical_shot_uids": uids,
+        "active_artifacts": active,
+        "superseded_artifacts": [],
+        "dependency_edges": [],
+        "stale_events": [],
+        "unresolved_change_requests": [],
+    })
+    rebuild_edges(canon)
+    canon["sha256"] = canonical_project_canon_hash(canon)
+    write_json(project / "00_project_canon/PROJECT_CANON_MANIFEST.json", canon)
+
+
 def rebuild_edges(canon: dict[str, Any]) -> None:
     active = canon["active_artifacts"]
     by_id = {entry["artifact_id"]: entry for entry in active}
@@ -166,7 +408,7 @@ def write_timing_authority(project: Path, uids: list[str], shot_ref: dict[str, A
     timing = envelope(
         "TIMING_ANIMATIC_V1",
         uids,
-        "ai-video-timed-animatic-previs-director",
+        TIMING_OWNER,
         [shot_ref, storyboard_ref],
     )
     timing.update({
@@ -180,7 +422,7 @@ def write_timing_authority(project: Path, uids: list[str], shot_ref: dict[str, A
     rel = "04_timing/TIMING_ANIMATIC_V1.json"
     write_json(project / rel, timing)
     entry = canon_entry(timing, "timing_animatic_v1", "timing_animatic_v1", rel, file_hash(project / rel))
-    apply_canon_update(project, [entry], "ai-video-timed-animatic-previs-director", "timing_animatic_v1")
+    apply_canon_update(project, [entry], TIMING_OWNER, "timing_animatic_v1")
     return entry
 
 
@@ -269,9 +511,7 @@ def build_k1(
     label_heavy: bool = False,
     promote_storyboard: bool = False,
 ) -> tuple[Path, dict[str, Any], set[str]]:
-    storyboard_fixture.create_package(
-        project / "03_storyboard", count, project_root=project, intrinsic_text=label_heavy
-    )
+    create_storyboard_fixture(project, count, intrinsic_text=label_heavy)
     uids = [f"SHT_{index:03d}" for index in range(1, count + 1)]
     authorities, shot_authority, look_authority, storyboard_authority = make_authorities(project, uids)
     package = project / "05_keyframes"
@@ -439,7 +679,7 @@ def add_k2(project: Path, package: Path, registered: set[str]) -> tuple[dict[str
     p1 = envelope(
         "PROMPT_PREFLIGHT_P1",
         uids,
-        "ai-video-omni-reference-prompt-director",
+        PROMPT_OWNER,
         [core_ref],
     )
     p1.update({"schema_version": "ai-video-prompt-preflight-test.v1"})
@@ -447,7 +687,7 @@ def add_k2(project: Path, package: Path, registered: set[str]) -> tuple[dict[str
     p1_rel = "06_prompt_preflight/PROMPT_PREFLIGHT_P1.json"
     write_json(project / p1_rel, p1)
     p1_entry = canon_entry(p1, "generation_unit_preflight_plan", "generation_unit_preflight_p1", p1_rel, file_hash(project / p1_rel))
-    apply_canon_update(project, [p1_entry], "ai-video-omni-reference-prompt-director", "generation_unit_preflight_p1")
+    apply_canon_update(project, [p1_entry], PROMPT_OWNER, "generation_unit_preflight_p1")
 
     p1_ref = artifact_ref(p1)
     supplement = envelope("KEYFRAME_BOUNDARY_K2", uids, OWNER, [core_ref, p1_ref])
@@ -769,8 +1009,8 @@ def main() -> int:
         path = project / "03_storyboard/00_manifest/STORYBOARD_MANIFEST.json"
         value = json.loads(path.read_text(encoding="utf-8"))
         value["frames"][0]["file_sha256"] = "1" * 64
-        value["frames"][0]["sha256"] = storyboard_fixture.canonical_artifact_hash(value["frames"][0])
-        value["sha256"] = storyboard_fixture.canonical_artifact_hash(value)
+        value["frames"][0]["sha256"] = canonical_project_canon_hash(value["frames"][0])
+        value["sha256"] = canonical_project_canon_hash(value)
         write_json(path, value)
 
     expect_attack("upstream Storyboard bytes drift", unrequested_storyboard_drift, "Project Canon invalid")

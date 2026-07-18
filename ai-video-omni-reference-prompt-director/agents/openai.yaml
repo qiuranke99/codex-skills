@@ -1,6 +1,6 @@
 interface:
   display_name: "AI Video Omni-Reference Prompt Director"
   short_description: "Compile approved multimodal controls into video prompts."
-  default_prompt: "Use $ai-video-omni-reference-prompt-director to create P1 generation-unit preflight, then after K2 and V2 compile or revise a P2 Omni-reference video package. Read immutable snapshots of the full approved project inventory, bind every relevant non-conflicting asset, inject exact Global Directing plus Look Core/State/Delta into every unit and repair prompt, target Seedance 2.5 semantics without unverified runtime claims, enforce documented Seedance 2.0 15s and 9-image/3-video/3-audio limits, and fail closed instead of falling back to text-only or endpoint-frame generation."
+  default_prompt: "Use $ai-video-omni-reference-prompt-director with this supplied hash-locked artifact inventory to create P1 preflight, then compile or revise P2 when K2/V2 inputs are supplied. Bind every relevant non-conflicting asset, inject exact Directing and Look blocks, enforce verified provider limits, and never require producer packages or fall back to text-only or endpoint-frame generation."
 policy:
   allow_implicit_invocation: true

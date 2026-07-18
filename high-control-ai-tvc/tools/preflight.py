@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Fail-closed runtime and installation preflight for the TVC production suite."""
+"""Fail-closed preflight for an explicitly selected High-Control aggregate profile."""
 
 from __future__ import annotations
 
@@ -43,20 +43,27 @@ def evaluate(
     repository_only: bool,
     automatic_only: bool,
 ) -> Dict[str, Any]:
+    if profile != "all":
+        raise SuiteConfigurationError(
+            "aggregate preflight supports only profile=all; core is an install-only compatibility subset"
+        )
     checks: List[Dict[str, Any]] = []
     active_repo_root = REPO_ROOT
     resolved_target = target
     if not repository_only:
         release_state = production_check(target, profile=profile)
+        release_ready = bool(
+            release_state.get("aggregate_profile_ready", release_state.get("ready_latest", False))
+        )
         _check(
             checks,
-            "github_latest_release",
-            "pass" if release_state["ready_latest"] else "fail",
-            f"GitHub main release {release_state.get('release_commit')} is active"
-            if release_state["ready_latest"]
-            else "; ".join(release_state.get("errors", ["release authority check failed"])),
+            "aggregate_github_latest_release",
+            "pass" if release_ready else "fail",
+            f"optional aggregate release {release_state.get('release_commit')} is active"
+            if release_ready
+            else "; ".join(release_state.get("errors", ["aggregate release check failed"])),
         )
-        if release_state["ready_latest"]:
+        if release_ready:
             active_system_root = Path(release_state["active_system_root"])
             active_repo_root = active_system_root.parent
             resolved_target = Path(release_state["target_root"])
@@ -71,15 +78,15 @@ def evaluate(
         for index, error in enumerate(errors):
             _check(checks, f"distribution_{index + 1}", "fail", error)
     else:
-        _check(checks, "distribution", "pass", f"manifest and all {len(skills)} skill directories are coherent")
+        _check(checks, "aggregate_distribution", "pass", f"all {len(skills)} aggregate members are coherent")
 
     if not repository_only:
         installation = inspect_installation(active_repo_root, resolved_target, profile)
         _check(
             checks,
-            "skill_installation",
+            "aggregate_skill_installation",
             "pass" if installation["ready"] else "fail",
-            "all selected skills have one suite-owned discovery entry"
+            "all aggregate-selected Skills have one aggregate-owned discovery entry"
             if installation["ready"]
             else "; ".join(installation["errors"] or [
                 f"{item['name']}={item['state']}" for item in installation["skills"] if item["state"] != "installed"
@@ -93,7 +100,7 @@ def evaluate(
             checks,
             "python_version",
             "pass" if current in tested else "fail",
-            f"running Python {current}; production-tested versions: {', '.join(tested)}",
+            f"running Python {current}; aggregate-tested versions: {', '.join(tested)}",
         )
 
         packages = python_config.get("packages", {}) if isinstance(python_config, dict) else {}
@@ -173,12 +180,14 @@ def evaluate(
         },
         "target_root": str(resolved_target.expanduser().absolute()) if resolved_target is not None else None,
         "profile": profile,
+        "scope": "optional_aggregate_profile",
+        "controls_individual_skill_availability": False,
         "repository_only": repository_only,
         "automatic_only": automatic_only,
         "ready": ready,
-        "production_ready": ready,
-        "result": "ready_latest" if ready else (
-            "repository_valid" if repository_only and not failures else (
+        "aggregate_profile_ready": ready,
+        "result": "aggregate_ready_latest" if ready else (
+            "aggregate_repository_valid" if repository_only and not failures else (
                 "needs_manual_confirmation" if not failures else "not_ready"
             )
         ),
@@ -196,7 +205,7 @@ def _print_text(result: Dict[str, Any]) -> None:
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--target", type=Path)
-    parser.add_argument("--profile", choices=("all", "core"), default="all")
+    parser.add_argument("--profile", choices=("all",), default="all")
     parser.add_argument("--confirm", action="append", default=[], metavar="GATE_ID")
     parser.add_argument("--automatic-only", action="store_true")
     parser.add_argument("--repository-only", action="store_true")
@@ -213,7 +222,14 @@ def main() -> int:
         )
     except (ReleaseControlError, SuiteConfigurationError, OSError) as exc:
         if args.format == "json":
-            print(json.dumps({"ready": False, "result": "not_ready", "error": str(exc)}, ensure_ascii=False, indent=2))
+            print(json.dumps({
+                "ready": False,
+                "aggregate_profile_ready": False,
+                "scope": "optional_aggregate_profile",
+                "controls_individual_skill_availability": False,
+                "result": "not_ready",
+                "error": str(exc),
+            }, ensure_ascii=False, indent=2))
         else:
             print(f"ERROR: {exc}", file=sys.stderr)
         return 2
@@ -221,7 +237,7 @@ def main() -> int:
         print(json.dumps(result, ensure_ascii=False, indent=2, sort_keys=True))
     else:
         _print_text(result)
-    return 0 if result["ready"] or result["result"] == "repository_valid" else 1
+    return 0 if result["ready"] or result["result"] == "aggregate_repository_valid" else 1
 
 
 if __name__ == "__main__":

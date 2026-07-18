@@ -46,6 +46,11 @@ def _write_fixture(author: Path, repository: str, remote_url: str, repository_id
     manifest = {
         "schema_version": "high-control-ai-tvc-suite.v1",
         "suite_id": release.DEFAULT_SUITE_ID,
+        "profile_scope": "optional_aggregate_compatibility_and_maintenance",
+        "opt_in_required": True,
+        "controls_individual_skill_availability": False,
+        "managed_inventory_policy": "skills_only",
+        "standalone_package_count": 2,
         "source_authority": {
             "repository": repository,
             "remote_url": remote_url,
@@ -53,13 +58,15 @@ def _write_fixture(author: Path, repository: str, remote_url: str, repository_id
             "github_repository_id": repository_id,
             "revision_policy": "github_main_latest_validated_immutable_snapshot",
         },
-        "independent_skills": ["fixture-independent-skill"],
+        "excluded_from_aggregate_profile": ["fixture-independent-skill"],
         "skills": [{"name": "fixture-production-skill", "tier": "core"}],
     }
     (subsystem / "SUITE_MANIFEST.json").write_text(
         json.dumps(manifest, indent=2) + "\n", encoding="utf-8", newline="\n"
     )
     requirements = {
+        "scope": "optional_aggregate_profile",
+        "controls_individual_skill_availability": False,
         "expected_distribution": {"skill_count": 1, "core_skill_count": 1, "optional_skill_count": 0}
     }
     (subsystem / "config" / "runtime-requirements.json").write_text(
@@ -130,6 +137,15 @@ def main() -> int:
             release.CANONICAL_BRANCH = "main"
             release.CANONICAL_REPOSITORY_ID = repository_id
 
+            core_check = release.production_check(target, profile="core")
+            if (
+                core_check["ready_latest"]
+                or core_check.get("aggregate_profile_ready") is not False
+                or core_check.get("controls_individual_skill_availability") is not False
+                or "install-only compatibility subset" not in str(core_check["errors"])
+            ):
+                raise AssertionError("unreachable core release check was not rejected immediately")
+
             def remote_head() -> str:
                 return release._run_git(
                     ["ls-remote", "--exit-code", str(remote), "refs/heads/main"]
@@ -143,20 +159,40 @@ def main() -> int:
                 remote_head_reader=remote_head,
                 github_identity_reader=remote_head,
             )
-            if not first["ready_latest"] or not first["restart_required"]:
+            if (
+                not first["ready_latest"]
+                or not first.get("aggregate_profile_ready")
+                or first.get("controls_individual_skill_availability") is not False
+                or not first["restart_required"]
+            ):
                 raise AssertionError("remote inventory was not authoritative over a stale local manifest")
             first_receipt = release._load_release_receipt(
                 release._release_state_paths(target, release.DEFAULT_SUITE_ID)["receipt"]
             )
             if first_receipt.get("snapshot_write_protection", {}).get("protected") is not True:
                 raise AssertionError("release receipt did not attest OS-level snapshot write protection")
-            if set(first_receipt["skills"]) != {
-                "fixture-production-skill",
-                "fixture-independent-skill",
-            }:
-                raise AssertionError("manifest-declared independent Skill was omitted from release inventory")
-            if first_receipt["content_equivalent_migration"]["adopted"] != ["fixture-independent-skill"]:
-                raise AssertionError("pre-suite exact link was not migrated through the guarded bridge")
+            if (
+                first_receipt.get("scope") != "optional_aggregate_profile"
+                or first_receipt.get("controls_individual_skill_availability") is not False
+            ):
+                raise AssertionError("release receipt did not preserve the optional aggregate boundary")
+            if set(first_receipt["skills"]) != {"fixture-production-skill"}:
+                raise AssertionError("standalone Skill leaked into the aggregate release inventory")
+            if first_receipt["content_equivalent_migration"]["adopted"]:
+                raise AssertionError("standalone link was adopted into aggregate ownership")
+            if (target / "fixture-independent-skill").resolve() != (
+                author / "fixture-independent-skill"
+            ).resolve():
+                raise AssertionError("aggregate sync changed the standalone discovery link")
+            install_receipt_path = Path(first["install_receipt"])
+            install_receipt = manager._load_receipt(install_receipt_path, release.DEFAULT_SUITE_ID)
+            if (
+                install_receipt.get("scope") != "optional_aggregate_profile"
+                or install_receipt.get("controls_individual_skill_availability") is not False
+            ):
+                raise AssertionError("install receipt did not preserve the optional aggregate boundary")
+            if "fixture-independent-skill" in install_receipt["entries"]:
+                raise AssertionError("standalone Skill leaked into the aggregate install receipt")
             local_manifest_path.write_bytes(authoritative_manifest_bytes)
             same_process = release.production_check(target, remote_head_reader=remote_head)
             if same_process["ready_latest"] or "PROCESS_RESTART_REQUIRED" not in str(same_process["errors"]):
@@ -164,7 +200,11 @@ def main() -> int:
 
             os.environ["CODEX_THREAD_ID"] = _uuid7_for_ms(int(time.time() * 1000) + 1_000)
             current = release.production_check(target, remote_head_reader=remote_head)
-            if not current["ready_latest"]:
+            if (
+                not current["ready_latest"]
+                or not current.get("aggregate_profile_ready")
+                or current.get("controls_individual_skill_availability") is not False
+            ):
                 raise AssertionError(f"fresh task could not attest the release: {current}")
 
             saved_transport_query = release.query_remote_head
@@ -193,8 +233,15 @@ def main() -> int:
             runtime_lock = project / "00_project_canon" / "SYSTEM_RUNTIME_LOCK.json"
             if not project_check["ready_latest"] or not runtime_lock.is_file():
                 raise AssertionError("stage gate did not persist the project release lock")
-            if json.loads(runtime_lock.read_text(encoding="utf-8"))["release_commit"] != first["release_commit"]:
+            runtime_lock_value = json.loads(runtime_lock.read_text(encoding="utf-8"))
+            if runtime_lock_value["release_commit"] != first["release_commit"]:
                 raise AssertionError("project runtime lock does not bind the active release")
+            if (
+                runtime_lock_value.get("authority_status") != "aggregate_ready_latest"
+                or runtime_lock_value.get("scope") != "optional_aggregate_profile"
+                or runtime_lock_value.get("controls_individual_skill_availability") is not False
+            ):
+                raise AssertionError("project runtime lock exceeded optional aggregate authority")
             pending = project / "00_project_canon" / "PENDING_PROJECT_CANON_TRANSACTION.json"
             pending.write_text("{}", encoding="utf-8")
             pending_check = release.production_check(
@@ -293,6 +340,10 @@ def main() -> int:
             )
             if second["release_commit"] == first["release_commit"]:
                 raise AssertionError("sync did not activate the advanced GitHub revision")
+            if (target / "fixture-independent-skill").resolve() != (
+                author / "fixture-independent-skill"
+            ).resolve():
+                raise AssertionError("aggregate update changed the standalone discovery link")
 
             unstable_value = second["release_commit"]
             old_value = first["release_commit"]

@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Create/update the repository-local, pinned Python runtime."""
+"""Create/update the optional aggregate compatibility-validation environment."""
 
 from __future__ import annotations
 
@@ -74,7 +74,7 @@ def main() -> int:
         tested = requirements["python"]["tested_major_minor"]
         current = f"{sys.version_info.major}.{sys.version_info.minor}"
         if current not in tested:
-            raise RuntimeError(f"Python {current} cannot build the production runtime; use {', '.join(tested)}")
+            raise RuntimeError(f"Python {current} cannot build the aggregate maintenance environment; use {', '.join(tested)}")
 
         venv = args.venv.expanduser().absolute()
         python = _venv_python(venv)
@@ -88,6 +88,8 @@ def main() -> int:
         result = {
             "schema_version": "1.0.0",
             "success": True,
+            "scope": "optional_aggregate_profile",
+            "controls_individual_skill_availability": False,
             "venv": str(venv),
             "python": str(python),
             "python_major_minor": venv_version,
@@ -95,7 +97,13 @@ def main() -> int:
             "note": "ffmpeg and ffprobe are system executables and are checked separately by preflight",
         }
     except (KeyError, OSError, RuntimeError, SuiteConfigurationError) as exc:
-        result = {"schema_version": "1.0.0", "success": False, "error": str(exc)}
+        result = {
+            "schema_version": "1.0.0",
+            "success": False,
+            "scope": "optional_aggregate_profile",
+            "controls_individual_skill_availability": False,
+            "error": str(exc),
+        }
         if args.format == "json":
             print(json.dumps(result, ensure_ascii=False, indent=2, sort_keys=True))
         else:
@@ -105,8 +113,8 @@ def main() -> int:
     if args.format == "json":
         print(json.dumps(result, ensure_ascii=False, indent=2, sort_keys=True))
     else:
-        print(f"OK: pinned runtime is ready at {result['venv']}")
-        print("Next: install ffmpeg/ffprobe, then run the suite preflight.")
+        print(f"OK: aggregate maintenance environment is ready at {result['venv']}")
+        print("Next (aggregate profile only): install ffmpeg/ffprobe, then run aggregate preflight.")
     return 0
 
 

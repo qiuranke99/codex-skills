@@ -20,7 +20,8 @@
 
 ## Quick validation checklist
 
-- Skill 文件存在于 `.agents/skills/cinematic_shot_image_explorer/SKILL.md`。
+- 独立包根目录存在 `SKILL.md`，不依赖某个工作区内的固定安装路径。
+- 独立包根目录存在 `agents/openai.yaml` 与 `scripts/test_contract.py`。
 - `examples.md` 存在并包含文字想法、粗略图像提示、上传图像占位描述三类示例。
 - `test_cases.md` 存在并覆盖 15 条验收测试。
 - `SKILL.md` frontmatter `name` 与目录名一致。

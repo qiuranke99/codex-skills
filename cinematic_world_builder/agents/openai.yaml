@@ -1,0 +1,7 @@
+interface:
+  display_name: "Cinematic World Builder"
+  short_description: "Build one coherent cinematic world across nine aspects"
+  default_prompt: "Use $cinematic_world_builder to turn this input into one coherent world and exactly nine film-still prompts."
+
+policy:
+  allow_implicit_invocation: true

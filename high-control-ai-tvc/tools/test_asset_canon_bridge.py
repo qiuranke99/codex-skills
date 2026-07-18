@@ -4,12 +4,10 @@
 from __future__ import annotations
 
 import copy
-import contextlib
 import binascii
 import builtins
 import hashlib
 import importlib.util
-import io
 import json
 import os
 import struct
@@ -24,12 +22,9 @@ from build_asset_canon_export import ExportError, OWNER_PROFILES, _image_metadat
 from validate_project_canon_manifest import canonical_hash, validate_manifest, verify_artifact_files
 
 
-SKILL_ROOT = Path(__file__).resolve().parents[2]
-WRAPPERS = {
-    profile_id: SKILL_ROOT / profile.owner_skill / "scripts/export_ai_video_canon.py"
-    for profile_id, profile in OWNER_PROFILES.items()
-}
-EXPORT_VALIDATOR = SKILL_ROOT / "ai-video-shot-script-director/scripts/validate_asset_canon_export.py"
+REPO_ROOT = Path(__file__).resolve().parents[2]
+AGGREGATE_BRIDGE = Path(__file__).resolve().with_name("build_asset_canon_export.py")
+EXPORT_VALIDATOR = Path(__file__).resolve().with_name("validate_asset_canon_export.py")
 
 
 def write_bytes(root: Path, locator: str, data: bytes) -> str:
@@ -127,7 +122,7 @@ def initialize_project(root: Path) -> None:
 
 
 def load_packaging_fixture_module() -> Any:
-    scripts = SKILL_ROOT / "packaging-product-identity-label-lock-board/scripts"
+    scripts = REPO_ROOT / "packaging-product-identity-label-lock-board/scripts"
     module_path = scripts / "test_contract.py"
     if str(scripts) not in sys.path:
         sys.path.insert(0, str(scripts))
@@ -157,7 +152,7 @@ def create_packaging_exact_copy_run_and_evidence(
     run_root_locator = run_root.relative_to(root).as_posix()
     primary_locator = primary_path.relative_to(root).as_posix()
     validator_path = (
-        SKILL_ROOT
+        REPO_ROOT
         / "packaging-product-identity-label-lock-board/scripts/validate_asset_board_run.py"
     )
     evidence = {
@@ -261,7 +256,9 @@ def command(
 ) -> list[str]:
     cmd = [
         sys.executable,
-        str(WRAPPERS[profile_id]),
+        str(AGGREGATE_BRIDGE),
+        "asset",
+        "--profile", profile_id,
         "--project-root", str(root),
         "--package-root", str(root / "exports" / f"{profile_id}-{asset_key}-v{version.replace('.', '_')}"),
         "--asset-key", asset_key,
@@ -590,7 +587,8 @@ def main() -> int:
         if exact_record.get("authority_evidence", {}).get("role") != "packaging_exact_copy":
             raise AssertionError("exact-copy packaging export did not bind authority evidence")
 
-        # Wrapper CLI has no owner field, so an attempted owner override is rejected.
+        # The aggregate CLI has no free-form owner field, so an attempted owner
+        # override is rejected before any Project Canon bytes are touched.
         values = create_inputs(root, "character_final", "spoofcli")
         spoof_cli = command(root, "character_final", "spoofcli", values) + ["--owner-skill", "banana-owner"]
         expect_failure_without_manifest_mutation(root, "owner override CLI", spoof_cli, "unrecognized arguments")
@@ -743,14 +741,13 @@ def main() -> int:
         if not any("superseded dependency" in error or "only while stale/blocked" in error for error in eligible_errors):
             raise AssertionError(f"eligible historical consumer was not rejected: {eligible_errors}")
 
-        # Fixed wrapper/profile location is also enforced at runtime.
-        sys.path.insert(0, str(SKILL_ROOT / "ai-video-shot-script-director/scripts"))
-        from build_asset_canon_export import run_fixed_owner_cli
-        captured = io.StringIO()
-        with contextlib.redirect_stdout(captured):
-            mismatch_code = run_fixed_owner_cli("character_casting", WRAPPERS["character_final"], [])
-        if mismatch_code == 0:
-            raise AssertionError("wrapper path/profile mismatch unexpectedly succeeded")
+        # A profile outside the fixed seven-owner registry is rejected by the
+        # one aggregate entrypoint; no owner-package wrapper participates.
+        invalid_profile = command(root, "character_final", "invalid-profile", values)
+        invalid_profile[invalid_profile.index("--profile") + 1] = "banana-owner"
+        expect_failure_without_manifest_mutation(
+            root, "unknown aggregate asset profile", invalid_profile, "invalid choice"
+        )
 
     # Fault injection proves an applied receipt cannot precede Canon.  The
     # identical rerun reconstructs the receipt from immutable base/delta/record.

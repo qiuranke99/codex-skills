@@ -3,6 +3,7 @@
 
 from __future__ import annotations
 
+import argparse
 import hashlib
 import json
 import sys
@@ -10,12 +11,7 @@ from pathlib import Path
 from typing import Any
 
 import validate_prompt_package as shared
-
-
-SHOT_SCRIPT_ROOT = Path(__file__).resolve().parents[2] / "ai-video-shot-script-director" / "scripts"
-if str(SHOT_SCRIPT_ROOT) not in sys.path:
-    sys.path.insert(0, str(SHOT_SCRIPT_ROOT))
-from build_asset_canon_export import validate_export_record as validate_owner_asset_export
+from ai_video_input_contracts import validate_owner_asset_export
 
 
 P1_REQUIRED_FILES = (
@@ -149,7 +145,7 @@ def _validate_preflight_package(root: Path, project_root: Path, canon_path: Path
     if errors:
         return errors
 
-    snapshot, snapshot_read_errors = load_object(root / shared.PREFLIGHT_SNAPSHOT, "preflight Canon snapshot")
+    snapshot, snapshot_read_errors = load_object(root / shared.PREFLIGHT_SNAPSHOT, "preflight input-inventory snapshot")
     plan, plan_read_errors = load_object(root / shared.PREFLIGHT_PLAN, "P1 plan")
     model_doc, model_read_errors = load_object(root / shared.MODEL_CAPS, "model capability profile")
     provider_doc, provider_read_errors = load_object(root / shared.PROVIDER_CAPS, "provider capability profile")
@@ -169,21 +165,18 @@ def _validate_preflight_package(root: Path, project_root: Path, canon_path: Path
         if schema is not None:
             errors.extend(f"{label}: schema: {item}" for item in shared.validate_instance(document, schema, schema))
 
-    snapshot_errors, active = shared.validate_manifest_snapshot(snapshot, "preflight Canon snapshot")
+    snapshot_errors, active = shared.validate_manifest_snapshot(snapshot, "preflight input-inventory snapshot")
     errors.extend(snapshot_errors)
     errors.extend(shared.validate_manifest_receipt(
         root, plan.get("project_canon_read_receipt"), snapshot, shared.PREFLIGHT_SNAPSHOT, "P1 plan"
     ))
     if plan.get("project_id") != snapshot.get("project_id"):
-        errors.append("P1 plan: project_id differs from preflight Canon snapshot")
+        errors.append("P1 plan: project_id differs from preflight input-inventory snapshot")
 
-    expected_canon = (project_root / DEFAULT_CANON).resolve()
-    if canon_path.resolve() != expected_canon:
-        errors.append("P1 source Canon: CLI path must be <project_root>/00_project_canon/PROJECT_CANON_MANIFEST.json")
-    actual_canon, canon_read_errors = load_object(canon_path, "P1 source Canon")
+    actual_canon, canon_read_errors = load_object(canon_path, "P1 input inventory")
     errors.extend(canon_read_errors)
     if actual_canon is not None and actual_canon != snapshot:
-        errors.append("P1 source Canon: actual canonical manifest must exactly equal the frozen preflight snapshot")
+        errors.append("P1 input inventory must exactly equal the frozen preflight snapshot")
     canon_file_errors, fixed_owner_roles = verify_canon_entry_files(project_root, active)
     errors.extend(canon_file_errors)
 
@@ -216,16 +209,17 @@ def _validate_preflight_package(root: Path, project_root: Path, canon_path: Path
     return errors
 
 
-def validate_preflight_package(root: Path, project_root: Path, canon_path: Path) -> list[str]:
+def validate_preflight_package(root: Path, project_root: Path, canon_path: Path | None = None) -> list[str]:
     root = root.resolve()
     project_root = project_root.resolve()
+    canon_path = canon_path.resolve() if canon_path is not None else (root / shared.PREFLIGHT_SNAPSHOT).resolve()
     if root == project_root:
         return ["P1 package root must be a strict child of --project-root"]
     try:
         root.relative_to(project_root)
         canon_path.resolve().relative_to(project_root)
     except (OSError, ValueError):
-        return ["P1 package and source Canon must be inside --project-root"]
+        return ["P1 package and input inventory must be inside --input-root"]
     try:
         return _validate_preflight_package(root, project_root, canon_path.resolve())
     except (TypeError, KeyError, AttributeError, ValueError, OverflowError) as exc:
@@ -233,14 +227,15 @@ def validate_preflight_package(root: Path, project_root: Path, canon_path: Path)
 
 
 def main(argv: list[str]) -> int:
-    if len(argv) != 6 or argv[2] != "--project-root" or argv[4] != "--project-canon-manifest":
-        print(
-            "usage: validate_preflight_package.py <package_root> --project-root <project_root> "
-            "--project-canon-manifest <source-canon.json>",
-            file=sys.stderr,
-        )
-        return 2
-    errors = validate_preflight_package(Path(argv[1]), Path(argv[3]), Path(argv[5]))
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("package_root", type=Path)
+    parser.add_argument("--input-root", "--project-root", dest="input_root", required=True, type=Path)
+    parser.add_argument(
+        "--input-inventory", "--project-canon-manifest", dest="input_inventory", type=Path,
+        help="optional source inventory; defaults to the frozen package snapshot",
+    )
+    args = parser.parse_args(argv[1:])
+    errors = validate_preflight_package(args.package_root, args.input_root, args.input_inventory)
     if errors:
         for error in errors:
             print(f"ERROR: {error}")

@@ -1,13 +1,15 @@
 ---
 name: ai-video-keyframe-continuity-pack
-description: "Use after an approved professional shot contract, one-shot-one-file storyboard, locked character/product/scene assets, global look, and—when timing matters—a V1 timing animatic exist, to create independently generated, generation-ready per-shot keyframe anchors and continuity ledgers for multimodal reference-to-video. Every scripted shot receives at least one approved anchor or a strictly validated storyboard promotion; complex action, liquid, material, and cross-generation-unit states receive additional anchors. These are Omni reference assets, never start/end-frame controls. Do not use for story ideation, storyboards, look design, video prompts, text-to-video, first/last-frame generation, editing, music, or output QC."
+description: "Create independently generated, generation-ready per-shot keyframe anchors and continuity ledgers for multimodal reference-to-video from supplied artifact contracts: an approved shot contract, one-shot-one-file storyboard, identity assets, global look, and timing evidence when material. Every scripted shot receives at least one approved anchor or a strictly validated storyboard promotion; complex action, liquid, material, and cross-generation-unit states receive additional anchors. Use the optional boundary-supplement mode only when a supplied generation-unit plan exists. These are Omni reference assets, never start/end-frame controls. Do not use for story ideation, storyboards, look design, video prompts, text-to-video, first/last-frame generation, editing, music, or output QC."
 ---
 
 # AI Video Keyframe Continuity Pack
 
-## HIGH_CONTROL_RELEASE_GATE_V2
-
-Before any action or production output, resolve this `SKILL.md` directory and execute the sibling OS-native launcher: on Windows, `& ..\\high-control-ai-tvc\\tools\\release-control.ps1 -Action check -Format json`; on macOS/Linux, `../high-control-ai-tvc/tools/release-control.sh check --format json`. The launcher must resolve the pinned runtime from the validated release receipt; never invoke `release_control.py` through an unverified global Python. Proceed only when `ready_latest=true`. On any failure, stop and run the same launcher with `sync`, then start a new Codex task. Bind the returned `release_commit` to this stage; never substitute a mutable Windows/Mac authoring checkout.
+This Skill is a self-contained entrypoint. Consume approved upstream facts as
+explicit artifact files or references; do not locate or import another Skill
+package. A generation-unit plan or shared project registry is an optional input
+for the matching K2 or registry-handoff branch, never an installation gate for
+K1.
 
 中文名：AI 视频关键帧连续性包
 
@@ -33,7 +35,8 @@ Run this Skill in two explicit artifact modes:
 
 ## 1. Scope And Trigger
 
-Use this Skill only when these upstream facts are available:
+Use this Skill when these upstream facts are supplied as readable, hash-locked
+artifact contracts:
 
 - an approved `PROFESSIONAL_SHOT_CONTRACT` with stable `shot_uid` values;
 - one independently stored storyboard frame per scripted shot;
@@ -69,7 +72,11 @@ Do not redefine their field names ad hoc.
 
 ## 3. Input Gate And Authority
 
-Build an input inventory from `PROJECT_CANON_MANIFEST`. Keep `package_root` and `project_root` distinct: local keyframe files resolve under the package root; every Canon/cross-owner locator resolves under the explicit whole-project root. If a new project is being recovered from already approved artifacts, first register those exact artifacts through the shared manifest contract; do not create a private inventory. Accept only artifacts whose envelope:
+Build an input inventory directly from the supplied artifact files. Keep
+`package_root` and `input_root` distinct when the inputs live outside the output
+package. A supplied `PROJECT_CANON_MANIFEST` may act as an optional index, but
+the Skill must not require that registry, its owner package, or a sibling
+directory. Accept only artifacts whose envelope:
 
 - has `contract_version: ai-video-artifact-v1`;
 - has `approval_status: user_approved` unless the user explicitly permits an `assistant_validated` working branch;
@@ -268,7 +275,6 @@ Required artifacts:
 ```text
 00_manifest/KEYFRAME_CONTINUITY_MANIFEST.json
 00_manifest/KEYFRAME_CONTINUITY_MANIFEST.md
-00_manifest/MANIFEST_UPDATE_RECEIPT.json
 00_manifest/owned_artifacts/<binary-artifact-id>.json
 01_keyframes/<shot_uid>/<keyframe_id>.<native_ext>
 01_keyframes/<shot_uid>/<keyframe_id>_generation_prompt.md
@@ -281,6 +287,9 @@ Required artifacts:
 04_reports/INVALIDATION_REPORT.md
 ```
 
+Add `00_manifest/MANIFEST_UPDATE_RECEIPT.json` only after an explicitly
+requested Project Canon handoff succeeds.
+
 After preflight, add only when applicable:
 
 ```text
@@ -291,14 +300,17 @@ After preflight, add only when applicable:
 
 The JSON manifest is the machine truth. The Markdown manifest is a human-readable rendering and cannot override it.
 
-Submit only K1/K2 artifacts owned by this Skill as an atomic Project Canon delta. The receipt records the validated base manifest hash and exact registered artifact IDs; never store a second canonical manifest in the package.
+Deliver only K1/K2 artifacts owned by this Skill. If a Project Canon registry
+was supplied and registration was requested, propose an atomic owned delta and
+record the validated base hash and exact registered IDs. Otherwise omit the
+receipt and hand off the standalone package directly.
 
 Run:
 
 ```bash
 python3 scripts/validate_keyframe_package.py <package_root> \
-  --project-root <project_root> \
-  --project-canon-manifest <project_root>/00_project_canon/PROJECT_CANON_MANIFEST.json
+  [--project-root <input_root> \
+   --project-canon-manifest <input_root>/00_project_canon/PROJECT_CANON_MANIFEST.json]
 ```
 
 ## 12. Completion Gate
@@ -314,7 +326,7 @@ Claim K1 `package_status: packaged` only when:
 - V1 timing anchors are bound, or a valid single-static-shot exemption exists;
 - its authority inventory exactly locks the current Shot Contract, final Storyboard, Global Look, V1/exemption, and every required character/product/packaging/material/scene asset;
 - every dependency is approved, hash-valid, and not stale;
-- the manifest update receipt registers K1, owned projections/anchors, and K2 when present;
+- when optional Project Canon registration was requested, the manifest update receipt registers K1, owned projections/anchors, and K2 when present;
 - no keyframe is a multi-panel crop or endpoint-control artifact;
 - the manifest denylist includes `standalone_single_image_to_video`, and no
   prompt requests classic/standalone single-image I2V while ordinary Omni R2V
@@ -329,14 +341,13 @@ Keep `assistant_qa_status` separate from `production_approval_status`. Validator
 
 `Use $ai-video-keyframe-continuity-pack to create generation-ready Omni-reference keyframes and continuity ledgers for every approved shot.`
 
-## Shared Project Canon Write Gate
+## Optional Project Canon Handoff
 
-Before any Canon mutation, preserve the exact current bytes at
-`<package_root>/00_manifest/BASE_PROJECT_CANON_SNAPSHOT.json` and materialize
-the validated post bytes at
-`<package_root>/00_manifest/CANDIDATE_PROJECT_CANON_POST.json`. Invoke only this
-package's `scripts/apply_project_canon_transition.py`. The shared writer owns
-the project `.canon.lock`, `PENDING_PROJECT_CANON_TRANSACTION.json` recovery or
-blocking, raw-byte compare-and-swap, durable post readback, and only then
-`MANIFEST_UPDATE_RECEIPT.json`. Never write Canon or an applied receipt
-directly.
+Do not require Project Canon for K1/K2 artifact creation, inspection, approval,
+or package validation. If registry mutation is explicitly requested, preserve
+the exact base and candidate bytes and invoke
+`scripts/apply_project_canon_transition.py` with an explicit compatible
+`--transition-runner`. Without that input the wrapper returns
+`blocked_missing_project_canon_transition_input`; the standalone keyframe
+package remains valid. Never locate a sibling package or write Canon/receipt
+bytes directly.

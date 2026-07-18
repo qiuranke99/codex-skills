@@ -10,17 +10,15 @@ import sys
 from pathlib import Path
 from typing import Any
 
-
-SUITE_ROOT = Path(__file__).resolve().parents[2]
-SHOT_SCRIPTS = SUITE_ROOT / "ai-video-shot-script-director" / "scripts"
-LOOK_SCRIPTS = SUITE_ROOT / "ai-video-global-look-lock" / "scripts"
-for helper_dir in (SHOT_SCRIPTS, LOOK_SCRIPTS):
-    if str(helper_dir) not in sys.path:
-        sys.path.insert(0, str(helper_dir))
-from validate_global_look import validate_look, verify_declared_file_hashes as verify_look_files  # type: ignore  # noqa: E402
-from validate_manifest_update_receipt import validate_receipt  # type: ignore  # noqa: E402
-from validate_project_canon_manifest import validate_manifest as validate_project_canon, verify_artifact_files as verify_project_canon_files  # type: ignore  # noqa: E402
-from validate_shot_contract import validate_contract as validate_shot_contract, verify_declared_file_hashes as verify_shot_files  # type: ignore  # noqa: E402
+from ai_video_input_contracts import (
+    validate_global_look as validate_look,
+    validate_manifest as validate_project_canon,
+    validate_receipt,
+    validate_shot_contract,
+    verify_artifact_files as verify_project_canon_files,
+    verify_look_files,
+    verify_shot_files,
+)
 
 
 HEX64 = set("0123456789abcdef")
@@ -581,7 +579,6 @@ def _validate_package(
     required = [
         "00_manifest/KEYFRAME_CONTINUITY_MANIFEST.json",
         "00_manifest/KEYFRAME_CONTINUITY_MANIFEST.md",
-        "00_manifest/MANIFEST_UPDATE_RECEIPT.json",
         "02_ledgers/CHARACTER_STATE_LEDGER.json",
         "02_ledgers/PRODUCT_STATE_LEDGER.json",
         "02_ledgers/MATERIAL_STATE_TRAJECTORY.json",
@@ -619,9 +616,9 @@ def _validate_package(
             "first/last-frame, and standalone single-image I2V"
         )
     canon_ready = False
-    if manifest.get("package_status") == "packaged":
+    if canon_manifest is not None or project_root is not None:
         if canon_manifest is None or project_root is None:
-            errors.append("packaged keyframe authority requires the actual Project Canon manifest and project root")
+            errors.append("optional Project Canon integration requires both manifest and project root")
         else:
             canon_structure_errors = validate_project_canon(canon_manifest)
             canon_errors = list(canon_structure_errors)
@@ -1020,36 +1017,39 @@ def _validate_package(
             errors.extend(validate_boundary_supplement(root, supplement, manifest, keyframe_ids))
 
     receipt_path = root / "00_manifest/MANIFEST_UPDATE_RECEIPT.json"
-    try:
-        receipt = load_json(receipt_path)
-    except (OSError, json.JSONDecodeError, ValueError) as exc:
-        errors.append(f"manifest update receipt read failed: {exc}")
-    else:
-        expected_registered = {manifest.get("artifact_id"), *keyframe_ids}
-        for rel, _, _ in projection_specs:
-            try:
-                projection_for_receipt = load_json(root / rel)
-            except (OSError, json.JSONDecodeError, ValueError):
-                continue
-            if isinstance(projection_for_receipt, dict):
-                expected_registered.add(projection_for_receipt.get("artifact_id"))
-        if supplement_path.is_file():
-            try:
-                supplement_for_receipt = load_json(supplement_path)
-            except (OSError, json.JSONDecodeError, ValueError):
-                pass
-            else:
-                if isinstance(supplement_for_receipt, dict):
-                    expected_registered.add(supplement_for_receipt.get("artifact_id"))
-        errors.extend(
-            f"manifest update receipt: {item}"
-            for item in validate_receipt(
-                receipt,
-                "ai-video-keyframe-continuity-pack",
-                expected_registered,
-                canon_manifest,
+    if receipt_path.is_file():
+        try:
+            receipt = load_json(receipt_path)
+        except (OSError, json.JSONDecodeError, ValueError) as exc:
+            errors.append(f"manifest update receipt read failed: {exc}")
+        else:
+            expected_registered = {manifest.get("artifact_id"), *keyframe_ids}
+            for rel, _, _ in projection_specs:
+                try:
+                    projection_for_receipt = load_json(root / rel)
+                except (OSError, json.JSONDecodeError, ValueError):
+                    continue
+                if isinstance(projection_for_receipt, dict):
+                    expected_registered.add(projection_for_receipt.get("artifact_id"))
+            if supplement_path.is_file():
+                try:
+                    supplement_for_receipt = load_json(supplement_path)
+                except (OSError, json.JSONDecodeError, ValueError):
+                    pass
+                else:
+                    if isinstance(supplement_for_receipt, dict):
+                        expected_registered.add(supplement_for_receipt.get("artifact_id"))
+            errors.extend(
+                f"manifest update receipt: {item}"
+                for item in validate_receipt(
+                    receipt,
+                    "ai-video-keyframe-continuity-pack",
+                    expected_registered,
+                    canon_manifest,
+                )
             )
-        )
+    elif canon_manifest is not None:
+        errors.append("optional Project Canon integration requires MANIFEST_UPDATE_RECEIPT.json")
 
     if manifest.get("package_status") == "packaged":
         if manifest.get("assistant_qa_status") != "passed":

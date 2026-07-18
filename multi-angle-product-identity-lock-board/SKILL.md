@@ -1,13 +1,19 @@
 ---
 name: multi-angle-product-identity-lock-board
-description: "Use when the user provides references for one low-risk, mostly opaque product and needs one text-free six-view identity board. Freeze the exact generation prompt, delegate the terminal built-in image call to exactly one non-decision image worker, bind and inspect that worker's actual board, then publish the complete generation and image-specific 4K prompt pair with both SHA-256 values in the same task's final main result. Use for clear silhouettes, simple construction, and non-critical text; route label-heavy packaging, material-sensitive glass/liquid/reflective products, mechanisms, state changes, advertising scenes, and prompt-only requests elsewhere."
+description: "Use when the user provides references for one low-risk, mostly opaque product and needs one text-free six-view identity board. Freeze the exact generation prompt, delegate the terminal built-in image call to exactly one non-decision image worker, bind and inspect that worker's actual board, then publish the complete generation and image-specific 4K prompt pair with both SHA-256 values in the same task's final main result. Run directly from this package; downstream AI-video project handoff is optional. Use for clear silhouettes, simple construction, and non-critical text; route label-heavy packaging, material-sensitive glass/liquid/reflective products, mechanisms, state changes, advertising scenes, and prompt-only requests elsewhere."
 ---
 
 # Multi-Angle Product Identity Lock Board
 
-## HIGH_CONTROL_RELEASE_GATE_V2
+## Standalone Runtime Boundary
 
-Before any action or production output, resolve this `SKILL.md` directory and execute the sibling OS-native launcher: on Windows, `& ..\\high-control-ai-tvc\\tools\\release-control.ps1 -Action check -Format json`; on macOS/Linux, `../high-control-ai-tvc/tools/release-control.sh check --format json`. The launcher must resolve the pinned runtime from the validated release receipt; never invoke `release_control.py` through an unverified global Python. Proceed only when `ready_latest=true`. On any failure, stop and run the same launcher with `sync`, then start a new Codex task. Bind the returned `release_commit` to this stage; never substitute a mutable Windows/Mac authoring checkout.
+Run this Skill from its own package. Resolve every bundled script and reference
+from this `SKILL.md` directory. Core applicability checks, source freezing,
+worker dispatch, result binding, QA, and publication must not probe,
+synchronize, import, or require any neighboring Skill package. A downstream
+AI-video project may consume accepted artifacts only after this Skill completes
+and production approval is explicit; that optional integration never changes
+this Skill's product gate or completion.
 
 Chinese name: 多角度产品身份锁定板
 
@@ -313,34 +319,27 @@ The emitted non-empty final response is the publication transition evidence; per
 
 Complete only when the worker result is unambiguously bound, the actual board is visually classified, both prompt sidecars pass reread hashing, and one final main result visibly contains the board, both complete prompts, both hashes, and both published states. A real source, authorization, capability, worker, persistence, integrity, or output-capacity blocker may end the run without a completion claim.
 
-## Optional AI-Video Project Canon Export
+## Optional AI-Video Artifact Handoff
 
-This downstream branch does not change product routing, the six-view topology,
-generation, later inspection, external 4K evidence, or final prompt-pair rules.
-Use it only for an accepted product board with `assistant_qa_status: passed`,
-verified `generation_prompt` and `four_k_enhancement_prompt` sidecar bytes, and
-explicit `user_granted` or `external_pipeline_granted` production approval.
+This package ends with the accepted board and its verified prompt-pair
+artifacts. It does not write project Canon, import another Skill, or assume a
+neighboring package exists.
 
-The owner records that decision using
-`../ai-video-shot-script-director/references/ai_video_owner_asset_approval.schema.json`,
-binding this fixed owner, asset key, primary board hash, both prompt hashes,
-affected canonical Shot UIDs, QA pass, and approval. Then invoke only
-`scripts/export_ai_video_canon.py` with project-relative paths and exact hashes;
-there is no owner argument. This low-risk product owner exports only
-`authority_mode: geometry_only` and
-`control_roles_authorized: [product_geometry]`; it never grants label-copy or
-material-behavior authority.
-Pillow is required to verify and fully load the primary PNG/JPEG/WebP board and
-lock decoder-observed dimensions of at least 64×64. Missing Pillow, arbitrary
-binary bytes, or a format/extension mismatch fails closed before Canon update.
+Only after `assistant_qa_status: passed`, exact byte/hash readback of both
+prompt sidecars, and explicit `user_granted` or
+`external_pipeline_granted` production approval may the main agent offer these
+artifacts to an external AI-video project integrator:
 
-The wrapper emits the owner-produced `ai-video-artifact-v1` record, independent
-primary/record four locks, base snapshot, entry delta, receipt, and validated
-Canon transition. Prompt Director must retain this actual product owner in
-feedback routing and cannot fabricate a projection. Export failure does not
-change the approved board or its existing handoff.
+- this exact Skill ID and asset key;
+- the worker-bound board locator and SHA-256;
+- both prompt roles, locators, and SHA-256 values;
+- affected Shot UIDs;
+- `authority_mode: geometry_only` and
+  `control_roles_authorized: [product_geometry]`;
+- `authority_stage: terminal_product_canon` and
+  `terminal_route_decision: not_applicable`.
 
-Approval and export records must also bind
-`authority_stage: terminal_product_canon` and
-`terminal_route_decision: not_applicable`. Install the pinned decoder with
-`python3 -m pip install -r ../ai-video-shot-script-director/requirements.txt`.
+The external integrator owns its schemas, dependencies, transaction safety,
+and Canon mutation. It must not infer label-copy or material-behavior authority
+from this geometry-only board. Missing or failed integration never blocks,
+upgrades, or demotes this Skill's accepted board.

@@ -1,44 +1,57 @@
 # Material-Sensitive Product Master Asset Board Test Cases
 
+These scenario IDs are the maintained acceptance map for contract v4. A test is green only when it asserts the process exit code, the exact structured result or blocker, and absence of forbidden output mutation.
+
 ## Green Scenarios
 
-1. **One-request completion**: an explicit Skill invocation authorizes one fresh non-decision image worker for the attempt; the main agent remains active and publishes a non-empty final result without a second user message.
-2. **Reference freeze**: every authoritative product/material source is copied into the run-scoped reference bundle in semantic order with byte size, SHA-256, and ordered-bundle hash.
-3. **Exact worker binding**: resolver binds one fresh worker thread, one task/turn/nonce, one imagegen call, one completed image event, and one PNG using exact agent path, checkpoint, parent thread, worker thread, and call ID. Because nested Codex task bodies can be stored as encrypted content, the same nonce must appear as one literal declaration in the auditable imagegen exec source.
-4. **Tool isolation**: the worker's only primary tool call is imagegen; resolver-linked waits tied to that same yielded image call may occur, but any unrelated tool call fails.
-5. **Prompt integrity**: the imagegen prompt is a JSON string literal byte-identical to the UTF-8/LF generation sidecar; the shell-wrapper failure is rejected.
-6. **Reference integrity**: the ordered `referenced_image_paths` list exactly equals the frozen manifest and every frozen byte still matches its hash.
-7. **Material QA**: the main agent opens the copied board and evaluates primary anchor, complementary views, transparent/reflection/refraction/fill/finish evidence, critical structure, panel legibility, source state, and pollution.
-8. **Built-in dimensions**: a source-faithful `1672x941` or `1536x1024` board remains `content_qa_reference`; dimensions alone do not fail QA, trigger repair, or block publication/handoff.
-9. **Repair ledger**: up to two focused repairs use attempts 02 and 03 with fresh prompt, nonce, worker, board, result, and QA; one immutable `accepted_attempt.json` selects the final source of truth.
-10. **Image-specific 4K**: the final enhancement prompt is created only after accepted-board inspection, names observed defects, and uses the accepted board plus all frozen original material references.
-11. **Artifact-backed publication**: the final builder verifies accepted attempt, prompt/board/inspection/worker/reference/handoff hashes and writes one payload containing the board, both complete prompts, both hashes, and published states.
-12. **External controls**: external handoff requests only `aspect_ratio: "16:9"` and `image_size: "4K"`; external readiness stays independent from prompt-pair publication.
+| ID | Scenario | Required evidence |
+|---|---|---|
+| G01 | Standalone package | Package copied alone to an empty discovery root; all 40 package regressions plus every package-local core CLI run with repository siblings unavailable and `PYTHONPATH` cleared. |
+| G02 | Decoded reference freeze | Valid PNG/JPEG/WebP sources are fully decoded; v2 manifest records detected format/MIME/dimensions, canonical suffix, ordered paths, sizes, file hashes, and bundle hash. |
+| G03 | Idempotent freeze | Repeating the exact source freeze produces byte-identical artifacts; a differing existing artifact is not overwritten. |
+| G04 | Semantic source contract | A complete draft freezes source authority/allowed use/exclusions, verified-inferred-needs_source facts, all critical invariants, and a legal 7-10 panel plan into one contract and exact prompt block. |
+| G05 | Prompt-block binding | The exact frozen material prompt block occurs once in the UTF-8/LF generation prompt and is bound into the worker exec receipt. |
+| G06 | Deterministic worker exec | Renderer produces the exact nonce-first, single-literal-imagegen, ordered-reference exec source and receipt; resolver compares the entire actual source byte-for-byte. |
+| G07 | Whole-worker binding | One fresh worker has exactly one task/turn, exact parent/checkpoint/agent/nonce binding, one imagegen exec, only bound waits, one completed image event, and empty finals. |
+| G08 | Complete PNG decode | Resolver verifies and fully loads the thread+call-derived PNG, records actual dimensions/hash, and creates board/result artifacts without overwriting. |
+| G09 | Non-exact dimensions | A source-faithful `1672x941` or `1536x1024` board remains content-QA evidence; dimensions alone do not fail or trigger repair. |
+| G10 | Complete content QA | QA covers every board gate, every planned panel, and every critical invariant exactly once; all accepted results pass and cite observed source fidelity. |
+| G11 | Focused repair ledger | At most attempts 01-03 exist; every repair has fresh prompt/exec/spawn/result/board/QA and only one immutable accepted attempt. |
+| G12 | Image-specific 4K handoff | Deterministic package-local renderer derives the exact prompt from the accepted board, every original source, source contract, and QA-authorized artifact cleanup operations; strict JSON handoff binds both prompt paths, exact 16:9/4K request, and a legal external status/QA/approval tuple. |
+| G13 | Artifact-backed publication | Builder independently revalidates every accepted path/hash/schema/image and emits one create-only payload containing board, full prompt pair, hashes, QA/status evidence, and published states. |
+| G14 | One-request lifecycle | Explicit invocation completes through one non-decision worker and one non-empty main-agent final without a second user message. |
 
 ## Red Scenarios
 
-- Implicit invocation attempts to spawn a worker: `blocked_worker_authorization`.
-- Main agent calls imagegen and assumes a continuation: fail.
-- Worker thread is missing, stale, wrong-parent, wrong-nonce, or ambiguous: exact `blocked_worker_*` failure.
-- Worker task envelope is encrypted and the imagegen exec omits or changes the literal nonce declaration: `blocked_worker_nonce_mismatch`.
-- Worker contains zero or multiple imagegen calls/events: fail.
-- Worker calls an unrelated tool before or after imagegen: fail.
-- Imagegen arguments use a variable, template literal, concatenation, decoy object, shell-command result, or non-literal wrapper: fail.
-- Submitted prompt differs by one byte or has the 44-character `Exit code / Wall time / Output` wrapper: `blocked_worker_prompt_mismatch`.
-- Reference order, path, size, or hash differs from the manifest: fail.
-- Source, copy destination, result JSON, or prompt escapes the frozen run/attempt boundary: fail.
-- Image call ID, worker thread ID, or generated path contains unsafe traversal or does not derive the exact PNG path: fail.
-- Newest PNG is selected by timestamp: fail.
-- Board is not copied into the attempt directory or not visually inspected: fail.
-- `assistant_qa_status: failed` is selected as accepted attempt: fail.
-- Two accepted attempts exist or failed attempt artifacts are overwritten: fail.
-- 4K prompt is frozen before inspection or invents fill level, internal structure, facets, highlights, labels, or material microdetail: fail.
-- A `1672x941` board is repaired only because it is not exact 16:9: fail.
-- Final claims `published` but omits the board, either complete prompt, either SHA-256, or either published state: fail.
-- A prompt is reconstructed after missing sidecar or hash mismatch: fail.
+| ID | Scenario | Expected result |
+|---|---|---|
+| R01 | Implicit routing attempts a worker. | `blocked_worker_authorization` |
+| R02 | v1 manifest, v1 accepted attempt, or direct original-path resolver mode. | `blocked_legacy_material_run_v1` |
+| R03 | Source is truncated, corrupt, mislabeled, symlink-escaped, duplicated, or mutates after freeze. | exact `blocked_reference_*` code; no frozen overwrite |
+| R04 | Source contract omits an alias, authority, fact class, critical invariant, or required panel; plan has not 7-10 panels, not exactly one anchor, not 3-4 angles, or no material response. | exact `blocked_source_contract_*` code |
+| R05 | Planned panel uses excluded content or a `needs_source` fact. | source-contract blocker |
+| R06 | Prompt omits, changes, or duplicates the frozen material prompt block. | prompt/exec blocker |
+| R07 | Actual imagegen uses a compliant literal in a comment but a bracket-notation/dynamic second call with different arguments. | exact exec-source mismatch; no output |
+| R08 | Prompt has variable/template/concatenation/shell-result transport or the historical 44-character `Exit code / Wall time / Output` wrapper. | exact exec-source or prompt mismatch |
+| R09 | Worker has an earlier task/turn, second image call, unknown call-shaped event, unrelated tool, wrong wait cell, non-empty final, or failed image event. | exact `blocked_worker_*` code |
+| R10 | Worker/reference/spawn/exec/result/hash lineage differs by one byte or path. | exact provenance blocker |
+| R11 | Image event path is not derived from exact thread+call, contains traversal, or newest-file selection is attempted. | exact image-path blocker |
+| R12 | PNG has only signature/IHDR, bad CRC, missing IDAT/IEND, is truncated, or cannot be fully decoded. | `blocked_worker_image_invalid`; no board/result |
+| R13 | Generated board bytes equal an original source. | generated/source collision blocker |
+| R14 | Output path aliases prompt, source, board, accepted record, result, or an existing different output. | location/conflict blocker; all inputs unchanged |
+| R15 | QA omits or duplicates a planned panel/invariant, contradicts its own status, or accepts a failed gate. | `blocked_board_inspection_invalid` |
+| R16 | Hero/macro panels change source chain type, link rhythm, connector topology, component order, edge thickness, fill boundary, label identity, or source-supported state while QA says passed. | repair-required content blocker |
+| R17 | A defect is cleanup-eligible while not a low/medium raster artifact, cites any critical invariant, omits a source alias, or uses an unapproved cleanup operation. | board-inspection or handoff/publication blocker |
+| R18 | 4K prompt is free prose or differs from the deterministic re-render; handoff is YAML/regex-like text, omits either prompt/source, adds provider controls, uses an illegal external status/QA/approval tuple, or has mismatched hashes. | exact enhancement-prompt or `blocked_4k_handoff_invalid` blocker |
+| R19 | Accepted record is empty, selects failed QA, omits a direct worker exec source/receipt path or hash, binds stale artifacts, exists twice, or is frozen before the 4K artifacts. | `blocked_accepted_attempt_*` |
+| R20 | Final output omits either full prompt/hash/status, exceeds capacity, or overwrites an artifact. | exact publication blocker; no partial output |
 
-## Required Runtime Proof
+## Historical Evidence Fixtures
 
-Static checks prove contract shape only. Acceptance requires a real local Codex smoke test in which a fresh Skill-using main agent spawns one terminal image worker, the worker imagegen completes with an empty worker final, the main agent resolves the exact PNG from worker thread ID plus call ID, visually inspects it, creates the image-specific 4K prompt, and emits one non-empty final main result containing the complete prompt pair and hashes.
+- `H01-control-flow-red`: 2026-07-10 thread `019f4b71-b716-71f0-bfc8-24ec7b650ff5`. Main-agent imagegen completed with a 44-character shell-output wrapper, both final records were empty, and no post-image prompt pair was published. It must never pass the worker-exec or final-output contract.
+- `H02-provenance-block-green`: the first v3 material smoke generated an image but could not prove the encrypted worker nonce. It correctly stopped without newest-file guessing, regeneration, or fake acceptance.
+- `H03-content-qa-red`: the v3 accepted bracelet board changed the fine uniform source chain into larger alternating round/oval links across hero and macro panels while another panel used a different chain. It is a topology failure, not a minor 4K cleanup defect, and must fail R16/R17.
 
-Maintain the 2026-07-10 bracelet rollout `019f4b71-b716-71f0-bfc8-24ec7b650ff5` as a red fixture: main-agent imagegen completed, the submitted prompt had the 44-character shell wrapper, both final records were empty, and the task completed without post-image publication.
+## Runtime Evidence Boundary
+
+Deterministic package tests prove artifact, provenance, decoder, schema, and state-transition behavior. They do not prove universal visual quality or native 4K. A real image-generation run may be cited only when its exact source contract, worker rollout, PNG, actual inspection, complete QA matrix, accepted record, prompt pair, and non-empty final are retained. Assistant QA alone is not user approval, and the prior bracelet smoke is not a visual-success fixture.

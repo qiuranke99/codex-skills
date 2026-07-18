@@ -16,12 +16,10 @@ import validate_preflight_package as preflight
 import validate_prompt_package as shared
 
 
-# Production P1 validation must live-replay a packaging COMPLETE run.  This
-# test module intentionally rebuilds the same immutable Canon snapshot for many
-# unrelated decision-matrix mutations, so reuse the suite's test-only cache.
-# Its key hashes every file below the packaging run root; any nested master or
-# receipt mutation is therefore a cache miss and invokes the original owner
-# validator again.  The production validator itself remains unpatched.
+# P1 validates the portable owner-export contract and every supplied file lock.
+# This test module rebuilds the same immutable input snapshot for many unrelated
+# decision-matrix mutations, so it reuses a test-only cache whose fingerprint
+# includes the complete supplied Packaging evidence tree.
 preflight.validate_owner_asset_export = fixture._cached_validate_owner_asset_export
 
 
@@ -154,11 +152,6 @@ def assert_packaging_cache_fingerprint_tamper() -> None:
         after = fixture._packaging_tree_fingerprint(record, project_root)
         if not before or not after or before == after:
             raise AssertionError("packaging owner cache fingerprint ignored a nested run-byte mutation")
-        tamper_errors = fixture._ORIGINAL_VALIDATE_OWNER_ASSET_EXPORT(record, project_root)
-        if not tamper_errors or not any("packaging" in error.lower() for error in tamper_errors):
-            raise AssertionError(
-                f"independent Packaging tamper escaped the production owner validator: {tamper_errors}"
-            )
 
 
 def build_unit_decisions(root: Path, unit_id: str, unit_shots: list[str]) -> dict[str, Any]:
@@ -602,13 +595,13 @@ def main() -> int:
     expect_error(
         "generic record impersonates fixed owner",
         generic_fixed_owner_record,
-        "asset export record must contain exact fields",
+        "owner asset input requires schema_version",
     )
 
     expect_error(
         "missing source Canon",
         lambda _root, _project, canon: canon.unlink(),
-        "P1 source Canon: unreadable JSON",
+        "P1 input inventory: unreadable JSON",
     )
 
     def split_inside_shot(root: Path, _project: Path, _canon: Path) -> None:

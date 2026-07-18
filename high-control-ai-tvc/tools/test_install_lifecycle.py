@@ -24,6 +24,10 @@ def main() -> int:
     errors.extend(inventory_errors)
     if errors:
         raise AssertionError(errors)
+    excluded_names = set(manifest.get("excluded_from_aggregate_profile", []))
+    managed_names = {item["name"] for item in skills}
+    if excluded_names & managed_names:
+        raise AssertionError("aggregate-excluded entries leaked into managed_inventory")
     first_name = skills[0]["name"]
 
     try:
@@ -40,13 +44,51 @@ def main() -> int:
     with tempfile.TemporaryDirectory(prefix="ai tvc install test ") as temporary:
         root = Path(temporary)
         target = root / "Discovery Root With Spaces"
+        linked_mode = "junction" if os.name == "nt" else "symlink"
 
         first = install(REPO_ROOT, target, "all", "copy")
         if len(first["changed"]) != len(skills):
             raise AssertionError("first install did not create every manifest skill")
+        if (
+            first.get("scope") != "optional_aggregate_profile"
+            or first.get("controls_individual_skill_availability") is not False
+        ):
+            raise AssertionError("install result did not preserve the optional aggregate boundary")
+
+        # Simulate a legacy receipt that incorrectly claimed a standalone
+        # package excluded from this aggregate profile. Migration must release
+        # only the receipt claim and preserve the discovery entry byte-for-byte.
+        standalone_name = next(iter(excluded_names))
+        standalone_source = (REPO_ROOT / standalone_name).resolve()
+        standalone_entry = target / standalone_name
+        _create_link(standalone_source, standalone_entry, linked_mode)
+        _state_root, legacy_receipt_path = manager._state_paths(target, manifest["suite_id"])
+        legacy_receipt = manager._load_receipt(legacy_receipt_path, manifest["suite_id"])
+        legacy_receipt["entries"][standalone_name] = {
+            "skill_name": standalone_name,
+            "tier": "independent",
+            "method": linked_mode,
+            "source": str(standalone_source),
+            "destination": str(standalone_entry),
+            "installed_digest": manager._tree_digest(standalone_source),
+        }
+        manager._write_json_atomic(legacy_receipt_path, legacy_receipt)
+
         second = install(REPO_ROOT, target, "all", "copy")
         if second["changed"] or len(second["unchanged"]) != len(skills):
             raise AssertionError("copy install is not idempotent")
+        if second["released_legacy_receipt_entries"] != [standalone_name]:
+            raise AssertionError("legacy standalone ownership was not released from aggregate receipt")
+        if standalone_entry.resolve() != standalone_source:
+            raise AssertionError("aggregate install changed the standalone discovery entry")
+        current_receipt = manager._load_receipt(legacy_receipt_path, manifest["suite_id"])
+        if (
+            current_receipt.get("scope") != "optional_aggregate_profile"
+            or current_receipt.get("controls_individual_skill_availability") is not False
+        ):
+            raise AssertionError("install receipt did not preserve the optional aggregate boundary")
+        if standalone_name in current_receipt["entries"]:
+            raise AssertionError("standalone Skill remained in the aggregate install receipt")
         if not inspect_installation(REPO_ROOT, target, "all")["ready"]:
             raise AssertionError("fresh managed copy is not ready")
 
@@ -69,12 +111,14 @@ def main() -> int:
 
         removed = uninstall(REPO_ROOT, target, "all")
         if len(removed["removed"]) != len(skills):
-            raise AssertionError("clean uninstall did not remove every suite-owned copy")
+            raise AssertionError("clean uninstall did not remove every aggregate-owned copy")
         if any((target / item["name"]).exists() for item in skills):
             raise AssertionError("clean uninstall left a managed skill entry")
+        if not os.path.lexists(str(standalone_entry)) or standalone_entry.resolve() != standalone_source:
+            raise AssertionError("aggregate uninstall removed or changed the standalone Skill")
+        manager._remove_link_only(standalone_entry, linked_mode)
 
         linked_target = root / "Linked Discovery Root"
-        linked_mode = "junction" if os.name == "nt" else "symlink"
         if os.name == "nt":
             percent_destination = root / "Literal %TEMP% Junction" / first_name
             percent_destination.parent.mkdir()
@@ -388,13 +432,25 @@ def main() -> int:
         original_production_check = project_manager.production_check
         project_manager.production_check = lambda *_args, **_kwargs: {
             "ready_latest": True,
+            "aggregate_profile_ready": True,
             "release_commit": "f" * 40,
             "active_system_root": str(REPO_ROOT / "high-control-ai-tvc"),
             "errors": [],
         }
         project = root / "Client Projects" / "Example TVC"
-        first_project = create_project(project, "Example TVC")
-        second_project = create_project(project, "Example TVC")
+        not_opted_in = root / "Client Projects" / "Not Opted In"
+        try:
+            create_project(not_opted_in, "Not Opted In")
+        except RuntimeError as exc:
+            if "--aggregate-managed" not in str(exc):
+                raise
+        else:
+            raise AssertionError("project helper accepted a project without explicit aggregate opt-in")
+        if not_opted_in.exists():
+            raise AssertionError("project helper mutated a destination before aggregate opt-in")
+
+        first_project = create_project(project, "Example TVC", aggregate_managed=True)
+        second_project = create_project(project, "Example TVC", aggregate_managed=True)
         if first_project["canon_created"] or second_project["canon_created"]:
             raise AssertionError("project helper fabricated Canon")
         if (project / "00_project_canon" / "PROJECT_CANON_MANIFEST.json").exists():
@@ -408,7 +464,7 @@ def main() -> int:
         unrelated_sentinel.write_text("preserve", encoding="utf-8")
         try:
             try:
-                create_project(unrelated, "Should Fail")
+                create_project(unrelated, "Should Fail", aggregate_managed=True)
             except RuntimeError:
                 pass
             else:

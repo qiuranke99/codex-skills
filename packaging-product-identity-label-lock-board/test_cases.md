@@ -75,3 +75,20 @@ Executable acceptance suite: `python -B scripts/test_contract.py`.
 - Do not treat prompt enumeration alone as exact-copy proof.
 - Do not accept visible gibberish because a close-up happens to be correct.
 - Do not split this workflow into additional Skills.
+
+## Standalone package and optional handoff
+
+1. Copy only this Skill directory to a fresh root and run
+   `python -B scripts/test_contract.py`.
+   - Pass: all package scripts, templates, and tests resolve within the copied
+     package; no neighboring Skill or external suite is inspected.
+2. The package entrypoint attempts to synchronize or validate an unrelated
+   suite before source freezing or prompt compilation.
+   - Fail: source freezing and prompt compilation start directly from this
+     package.
+3. An AI-video project integrator is absent.
+   - Pass: the accepted packaging board and its copy authority are unchanged;
+     project handoff is optional and external.
+4. The package attempts to import or invoke a project-Canon writer.
+   - Fail: it may only expose locked board/copy artifacts after the package
+     validator passes and production approval is explicit.

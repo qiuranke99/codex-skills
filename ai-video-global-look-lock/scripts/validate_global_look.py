@@ -8,18 +8,16 @@ import hashlib
 import json
 import math
 import re
-import sys
 from pathlib import Path
 from typing import Any
 
-
-SUITE_ROOT = Path(__file__).resolve().parents[2]
-SHOT_SCRIPTS = SUITE_ROOT / "ai-video-shot-script-director" / "scripts"
-if str(SHOT_SCRIPTS) not in sys.path:
-    sys.path.insert(0, str(SHOT_SCRIPTS))
-from validate_manifest_update_receipt import validate_receipt  # type: ignore  # noqa: E402
-from validate_project_canon_manifest import validate_manifest as validate_project_canon, verify_artifact_files as verify_project_canon_files  # type: ignore  # noqa: E402
-from revision_evidence import keyed_changes, validate_predecessor_evidence  # type: ignore  # noqa: E402
+from ai_video_input_contracts import (
+    keyed_changes,
+    validate_manifest as validate_project_canon,
+    validate_predecessor_evidence,
+    validate_receipt,
+    verify_artifact_files as verify_project_canon_files,
+)
 
 
 HASH_RE = re.compile(r"^[a-f0-9]{64}$")
@@ -779,10 +777,14 @@ def main() -> int:
         errors.append("non-draft verified_bytes references require --project-root")
     if file_root is not None:
         errors.extend(verify_declared_file_hashes(record, file_root.resolve()))
-    if record.get("approval_status") in {"assistant_validated", "user_approved"}:
-        if args.project_root is None or args.project_canon_manifest is None or args.manifest_update_receipt is None:
-            errors.append("validated Global Look completion requires --project-root, --project-canon-manifest, and --manifest-update-receipt")
-        else:
+    canon_args = (args.project_root, args.project_canon_manifest, args.manifest_update_receipt)
+    if any(item is not None for item in canon_args):
+        if not all(item is not None for item in canon_args):
+            errors.append(
+                "optional Project Canon integration requires --project-root, "
+                "--project-canon-manifest, and --manifest-update-receipt together"
+            )
+        elif record.get("approval_status") in {"assistant_validated", "user_approved"}:
             try:
                 canon = load_json(args.project_canon_manifest)
                 receipt = load_json(args.manifest_update_receipt)

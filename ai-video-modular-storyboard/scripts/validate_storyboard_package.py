@@ -12,16 +12,15 @@ import sys
 from pathlib import Path
 from typing import Any
 
-SUITE_ROOT = Path(__file__).resolve().parents[2]
-SHOT_SCRIPTS = SUITE_ROOT / "ai-video-shot-script-director" / "scripts"
-LOOK_SCRIPTS = SUITE_ROOT / "ai-video-global-look-lock" / "scripts"
-for helper_dir in (SHOT_SCRIPTS, LOOK_SCRIPTS):
-    if str(helper_dir) not in sys.path:
-        sys.path.insert(0, str(helper_dir))
-from validate_global_look import validate_look, verify_declared_file_hashes as verify_look_files  # type: ignore  # noqa: E402
-from validate_manifest_update_receipt import validate_receipt  # type: ignore  # noqa: E402
-from validate_project_canon_manifest import validate_manifest as validate_project_canon, verify_artifact_files as verify_project_canon_files  # type: ignore  # noqa: E402
-from validate_shot_contract import validate_contract as validate_shot_contract, verify_declared_file_hashes as verify_shot_files  # type: ignore  # noqa: E402
+from ai_video_input_contracts import (
+    validate_global_look as validate_look,
+    validate_manifest as validate_project_canon,
+    validate_receipt,
+    validate_shot_contract,
+    verify_artifact_files as verify_project_canon_files,
+    verify_look_files,
+    verify_shot_files,
+)
 
 OWNER = "ai-video-modular-storyboard"
 CONTRACT_VERSION = "ai-video-artifact-v1"
@@ -556,9 +555,7 @@ def _validate_package(root: Path, canon_manifest: dict[str, Any] | None = None, 
     shot_authority: dict[str, Any] | None = None
     look_authority: dict[str, Any] | None = None
     if data.get("package_status") in {"assistant_validated", "user_approved"}:
-        if canon_manifest is None:
-            errors.append("validated storyboard package requires the actual Project Canon manifest")
-        else:
+        if canon_manifest is not None:
             canon_errors = validate_project_canon(canon_manifest)
             if not canon_errors and project_root is not None:
                 canon_errors.extend(verify_project_canon_files(canon_manifest, project_root))
@@ -797,7 +794,6 @@ def _validate_package(root: Path, canon_manifest: dict[str, Any] | None = None, 
     continuity_path = root / "04_qa/continuity_report.md"
     validation_path = root / "04_qa/validation_report.json"
     for path, label in (
-        (receipt_path, "manifest update receipt"),
         (metadata_path, "review board metadata"),
         (continuity_path, "continuity report"),
         (validation_path, "validation report"),
@@ -817,6 +813,8 @@ def _validate_package(root: Path, canon_manifest: dict[str, Any] | None = None, 
                 f"manifest update receipt: {item}"
                 for item in validate_receipt(receipt, OWNER, expected_registered, canon_manifest)
             )
+    elif canon_manifest is not None:
+        errors.append("optional Project Canon integration requires MANIFEST_UPDATE_RECEIPT.json")
     if metadata_path.is_file() and isinstance(board, dict):
         try:
             metadata = json.loads(metadata_path.read_text(encoding="utf-8"))

@@ -1,6 +1,6 @@
 interface:
   display_name: "AI Video Keyframe Continuity Pack"
   short_description: "Generation-ready Omni anchors and state continuity ledgers."
-  default_prompt: "Use $ai-video-keyframe-continuity-pack after the shot contract, final modular storyboard, canon assets, global look, and V1 timing are approved. Create K1 Omni-reference anchors and state ledgers before unit preflight, then create a separate K2 boundary supplement after the exact P1 plan. Never use first/last-frame mode."
+  default_prompt: "Use $ai-video-keyframe-continuity-pack with these supplied, approved Shot, Storyboard, identity, Look, and timing artifact contracts. Create K1 Omni-reference anchors and state ledgers; create the optional K2 boundary supplement only when an exact P1 plan is supplied. Never require producer packages or use first/last-frame mode."
 policy:
   allow_implicit_invocation: true

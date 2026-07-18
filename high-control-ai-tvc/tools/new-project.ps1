@@ -7,6 +7,8 @@ param(
 
     [string]$Target,
 
+    [switch]$AggregateManaged,
+
     [ValidateSet("text", "json")]
     [string]$Format = "text"
 )
@@ -46,5 +48,6 @@ $arguments = @($argumentsPrefix)
 $arguments += @((Join-Path $ScriptDirectory "new_project.py"), $Destination, "--format", $Format)
 if ($Name) { $arguments += @("--name", $Name) }
 if ($Target) { $arguments += @("--target", $Target) }
+if ($AggregateManaged) { $arguments += "--aggregate-managed" }
 & $python @arguments
 exit $LASTEXITCODE

@@ -5,9 +5,10 @@ description: "Create and maintain an editable, generation-ready AI-video storybo
 
 # AI Video Modular Storyboard
 
-## HIGH_CONTROL_RELEASE_GATE_V2
-
-Before any action or production output, resolve this `SKILL.md` directory and execute the sibling OS-native launcher: on Windows, `& ..\\high-control-ai-tvc\\tools\\release-control.ps1 -Action check -Format json`; on macOS/Linux, `../high-control-ai-tvc/tools/release-control.sh check --format json`. The launcher must resolve the pinned runtime from the validated release receipt; never invoke `release_control.py` through an unverified global Python. Proceed only when `ready_latest=true`. On any failure, stop and run the same launcher with `sync`, then start a new Codex task. Bind the returned `release_commit` to this stage; never substitute a mutable Windows/Mac authoring checkout.
+This Skill is a self-contained entrypoint. Consume one supplied Professional
+Shot Contract and any supplied authority artifacts by contract, without
+requiring their producer packages or a workflow-suite installation. Optional
+pipeline handoff does not gate storyboard creation or validation.
 
 中文名：AI 视频模块化故事板
 
@@ -19,11 +20,25 @@ The independent frames are the source assets. A contact sheet is only a determin
 
 ## Input Gate
 
-Require an approved professional Shot Contract with stable `shot_uid`, display order, target duration, visible action, composition intent, initial state, ending state, and continuity relations for every shot. Require references only when the Shot Contract marks them as authoritative. Read the current approved character, product, packaging, material, scene, and Global Look records when available.
+Require a supplied, approved Professional Shot Contract artifact with stable
+`shot_uid`, display order, target duration, visible action, composition intent,
+initial state, ending state, and continuity relations for every shot. Require
+references only when that contract marks them as authoritative. Read supplied
+character, product, packaging, material, scene, and Global Look artifacts when
+available; never require their producer directories.
 
-Read the one canonical `<project_root>/00_project_canon/PROJECT_CANON_MANIFEST.json` under the shared contract owned by `ai-video-shot-script-director`. Propose only storyboard-owned registry deltas. Store `MANIFEST_UPDATE_RECEIPT.json`, never a second project manifest.
+A supplied `<project_root>/00_project_canon/PROJECT_CANON_MANIFEST.json` may be
+used as an optional artifact index. If it is absent, validate the Shot Contract
+and authority files directly from their declared locators and hashes. Do not
+create a private registry merely to use this Skill.
 
-If the input is only a rough or structured creative draft, issue a precise upstream request to `ai-video-shot-script-director`; do not silently invent the definitive shot count. If the user asks to reorder, insert, delete, merge, or split shots, route that change to the Shot Contract owner before changing the storyboard. Missing optional detail is not a reason to stop: infer conservative directing detail and record it.
+If the input is only a rough or structured creative draft, return
+`blocked_missing_professional_shot_contract` with the exact missing fields; do
+not require or locate a named sibling package and do not silently invent the
+definitive shot count. If the user asks to reorder, insert, delete, merge, or
+split shots, emit a change request addressed to the Shot Contract's declared
+owner before changing the storyboard. Missing optional detail is not a reason
+to stop: infer conservative directing detail and record it.
 
 ## Canonical Resources
 
@@ -133,7 +148,6 @@ The owner is `ai-video-modular-storyboard`, `contract_version` is `ai-video-arti
 storyboard-package/
 ├── 00_manifest/
 │   ├── STORYBOARD_MANIFEST.json
-│   ├── MANIFEST_UPDATE_RECEIPT.json
 │   ├── owned_artifacts/<frame-or-board-artifact-id>.json
 │   └── pre_transactions/<transaction_id>_BASE.json
 ├── 01_frames/
@@ -150,6 +164,9 @@ storyboard-package/
 ```
 
 Do not create empty placeholder files for stages not produced.
+
+Add `00_manifest/MANIFEST_UPDATE_RECEIPT.json` only after an explicitly
+requested Project Canon handoff succeeds.
 
 ## Hard Boundaries
 
@@ -184,8 +201,8 @@ Claim the package ready only when:
 - applied replacement transactions are atomic and prove unaffected hashes stayed unchanged;
 - reorder requests were routed upstream;
 - no approved artifact is stale;
-- every binary frame/board has a complete owned-artifact JSON record; Canon locks its project-relative primary bytes and record-sidecar bytes separately;
-- `python3 scripts/validate_storyboard_package.py <storyboard-package> --project-root <project-root> --project-canon-manifest <actual-project-canon>` exits zero for every applied replacement transaction.
+- every binary frame/board has a complete owned-artifact JSON record; when optional Project Canon registration was requested, its primary bytes and record-sidecar bytes are locked separately;
+- `python3 scripts/validate_storyboard_package.py <storyboard-package>` exits zero; when optional Project Canon integration is supplied, add `--project-root <project-root> --project-canon-manifest <actual-project-canon>` and require the same result.
 
 Validator success proves structural integrity, not aesthetic or production approval.
 
@@ -193,14 +210,13 @@ Validator success proves structural integrity, not aesthetic or production appro
 
 `Use $ai-video-modular-storyboard to turn this approved Shot Contract into N independent editable storyboard frames and a deterministic human review board.`
 
-## Shared Project Canon Write Gate
+## Optional Project Canon Handoff
 
-Before any Canon mutation, preserve the exact current bytes at
-`<package_root>/00_manifest/BASE_PROJECT_CANON_SNAPSHOT.json` and materialize
-the validated post bytes at
-`<package_root>/00_manifest/CANDIDATE_PROJECT_CANON_POST.json`. Invoke only this
-package's `scripts/apply_project_canon_transition.py`. The shared writer owns
-the project `.canon.lock`, `PENDING_PROJECT_CANON_TRANSACTION.json` recovery or
-blocking, raw-byte compare-and-swap, durable post readback, and only then
-`MANIFEST_UPDATE_RECEIPT.json`. Never write Canon or an applied receipt
-directly.
+Do not require Project Canon for frame generation, inspection, review-board
+composition, replacement transactions, or package validation. If registry
+mutation is explicitly requested, preserve exact base/candidate bytes and
+invoke `scripts/apply_project_canon_transition.py` with an explicit compatible
+`--transition-runner`. Without that input the wrapper returns
+`blocked_missing_project_canon_transition_input`; the standalone storyboard
+package remains valid. Never locate a sibling package or write Canon/receipt
+bytes directly.

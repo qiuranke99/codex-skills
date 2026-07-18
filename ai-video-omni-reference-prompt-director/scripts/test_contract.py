@@ -30,15 +30,12 @@ validator = importlib.util.module_from_spec(SPEC)
 SPEC.loader.exec_module(validator)
 
 # Prompt cases reuse one ordinary project fixture.  A process audit barrier
-# blocks writes to the complete Packaging authority closure before the OS can
-# mutate it; only non-Packaging dirty paths are restored between cases.  The
-# production owner validator still runs once for every isolated harness.  A
-# real Packaging mutation must use an independent, non-cached byte copy.
+# blocks writes to the input-owned Packaging authority closure before the OS
+# can mutate it; only non-Packaging dirty paths are restored between cases.
 _ORIGINAL_VALIDATE_OWNER_ASSET_EXPORT = validator.validate_owner_asset_export
 _PACKAGING_OWNER_VALIDATION_CACHE: dict[str, tuple[str, ...]] = {}
 _PACKAGING_FIXTURE_CACHE: dict[str, Path] = {}
 _PACKAGING_FIXTURE_TEMP_DIRS: list[tempfile.TemporaryDirectory[str]] = []
-_PACKAGING_FIXTURE_MODULE: Any | None = None
 _CASE_HARNESSES: list["CaseHarness"] = []
 _FROZEN_PROJECTS: dict[Path, "CaseHarness"] = {}
 
@@ -136,15 +133,66 @@ CHARACTER_ASSET_ID = "ASSET_FINAL_CHARACTER_LEAD_V1_0_0"
 PRODUCT_ASSET_ID = "ASSET_MATERIAL_PRODUCT_HERO_V1_0_0"
 PACKAGING_ASSET_ID = "ASSET_PACKAGING_PRODUCT_HERO_LABEL_V1_0_0"
 SCENE_ASSET_ID = "ASSET_SCENE_CANON_FIELD_V1_0_0"
-GLOBAL_LOOK_TEMPLATE_PATH = HERE.parents[1] / "ai-video-global-look-lock/references/global_look_contract.template.json"
-GLOBAL_LOOK_TEMPLATE = json.loads(GLOBAL_LOOK_TEMPLATE_PATH.read_text(encoding="utf-8"))
 GRAMMAR = (
     "GLOBAL DIRECTING GRAMMAR — restrained performance; one primary camera intention per shot; "
     "motivated cuts; alternating environmental wides and tactile macro inserts."
 )
-LOOK = GLOBAL_LOOK_TEMPLATE["global_look_prompt_full"]
-STATE = GLOBAL_LOOK_TEMPLATE["look_states"][0]["state_prompt_full"]
-DELTA = GLOBAL_LOOK_TEMPLATE["shot_look_assignments"][0]["shot_look_delta_prompt_full"]
+LOOK = (
+    "GLOBAL LOOK CORE — cinematic naturalism with stable warm practical highlights, controlled black levels, "
+    "neutral product color, restrained saturation, consistent lens response, soft atmospheric depth, protected "
+    "skin tone, repeatable material reflection, and no shot-local palette or texture drift across the sequence."
+)
+STATE = (
+    "LOOK STATE FIELD — preserve the same exposure, contrast, atmosphere, palette, texture, product response, "
+    "and highlight rolloff for every assigned shot while allowing only composition-specific lighting motivation."
+)
+DELTA = (
+    "SHOT LOOK DELTA — FROZEN STRUCTURED AUTHORITY\n"
+    "active: false\nscope: []\ndescription: no shot-local deviation\n"
+    "reason: preserve the frozen look core\npreserves_look_core: true"
+)
+GLOBAL_LOOK_TEMPLATE = {
+    "contract_version": "ai-video-artifact-v1",
+    "artifact_id": "GLOBAL_LOOK_TEMPLATE",
+    "owner_skill": "ai-video-global-look-lock",
+    "version": "1.0.0",
+    "sha256": None,
+    "approval_status": "draft",
+    "dependencies": [],
+    "affected_shot_uids": [SHOTS[0]],
+    "stale_reason": None,
+    "schema_version": "ai-video-global-look.v1",
+    "global_look_prompt_full": LOOK,
+    "project_constraints": {"multiple_look_states": False},
+    "look_states": [{
+        "state_id": "LOOK_STATE_FIELD",
+        "state_prompt_full": STATE,
+        "reference_ids": ["LOOK_REFERENCE_HERO"],
+    }],
+    "look_reference_set": [{
+        "reference_id": "LOOK_REFERENCE_HERO",
+        "artifact": {},
+        "locator": "",
+        "file_sha256": "0" * 64,
+    }],
+    "shot_look_assignments": [{
+        "shot_uid": SHOTS[0],
+        "state_id": "LOOK_STATE_FIELD",
+        "shot_look_delta": {
+            "active": False,
+            "scope": [],
+            "description": "no shot-local deviation",
+            "reason": "preserve the frozen look core",
+            "preserves_look_core": True,
+        },
+        "shot_look_delta_prompt_full": DELTA,
+    }],
+    "look_risk_coverage": [],
+    "intrinsic_product_boundaries": [{"source_asset_ids": []}],
+    "skin_tone_boundaries": [{"source_asset_ids": []}],
+    "three_layer_lock": {},
+    "revision_scope": {},
+}
 ATLAS_SOURCE_ARTIFACT_TYPES = {
     "GLOBAL_LOOK_REFERENCE", "CHARACTER_ASSET", "PRODUCT_ASSET", "SCENE_ASSET",
     "CHARACTER_FINAL_LOCK_BOARD_ASSET", "MATERIAL_SENSITIVE_PRODUCT_ASSET", "SCENE_CANON_ASSET",
@@ -442,32 +490,26 @@ def make_packaging_exact_copy_authority_evidence(
     artifact_id: str,
     asset_key: str,
 ) -> tuple[str, str, dict[str, str]]:
-    global _PACKAGING_FIXTURE_MODULE
-    packaging_scripts = HERE.parents[1] / "packaging-product-identity-label-lock-board/scripts"
-    if str(packaging_scripts) not in sys.path:
-        sys.path.insert(0, str(packaging_scripts))
-    if _PACKAGING_FIXTURE_MODULE is None:
-        module_path = packaging_scripts / "test_contract.py"
-        spec = importlib.util.spec_from_file_location("_omni_packaging_contract_fixture", module_path)
-        if spec is None or spec.loader is None:
-            raise AssertionError("packaging fixture module is unavailable")
-        module = importlib.util.module_from_spec(spec)
-        spec.loader.exec_module(module)
-        _PACKAGING_FIXTURE_MODULE = module
-    module = _PACKAGING_FIXTURE_MODULE
-    fixture_data = module.valid_fixture(
-        project_root / f"sources/{artifact_id}_packaging_board_fixture",
-        exact_copy=True,
+    primary_rel, primary_hash = make_png(project_root, f"{artifact_id}_EXACT_COPY", (196, 152, 76))
+    primary_path = project_root / primary_rel
+    run_root = project_root / f"sources/{artifact_id}_packaging_board_fixture"
+    run_root.mkdir(parents=True, exist_ok=True)
+    manifest_path = run_root / "ASSET_BOARD_MANIFEST.json"
+    manifest = {
+        "schema_version": "packaging-board-canon-evidence-fixture.v1",
+        "asset_key": asset_key,
+        "acceptance_status": "accepted",
+        "final_board_path": primary_rel,
+        "final_board_sha256": primary_hash,
+    }
+    write_json(manifest_path, manifest)
+    (run_root / "VALIDATION_REPORT.md").write_text(
+        "Local input-contract fixture: exact-copy authority supplied by the owner.\n",
+        encoding="utf-8",
     )
-    run_root = Path(fixture_data["run_dir"])
-    manifest_path = Path(fixture_data["manifest"])
-    manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
-    primary_path = Path(manifest["final_board_path"])
     run_root_rel = run_root.relative_to(project_root).as_posix()
-    primary_rel = primary_path.relative_to(project_root).as_posix()
-    primary_hash = file_hash(primary_path)
     manifest_rel = manifest_path.relative_to(project_root).as_posix()
-    validator_path = packaging_scripts / "validate_asset_board_run.py"
+    local_contract_path = HERE / "ai_video_input_contracts.py"
     evidence = {
         "schema_version": "packaging-board-canon-evidence.v1",
         "owner_skill": "packaging-product-identity-label-lock-board",
@@ -478,7 +520,7 @@ def make_packaging_exact_copy_authority_evidence(
             "asset_board_manifest_locator": manifest_rel,
             "asset_board_manifest_file_sha256": file_hash(manifest_path),
         },
-        "validator_file_sha256": file_hash(validator_path),
+        "input_contract_file_sha256": file_hash(local_contract_path),
         "final_board": {"locator": primary_rel, "file_sha256": primary_hash},
         "sha256": None,
     }
@@ -802,10 +844,11 @@ def create_package(root: Path, project_root: Path | None = None) -> None:
     look["three_layer_lock"].update({"textual_contract_frozen": True, "visual_reference_set_approved": True})
     look["revision_scope"].update({"changed_state_ids": ["LOOK_STATE_FIELD"], "changed_shot_uids": SHOTS})
     look_rel, look_file_hash = write_original_json(project_root, look)
-    look_schema = json.loads((HERE.parents[1] / "ai-video-global-look-lock/references/global_look_contract.schema.json").read_text(encoding="utf-8"))
-    look_schema_errors = validator.validate_instance(look, look_schema, look_schema)
-    if look_schema_errors:
-        raise AssertionError(f"Global Look source fixture must satisfy its owner schema: {look_schema_errors}")
+    look_contract_errors = validator.validate_owner_input(
+        look, "ai-video-global-look-lock", "ai-video-global-look.v1"
+    )
+    if look_contract_errors:
+        raise AssertionError(f"Global Look input fixture violates its consumed contract: {look_contract_errors}")
     artifacts[look["artifact_id"]] = look
     entries.append(make_entry(look, "global_look_contract", "GLOBAL_LOOK_CONTRACT", look_rel, look_file_hash))
 
@@ -1485,21 +1528,22 @@ def create_package(root: Path, project_root: Path | None = None) -> None:
     receipt["resulting_manifest_sha256"] = post_manifest["sha256"]
     write_json(root / validator.MANIFEST_RECEIPT, receipt)
 
-    owner_schema_pairs = [
-        (shot_rel, HERE.parents[1] / "ai-video-shot-script-director/references/shot_contract.schema.json"),
-        (look_rel, HERE.parents[1] / "ai-video-global-look-lock/references/global_look_contract.schema.json"),
-        (storyboard_rel, HERE.parents[1] / "ai-video-modular-storyboard/references/storyboard_manifest.schema.json"),
-        (v1_rel, HERE.parents[1] / "ai-video-timed-animatic-previs-director/references/previs_manifest.schema.json"),
-        (keyframe_rel, HERE.parents[1] / "ai-video-keyframe-continuity-pack/references/keyframe_manifest.schema.json"),
-        (k2_rel, HERE.parents[1] / "ai-video-keyframe-continuity-pack/references/boundary_supplement.schema.json"),
-        (v2_manifest_rel, HERE.parents[1] / "ai-video-timed-animatic-previs-director/references/previs_manifest.schema.json"),
+    owner_input_contracts = [
+        (shot_rel, "ai-video-shot-script-director", "ai-video-shot-contract.v1"),
+        (look_rel, "ai-video-global-look-lock", "ai-video-global-look.v1"),
+        (storyboard_rel, "ai-video-modular-storyboard", "ai-video-modular-storyboard.v1"),
+        (v1_rel, "ai-video-timed-animatic-previs-director", "ai-video-timed-animatic-previs.v1"),
+        (keyframe_rel, "ai-video-keyframe-continuity-pack", "ai-video-keyframe-continuity-pack.v1"),
+        (k2_rel, "ai-video-keyframe-continuity-pack", "ai-video-keyframe-boundary-supplement.v1"),
+        (v2_manifest_rel, "ai-video-timed-animatic-previs-director", "ai-video-timed-animatic-previs.v1"),
     ]
-    for source_rel, schema_path in owner_schema_pairs:
+    for source_rel, expected_owner, expected_schema in owner_input_contracts:
         source_value = json.loads((project_root / source_rel).read_text(encoding="utf-8"))
-        owner_schema = json.loads(schema_path.read_text(encoding="utf-8"))
-        schema_errors = validator.validate_instance(source_value, owner_schema, owner_schema)
-        if schema_errors:
-            raise AssertionError(f"owner source must satisfy {schema_path.name}: {schema_errors}")
+        input_errors = validator.validate_owner_input(source_value, expected_owner, expected_schema)
+        if input_errors:
+            raise AssertionError(
+                f"owner source must satisfy consumed input contract {expected_schema}: {input_errors}"
+            )
 
 
 def create_revise_package(root: Path, project_root: Path | None = None) -> None:
@@ -2208,9 +2252,11 @@ def main() -> int:
         raise AssertionError(f"positive anchored revision fixture failed: {revision_errors}")
 
     def root_boundary_checks(package_root: Path, project_root: Path) -> None:
-        missing_actual = validator.validate_package(package_root, project_root, None)
-        if not any("--project-canon-manifest is required" in error for error in missing_actual):
-            raise AssertionError(f"final package passed without actual post Canon: {missing_actual}")
+        standalone_errors = validator.validate_package(package_root, project_root, None)
+        if standalone_errors:
+            raise AssertionError(
+                f"final standalone package must not require optional post Canon: {standalone_errors}"
+            )
         wrong_root = validator.validate_package(
             package_root, package_root, project_root / validator.DEFAULT_POST_CANON
         )

@@ -14,5 +14,5 @@ for PYTHON in python3.12 python3.11; do
     exec "$PYTHON" "$SCRIPT_DIR/setup_runtime.py" "$@"
   fi
 done
-printf '%s\n' "ERROR: install Python 3.11 or 3.12 before creating the suite runtime." >&2
+printf '%s\n' "ERROR: install Python 3.11 or 3.12 before creating the optional aggregate maintenance environment." >&2
 exit 127

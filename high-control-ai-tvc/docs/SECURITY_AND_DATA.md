@@ -2,6 +2,10 @@
 
 这个仓库是公开的生产系统源码，不是客户项目存储区。
 
+这些数据边界同时适用于独立 Skill 和显式选择的 aggregate workflow；
+`high-control-ai-tvc` 的 receipt、release gate 或 preflight 不决定单包是否
+available，也不会取得客户数据的管理权。
+
 ## 必须放在仓库之外的内容
 
 - 客户粗脚本、品牌策略和未发布创意；

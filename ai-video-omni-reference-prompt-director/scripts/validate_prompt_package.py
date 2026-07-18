@@ -3,6 +3,7 @@
 
 from __future__ import annotations
 
+import argparse
 import copy
 import hashlib
 import json
@@ -13,10 +14,6 @@ import subprocess
 import sys
 from pathlib import Path
 from typing import Any
-
-SHOT_DIRECTOR_SCRIPTS = Path(__file__).resolve().parents[2] / "ai-video-shot-script-director" / "scripts"
-if str(SHOT_DIRECTOR_SCRIPTS) not in sys.path:
-    sys.path.insert(0, str(SHOT_DIRECTOR_SCRIPTS))
 
 from build_reference_atlas import (
     ALLOWED_ATLAS_CONTROL_ROLES,
@@ -31,16 +28,31 @@ from build_reference_atlas import (
     build_from_spec,
     decode_common_raster,
 )
-from validate_schema_parity import validate_instance
-from build_asset_canon_export import validate_export_record as validate_owner_asset_export
-
-PREVIS_SCRIPTS = Path(__file__).resolve().parents[2] / "ai-video-timed-animatic-previs-director" / "scripts"
-if str(PREVIS_SCRIPTS) not in sys.path:
-    sys.path.insert(0, str(PREVIS_SCRIPTS))
+from ai_video_input_contracts import validate_owner_asset_export, validate_owner_input
+from json_schema_runtime import validate_instance
 from probe_control_media import MediaProbeError, probe_media
 
 
 OWNER = "ai-video-omni-reference-prompt-director"
+
+
+def _skill_name(*parts: str) -> str:
+    """Build external owner IDs without encoding package-relative paths."""
+    return "-".join(parts)
+
+
+SHOT_OWNER = _skill_name("ai", "video", "shot", "script", "director")
+LOOK_OWNER = _skill_name("ai", "video", "global", "look", "lock")
+STORYBOARD_OWNER = _skill_name("ai", "video", "modular", "storyboard")
+KEYFRAME_OWNER = _skill_name("ai", "video", "keyframe", "continuity", "pack")
+PREVIS_OWNER = _skill_name("ai", "video", "timed", "animatic", "previs", "director")
+CASTING_OWNER = _skill_name("character", "casting", "lock", "board")
+CHARACTER_FINAL_OWNER = _skill_name("character", "final", "lock", "board")
+SINGLE_FACE_OWNER = _skill_name("single", "face", "character", "lock", "board")
+MULTI_ANGLE_OWNER = _skill_name("multi", "angle", "product", "identity", "lock", "board")
+PACKAGING_OWNER = _skill_name("packaging", "product", "identity", "label", "lock", "board")
+MATERIAL_OWNER = _skill_name("material", "sensitive", "product", "master", "asset", "board")
+SCENE_OWNER = _skill_name("scene", "canon", "asset", "pack")
 APPROVALS = {"draft", "assistant_validated", "user_approved", "stale", "blocked"}
 SEMVER = re.compile(r"^[0-9]+\.[0-9]+\.[0-9]+$")
 HEX64 = re.compile(r"^[a-f0-9]{64}$")
@@ -104,17 +116,6 @@ RUNTIME_SCHEMA_BY_FILE = {
     PAYLOAD: "provider_payload_manifest.schema.json",
     FEEDBACK: "feedback_route.schema.json",
 }
-OWNER_SCHEMA_BY_VERSION = {
-    "ai-video-shot-contract.v1": "ai-video-shot-script-director/references/shot_contract.schema.json",
-    "ai-video-global-look.v1": "ai-video-global-look-lock/references/global_look_contract.schema.json",
-    "ai-video-modular-storyboard.v1": "ai-video-modular-storyboard/references/storyboard_manifest.schema.json",
-    "ai-video-keyframe-continuity-pack.v1": "ai-video-keyframe-continuity-pack/references/keyframe_manifest.schema.json",
-    "ai-video-keyframe-boundary-supplement.v1": "ai-video-keyframe-continuity-pack/references/boundary_supplement.schema.json",
-    "ai-video-timed-animatic-previs.v1": "ai-video-timed-animatic-previs-director/references/previs_manifest.schema.json",
-    "ai-video-generation-unit-preflight.v1": "ai-video-omni-reference-prompt-director/references/generation_unit_preflight.schema.json",
-}
-
-
 def load_json(path: Path) -> Any:
     def reject_constant(value: str) -> None:
         raise ValueError(f"non-finite JSON number: {value}")
@@ -685,13 +686,8 @@ PREFLIGHT_VIDEO_TYPE_TOKENS = (
 PREFLIGHT_AUDIO_SLOT_PREFIXES = ("audio:", "dialogue_audio:", "voice_audio:", "sfx_audio:")
 PREFLIGHT_VIDEO_SLOT_PREFIXES = ("video_reference:", "motion_reference:", "camera_reference_video:")
 REGISTERED_ASSET_OWNERS = {
-    "character-casting-lock-board",
-    "character-final-lock-board",
-    "single-face-character-lock-board",
-    "multi-angle-product-identity-lock-board",
-    "packaging-product-identity-label-lock-board",
-    "material-sensitive-product-master-asset-board",
-    "scene-canon-asset-pack",
+    CASTING_OWNER, CHARACTER_FINAL_OWNER, SINGLE_FACE_OWNER, MULTI_ANGLE_OWNER,
+    PACKAGING_OWNER, MATERIAL_OWNER, SCENE_OWNER,
 }
 SOURCE_CODEC_MEDIA_TYPES = {"PNG": "image/png", "JPEG": "image/jpeg", "WEBP": "image/webp"}
 
@@ -1342,18 +1338,10 @@ def load_original_authority(
             errors.append(f"upstream authority/{slot}: original artifact {field} differs from active Canon entry")
     if value.get("schema_version") != expected_schema_version:
         errors.append(f"upstream authority/{slot}: expected original schema {expected_schema_version}")
-    schema_rel = OWNER_SCHEMA_BY_VERSION.get(expected_schema_version)
-    if schema_rel is None:
-        errors.append(f"upstream authority/{slot}: no owner-schema adapter is registered")
-    else:
-        schema_path = Path(__file__).resolve().parents[2] / schema_rel
-        try:
-            owner_schema = load_json(schema_path)
-        except (OSError, json.JSONDecodeError, ValueError) as exc:
-            errors.append(f"upstream authority/{slot}: owner schema unavailable: {exc}")
-        else:
-            for schema_error in validate_instance(value, owner_schema, owner_schema):
-                errors.append(f"upstream authority/{slot}: owner schema: {schema_error}")
+    errors.extend(
+        f"upstream authority/{slot}: input contract: {item}"
+        for item in validate_owner_input(value, expected_owner, expected_schema_version)
+    )
     if value.get("schema_version") == "ai-video-upstream-authority-projection.v1" or "authority_artifact_ref" in value:
         errors.append(f"upstream authority/{slot}: Prompt-made authority projection is forbidden")
     return value, errors
@@ -2942,31 +2930,22 @@ def validate_lockfile(package_root: Path, project_root: Path, lockfile: dict[str
 
 ROUTE_OWNERS = {
     "prompt_binding_or_serialization": OWNER,
-    "canon_camera_intent_change": "ai-video-shot-script-director",
-    "storyboard_static_realization_mismatch": "ai-video-modular-storyboard",
-    "global_look": "ai-video-global-look-lock",
-    "keyframe_visual_state": "ai-video-keyframe-continuity-pack",
-    "dynamic_camera_blocking_physics": "ai-video-timed-animatic-previs-director",
-    "shot_story_timing_function": "ai-video-shot-script-director",
+    "canon_camera_intent_change": SHOT_OWNER,
+    "storyboard_static_realization_mismatch": STORYBOARD_OWNER,
+    "global_look": LOOK_OWNER,
+    "keyframe_visual_state": KEYFRAME_OWNER,
+    "dynamic_camera_blocking_physics": PREVIS_OWNER,
+    "shot_story_timing_function": SHOT_OWNER,
     "stochastic_model_failure": OWNER,
 }
 WORKFLOW_OWNERS = {
-    "ai-video-shot-script-director",
-    "ai-video-global-look-lock",
-    "ai-video-modular-storyboard",
-    "ai-video-timed-animatic-previs-director",
-    "ai-video-keyframe-continuity-pack",
+    SHOT_OWNER, LOOK_OWNER, STORYBOARD_OWNER, PREVIS_OWNER, KEYFRAME_OWNER,
     OWNER,
 }
 ASSET_ARTIFACT_TYPE_TOKENS = {"CHARACTER", "PRODUCT", "PACKAGING", "MATERIAL", "SCENE"}
 REGISTERED_ASSET_OWNERS = {
-    "character-casting-lock-board",
-    "character-final-lock-board",
-    "single-face-character-lock-board",
-    "multi-angle-product-identity-lock-board",
-    "packaging-product-identity-label-lock-board",
-    "material-sensitive-product-master-asset-board",
-    "scene-canon-asset-pack",
+    CASTING_OWNER, CHARACTER_FINAL_OWNER, SINGLE_FACE_OWNER, MULTI_ANGLE_OWNER,
+    PACKAGING_OWNER, MATERIAL_OWNER, SCENE_OWNER,
 }
 
 
@@ -3197,14 +3176,18 @@ def validate_revision_anchor(root: Path, ir: dict[str, Any], feedback: dict[str,
 
 def _validate_package(root: Path, project_root: Path, project_canon_manifest: Path | None) -> list[str]:
     errors: list[str] = []
-    for rel in JSON_FILES + TEXT_FILES:
+    required_json_files = [
+        rel for rel in JSON_FILES
+        if rel != MANIFEST_RECEIPT or project_canon_manifest is not None or (root / rel).is_file()
+    ]
+    for rel in required_json_files + TEXT_FILES:
         if not (root / rel).is_file():
             errors.append(f"missing required file: {rel}")
     if errors:
         return errors
 
     documents: dict[str, dict[str, Any]] = {}
-    for rel in JSON_FILES:
+    for rel in required_json_files:
         try:
             value = load_json(root / rel)
         except (OSError, json.JSONDecodeError, ValueError) as exc:
@@ -3271,11 +3254,16 @@ def _validate_package(root: Path, project_root: Path, project_canon_manifest: Pa
     }
     if additional_owned_ids != allowed_additional:
         errors.append(f"Prompt-owned compile artifacts lack an explicit output contract: {sorted(additional_owned_ids - allowed_additional)}")
-    errors.extend(validate_manifest_update_receipt(documents[MANIFEST_RECEIPT], compile_snapshot, owned_docs, allowed_additional))
-    errors.extend(validate_actual_post_canon(
-        root, project_root, project_canon_manifest, pre_snapshot, compile_snapshot,
-        documents[MANIFEST_RECEIPT], owned_docs, allowed_additional,
-    ))
+    if project_canon_manifest is not None:
+        receipt = documents.get(MANIFEST_RECEIPT)
+        if receipt is None:
+            errors.append("optional Project Canon integration requires MANIFEST_UPDATE_RECEIPT.json")
+        else:
+            errors.extend(validate_manifest_update_receipt(receipt, compile_snapshot, owned_docs, allowed_additional))
+            errors.extend(validate_actual_post_canon(
+                root, project_root, project_canon_manifest, pre_snapshot, compile_snapshot,
+                receipt, owned_docs, allowed_additional,
+            ))
 
     capability_errors, provider, effective_limits = validate_capabilities(root, documents[MODEL_CAPS], documents[PROVIDER_CAPS])
     errors.extend(capability_errors)
@@ -3350,10 +3338,18 @@ def validate_package(root: Path, project_root: Path | None = None, project_canon
 
 
 def main(argv: list[str]) -> int:
-    if len(argv) != 6 or argv[2] != "--project-root" or argv[4] != "--project-canon-manifest":
-        print("usage: validate_prompt_package.py <package_root> --project-root <project_root> --project-canon-manifest <actual-post-canon.json>", file=sys.stderr)
-        return 2
-    errors = validate_package(Path(argv[1]).resolve(), Path(argv[3]).resolve(), Path(argv[5]).resolve())
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("package_root", type=Path)
+    parser.add_argument("--input-root", "--project-root", dest="input_root", required=True, type=Path)
+    parser.add_argument(
+        "--project-canon-manifest", type=Path,
+        help="optional actual post-write registry used only for Project Canon integration proof",
+    )
+    args = parser.parse_args(argv[1:])
+    errors = validate_package(
+        args.package_root.resolve(), args.input_root.resolve(),
+        args.project_canon_manifest.resolve() if args.project_canon_manifest is not None else None,
+    )
     if errors:
         for error in errors:
             print(f"ERROR: {error}")

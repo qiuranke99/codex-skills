@@ -23,11 +23,7 @@ from validate_previs_package import (
 HERE = Path(__file__).resolve().parent
 SKILL_ROOT = HERE.parent
 OWNER = "ai-video-timed-animatic-previs-director"
-SUITE_ROOT = SKILL_ROOT.parent
-PROMPT_HELPERS = SUITE_ROOT / "ai-video-omni-reference-prompt-director" / "scripts"
-if str(PROMPT_HELPERS) not in sys.path:
-    sys.path.insert(0, str(PROMPT_HELPERS))
-from validate_schema_parity import validate_instance  # type: ignore  # noqa: E402
+from validate_schema_parity import validate_instance  # noqa: E402
 
 PREVIS_SCHEMA = json.loads((SKILL_ROOT / "references/previs_manifest.schema.json").read_text(encoding="utf-8"))
 PROVIDER_EVIDENCE_SCHEMA = json.loads((SKILL_ROOT / "references/provider_runtime_capability_evidence.schema.json").read_text(encoding="utf-8"))
@@ -1248,7 +1244,11 @@ def main() -> int:
         shutil.copytree(v1_only.parent, no_canon_project)
         no_canon = no_canon_project / "previs-package"
         (no_canon_project / "00_project_canon/PROJECT_CANON_MANIFEST.json").unlink()
-        expect_invalid("approved package requires actual Canon", no_canon, "requires the actual Project Canon manifest")
+        standalone_errors = validate_package(no_canon)
+        if standalone_errors:
+            raise AssertionError(
+                f"approved standalone package must not require optional Project Canon: {standalone_errors}"
+            )
 
         def canon_locator_escape(fixture: Path, _data: dict[str, Any]) -> None:
             path = fixture.parent / "00_project_canon/PROJECT_CANON_MANIFEST.json"
@@ -1260,7 +1260,7 @@ def main() -> int:
         expect_invalid(
             "Canon locator escape rejected",
             mutate_fixture(v1_only, root / "bad_canon_locator", canon_locator_escape),
-            "locator must be a safe project-relative path",
+            "absolute paths and traversal are forbidden",
         )
 
         def canon_slot_alias(fixture: Path, _data: dict[str, Any]) -> None:
@@ -1286,7 +1286,7 @@ def main() -> int:
         expect_invalid(
             "Previs root unstable slot rejected",
             mutate_fixture(p3, root / "bad_previs_root_slot", previs_root_slot_drift),
-            "replacement must preserve artifact_slot",
+            "Canon artifact_slot must be previs_manifest",
         )
 
         def drop_v1_predecessor(fixture: Path, _data: dict[str, Any]) -> None:
@@ -1298,7 +1298,7 @@ def main() -> int:
         expect_invalid(
             "V2 requires versioned V1 root predecessor",
             mutate_fixture(p3, root / "bad_missing_v1_predecessor", drop_v1_predecessor),
-            "endpoints must be known active or superseded artifacts",
+            "exactly one superseded V1 previs_manifest predecessor",
         )
 
         def v1_primary_record_conflated(fixture: Path, _data: dict[str, Any]) -> None:

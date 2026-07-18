@@ -5,8 +5,6 @@ Run:
 ```bash
 python3 scripts/validate_shot_contract.py references/shot_contract.template.json
 python3 scripts/test_contract.py
-python3 scripts/test_asset_canon_bridge.py
-python3 scripts/test_global_canon_write_gate.py
 ```
 
 ## Positive cases
@@ -21,16 +19,6 @@ python3 scripts/test_global_canon_write_gate.py
 8. **Predecessor-bound selective repair**: S004 revision binds one frozen predecessor, increases SemVer, declares the exact real JSON-pointer diff, and the validator independently derives S004 while all other stable Shot UIDs remain unchanged. Pass.
 9. **Historical stale consumer**: stale, downstream-ineligible B1 retains its exact A1 dependency after A1 is superseded by A2, with a historical edge and one complete A2-to-B1 stale event. Pass.
 10. **Atomic Canon delta**: the updater validates a raw-hash-locked immutable base snapshot against the actual post manifest and receipt; unchanged and explicitly preserved entries are byte-identical. Pass.
-11. **Seven fixed asset owners**: every maintained character/product/packaging/material/scene owner exports its own approved binary asset and required prompt evidence through a package-local wrapper into one four-lock `ai-video-artifact-v1` Canon entry. Pass.
-12. **Replacement closure**: replacing an asset supersedes the old entry, preserves its historical locks/edges, applies an event-bound stale overlay to direct and transitive consumers, and leaves their immutable owner records approved. Pass.
-13. **Capability-bound packaging**: an ordinary packaging asset authorizes only `product_geometry`; `label_copy` additionally requires a hash-locked exact-copy authority sidecar that binds the frozen copy bundle, passed coverage matrix, dependency-bound prompt index, passed post-composite verification and explicit production approval. Pass.
-14. **Crash-safe commit recovery**: a fault after atomic Canon replacement but before receipt publication leaves no `applied` receipt; an identical rerun reconstructs it from the immutable base/delta/record and exact post manifest. Pass.
-15. **Concurrent exports**: two processes export different fixed-owner assets simultaneously; a project lock plus raw-byte compare-and-swap serializes them, and the final Canon contains both revisions with no lost update. Pass.
-16. **Prepared-transaction resume**: faults after base/delta or after owner-record publication leave Canon untouched and no receipt; an exact rerun reuses identical immutable bytes and completes. Pass.
-17. **Character terminal route**: casting without `--casting-as-terminal` is rejected; explicit terminal casting passes; no casting export plus final passes; terminal casting/final/single-face collide on one same-key terminal slot. Pass.
-18. **Global cross-writer recovery**: Shot revisions plus Look, Storyboard, Previs, Keyframe, and Prompt writers all share one lock/journal; a successor recovers a committed missing receipt before advancing. Pass.
-19. **Pinned raster runtime**: Shot Director and Prompt Director carry one identical exact Pillow pin, and real asset bytes must decode under it. Pass.
-
 ## Negative cases
 
 1. **Time mismatch**: shot durations do not equal total duration within 0.01 seconds. Fail.

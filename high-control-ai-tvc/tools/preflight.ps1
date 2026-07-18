@@ -1,6 +1,6 @@
 [CmdletBinding()]
 param(
-    [ValidateSet("all", "core")]
+    [ValidateSet("all")]
     [string]$Profile = "all",
 
     [string]$Target,

@@ -22,7 +22,7 @@ if [[ -z "$PYTHON_EXECUTABLE" && -x "$SUBSYSTEM_DIR/.venv/bin/python" ]]; then
   PYTHON_EXECUTABLE="$SUBSYSTEM_DIR/.venv/bin/python"
 fi
 if [[ -z "$PYTHON_EXECUTABLE" || ! -x "$PYTHON_EXECUTABLE" ]]; then
-  printf '%s\n' "ERROR: pinned High-Control runtime is unavailable. Run setup-runtime.sh and release sync before production." >&2
+  printf '%s\n' "ERROR: optional aggregate maintenance runtime is unavailable. Run setup-runtime.sh and aggregate release sync before using the aggregate profile." >&2
   exit 127
 fi
 

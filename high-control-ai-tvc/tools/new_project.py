@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Create a non-destructive project skeleton outside the suite repository."""
+"""Create a non-destructive skeleton for an explicitly opted-in aggregate project."""
 
 from __future__ import annotations
 
@@ -54,13 +54,13 @@ def _read_marker(path: Path, suite_id: str) -> Dict[str, Any] | None:
 def _project_readme(name: str, system_root: str, release_commit: str) -> str:
     return f"""# {name}
 
-这是 High-Control AI TVC Production System 的项目工作区，不是 Skill 安装目录。
+这是显式选择 High-Control 可选聚合工作流的项目工作区，不是 Skill 安装目录。单独使用任一 Skill 不需要创建此项目或通过聚合门禁。
 
 ## 从这里开始
 
 1. 把客户原始脚本放入 `01_sources/script/original/`，其他已获授权参考放入 `01_sources/` 的对应分类目录；保留原文件，不要覆盖。
 2. 在 Codex 中打开本项目目录。
-3. 本项目已绑定 GitHub 验证 release `{release_commit}`。设置 `<SYSTEM_ROOT>` 为 `{system_root}`，使用其 `docs/CODEX_PROMPTS.md` Master Prompt；每个生产阶段开始前必须重新通过 release gate。
+3. 因为本项目显式选择了聚合工作流，它绑定聚合 release `{release_commit}`。设置 `<SYSTEM_ROOT>` 为 `{system_root}`，使用其 `docs/CODEX_PROMPTS.md` Master Prompt；每个聚合阶段开始前重新检查聚合 release。
 4. 第一阶段由 `ai-video-shot-script-director` 创建真实的 `00_project_canon/PROJECT_CANON_MANIFEST.json`。本骨架不会伪造 Canon。
 
 ## 目录职责
@@ -82,12 +82,26 @@ def _project_readme(name: str, system_root: str, release_commit: str) -> str:
 """
 
 
-def create_project(destination: Path, project_name: str, target: Path | None = None) -> Dict[str, Any]:
-    release_state = production_check(target, profile="all", cwd=destination.parent)
-    if not release_state["ready_latest"]:
+def create_project(
+    destination: Path,
+    project_name: str,
+    target: Path | None = None,
+    *,
+    aggregate_managed: bool = False,
+) -> Dict[str, Any]:
+    if not aggregate_managed:
         raise RuntimeError(
-            "GitHub-latest validated release is required before project creation: "
-            + "; ".join(release_state.get("errors", ["release authority check failed"]))
+            "this helper is only for explicitly aggregate-managed projects; pass --aggregate-managed. "
+            "Individual Skills do not require this project helper or aggregate gate."
+        )
+    release_state = production_check(target, profile="all", cwd=destination.parent)
+    release_ready = bool(
+        release_state.get("aggregate_profile_ready", release_state.get("ready_latest", False))
+    )
+    if not release_ready:
+        raise RuntimeError(
+            "an active validated aggregate release is required for this opted-in project: "
+            + "; ".join(release_state.get("errors", ["aggregate release check failed"]))
         )
     active_system_root = Path(release_state["active_system_root"])
     active_repo_root = active_system_root.parent
@@ -141,6 +155,7 @@ def create_project(destination: Path, project_name: str, target: Path | None = N
             "schema_version": "ai-tvc-project-skeleton.v1",
             "skeleton_version": SKELETON_VERSION,
             "suite_id": suite_id,
+            "aggregate_profile_opt_in": True,
             "project_name": project_name,
             "created_at": datetime.now(timezone.utc).replace(microsecond=0).isoformat().replace("+00:00", "Z"),
             "canon_initialized": False,
@@ -161,15 +176,23 @@ def create_project(destination: Path, project_name: str, target: Path | None = N
         cwd=destination,
         project_root=destination,
     )
-    if not final_release_state["ready_latest"]:
+    final_release_ready = bool(
+        final_release_state.get(
+            "aggregate_profile_ready", final_release_state.get("ready_latest", False)
+        )
+    )
+    if not final_release_ready:
         raise RuntimeError(
-            "project skeleton exists but its GitHub-latest runtime lock was not committed: "
-            + "; ".join(final_release_state.get("errors", ["release authority check failed"]))
+            "aggregate project exists but its aggregate runtime lock was not committed: "
+            + "; ".join(final_release_state.get("errors", ["aggregate release check failed"]))
         )
 
     return {
         "schema_version": "1.0.0",
         "success": True,
+        "scope": "optional_aggregate_profile",
+        "aggregate_profile_opt_in": True,
+        "controls_individual_skill_availability": False,
         "suite_id": suite_id,
         "project_root": str(destination),
         "project_name": project_name,
@@ -187,6 +210,11 @@ def main() -> int:
     parser.add_argument("destination", type=Path)
     parser.add_argument("--name", help="human-readable project name; defaults to the destination folder name")
     parser.add_argument("--target", type=Path, help="Codex discovery root; auto-detected when omitted")
+    parser.add_argument(
+        "--aggregate-managed",
+        action="store_true",
+        help="explicitly opt this project into the optional High-Control aggregate workflow",
+    )
     parser.add_argument("--format", choices=("text", "json"), default="text")
     args = parser.parse_args()
     name = args.name or args.destination.expanduser().name
@@ -194,17 +222,28 @@ def main() -> int:
         print("ERROR: project name cannot be empty", file=sys.stderr)
         return 2
     try:
-        result = create_project(args.destination, name.strip(), args.target)
+        result = create_project(
+            args.destination,
+            name.strip(),
+            args.target,
+            aggregate_managed=args.aggregate_managed,
+        )
     except (OSError, RuntimeError, SuiteConfigurationError) as exc:
         if args.format == "json":
-            print(json.dumps({"success": False, "error": str(exc)}, ensure_ascii=False, indent=2))
+            print(json.dumps({
+                "success": False,
+                "scope": "optional_aggregate_profile",
+                "aggregate_profile_opt_in": args.aggregate_managed,
+                "controls_individual_skill_availability": False,
+                "error": str(exc),
+            }, ensure_ascii=False, indent=2))
         else:
             print(f"ERROR: {exc}", file=sys.stderr)
         return 2
     if args.format == "json":
         print(json.dumps(result, ensure_ascii=False, indent=2, sort_keys=True))
     else:
-        print(f"OK: project skeleton ready at {result['project_root']}")
+        print(f"OK: opt-in aggregate project skeleton ready at {result['project_root']}")
         print("No customer assets or Project Canon were created.")
     return 0
 

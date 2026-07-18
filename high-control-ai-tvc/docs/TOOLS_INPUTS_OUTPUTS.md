@@ -2,18 +2,22 @@
 
 ## 1. 系统组成
 
-High-Control suite 包含 15 个 Skill，其中 13 个构成生产核心，2 个只用于
-前期探索；同一 GitHub release 还发布 1 个 manifest 声明的独立复杂产品
-production Skill。
+仓库包含 16 个 standalone 顶层 Skill。High-Control 只把其中 13 个核心 Owner
+与 2 个可选探索 Skill 组合成显式 opt-in aggregate compatibility/maintenance
+profile；manifest 的 `excluded_from_aggregate_profile` 条目只被该 profile
+排除，不进入受管清单、安装或发布回执。下面的 Owner 输入输出合同描述
+端到端组合方式，不改变全部 16 个包各自独立的 authority。
 
-所有 16 个 publication Skill 的共同前置输入是 GitHub-latest release attestation。
-OS-native `release-control.ps1` / `release-control.sh` 固定运行时入口执行
-`check --project-root <PROJECT_ROOT>` 后必须返回
-`ready_latest=true`，并生成/更新 `00_project_canon/SYSTEM_RUNTIME_LOCK.json`；
-该锁绑定 repository id、`main` commit、Git tree、manifest/runtime hashes、
-16 个 Skill tree、release receipt、操作系统级只读 snapshot 证据和新 Codex
-task。生产门必须证明 snapshot 拒绝创建文件与获取写句柄；任何旧、离线、
-可写、漂移或混代状态都不得进入下列 Owner 合同。
+单个 Skill 的共同前置只有自身 `SKILL.md` 声明的输入与 package-local
+依赖；不需要 GitHub-latest attestation、suite receipt、pinned runtime、
+其他 Skill 或同一 release 布局。
+
+仅当用户选择 aggregate-managed workflow 时，OS-native
+`release-control.ps1` / `release-control.sh` 才执行
+`check --project-root <PROJECT_ROOT>`、要求 `ready_latest=true`，并生成或更新
+`00_project_canon/SYSTEM_RUNTIME_LOCK.json`。该锁绑定所选 aggregate
+snapshot、receipt、runtime 和 Codex task；它证明聚合事务的兼容性与版本
+一致性，不证明或否定任一单包 availability。
 
 ### 六个新增流程 Owner
 
@@ -38,6 +42,49 @@ task。生产门必须证明 snapshot 拒绝创建文件与获取写句柄；任
 | `material-sensitive-product-master-asset-board` | 玻璃、透明、液体、乳霜、反光、镜面、磨砂、多层产品 | 锁定材质行为和结构证据，不猜隐藏机制 |
 | `scene-canon-asset-pack` | 需要复用的场景、环境、空间和 unseen-space 扩展 | 分离场景固有事实与临时光线/镜头/后期效果 |
 
+### Aggregate Project Canon bridge
+
+只有 aggregate-managed 项目使用
+`<SYSTEM_ROOT>/tools/build_asset_canon_export.py`。资产注册必须显式选择固定
+profile；不存在自由文本 `--owner`，独立 owner 包也不保存或导入该 bridge：
+
+```text
+python <SYSTEM_ROOT>/tools/build_asset_canon_export.py asset \
+  --profile <character_casting|character_final|single_face_character|multi_angle_product|packaging_product|material_sensitive_product|scene_canon> \
+  --project-root <PROJECT_ROOT> --package-root <PACKAGE_ROOT> \
+  --asset-key <ASSET_KEY> --version <SEMVER> --authority-mode <FIXED_MODE> \
+  --primary-asset <PROJECT_RELATIVE_IMAGE> --primary-asset-sha256 <SHA256> \
+  --prompt-evidence <ROLE=PROJECT_RELATIVE_TEXT=SHA256> \
+  --approval-evidence <PROJECT_RELATIVE_JSON> --approval-evidence-sha256 <SHA256> \
+  --affected-shot-uid <SHOT_UID>
+```
+
+该入口验证真实 PNG/JPEG/WebP 解码与尺寸、prompt bytes、显式生产批准、固定
+authority capability、所有文件 hash、Project Canon base/transition/receipt，
+并在单一项目锁下执行 compare-and-swap、pending journal 崩溃恢复和替换后的
+完整下游 stale 传播。导出记录可再用
+`tools/validate_asset_canon_export.py <record> --project-root <PROJECT_ROOT>
+--canonical-manifest <manifest>` 独立复核。
+
+六个 workflow Owner 通过各自 package-local
+`scripts/apply_project_canon_transition.py --transition-runner <RUNNER>` 把已验证
+candidate 交给下列固定 aggregate runner。runner 只注入一个冻结的 profile，
+transition validator 还会核对 candidate owner；所有事务逻辑仍由同一个 bridge
+实现：
+
+| Workflow Owner | 固定 runner（位于 `<SYSTEM_ROOT>/tools/`） |
+|---|---|
+| `ai-video-shot-script-director` | `canon_runner_ai_video_shot_script_director.py` |
+| `ai-video-global-look-lock` | `canon_runner_ai_video_global_look_lock.py` |
+| `ai-video-modular-storyboard` | `canon_runner_ai_video_modular_storyboard.py` |
+| `ai-video-timed-animatic-previs-director` | `canon_runner_ai_video_timed_animatic_previs_director.py` |
+| `ai-video-keyframe-continuity-pack` | `canon_runner_ai_video_keyframe_continuity_pack.py` |
+| `ai-video-omni-reference-prompt-director` | `canon_runner_ai_video_omni_reference_prompt_director.py` |
+
+直接调试时也可用
+`build_asset_canon_export.py workflow --profile <FIXED_WORKFLOW_OWNER> ...`；生产
+handoff 应使用上表固定 runner，使 package 不必传递或推断 owner。
+
 ### 两个可选探索 Skill
 
 | Skill | 何时使用 | 是否进入 Canon |
@@ -53,7 +100,7 @@ task。生产门必须证明 snapshot 拒绝创建文件与获取写句柄；任
 |---|---|---|---|
 | Codex Desktop / Codex CLI | 读取 Skill、编制 artifact、运行 validator、协调图像生成与返工 | 全程 | 能发现本仓库 Skill；能读写项目目录；重启后 `$skill-name` 可触发 |
 | Codex Image Generation | 生成资产板、Look refs、Storyboard、K1/K2 | 2、3、4A/4B、6、8（按需） | 每次生成前提示词 sidecar 已冻结；生成调用为回合最后动作；下一回合实际检查 |
-| 固定 Python 3.11/3.12 runtime | 运行 schema、hash、Canon transition 和 package validator | 全程 | OS-native launcher 能解析已验证解释器；禁止用未验证的全局 Python 替代 |
+| Aggregate pinned Python 3.11/3.12 runtime | 在 aggregate-managed workflow 中运行跨包 schema、hash、Canon transition 和 compatibility validator | 聚合流程全程 | OS-native launcher 能解析已验证解释器；只约束 aggregate tools，不覆盖单包自己的运行时合同 |
 | Pillow `11.3.0` | 图片解码、review board、Canon 资产验证、deterministic atlas | 2、4A/4B、6、7、8、10 | 版本与两个 requirements pin 一致；真实 decode/verify/load 通过 |
 | FFmpeg + ffprobe | V1/V2 构建与实时媒体验证；P1/P2 检查视频/音频 | 5、7、9、10 | 位于 PATH；可解析 codec、duration、streams、fps、尺寸、帧/packet 数和 chapters |
 | 文档转换器 | 提取旧 `.doc`/`.rtf` | 0（仅旧格式） | macOS 可使用 `textutil`；Windows 使用 Word/受信任转换器；输出和转换器身份可记录并 hash |
@@ -79,12 +126,12 @@ Previs 工具不绑定品牌。可以使用确定性 2D animatic、中性 3D blo
 - 旧 Word 文档可由 `textutil` 提取，但仍需保存源字节 hash 和 extraction report。
 - 路径包含空格时使用完整绝对路径并正确引用。
 
-### 一次性 Preflight
+### 显式 aggregate profile 的一次性 Preflight
 
-在真实项目开始前，Codex 应验证：
+在 aggregate-managed 项目开始前，Codex 应验证：
 
 ```text
-[ ] 16 个 publication Skill 全部来自同一 release；其中 13 个 suite 核心 Skill 可发现
+[ ] 用户选择的 aggregate entries 来自同一已验证 snapshot；13 个核心 Owner 可发现
 [ ] Python 可运行
 [ ] Pillow 精确版本可导入
 [ ] ffmpeg 和 ffprobe 可运行
@@ -94,6 +141,9 @@ Previs 工具不绑定品牌。可以使用确定性 2D animatic、中性 3D blo
 [ ] Provider capability evidence 已获得，或明确记录为 P1 前 blocker
 [ ] 不存在未恢复的 PENDING_PROJECT_CANON_TRANSACTION
 ```
+
+不采用 aggregate profile 时，不运行这张清单来判断单 Skill 是否 available；
+改为运行所调用包的 package-local validation。
 
 ## 4. 最小项目输入
 

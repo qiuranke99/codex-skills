@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Validate shipped JSON templates against their local JSON Schemas using stdlib."""
+"""Validate opt-in aggregate schema/template parity without judging package availability."""
 
 from __future__ import annotations
 
@@ -189,7 +189,7 @@ def main() -> int:
         for error in errors:
             print(f"ERROR: {error}")
         return 1
-    print(f"OK: {len(PAIRS)} shipped templates conform to their local JSON Schemas")
+    print(f"OK: {len(PAIRS)} aggregate schema/template compatibility pairs conform")
     return 0
 
 

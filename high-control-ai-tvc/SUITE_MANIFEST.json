@@ -2,6 +2,11 @@
   "schema_version": "high-control-ai-tvc-suite.v1",
   "suite_id": "high-control-ai-tvc-production-system",
   "suite_name": "High-Control AI TVC Production System",
+  "profile_scope": "optional_aggregate_compatibility_and_maintenance",
+  "opt_in_required": true,
+  "controls_individual_skill_availability": false,
+  "managed_inventory_policy": "skills_only",
+  "standalone_package_count": 16,
   "repository": "qiuranke99/codex-skills",
   "subsystem_path": "high-control-ai-tvc",
   "source_repository": "qiuranke99/codex-skills",
@@ -21,7 +26,7 @@
     "first_last_frame",
     "endpoint_frame_interpolation"
   ],
-  "independent_skills": [
+  "excluded_from_aggregate_profile": [
     "complex-product-identity-reconstruction-asset-locking"
   ],
   "skills": [

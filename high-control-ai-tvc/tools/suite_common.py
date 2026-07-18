@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Shared, dependency-free distribution helpers for the TVC skill suite."""
+"""Shared, dependency-free helpers for the optional TVC aggregate profile."""
 
 from __future__ import annotations
 
@@ -44,13 +44,30 @@ def suite_id_from_manifest(manifest: Dict[str, Any]) -> str:
 def load_distribution(
     repo_root: Path = REPO_ROOT,
 ) -> Tuple[Dict[str, Any], Dict[str, Any], List[Dict[str, str]], List[str]]:
-    """Load the two SSOT files and return normalized skills plus validation errors."""
+    """Load aggregate-profile metadata and return normalized members plus errors."""
     subsystem_root = repo_root / "high-control-ai-tvc"
     manifest_path = subsystem_root / "SUITE_MANIFEST.json"
     requirements_path = subsystem_root / "config" / "runtime-requirements.json"
     manifest = read_json(manifest_path)
     requirements = read_json(requirements_path)
     errors: List[str] = []
+
+    required_profile_metadata = {
+        "profile_scope": "optional_aggregate_compatibility_and_maintenance",
+        "opt_in_required": True,
+        "controls_individual_skill_availability": False,
+        "managed_inventory_policy": "skills_only",
+    }
+    for key, expected_value in required_profile_metadata.items():
+        if manifest.get(key) != expected_value:
+            errors.append(f"SUITE_MANIFEST.json {key} must be {expected_value!r}")
+    standalone_package_count = manifest.get("standalone_package_count")
+    if not isinstance(standalone_package_count, int) or standalone_package_count < 1:
+        errors.append("SUITE_MANIFEST.json standalone_package_count must be a positive integer")
+    if requirements.get("scope") != "optional_aggregate_profile":
+        errors.append("runtime requirements scope must be optional_aggregate_profile")
+    if requirements.get("controls_individual_skill_availability") is not False:
+        errors.append("runtime requirements must not control individual Skill availability")
 
     raw_skills = manifest.get("skills")
     skills: List[Dict[str, str]] = []
@@ -117,26 +134,37 @@ def managed_inventory(
     suite_skills: List[Dict[str, str]],
     repo_root: Path = REPO_ROOT,
 ) -> Tuple[List[Dict[str, str]], List[str]]:
-    """Return suite Skills plus manifest-declared independent publication Skills."""
+    """Return opt-in aggregate members and validate packages excluded from this profile.
+
+    Every top-level Skill remains independently installable.  The exclusion
+    catalog says only that this optional aggregate profile does not manage the
+    listed package; it is not an inventory of the repository's standalone
+    Skills.
+    """
     inventory = list(suite_skills)
     errors: List[str] = []
     names = {item["name"] for item in inventory}
-    raw_independent = manifest.get("independent_skills", [])
-    if not isinstance(raw_independent, list):
-        return inventory, ["SUITE_MANIFEST.json independent_skills must be an array"]
-    for index, name in enumerate(raw_independent):
+    excluded_seen = set()
+    raw_excluded = manifest.get("excluded_from_aggregate_profile", [])
+    if not isinstance(raw_excluded, list):
+        return inventory, ["SUITE_MANIFEST.json excluded_from_aggregate_profile must be an array"]
+    for index, name in enumerate(raw_excluded):
         if not isinstance(name, str) or not re.fullmatch(r"[a-z0-9][a-z0-9_-]*", name):
-            errors.append(f"independent_skills[{index}] is not a valid skill directory name")
+            errors.append(
+                f"excluded_from_aggregate_profile[{index}] is not a valid skill directory name"
+            )
             continue
         if name in names:
-            errors.append(f"duplicate managed skill name: {name}")
+            errors.append(f"aggregate exclusion catalog overlaps aggregate membership: {name}")
             continue
-        names.add(name)
+        if name in excluded_seen:
+            errors.append(f"duplicate aggregate exclusion catalog entry: {name}")
+            continue
+        excluded_seen.add(name)
         skill_root = repo_root / name
         if not skill_root.is_dir() or not (skill_root / "SKILL.md").is_file():
-            errors.append(f"{name}: independent Skill package is missing")
+            errors.append(f"{name}: aggregate-excluded standalone Skill package is missing")
             continue
-        inventory.append({"name": name, "tier": "independent"})
     return inventory, errors
 
 

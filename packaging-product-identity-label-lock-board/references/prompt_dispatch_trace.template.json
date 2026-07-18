@@ -1,7 +1,6 @@
 {
-  "schema_version": "packaging_prompt_dispatch_trace.v1",
+  "schema_version": "packaging_prompt_dispatch_trace.v2",
   "run_id": "replace-with-run-id",
-  "release_gate_completed_elapsed_ms": 0,
   "generation_prompt_path": "replace-with-absolute-path",
   "generation_prompt_sha256": "replace-with-sha256",
   "generation_reference_pack_path": "replace-with-absolute-path",
@@ -18,7 +17,6 @@
     "task_mentions_skill": false,
     "first_tool": "imagegen",
     "pre_imagegen_tool_call_count": 0,
-    "reran_release_gate": false,
     "imagegen_submitted_elapsed_ms": 0,
     "imagegen_tool_call_count": 1,
     "imagegen_reference_count": 1,

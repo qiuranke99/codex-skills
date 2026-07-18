@@ -5,9 +5,11 @@ description: "Create and freeze a production-wide visual look contract for AI vi
 
 # AI Video Global Look Lock
 
-## HIGH_CONTROL_RELEASE_GATE_V2
-
-Before any action or production output, resolve this `SKILL.md` directory and execute the sibling OS-native launcher: on Windows, `& ..\\high-control-ai-tvc\\tools\\release-control.ps1 -Action check -Format json`; on macOS/Linux, `../high-control-ai-tvc/tools/release-control.sh check --format json`. The launcher must resolve the pinned runtime from the validated release receipt; never invoke `release_control.py` through an unverified global Python. Proceed only when `ready_latest=true`. On any failure, stop and run the same launcher with `sync`, then start a new Codex task. Bind the returned `release_commit` to this stage; never substitute a mutable Windows/Mac authoring checkout.
+This Skill is a self-contained entrypoint. Consume the supplied Shot Contract,
+identity assets, and look evidence through their artifact fields and byte locks;
+do not require another Skill directory, a release receipt, or a workflow-suite
+installation. A larger pipeline may consume the result later, but that context
+is optional.
 
 中文名：AI 视频全局影调锁定
 
@@ -36,7 +38,8 @@ classic standalone I2V route.
 
 ## Input Gate
 
-For a final production lock, require:
+For a final production lock, require these supplied input artifacts, not their
+producer packages:
 
 1. a Professional Shot Contract with stable Shot UIDs;
 2. all available approved character, product, packaging, material and scene identity assets;
@@ -153,7 +156,13 @@ Follow `references/invalidation_contract.md` exactly.
 
 ## Output Contract
 
-Read the single `<project_root>/00_project_canon/PROJECT_CANON_MANIFEST.json`, verify it, preserve its exact bytes as immutable `<package_root>/00_manifest/BASE_PROJECT_CANON_SNAPSHOT.json`, record the snapshot's raw SHA-256, and apply only this Skill's validated Global Look/reference entries through the shared atomic-delta protocol. Store `00_manifest/MANIFEST_UPDATE_RECEIPT.json`; the snapshot is historical proof and never a private current Canon. Validate the real base/post transition with the shared Shot Director helper; a receipt alone proves only result registration.
+Deliver the Global Look artifact and independent reference set directly. A
+Project Canon registry is optional integration context. When the caller supplies
+one and requests registration, preserve its exact bytes as
+`<package_root>/00_manifest/BASE_PROJECT_CANON_SNAPSHOT.json`, produce a proposed
+post state, and invoke the explicit transition handoff described below. When no
+registry is supplied, omit the receipt and complete the standalone artifact;
+never fabricate registry evidence or search for a sibling writer.
 
 Deliver one authoritative JSON artifact conforming to `global_look_contract.schema.json`, the approved independent reference images, the manifest update receipt, and a concise human-readable rendering. The JSON must contain:
 
@@ -188,18 +197,20 @@ Claim `assistant_validated` only when:
 - the canonical hash is correct and approval status is honest.
 - every `verified_bytes` source and look-reference locator resolves and re-hashes exactly.
 - each look-reference owner record is materialized at `owned_artifacts/<artifact_id>.json`; its primary locator/file hash and artifact-record locator/file hash are separately locked in Project Canon;
-- the current root Global Look and every nested reference artifact are active Canon entries and are registered together by one valid manifest update receipt against the canonical registry base hash.
+- when optional Project Canon registration was requested, the current root Global Look and every nested reference artifact are active entries registered together by one valid manifest update receipt against the supplied registry base hash;
 - every non-initial revision binds one real frozen predecessor, increases SemVer, and passes exact field/State/Shot diff validation;
-- the Canon update passes `validate_project_canon_transition.py` against the immutable raw-hash-verified base snapshot, with every claimed preserved artifact passed explicitly.
+- when optional Project Canon registration was requested, the transition passes the caller-supplied transition contract against the immutable raw-hash-verified base snapshot, with every claimed preserved artifact passed explicitly.
 
-Validate that receipt with the shared Shot Director helper, including this Skill name and every owned artifact ID:
+Validate the standalone artifact without registry arguments:
 
 ```bash
 python3 scripts/validate_global_look.py <GLOBAL_LOOK_CONTRACT.json> \
-  --project-root <project_root> \
-  --project-canon-manifest <project_root>/00_project_canon/PROJECT_CANON_MANIFEST.json \
-  --manifest-update-receipt 00_manifest/MANIFEST_UPDATE_RECEIPT.json
+  --verify-files-root <input_root>
 ```
+
+If Project Canon registration was requested, add `--project-root`,
+`--project-canon-manifest`, and `--manifest-update-receipt` together. Partial
+integration inputs fail closed.
 
 Validator success proves structural integrity and declared evidence coverage. It does not prove user taste, legal clearance, external provider obedience, or final-video appearance.
 
@@ -207,14 +218,13 @@ Validator success proves structural integrity and declared evidence coverage. It
 
 `Use $ai-video-global-look-lock to create a three-layer global look lock from this approved shot contract and these identity/look references. Preserve product and skin truth, generate only missing independent look references, and bind every shot to one legal Look State.`
 
-## Shared Project Canon Write Gate
+## Optional Project Canon Handoff
 
-Before any Canon mutation, preserve the exact current bytes at
-`<package_root>/00_manifest/BASE_PROJECT_CANON_SNAPSHOT.json` and materialize
-the validated post bytes at
-`<package_root>/00_manifest/CANDIDATE_PROJECT_CANON_POST.json`. Invoke only this
-package's `scripts/apply_project_canon_transition.py`. The shared writer owns
-the project `.canon.lock`, `PENDING_PROJECT_CANON_TRANSACTION.json` recovery or
-blocking, raw-byte compare-and-swap, durable post readback, and only then
-`MANIFEST_UPDATE_RECEIPT.json`. Never write Canon or an applied receipt
-directly.
+Do not require Project Canon to create, validate, inspect, approve, or hand off
+the Global Look package. If the caller explicitly requests registry mutation,
+preserve the exact base and candidate bytes, then invoke
+`scripts/apply_project_canon_transition.py` with an explicit compatible
+`--transition-runner`. Without that input the wrapper returns
+`blocked_missing_project_canon_transition_input`; the standalone Global Look
+artifact remains valid. Never locate a sibling package or write Canon/receipt
+bytes directly.

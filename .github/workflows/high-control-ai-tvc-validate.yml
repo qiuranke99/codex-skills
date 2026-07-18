@@ -1,4 +1,4 @@
-name: Validate distribution
+name: Validate standalone Skills and optional aggregate
 
 on:
   push:
@@ -9,8 +9,26 @@ permissions:
   contents: read
 
 jobs:
+  standalone-skills:
+    name: Standalone package authority
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: actions/setup-python@v6
+        with:
+          python-version: "3.12"
+
+      - name: Test the repository-level standalone validator
+        run: python .github/scripts/test_validate_standalone_skills.py
+
+      - name: Validate all 16 Skills in isolated package roots
+        run: python .github/scripts/validate_standalone_skills.py --repo-root . --expected-count 16 --compact
+
   cross-platform:
-    name: ${{ matrix.os }} / Python ${{ matrix.python }}
+    name: Optional aggregate / ${{ matrix.os }} / Python ${{ matrix.python }}
+    needs: standalone-skills
     runs-on: ${{ matrix.os }}
     timeout-minutes: 30
     strategy:
@@ -46,7 +64,7 @@ jobs:
         shell: pwsh
         run: choco install ffmpeg --no-progress -y
 
-      - name: Validate distribution and Python syntax
+      - name: Validate optional aggregate metadata and Python syntax
         shell: bash
         run: |
           python high-control-ai-tvc/tools/validate_distribution.py
@@ -58,8 +76,8 @@ jobs:
           python high-control-ai-tvc/tools/test_install_lifecycle.py
           python high-control-ai-tvc/tools/test_release_control.py
 
-      - name: Run six-Skill integration and 13-package contract suite
-        run: python ai-video-omni-reference-prompt-director/scripts/validate_ai_video_suite.py --suite-root .
+      - name: Run aggregate integration and package contract regressions
+        run: python high-control-ai-tvc/tools/validate_ai_video_aggregate.py --suite-root .
 
       - name: Parse PowerShell scripts
         if: runner.os == 'Windows'
@@ -91,10 +109,14 @@ jobs:
           target="$RUNNER_TEMP/Codex Skills"
           high-control-ai-tvc/tools/install.sh install --target "$target" --mode symlink --format json
           high-control-ai-tvc/tools/install.sh status --target "$target" --format json
-          python ai-video-omni-reference-prompt-director/scripts/validate_ai_video_suite.py --suite-root . --skip-tests --require-discovery --discovery-root "$target"
+          python high-control-ai-tvc/tools/validate_ai_video_aggregate.py --suite-root . --skip-tests --require-discovery --discovery-root "$target"
           project="$RUNNER_TEMP/Client Project"
           if high-control-ai-tvc/tools/new-project.sh "$project" --name "Client Project" --format json; then
-            echo "legacy install bypassed the GitHub release gate" >&2
+            echo "project helper accepted a project without explicit aggregate opt-in" >&2
+            exit 1
+          fi
+          if high-control-ai-tvc/tools/new-project.sh "$project" --name "Client Project" --aggregate-managed --format json; then
+            echo "aggregate-managed project bypassed the aggregate release check" >&2
             exit 1
           fi
           high-control-ai-tvc/tools/install.sh uninstall --target "$target" --format json
@@ -108,7 +130,7 @@ jobs:
           $target = Join-Path $env:RUNNER_TEMP 'Codex Skills'
           .\high-control-ai-tvc\tools\install.ps1 install -Target $target -Mode junction -Format json
           .\high-control-ai-tvc\tools\install.ps1 status -Target $target -Format json
-          python .\ai-video-omni-reference-prompt-director\scripts\validate_ai_video_suite.py --suite-root . --skip-tests --require-discovery --discovery-root $target
+          python .\high-control-ai-tvc\tools\validate_ai_video_aggregate.py --suite-root . --skip-tests --require-discovery --discovery-root $target
           .\high-control-ai-tvc\tools\install.ps1 uninstall -Target $target -Format json
 
       - name: Exercise Windows PowerShell 5.1 wrappers

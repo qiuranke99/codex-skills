@@ -51,17 +51,23 @@ function Resolve-SuitePython {
             return @{ Executable = $command.Source; Prefix = @() }
         }
     }
-    throw "Python 3.11 or 3.12 was not found. Install it before running this suite."
+    throw "Python 3.11 or 3.12 was not found. Install it before running the optional aggregate tooling."
 }
 
 $python = Resolve-SuitePython
 $arguments = @($python.Prefix)
 if ($Action -in @("sync", "check")) {
+    if ($Profile -ne "all") {
+        throw "Aggregate sync/check supports only Profile=all; core is an install-only compatibility subset."
+    }
     $arguments += (Join-Path $ScriptDirectory "release_control.py")
     $arguments += @($Action, "--format", $Format)
     if ($Target) { $arguments += @("--target", $Target) }
     if ($Action -eq "sync") { $arguments += @("--mode", $Mode) }
 } elseif ($Action -eq "audit") {
+    if ($Profile -ne "all") {
+        throw "Aggregate audit supports only Profile=all; core is an install-only compatibility subset."
+    }
     $arguments += (Join-Path $ScriptDirectory "preflight.py")
     $arguments += @("--profile", $Profile, "--format", $Format)
     if ($Target) { $arguments += @("--target", $Target) }

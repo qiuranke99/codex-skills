@@ -31,6 +31,48 @@ ASSET_NAMES = {
 }
 
 
+def assert_standalone_skill_contract() -> None:
+    skill_dir = HERE.parent
+    required = (
+        "SKILL.md",
+        "agents/openai.yaml",
+        "references/product-identity-contract.md",
+        "references/generation-runtime-and-qa.md",
+        "references/package-contract.md",
+        "scripts/init_asset_package.py",
+        "scripts/validate_asset_package.py",
+    )
+    for relative in required:
+        if not (skill_dir / relative).is_file():
+            raise AssertionError(f"standalone package is missing {relative}")
+
+    forbidden_text = (
+        "HIGH_CONTROL_" + "RELEASE_GATE_V2",
+        "high-control-" + "ai-tvc",
+        "release-" + "control.ps1",
+        "release-" + "control.sh",
+        "ready_" + "latest=true",
+    )
+    text_suffixes = {".md", ".py", ".yaml", ".json", ".txt"}
+    for path in skill_dir.rglob("*"):
+        if not path.is_file() or path.suffix.casefold() not in text_suffixes:
+            continue
+        text = path.read_text(encoding="utf-8")
+        for marker in forbidden_text:
+            if marker in text:
+                raise AssertionError(f"standalone package retains external runtime marker {marker!r} in {path.relative_to(skill_dir)}")
+        if path.suffix.casefold() == ".py":
+            if ("sys.path." + "insert") in text or (".parents[" + "2]") in text:
+                raise AssertionError(f"standalone package retains a cross-package Python loader in {path.relative_to(skill_dir)}")
+
+    skill = (skill_dir / "SKILL.md").read_text(encoding="utf-8")
+    metadata = (skill_dir / "agents/openai.yaml").read_text(encoding="utf-8")
+    if "## Standalone Runtime Contract" not in skill:
+        raise AssertionError("SKILL.md is missing the standalone runtime contract")
+    if "allow_implicit_invocation: true" not in metadata:
+        raise AssertionError("complex-product invocation metadata drifted")
+
+
 def sha(text: str) -> str:
     return hashlib.sha256(text.encode("utf-8")).hexdigest()
 
@@ -210,6 +252,8 @@ def expect_invalid(package: Path, label: str, fragment: str) -> None:
 
 
 def main() -> int:
+    assert_standalone_skill_contract()
+    print("PASS standalone package contract")
     with tempfile.TemporaryDirectory(prefix="complex-product-contract-") as temp:
         root = Path(temp)
         expect_valid(make_full(root), "complete package")

@@ -11,14 +11,11 @@ from pathlib import Path
 from typing import Callable
 
 from validate_global_look import canonical_sha256, render_shot_look_delta_prompt, validate_canon_registration, validate_look, verify_declared_file_hashes
-from validate_project_canon_manifest import canonical_hash as canonical_project_canon_hash
-from validate_shot_contract import canonical_sha256 as canonical_shot_hash
-from revision_evidence import revision_semantic_view, semantic_diff_pointers
+from ai_video_input_contracts import canonical_hash, revision_semantic_view, semantic_diff_pointers
 
 
 ROOT = Path(__file__).resolve().parents[1]
 TEMPLATE = ROOT / "references" / "global_look_contract.template.json"
-SHOT_TEMPLATE = ROOT.parent / "ai-video-shot-script-director/references/shot_contract.template.json"
 
 
 def write_json(path: Path, value: dict) -> None:
@@ -293,9 +290,18 @@ def run_case(name: str, factory: Callable[[], dict], should_pass: bool) -> bool:
 def canon_registration_integration() -> bool:
     with tempfile.TemporaryDirectory() as tmp:
         project = Path(tmp)
-        shot = json.loads(SHOT_TEMPLATE.read_text(encoding="utf-8"))
-        shot["approval_status"] = "assistant_validated"
-        shot["sha256"] = canonical_shot_hash(shot)
+        shot = {
+            "contract_version": "ai-video-artifact-v1",
+            "artifact_id": "SHOT_CONTRACT_LOOK_TEST",
+            "owner_skill": "ai-video-shot-script-director",
+            "version": "1.0.0",
+            "sha256": None,
+            "approval_status": "assistant_validated",
+            "dependencies": [],
+            "affected_shot_uids": ["SHT_001", "SHT_002"],
+            "stale_reason": None,
+        }
+        shot["sha256"] = canonical_hash(shot)
         shot_rel = "01_script/SHOT_CONTRACT.json"
         write_json(project / shot_rel, shot)
 
@@ -373,7 +379,7 @@ def canon_registration_integration() -> bool:
             "stale_events": [],
             "unresolved_change_requests": [],
         }
-        canon["sha256"] = canonical_project_canon_hash(canon)
+        canon["sha256"] = canonical_hash(canon)
         receipt = {
             "schema_version": "ai-video-manifest-update-receipt.v1",
             "canonical_manifest_locator": "00_project_canon/PROJECT_CANON_MANIFEST.json",
@@ -392,7 +398,7 @@ def canon_registration_integration() -> bool:
         removed_id = look["look_reference_set"][0]["artifact"]["artifact_id"]
         unregistered["active_artifacts"] = [item for item in unregistered["active_artifacts"] if item["artifact_id"] != removed_id]
         unregistered["dependency_edges"] = [item for item in unregistered["dependency_edges"] if item["consumer_artifact_id"] != removed_id]
-        unregistered["sha256"] = canonical_project_canon_hash(unregistered)
+        unregistered["sha256"] = canonical_hash(unregistered)
         unregistered_errors = validate_canon_registration(look, unregistered, project)
         if not any("nested artifact is not registered" in item for item in unregistered_errors):
             print("  Unregistered-reference errors:", unregistered_errors)

@@ -13,19 +13,28 @@ import tempfile
 from pathlib import Path
 from typing import Any
 
+from build_asset_canon_export import WORKFLOW_CANON_WRITERS
 from test_asset_canon_bridge import command as asset_command
 from test_asset_canon_bridge import create_inputs, initialize_project, run as run_asset
 from validate_project_canon_manifest import canonical_hash, validate_manifest, verify_artifact_files
 
 
 ROOT = Path(__file__).resolve().parents[2]
-WRITERS = {
+AGGREGATE_BRIDGE = Path(__file__).resolve().with_name("build_asset_canon_export.py")
+WORKFLOW_PROFILES = tuple(sorted(WORKFLOW_CANON_WRITERS))
+PACKAGE_HANDOFFS = {
     "ai-video-shot-script-director": ROOT / "ai-video-shot-script-director/scripts/apply_project_canon_transition.py",
     "ai-video-global-look-lock": ROOT / "ai-video-global-look-lock/scripts/apply_project_canon_transition.py",
     "ai-video-modular-storyboard": ROOT / "ai-video-modular-storyboard/scripts/apply_project_canon_transition.py",
     "ai-video-timed-animatic-previs-director": ROOT / "ai-video-timed-animatic-previs-director/scripts/apply_project_canon_transition.py",
     "ai-video-keyframe-continuity-pack": ROOT / "ai-video-keyframe-continuity-pack/scripts/apply_project_canon_transition.py",
     "ai-video-omni-reference-prompt-director": ROOT / "ai-video-omni-reference-prompt-director/scripts/apply_project_canon_transition.py",
+}
+AGGREGATE_RUNNERS = {
+    owner: Path(__file__).resolve().with_name(
+        "canon_runner_" + owner.replace("-", "_") + ".py"
+    )
+    for owner in WORKFLOW_PROFILES
 }
 PHASE = {
     "ai-video-shot-script-director": "professional_script",
@@ -117,7 +126,8 @@ def writer_command(
     registered: list[str],
 ) -> list[str]:
     command = [
-        sys.executable, str(WRITERS[owner]),
+        sys.executable, str(PACKAGE_HANDOFFS[owner]),
+        "--transition-runner", str(AGGREGATE_RUNNERS[owner]),
         "--project-root", str(project),
         "--package-root", str(package),
         "--transaction-id", transaction_id,
@@ -151,7 +161,7 @@ def main() -> int:
         )
         if faulted.returncode == 0:
             raise AssertionError("asset precommit fault did not leave a pending journal")
-        for index, (owner, wrapper) in enumerate(WRITERS.items(), start=1):
+        for index, owner in enumerate(WORKFLOW_PROFILES, start=1):
             package = project / f"blocked/{index}"
             attempted = writer_command(project, package, owner, f"BLOCKED_{index}", [f"BLOCKED_{index}"])
             result = run(attempted)

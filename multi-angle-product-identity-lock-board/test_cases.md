@@ -15,6 +15,8 @@
 11. **Final main result**: `scripts/build_final_result.py` proves the accepted-attempt, worker, inspection, board, manifest, prompt, and handoff chain before the board, both complete prompts, both hashes, and both published states appear together in one non-empty `final` response.
 12. **Repair isolation**: one repair uses a fresh worker and a newly frozen attempt prompt; the main agent never calls imagegen.
 13. **Optional native 4K**: the native branch is off by default and never borrows evidence from an external enhancement.
+14. **Standalone package**: copy only this Skill directory to a fresh root; bundled source-freezing, prompt-freezing, worker-binding, final-result commands, and entrypoint routing remain available without any neighboring Skill.
+15. **Optional project handoff**: absent AI-video integration cannot block or demote an accepted board; only an external integrator may consume the worker-bound board and locked prompt artifacts after assistant QA, byte/hash readback, and explicit production approval.
 
 ## Red Scenarios
 
@@ -36,6 +38,8 @@
 - The final claims `published` but omits the board, either complete prompt, either hash, or either published state: fail.
 - A prompt is reconstructed after a sidecar or hash mismatch: fail.
 - A 1672x941 board is repaired only because its pixels are not exact 16:9: fail.
+- The entrypoint probes or synchronizes an unrelated suite before checking the package's real local worker capabilities: fail.
+- This package attempts to import or invoke a project-Canon writer: fail; the explicit one-worker authorization and main-agent decision boundary remain unchanged.
 
 ## Required Runtime Proof
 

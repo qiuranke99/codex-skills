@@ -11,11 +11,13 @@ Use these cases for description routing, package-state tests, and forward tests.
 
 ## Should Not Trigger
 
-1. One simple opaque speaker with clear silhouette and non-critical text needs one six-view board: use `multi-angle-product-identity-lock-board`.
-2. A perfume bottle's glass, liquid, and refraction are the primary risk: use `material-sensitive-product-master-asset-board`.
-3. A label-heavy box requires exact copy and barcode layout: use `packaging-product-identity-label-lock-board`.
+1. One simple opaque speaker with clear silhouette and non-critical text needs one six-view board: route to a simple-product multi-angle identity workflow when available.
+2. A perfume bottle's glass, liquid, and refraction are the primary risk: route to a material-response-first product workflow when available.
+3. A label-heavy box requires exact copy and barcode layout: route to a packaging-copy-first identity workflow when available.
 4. User wants a lifestyle ad, poster, or cinematic product scene: use ordinary creative production, not an identity package.
 5. User wants prompts only, a simple upscale, source search, 3D CAD engineering, safety certification, or product redesign.
+
+These routing alternatives are scope guidance, not runtime dependencies. Their absence never blocks an in-scope complex-product package; for an out-of-scope request, explain the mismatch without claiming that an unavailable workflow ran.
 
 ## Blocked And Boundary Cases
 
