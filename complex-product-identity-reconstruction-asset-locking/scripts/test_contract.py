@@ -478,7 +478,7 @@ def main() -> int:
         write_manifest(legacy, manifest)
         expect_invalid(legacy, "legacy monolithic geometry manifest", "cannot prove independent camera coverage")
 
-    print("contract tests: OK (4 valid + 8 historical/boundary failures)")
+    print("contract tests: OK (4 valid + 9 historical/boundary failures)")
     return 0
 
 
