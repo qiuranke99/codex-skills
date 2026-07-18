@@ -10,6 +10,38 @@ $PackageRoot = Split-Path -Parent $ScriptDirectory
 $PythonExecutable = $null
 $PythonPrefix = @()
 
+function Invoke-PythonCommand {
+    param(
+        [Parameter(Mandatory = $true)]
+        [string]$FilePath,
+        [object[]]$ArgumentList = @(),
+        [switch]$CaptureOutput
+    )
+
+    $PreviousErrorActionPreference = $ErrorActionPreference
+    $Output = @()
+    $ExitCode = 1
+    try {
+        # Windows PowerShell 5.1 promotes redirected native stderr to the
+        # PowerShell error stream. Capture the process exit code explicitly so
+        # expected native stderr cannot terminate this wrapper before the code
+        # is inspected; PowerShell 7 follows the same deterministic path.
+        $ErrorActionPreference = "Continue"
+        if ($CaptureOutput) {
+            $Output = @(& $FilePath @ArgumentList 2>&1)
+        } else {
+            & $FilePath @ArgumentList *> $null
+        }
+        $ExitCode = $LASTEXITCODE
+    } finally {
+        $ErrorActionPreference = $PreviousErrorActionPreference
+    }
+    return [PSCustomObject]@{
+        ExitCode = $ExitCode
+        Output = $Output
+    }
+}
+
 if ($env:AI_AD_REFERENCE_PYTHON) {
     if (-not (Test-Path -LiteralPath $env:AI_AD_REFERENCE_PYTHON -PathType Leaf)) {
         throw "AI_AD_REFERENCE_PYTHON is not an executable file"
@@ -36,7 +68,13 @@ if ($env:AI_AD_REFERENCE_PYTHON) {
             $Command = Get-Command $Candidate.Command -CommandType Application -ErrorAction SilentlyContinue |
                 Select-Object -First 1
             if ($Command) {
-                $Resolved = $Command.Source
+                if ($Command.Path) {
+                    $Resolved = $Command.Path
+                } elseif ($Command.Definition) {
+                    $Resolved = $Command.Definition
+                } elseif ($Command.Source) {
+                    $Resolved = $Command.Source
+                }
             }
         }
         if ($Resolved) {
@@ -44,13 +82,8 @@ if ($env:AI_AD_REFERENCE_PYTHON) {
                 "-I", "-B", "-c",
                 "import sys; raise SystemExit(0 if sys.version_info >= (3, 10) else 1)"
             )
-            try {
-                & $Resolved @ProbeArguments *> $null
-                $ProbeExit = $LASTEXITCODE
-            } catch {
-                $ProbeExit = 1
-            }
-            if ($ProbeExit -eq 0) {
+            $ProbeResult = Invoke-PythonCommand -FilePath $Resolved -ArgumentList $ProbeArguments
+            if ($ProbeResult.ExitCode -eq 0) {
                 $PythonExecutable = $Resolved
                 $PythonPrefix = @($Candidate.Prefix)
                 break
@@ -68,8 +101,8 @@ $VersionArguments = @($PythonPrefix) + @(
     "-I", "-B", "-c",
     "import sys; raise SystemExit(0 if sys.version_info >= (3, 10) else 1)"
 )
-& $PythonExecutable @VersionArguments
-if ($LASTEXITCODE -ne 0) {
+$VersionResult = Invoke-PythonCommand -FilePath $PythonExecutable -ArgumentList $VersionArguments
+if ($VersionResult.ExitCode -ne 0) {
     throw "Python 3.10 or newer is required for package-local contract tests"
 }
 
@@ -79,13 +112,12 @@ $ContractArguments = @($PythonPrefix) + @(
     $ScriptDirectory,
     (Join-Path $ScriptDirectory "test_contract.py")
 )
-$ContractOutput = & $PythonExecutable @ContractArguments 2>&1
-$ContractExit = $LASTEXITCODE
-foreach ($Line in @($ContractOutput)) {
+$ContractResult = Invoke-PythonCommand -FilePath $PythonExecutable -ArgumentList $ContractArguments -CaptureOutput
+foreach ($Line in @($ContractResult.Output)) {
     [Console]::Error.WriteLine($Line.ToString())
 }
-if ($ContractExit -ne 0) {
-    throw "Package-local contract tests failed with exit $ContractExit"
+if ($ContractResult.ExitCode -ne 0) {
+    throw "Package-local contract tests failed with exit $($ContractResult.ExitCode)"
 }
 
 $Standalone = [ordered]@{

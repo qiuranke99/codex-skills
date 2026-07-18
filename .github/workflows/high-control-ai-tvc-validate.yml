@@ -154,8 +154,11 @@ jobs:
         if: runner.os == 'Windows' && matrix.python == '3.11'
         shell: powershell
         run: |
-          $env:AI_TVC_PYTHON = (Get-Command python).Source
-          $env:AI_AD_REFERENCE_PYTHON = (Get-Command python).Source
+          $pythonCommand = Get-Command python -CommandType Application | Select-Object -First 1
+          $pythonPath = if ($pythonCommand.Path) { $pythonCommand.Path } else { $pythonCommand.Definition }
+          if (-not $pythonPath) { throw 'Could not resolve the Python executable path' }
+          $env:AI_TVC_PYTHON = $pythonPath
+          $env:AI_AD_REFERENCE_PYTHON = $pythonPath
           .\advertising-reference-research-director\scripts\preflight.ps1 -Format json
           .\high-control-ai-tvc\tools\preflight.ps1 -RepositoryOnly -Format json
           $target = Join-Path $env:RUNNER_TEMP 'Codex Skills PS51'
