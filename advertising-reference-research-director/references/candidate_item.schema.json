@@ -1,0 +1,230 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://local.codex/advertising-reference-research-director/candidate_item.schema.json",
+  "title": "Advertising Reference Candidate Ledger Item",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema_version", "candidate_id", "run_id", "intent_id", "intent_version", "pack_id", "discovered_at", "modality", "object", "source", "access_state", "provenance_check", "rights_scope", "intent_alignment", "evaluation_dimensions", "dedup", "diversity", "agent_trace", "status", "verification_receipt_id"],
+  "properties": {
+    "schema_version": {"const": "1.2.0"},
+    "candidate_id": {"type": "string", "pattern": "^candidate_[A-Za-z0-9._-]+$"},
+    "run_id": {"type": "string", "minLength": 1},
+    "intent_id": {"type": "string", "minLength": 1},
+    "intent_version": {"type": "string", "pattern": "^v[1-9][0-9]*$"},
+    "pack_id": {"type": "string", "minLength": 1},
+    "discovered_at": {"type": "string", "format": "date-time"},
+    "modality": {"type": "string", "enum": ["image", "video"]},
+    "object": {
+      "type": "object", "additionalProperties": false,
+      "required": ["object_type", "title", "campaign", "brand", "creator", "publish_date", "region", "language", "stable_id", "canonical_url", "asset_locator"],
+      "properties": {
+        "object_type": {"type": "string", "enum": ["project_image", "specific_video_work", "specific_cut"]},
+        "title": {"type": "string", "minLength": 1},
+        "campaign": {"type": ["string", "null"]},
+        "brand": {"type": ["string", "null"]},
+        "creator": {"type": ["string", "null"]},
+        "publish_date": {"type": ["string", "null"], "format": "date"},
+        "region": {"type": ["string", "null"]},
+        "language": {"type": ["string", "null"]},
+        "stable_id": {"type": ["string", "null"]},
+        "canonical_url": {"type": "string", "format": "uri"},
+        "asset_locator": {"type": ["string", "null"]}
+      }
+    },
+    "source": {
+      "type": "object", "additionalProperties": false,
+      "required": ["source_id", "source_family_id", "domain", "discovered_url", "evidence_tier"],
+      "properties": {
+        "source_id": {"type": "string", "minLength": 1},
+        "source_family_id": {"type": "string", "minLength": 1},
+        "domain": {"type": "string", "minLength": 1},
+        "discovered_url": {"type": "string", "format": "uri"},
+        "evidence_tier": {"type": "string", "enum": ["original_owner", "creator_credit", "accountable_curator", "official_distribution", "discovery_only"]}
+      }
+    },
+    "access_state": {"$ref": "#/$defs/access_state"},
+    "provenance_check": {"$ref": "#/$defs/provenance_check"},
+    "rights_scope": {"$ref": "#/$defs/rights_scope"},
+    "intent_alignment": {"$ref": "#/$defs/intent_alignment"},
+    "evaluation_dimensions": {
+      "type": "object", "additionalProperties": false,
+      "required": ["relevance", "craft_signal", "source_authority", "freshness", "access_reliability", "link_durability", "evidence_completeness", "rights_risk", "diversity_contribution"],
+      "properties": {
+        "relevance": {"$ref": "#/$defs/dimension"},
+        "craft_signal": {"$ref": "#/$defs/dimension"},
+        "source_authority": {"$ref": "#/$defs/dimension"},
+        "freshness": {"$ref": "#/$defs/dimension"},
+        "access_reliability": {"$ref": "#/$defs/dimension"},
+        "link_durability": {"$ref": "#/$defs/dimension"},
+        "evidence_completeness": {"$ref": "#/$defs/dimension"},
+        "rights_risk": {"$ref": "#/$defs/dimension"},
+        "diversity_contribution": {"$ref": "#/$defs/dimension"}
+      }
+    },
+    "dedup": {
+      "type": "object", "additionalProperties": false,
+      "required": ["canonical_url_key", "stable_id_key", "fingerprint", "near_duplicate_group_id", "campaign_group_id", "creator_group_id", "version_relation"],
+      "properties": {
+        "canonical_url_key": {"type": "string", "minLength": 1},
+        "stable_id_key": {"type": ["string", "null"]},
+        "fingerprint": {
+          "type": ["object", "null"], "additionalProperties": false,
+          "required": ["method", "exact_or_manifest_sha256", "perceptual_hash", "sample_count", "sampled_at_seconds", "evidence_capture_id"],
+          "properties": {
+            "method": {"type": "string", "enum": ["image_content_sha256_dhash64", "video_sample_manifest_sha256_dhash64"]},
+            "exact_or_manifest_sha256": {"type": "string", "pattern": "^[a-f0-9]{64}$"},
+            "perceptual_hash": {"type": "string", "pattern": "^[a-f0-9]{16}$"},
+            "sample_count": {"type": "integer", "minimum": 1},
+            "sampled_at_seconds": {"type": "array", "uniqueItems": true, "items": {"type": "number", "minimum": 0}},
+            "evidence_capture_id": {"type": "string", "pattern": "^capture_[A-Za-z0-9._-]+$"}
+          }
+        },
+        "near_duplicate_group_id": {"type": ["string", "null"]},
+        "campaign_group_id": {"type": ["string", "null"]},
+        "creator_group_id": {"type": ["string", "null"]},
+        "version_relation": {"type": "string", "enum": ["unique", "mirror", "repost", "cutdown", "regional_version", "same_campaign_distinct_asset", "unknown"]}
+      }
+    },
+    "diversity": {
+      "type": "object", "additionalProperties": false,
+      "required": ["territory_id", "visual_mechanism_tags", "temporal_mechanism_tags", "discipline_tags"],
+      "properties": {
+        "territory_id": {"type": "string", "minLength": 1},
+        "visual_mechanism_tags": {"type": "array", "uniqueItems": true, "items": {"type": "string", "minLength": 1}},
+        "temporal_mechanism_tags": {"type": "array", "uniqueItems": true, "items": {"type": "string", "minLength": 1}},
+        "discipline_tags": {"type": "array", "uniqueItems": true, "items": {"type": "string", "minLength": 1}}
+      }
+    },
+    "agent_trace": {
+      "type": "object", "additionalProperties": false,
+      "required": ["finder_agent_id", "approach_id", "query_id", "discovery_lane", "finder_decision"],
+      "properties": {
+        "finder_agent_id": {"type": "string", "minLength": 1},
+        "approach_id": {"type": "string", "minLength": 1},
+        "query_id": {"type": "string", "minLength": 1},
+        "discovery_lane": {"type": "string", "minLength": 1},
+        "finder_decision": {"type": "string", "enum": ["proposed", "screened_in", "screened_out"]}
+      }
+    },
+    "status": {"type": "string", "enum": ["raw", "screened", "qualified", "selected", "rejected", "quarantined", "invalidated"]},
+    "verification_receipt_id": {"type": ["string", "null"]}
+  },
+  "$defs": {
+    "dimension": {
+      "type": "object", "additionalProperties": false,
+      "required": ["score", "rationale"],
+      "properties": {"score": {"type": "number", "minimum": 0, "maximum": 100}, "rationale": {"type": "string", "minLength": 1}}
+    },
+    "access_state": {
+      "type": "object", "additionalProperties": false,
+      "required": ["mode", "state", "checked_url", "page_rendered", "canonical_url_resolved", "shareable_without_session", "http_status", "challenge_detected"],
+      "properties": {
+        "mode": {"type": "string", "enum": ["public", "signed_chrome", "subscription", "geo_or_age_gated"]},
+        "state": {"type": "string", "enum": ["accessible", "session_bound", "blocked", "challenge", "soft_404", "not_found"]},
+        "checked_url": {"type": "string", "format": "uri"},
+        "page_rendered": {"type": "boolean"},
+        "canonical_url_resolved": {"type": "boolean"},
+        "shareable_without_session": {"type": ["boolean", "string"], "enum": [true, false, "unknown"]},
+        "http_status": {"type": ["integer", "null"], "minimum": 100, "maximum": 599},
+        "challenge_detected": {"type": "boolean"}
+      }
+    },
+    "provenance_check": {
+      "type": "object", "additionalProperties": false,
+      "required": ["status", "accountable_url", "accountable_owner", "source_signal", "matched_object"],
+      "properties": {
+        "status": {"type": "string", "enum": ["passed", "failed"]},
+        "accountable_url": {"type": ["string", "null"], "format": "uri"},
+        "accountable_owner": {"type": ["string", "null"], "minLength": 3},
+        "source_signal": {"type": "string", "enum": ["original_owner", "creator_credit", "accountable_curator", "official_distribution", "discovery_only"]},
+        "matched_object": {"type": "boolean"}
+      }
+    },
+    "right": {
+      "type": "object", "additionalProperties": false,
+      "required": ["state", "basis"],
+      "properties": {"state": {"type": "string", "enum": ["allowed", "prohibited", "permission_required", "unknown", "not_applicable"]}, "basis": {"type": "string", "minLength": 1}}
+    },
+    "rights_scope": {
+      "type": "object", "additionalProperties": false,
+      "required": ["discoverable", "viewable", "shareable_without_session", "downloadable", "internal_board_use", "commercial_reuse"],
+      "properties": {
+        "discoverable": {"$ref": "#/$defs/right"}, "viewable": {"$ref": "#/$defs/right"}, "shareable_without_session": {"$ref": "#/$defs/right"},
+        "downloadable": {"$ref": "#/$defs/right"}, "internal_board_use": {"$ref": "#/$defs/right"}, "commercial_reuse": {"$ref": "#/$defs/right"}
+      }
+    },
+    "intent_alignment": {
+      "type": "object", "additionalProperties": false,
+      "required": ["intent_constraints_sha256", "decision_relevance", "subject_match", "observed_scene_scale", "observed_human_presence", "visual_axes_matched", "temporal_axes_matched", "must_have_evidence", "must_not_have_checks", "positive_anchor_assessments", "negative_anchor_assessments", "market_region_status", "language_status", "transfer_rationale", "rights_compatible"],
+      "properties": {
+        "intent_constraints_sha256": {"type": "string", "pattern": "^[a-f0-9]{64}$"},
+        "decision_relevance": {"type": "string", "minLength": 20},
+        "subject_match": {"type": "boolean"},
+        "observed_scene_scale": {"type": "string", "enum": ["macro_product", "tabletop", "human_scale", "room_scale", "large_scale_set", "architecture", "landscape", "mixed", "unspecified"]},
+        "observed_human_presence": {"type": "string", "enum": ["none", "hands_only", "partial_body", "full_body_single", "full_body_group", "mixed", "unspecified"]},
+        "visual_axes_matched": {"type": "array", "minItems": 1, "uniqueItems": true, "items": {"type": "string", "minLength": 1}},
+        "temporal_axes_matched": {"type": "array", "uniqueItems": true, "items": {"type": "string", "minLength": 1}},
+        "must_have_evidence": {"type": "array", "uniqueItems": true, "items": {"$ref": "#/$defs/criterion_evidence"}},
+        "must_not_have_checks": {"type": "array", "uniqueItems": true, "items": {"$ref": "#/$defs/exclusion_check"}},
+        "positive_anchor_assessments": {"type": "array", "uniqueItems": true, "items": {"$ref": "#/$defs/anchor_assessment"}},
+        "negative_anchor_assessments": {"type": "array", "uniqueItems": true, "items": {"$ref": "#/$defs/anchor_assessment"}},
+        "market_region_status": {"type": "string", "enum": ["match", "transferable", "mismatch"]},
+        "language_status": {"type": "string", "enum": ["match", "transferable", "mismatch"]},
+        "transfer_rationale": {"type": ["string", "null"], "minLength": 20},
+        "rights_compatible": {"type": "boolean"}
+      }
+    },
+    "criterion_evidence": {
+      "type": "object", "additionalProperties": false,
+      "required": ["criterion", "evidence"],
+      "properties": {
+        "criterion": {"type": "string", "minLength": 1},
+        "evidence": {"type": "string", "minLength": 20}
+      }
+    },
+    "exclusion_check": {
+      "type": "object", "additionalProperties": false,
+      "required": ["criterion", "absent", "evidence"],
+      "properties": {
+        "criterion": {"type": "string", "minLength": 1},
+        "absent": {"const": true},
+        "evidence": {"type": "string", "minLength": 20}
+      }
+    },
+    "anchor_assessment": {
+      "type": "object", "additionalProperties": false,
+      "required": ["label", "status", "rationale"],
+      "properties": {
+        "label": {"type": "string", "minLength": 1},
+        "status": {"type": "string", "enum": ["aligned", "neutral", "conflicts"]},
+        "rationale": {"type": "string", "minLength": 20}
+      }
+    }
+  },
+  "allOf": [
+    {
+      "if": {"properties": {"status": {"enum": ["qualified", "selected", "rejected"]}}},
+      "then": {
+        "properties": {
+          "verification_receipt_id": {"type": "string", "minLength": 1},
+          "access_state": {"properties": {"state": {"enum": ["accessible", "session_bound"]}}},
+          "provenance_check": {"properties": {"status": {"const": "passed"}, "source_signal": {"enum": ["original_owner", "creator_credit", "accountable_curator", "official_distribution"]}, "matched_object": {"const": true}}},
+          "intent_alignment": {"properties": {"subject_match": {"const": true}, "market_region_status": {"enum": ["match", "transferable"]}, "language_status": {"enum": ["match", "transferable"]}, "rights_compatible": {"const": true}}},
+          "dedup": {"properties": {"version_relation": {"enum": ["unique", "cutdown", "regional_version", "same_campaign_distinct_asset"]}}}
+        }
+      }
+    },
+    {
+      "if": {"properties": {"status": {"enum": ["qualified", "selected", "rejected"]}}},
+      "then": {"properties": {"dedup": {"properties": {"fingerprint": {"type": "object"}}}}}
+    },
+    {
+      "if": {"properties": {"modality": {"const": "image"}, "status": {"enum": ["qualified", "selected", "rejected"]}}},
+      "then": {"properties": {"object": {"properties": {"object_type": {"const": "project_image"}, "asset_locator": {"type": "string", "minLength": 1}}}}}
+    },
+    {
+      "if": {"properties": {"modality": {"const": "video"}, "status": {"enum": ["qualified", "selected", "rejected"]}}},
+      "then": {"properties": {"object": {"properties": {"object_type": {"enum": ["specific_video_work", "specific_cut"]}, "stable_id": {"type": "string", "minLength": 1}, "asset_locator": {"type": "string", "minLength": 1}}}}}
+    }
+  ]
+}

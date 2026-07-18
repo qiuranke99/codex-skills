@@ -1,0 +1,139 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://local.codex/advertising-reference-research-director/verification_report.schema.json",
+  "title": "Advertising Reference Final Verification Report",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema_version", "report_id", "run_id", "intent_id", "intent_version", "pack_id", "run_mode", "acceptance_class", "production_contract_eligible", "production_deliverable", "trust_boundary", "generated_at", "delivery_reference_time", "freshness_window_minutes", "final_status", "artifact_contract", "referenced_evidence_contract", "counts", "final_reverification", "gates", "diversity", "agent_separation", "adversarial_audit", "rights_summary", "freshness_summary", "failures"],
+  "properties": {
+    "schema_version": {"const": "1.2.0"},
+    "report_id": {"type": "string", "pattern": "^verification_report_[A-Za-z0-9._-]+$"},
+    "run_id": {"type": "string", "minLength": 1}, "intent_id": {"type": "string", "minLength": 1}, "intent_version": {"type": "string", "pattern": "^v[1-9][0-9]*$"}, "pack_id": {"type": "string", "minLength": 1},
+    "run_mode": {"type": "string", "enum": ["test_fixture", "retrospective_smoke", "production_live"]},
+    "acceptance_class": {"type": "string", "enum": ["fixture_contract_pass", "retrospective_smoke_pass", "production_contract_eligible"]},
+    "production_contract_eligible": {"type": "boolean"},
+    "production_deliverable": {"const": false},
+    "trust_boundary": {
+      "type": "object", "additionalProperties": false,
+      "required": ["cryptographic_authenticity", "browser_action_attested", "claim_scope", "rights_granted", "statement"],
+      "properties": {
+        "cryptographic_authenticity": {"const": "not_attested"},
+        "browser_action_attested": {"const": false},
+        "claim_scope": {"const": "contract_eligible_only"},
+        "rights_granted": {"const": false},
+        "statement": {"const": "Hash bindings establish internal artifact consistency only; browser actions are not cryptographically attested, contract eligibility is not production delivery, third-party access may change, and no reuse rights are granted."}
+      }
+    },
+    "generated_at": {"type": "string", "format": "date-time"},
+    "delivery_reference_time": {"type": "string", "format": "date-time"},
+    "freshness_window_minutes": {"type": "integer", "minimum": 1},
+    "final_status": {"type": "string", "enum": ["pass", "fail", "blocked"]},
+    "artifact_contract": {
+      "type": "array", "minItems": 10, "maxItems": 10, "uniqueItems": true,
+      "items": {
+        "type": "object", "additionalProperties": false,
+        "required": ["artifact_type", "path", "sha256", "schema_id"],
+        "properties": {
+          "artifact_type": {"type": "string", "enum": ["intent_brief", "approach_registry", "candidate_ledger", "verification_receipts", "browser_capture_records", "shortlist_30", "selected_20", "rejected_10", "feedback_ledger", "reference_board"]},
+          "path": {"type": "string", "minLength": 1}, "sha256": {"type": "string", "pattern": "^[a-f0-9]{64}$"}, "schema_id": {"type": ["string", "null"]}
+        }
+      }
+    },
+    "referenced_evidence_contract": {
+      "type": "array", "minItems": 4,
+      "items": {
+        "type": "object", "additionalProperties": false,
+        "required": ["path", "sha256", "purposes"],
+        "properties": {
+          "path": {"type": "string", "minLength": 1},
+          "sha256": {"type": "string", "pattern": "^[a-f0-9]{64}$"},
+          "purposes": {
+            "type": "array", "minItems": 1, "uniqueItems": true,
+            "items": {"type": "string", "enum": ["relevance_review", "diversity_review", "resolution_review", "adversarial_audit", "feedback_intent_snapshot", "diversity_waiver_evidence", "dedup_version_review"]}
+          }
+        }
+      }
+    },
+    "counts": {
+      "type": "object", "additionalProperties": false,
+      "required": ["qualified", "selected", "rejected"],
+      "properties": {"qualified": {"const": 30}, "selected": {"const": 20}, "rejected": {"const": 10}}
+    },
+    "final_reverification": {
+      "type": "array", "minItems": 30, "maxItems": 30,
+      "items": {
+        "type": "object", "additionalProperties": false,
+        "required": ["candidate_id", "receipt_id", "checked_at", "freshness_status", "access_status", "media_status", "provenance_status"],
+        "properties": {"candidate_id": {"type": "string", "minLength": 1}, "receipt_id": {"type": "string", "minLength": 1}, "checked_at": {"type": "string", "format": "date-time"}, "freshness_status": {"const": "fresh"}, "access_status": {"type": "string", "enum": ["accessible", "session_bound"]}, "media_status": {"const": "passed"}, "provenance_status": {"const": "passed"}}
+      }
+    },
+    "gates": {"$ref": "#/$defs/gates"},
+    "diversity": {
+      "type": "object", "additionalProperties": false,
+      "required": ["broad_brief", "distinct_domains", "distinct_source_families", "territory_count", "max_per_domain", "max_per_campaign_or_creator", "max_per_near_duplicate_group", "waiver", "status"],
+      "properties": {
+        "broad_brief": {"type": "boolean"}, "distinct_domains": {"type": "integer", "minimum": 1}, "distinct_source_families": {"type": "integer", "minimum": 1}, "territory_count": {"type": "integer", "minimum": 1},
+        "max_per_domain": {"type": "integer", "minimum": 1}, "max_per_campaign_or_creator": {"type": "integer", "minimum": 1}, "max_per_near_duplicate_group": {"type": "integer", "minimum": 1},
+        "waiver": {"type": ["object", "null"], "additionalProperties": false, "required": ["constraints", "reason", "evidence", "remaining_risk", "approved_by"], "properties": {"constraints": {"type": "array", "minItems": 1, "uniqueItems": true, "items": {"type": "string", "enum": ["min_domains", "min_source_families", "territory_count", "max_per_domain", "max_per_campaign_or_creator", "max_per_near_duplicate_group"]}}, "reason": {"type": "string", "minLength": 1}, "evidence": {"type": "array", "minItems": 1, "items": {"type": "string", "minLength": 1}}, "remaining_risk": {"type": "string", "minLength": 1}, "approved_by": {"type": "string", "minLength": 1}}},
+        "status": {"type": "string", "enum": ["passed", "waived", "failed"]}
+      }
+    },
+    "agent_separation": {
+      "type": "object", "additionalProperties": false,
+      "required": ["finder_agent_ids", "capture_operator_agent_ids", "verifier_agent_ids", "relevance_curator_agent_id", "diversity_curator_agent_id", "root_synthesizer_agent_id", "auditor_agent_id", "no_self_approval", "decision_roles_disjoint", "auditor_independent"],
+      "properties": {
+        "finder_agent_ids": {"type": "array", "minItems": 1, "uniqueItems": true, "items": {"type": "string", "minLength": 1}}, "capture_operator_agent_ids": {"type": "array", "minItems": 1, "uniqueItems": true, "items": {"type": "string", "minLength": 1}}, "verifier_agent_ids": {"type": "array", "minItems": 1, "uniqueItems": true, "items": {"type": "string", "minLength": 1}},
+        "relevance_curator_agent_id": {"type": "string", "minLength": 1}, "diversity_curator_agent_id": {"type": "string", "minLength": 1}, "root_synthesizer_agent_id": {"type": "string", "minLength": 1}, "auditor_agent_id": {"type": "string", "minLength": 1},
+        "no_self_approval": {"const": true}, "decision_roles_disjoint": {"const": true}, "auditor_independent": {"const": true}
+      }
+    },
+    "adversarial_audit": {
+      "type": "object", "additionalProperties": false,
+      "required": ["auditor_id", "independent_from", "completed_at", "checks", "candidate_ids", "outcome", "evidence_refs"],
+      "properties": {
+        "auditor_id": {"type": "string", "minLength": 1},
+        "independent_from": {"type": "array", "minItems": 1, "uniqueItems": true, "items": {"type": "string", "minLength": 1}},
+        "completed_at": {"type": "string", "format": "date-time"},
+        "checks": {"type": "array", "minItems": 6, "uniqueItems": true, "items": {"type": "string", "enum": ["soft_404", "media_truth", "object_match", "provenance", "deduplication", "diversity", "rights_separation", "agent_independence", "freshness"]}},
+        "candidate_ids": {"type": "array", "minItems": 30, "maxItems": 30, "uniqueItems": true, "items": {"type": "string", "minLength": 1}},
+        "outcome": {"type": "string", "enum": ["pass", "fail"]},
+        "evidence_refs": {"type": "array", "minItems": 1, "uniqueItems": true, "items": {"type": "string", "minLength": 1}}
+      }
+    },
+    "rights_summary": {
+      "type": "object", "additionalProperties": false,
+      "required": ["assessed_count", "session_bound_count", "shareable_without_session_count", "commercial_reuse_unknown_or_restricted_count", "downloaded_video_count"],
+      "properties": {"assessed_count": {"const": 30}, "session_bound_count": {"type": "integer", "minimum": 0, "maximum": 30}, "shareable_without_session_count": {"type": "integer", "minimum": 0, "maximum": 30}, "commercial_reuse_unknown_or_restricted_count": {"type": "integer", "minimum": 0, "maximum": 30}, "downloaded_video_count": {"const": 0}}
+    },
+    "freshness_summary": {
+      "type": "object", "additionalProperties": false,
+      "required": ["receipt_window_minutes", "oldest_checked_at", "newest_checked_at", "fresh_count", "stale_count"],
+      "properties": {"receipt_window_minutes": {"type": "integer", "minimum": 1}, "oldest_checked_at": {"type": "string", "format": "date-time"}, "newest_checked_at": {"type": "string", "format": "date-time"}, "fresh_count": {"const": 30}, "stale_count": {"const": 0}}
+    },
+    "failures": {"type": "array", "items": {"type": "object", "additionalProperties": false, "required": ["gate", "message", "candidate_ids"], "properties": {"gate": {"type": "string", "minLength": 1}, "message": {"type": "string", "minLength": 1}, "candidate_ids": {"type": "array", "uniqueItems": true, "items": {"type": "string", "minLength": 1}}}}}
+  },
+  "$defs": {
+    "gates": {
+      "type": "object", "additionalProperties": false,
+      "required": ["intent_frozen", "route_contract_valid", "exactly_30_qualified", "exactly_20_selected", "exactly_10_rejected", "partition_disjoint", "partition_union_exact", "access_verified", "media_verified", "object_match_verified", "provenance_confirmed", "no_placeholder_or_dead", "dedup_passed", "diversity_passed_or_waived", "finder_verifier_separated", "rights_assessed", "receipts_within_window", "final_reverification_passed", "feedback_chain_valid"],
+      "properties": {
+        "intent_frozen": {"type": "boolean"}, "route_contract_valid": {"type": "boolean"}, "exactly_30_qualified": {"type": "boolean"}, "exactly_20_selected": {"type": "boolean"}, "exactly_10_rejected": {"type": "boolean"},
+        "partition_disjoint": {"type": "boolean"}, "partition_union_exact": {"type": "boolean"}, "access_verified": {"type": "boolean"}, "media_verified": {"type": "boolean"}, "object_match_verified": {"type": "boolean"},
+        "provenance_confirmed": {"type": "boolean"}, "no_placeholder_or_dead": {"type": "boolean"}, "dedup_passed": {"type": "boolean"}, "diversity_passed_or_waived": {"type": "boolean"},
+        "finder_verifier_separated": {"type": "boolean"}, "rights_assessed": {"type": "boolean"}, "receipts_within_window": {"type": "boolean"}, "final_reverification_passed": {"type": "boolean"}, "feedback_chain_valid": {"type": "boolean"}
+      }
+    }
+  },
+  "allOf": [
+    {
+      "if": {"properties": {"final_status": {"const": "pass"}}},
+      "then": {
+        "properties": {
+          "gates": {"properties": {"intent_frozen": {"const": true}, "route_contract_valid": {"const": true}, "exactly_30_qualified": {"const": true}, "exactly_20_selected": {"const": true}, "exactly_10_rejected": {"const": true}, "partition_disjoint": {"const": true}, "partition_union_exact": {"const": true}, "access_verified": {"const": true}, "media_verified": {"const": true}, "object_match_verified": {"const": true}, "provenance_confirmed": {"const": true}, "no_placeholder_or_dead": {"const": true}, "dedup_passed": {"const": true}, "diversity_passed_or_waived": {"const": true}, "finder_verifier_separated": {"const": true}, "rights_assessed": {"const": true}, "receipts_within_window": {"const": true}, "final_reverification_passed": {"const": true}, "feedback_chain_valid": {"const": true}}},
+          "adversarial_audit": {"properties": {"outcome": {"const": "pass"}, "checks": {"allOf": [{"contains": {"const": "soft_404"}}, {"contains": {"const": "media_truth"}}, {"contains": {"const": "provenance"}}, {"contains": {"const": "deduplication"}}, {"contains": {"const": "diversity"}}, {"contains": {"const": "rights_separation"}}]} }},
+          "failures": {"maxItems": 0}
+        }
+      }
+    }
+  ]
+}

@@ -1,0 +1,37 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://local.codex/advertising-reference-research-director/diversity_review.schema.json",
+  "title": "Blind Diversity Curation Review",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema_version", "review_id", "review_type", "run_id", "intent_id", "intent_version", "pack_id", "reviewer", "input_contract_sha256", "started_at", "completed_at", "counterpart_review_unseen", "finder_outputs_frozen", "verdict", "rationale", "metrics"],
+  "properties": {
+    "schema_version": {"const": "1.0.0"},
+    "review_id": {"type": "string", "pattern": "^diversity_review_[A-Za-z0-9._-]+$"},
+    "review_type": {"const": "diversity"},
+    "run_id": {"type": "string", "minLength": 1},
+    "intent_id": {"type": "string", "minLength": 1},
+    "intent_version": {"type": "string", "pattern": "^v[1-9][0-9]*$"},
+    "pack_id": {"type": "string", "minLength": 1},
+    "reviewer": {"type": "string", "minLength": 1},
+    "input_contract_sha256": {"type": "string", "pattern": "^[a-f0-9]{64}$"},
+    "started_at": {"type": "string", "format": "date-time"},
+    "completed_at": {"type": "string", "format": "date-time"},
+    "counterpart_review_unseen": {"const": true},
+    "finder_outputs_frozen": {"const": true},
+    "verdict": {"type": "string", "enum": ["pass", "fail"]},
+    "rationale": {"type": "string", "minLength": 20},
+    "metrics": {
+      "type": "object", "additionalProperties": false,
+      "required": ["distinct_domains", "distinct_source_families", "territory_count", "max_per_domain", "max_per_campaign_or_creator", "max_per_near_duplicate_group"],
+      "properties": {
+        "distinct_domains": {"type": "integer", "minimum": 1},
+        "distinct_source_families": {"type": "integer", "minimum": 1},
+        "territory_count": {"type": "integer", "minimum": 1},
+        "max_per_domain": {"type": "integer", "minimum": 1},
+        "max_per_campaign_or_creator": {"type": "integer", "minimum": 1},
+        "max_per_near_duplicate_group": {"type": "integer", "minimum": 1}
+      }
+    }
+  }
+}

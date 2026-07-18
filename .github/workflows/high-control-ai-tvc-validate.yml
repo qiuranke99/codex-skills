@@ -26,8 +26,8 @@ jobs:
       - name: Test the repository-level standalone validator
         run: python .github/scripts/test_validate_standalone_skills.py
 
-      - name: Validate all 16 Skills in isolated package roots
-        run: python .github/scripts/validate_standalone_skills.py --repo-root . --expected-count 16 --timeout 180 --compact
+      - name: Validate all 17 Skills in isolated package roots
+        run: python .github/scripts/validate_standalone_skills.py --repo-root . --expected-count 17 --timeout 180 --compact
 
   cross-platform:
     name: Optional aggregate / ${{ matrix.os }} / Python ${{ matrix.python }}
@@ -93,6 +93,14 @@ jobs:
             [System.Management.Automation.Language.Parser]::ParseFile($_.FullName, [ref]$tokens, [ref]$parseErrors) | Out-Null
             $errors += $parseErrors
           }
+          $tokens = $null
+          $parseErrors = $null
+          [System.Management.Automation.Language.Parser]::ParseFile(
+            (Resolve-Path .\advertising-reference-research-director\scripts\preflight.ps1),
+            [ref]$tokens,
+            [ref]$parseErrors
+          ) | Out-Null
+          $errors += $parseErrors
           if ($errors.Count -gt 0) {
             $errors | Format-List | Out-String | Write-Error
             exit 1
@@ -101,13 +109,17 @@ jobs:
       - name: Validate POSIX shell syntax
         if: runner.os != 'Windows'
         shell: bash
-        run: bash -n high-control-ai-tvc/tools/*.sh
+        run: |
+          bash -n high-control-ai-tvc/tools/*.sh
+          bash -n advertising-reference-research-director/scripts/preflight.sh
 
       - name: Exercise POSIX wrappers
         if: runner.os != 'Windows'
         shell: bash
         run: |
           export AI_TVC_PYTHON="$(command -v python)"
+          export AI_AD_REFERENCE_PYTHON="$(command -v python)"
+          advertising-reference-research-director/scripts/preflight.sh --format json
           high-control-ai-tvc/tools/preflight.sh --repository-only --format json
           target="$RUNNER_TEMP/Codex Skills"
           high-control-ai-tvc/tools/install.sh install --target "$target" --mode symlink --format json
@@ -129,6 +141,8 @@ jobs:
         shell: pwsh
         run: |
           $env:AI_TVC_PYTHON = (Get-Command python).Source
+          $env:AI_AD_REFERENCE_PYTHON = (Get-Command python).Source
+          .\advertising-reference-research-director\scripts\preflight.ps1 -Format json
           .\high-control-ai-tvc\tools\preflight.ps1 -RepositoryOnly -Format json
           $target = Join-Path $env:RUNNER_TEMP 'Codex Skills'
           .\high-control-ai-tvc\tools\install.ps1 install -Target $target -Mode junction -Format json
@@ -141,6 +155,8 @@ jobs:
         shell: powershell
         run: |
           $env:AI_TVC_PYTHON = (Get-Command python).Source
+          $env:AI_AD_REFERENCE_PYTHON = (Get-Command python).Source
+          .\advertising-reference-research-director\scripts\preflight.ps1 -Format json
           .\high-control-ai-tvc\tools\preflight.ps1 -RepositoryOnly -Format json
           $target = Join-Path $env:RUNNER_TEMP 'Codex Skills PS51'
           .\high-control-ai-tvc\tools\install.ps1 install -Target $target -Mode copy -Format json

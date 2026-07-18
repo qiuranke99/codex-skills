@@ -1,0 +1,54 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://local.codex/advertising-reference-research-director/shortlist_30.schema.json",
+  "title": "Qualified Shortlist of Exactly 30",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema_version", "run_id", "intent_id", "intent_version", "pack_id", "modality", "created_at", "qualified_candidate_count", "candidate_ids", "items", "partition", "integrity_assertions"],
+  "properties": {
+    "schema_version": {"const": "1.0.0"},
+    "run_id": {"type": "string", "minLength": 1},
+    "intent_id": {"type": "string", "minLength": 1},
+    "intent_version": {"type": "string", "pattern": "^v[1-9][0-9]*$"},
+    "pack_id": {"type": "string", "minLength": 1},
+    "modality": {"type": "string", "enum": ["image", "video", "mixed"]},
+    "created_at": {"type": "string", "format": "date-time"},
+    "qualified_candidate_count": {"const": 30},
+    "candidate_ids": {"type": "array", "minItems": 30, "maxItems": 30, "uniqueItems": true, "items": {"type": "string", "minLength": 1}},
+    "items": {
+      "type": "array", "minItems": 30, "maxItems": 30,
+      "items": {
+        "type": "object", "additionalProperties": false,
+        "required": ["candidate_id", "verification_receipt_id", "qualification_status", "freshness_status", "access_status", "media_status", "provenance_status", "dedup_status", "territory_id"],
+        "properties": {
+          "candidate_id": {"type": "string", "minLength": 1},
+          "verification_receipt_id": {"type": "string", "minLength": 1},
+          "qualification_status": {"const": "qualified"},
+          "freshness_status": {"const": "fresh"},
+          "access_status": {"type": "string", "enum": ["accessible", "session_bound"]},
+          "media_status": {"const": "passed"},
+          "provenance_status": {"const": "passed"},
+          "dedup_status": {"type": "string", "enum": ["unique", "authorized_version"]},
+          "territory_id": {"type": "string", "minLength": 1}
+        }
+      }
+    },
+    "partition": {
+      "type": "object", "additionalProperties": false,
+      "required": ["selected_candidate_ids", "rejected_candidate_ids"],
+      "properties": {
+        "selected_candidate_ids": {"type": "array", "minItems": 20, "maxItems": 20, "uniqueItems": true, "items": {"type": "string", "minLength": 1}},
+        "rejected_candidate_ids": {"type": "array", "minItems": 10, "maxItems": 10, "uniqueItems": true, "items": {"type": "string", "minLength": 1}}
+      }
+    },
+    "integrity_assertions": {
+      "type": "object", "additionalProperties": false,
+      "required": ["ids_unique", "partition_disjoint", "union_equals_shortlist", "all_receipts_fresh", "all_access_verified", "all_media_verified", "all_provenance_confirmed", "no_placeholder_or_dead", "finder_verifier_separated"],
+      "properties": {
+        "ids_unique": {"const": true}, "partition_disjoint": {"const": true}, "union_equals_shortlist": {"const": true},
+        "all_receipts_fresh": {"const": true}, "all_access_verified": {"const": true}, "all_media_verified": {"const": true},
+        "all_provenance_confirmed": {"const": true}, "no_placeholder_or_dead": {"const": true}, "finder_verifier_separated": {"const": true}
+      }
+    }
+  }
+}

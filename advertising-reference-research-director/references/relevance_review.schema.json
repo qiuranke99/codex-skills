@@ -1,0 +1,26 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://local.codex/advertising-reference-research-director/relevance_review.schema.json",
+  "title": "Blind Relevance Curation Review",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema_version", "review_id", "review_type", "run_id", "intent_id", "intent_version", "pack_id", "reviewer", "input_contract_sha256", "started_at", "completed_at", "counterpart_review_unseen", "finder_outputs_frozen", "verdict", "rationale", "ordered_candidate_ids"],
+  "properties": {
+    "schema_version": {"const": "1.0.0"},
+    "review_id": {"type": "string", "pattern": "^relevance_review_[A-Za-z0-9._-]+$"},
+    "review_type": {"const": "relevance"},
+    "run_id": {"type": "string", "minLength": 1},
+    "intent_id": {"type": "string", "minLength": 1},
+    "intent_version": {"type": "string", "pattern": "^v[1-9][0-9]*$"},
+    "pack_id": {"type": "string", "minLength": 1},
+    "reviewer": {"type": "string", "minLength": 1},
+    "input_contract_sha256": {"type": "string", "pattern": "^[a-f0-9]{64}$"},
+    "started_at": {"type": "string", "format": "date-time"},
+    "completed_at": {"type": "string", "format": "date-time"},
+    "counterpart_review_unseen": {"const": true},
+    "finder_outputs_frozen": {"const": true},
+    "verdict": {"type": "string", "enum": ["pass", "fail"]},
+    "rationale": {"type": "string", "minLength": 20},
+    "ordered_candidate_ids": {"type": "array", "minItems": 30, "maxItems": 30, "uniqueItems": true, "items": {"type": "string", "minLength": 1}}
+  }
+}

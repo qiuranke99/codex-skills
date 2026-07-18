@@ -1,0 +1,159 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://local.codex/advertising-reference-research-director/verification_receipt.schema.json",
+  "title": "Advertising Reference Verification Receipt",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema_version", "receipt_id", "run_id", "intent_id", "intent_version", "pack_id", "candidate_id", "source_id", "modality", "checked_at", "freshness", "verifier", "access_state", "media_check", "object_match", "provenance_check", "rights_scope", "dedup_check", "evidence_level", "evidence", "capture_bindings", "failure_codes", "outcome"],
+  "properties": {
+    "schema_version": {"const": "1.1.0"},
+    "receipt_id": {"type": "string", "pattern": "^receipt_[A-Za-z0-9._-]+$"},
+    "run_id": {"type": "string", "minLength": 1},
+    "intent_id": {"type": "string", "minLength": 1},
+    "intent_version": {"type": "string", "pattern": "^v[1-9][0-9]*$"},
+    "pack_id": {"type": "string", "minLength": 1},
+    "candidate_id": {"type": "string", "minLength": 1},
+    "source_id": {"type": "string", "minLength": 1},
+    "modality": {"type": "string", "enum": ["image", "video"]},
+    "checked_at": {"type": "string", "format": "date-time"},
+    "freshness": {
+      "type": "object", "additionalProperties": false,
+      "required": ["window_minutes", "expires_at", "status", "reverification_required"],
+      "properties": {
+        "window_minutes": {"type": "integer", "minimum": 1},
+        "expires_at": {"type": "string", "format": "date-time"},
+        "status": {"type": "string", "enum": ["fresh", "stale", "unknown"]},
+        "reverification_required": {"type": "boolean"}
+      }
+    },
+    "verifier": {
+      "type": "object", "additionalProperties": false,
+      "required": ["finder_agent_id", "verifier_agent_id", "verification_surface", "independence_asserted"],
+      "properties": {
+        "finder_agent_id": {"type": "string", "minLength": 1},
+        "verifier_agent_id": {"type": "string", "minLength": 1},
+        "verification_surface": {"type": "string", "enum": ["http", "in_app_browser", "chrome_authenticated", "platform_api", "manual_visual_review"]},
+        "independence_asserted": {"const": true}
+      }
+    },
+    "access_state": {"$ref": "#/$defs/access_state"},
+    "media_check": {
+      "type": "object", "additionalProperties": false,
+      "required": ["status", "kind", "image_render", "video_playback"],
+      "properties": {
+        "status": {"type": "string", "enum": ["passed", "failed", "not_applicable"]},
+        "kind": {"type": "string", "enum": ["image", "video"]},
+        "image_render": {"type": ["object", "null"], "additionalProperties": false, "required": ["rendered", "asset_locator", "natural_width", "natural_height", "placeholder_detected"], "properties": {"rendered": {"type": "boolean"}, "asset_locator": {"type": "string", "minLength": 1}, "natural_width": {"type": "integer", "minimum": 1}, "natural_height": {"type": "integer", "minimum": 1}, "placeholder_detected": {"type": "boolean"}}},
+        "video_playback": {"type": ["object", "null"], "additionalProperties": false, "required": ["player_present", "playback_started", "observed_progress_seconds", "duration_seconds", "specific_work_matched"], "properties": {"player_present": {"type": "boolean"}, "playback_started": {"type": "boolean"}, "observed_progress_seconds": {"type": "number", "minimum": 0}, "duration_seconds": {"type": ["number", "null"], "exclusiveMinimum": 0}, "specific_work_matched": {"type": "boolean"}}}
+      }
+    },
+    "object_match": {
+      "type": "object", "additionalProperties": false,
+      "required": ["status", "matched_title", "matched_stable_id", "rationale"],
+      "properties": {"status": {"type": "string", "enum": ["matched", "mismatched", "uncertain"]}, "matched_title": {"type": "boolean"}, "matched_stable_id": {"type": ["boolean", "null"]}, "rationale": {"type": "string", "minLength": 1}}
+    },
+    "provenance_check": {"$ref": "#/$defs/provenance_check"},
+    "rights_scope": {"$ref": "#/$defs/rights_scope"},
+    "dedup_check": {
+      "type": "object", "additionalProperties": false,
+      "required": ["status", "exact_url_checked", "stable_id_checked", "campaign_version_checked", "near_duplicate_group_id", "fingerprint_capture_ids", "comparison_set_sha256", "phash_distance_threshold", "manual_version_review_ref"],
+      "properties": {
+        "status": {"type": "string", "enum": ["unique", "authorized_version", "duplicate", "uncertain"]},
+        "exact_url_checked": {"type": "boolean"}, "stable_id_checked": {"type": "boolean"}, "campaign_version_checked": {"type": "boolean"},
+        "near_duplicate_group_id": {"type": ["string", "null"]},
+        "fingerprint_capture_ids": {"type": "array", "uniqueItems": true, "items": {"type": "string", "pattern": "^capture_[A-Za-z0-9._-]+$"}},
+        "comparison_set_sha256": {"type": ["string", "null"], "pattern": "^[a-f0-9]{64}$"},
+        "phash_distance_threshold": {"type": ["integer", "null"], "enum": [6, null]},
+        "manual_version_review_ref": {"type": ["string", "null"]}
+      }
+    },
+    "evidence": {
+      "type": "array", "minItems": 1,
+      "items": {
+        "type": "object", "additionalProperties": false,
+        "required": ["kind", "locator", "captured_at"],
+        "properties": {"kind": {"type": "string", "enum": ["url", "screenshot", "dom_locator", "player_progress", "api_response", "manual_note"]}, "locator": {"type": "string", "minLength": 1}, "captured_at": {"type": "string", "format": "date-time"}}
+      }
+    },
+    "capture_bindings": {
+      "type": "array", "uniqueItems": true,
+      "items": {
+        "type": "object", "additionalProperties": false,
+        "required": ["capture_id", "record_sha256", "purposes"],
+        "properties": {
+          "capture_id": {"type": "string", "pattern": "^capture_[A-Za-z0-9._-]+$"},
+          "record_sha256": {"type": "string", "pattern": "^[a-f0-9]{64}$"},
+          "purposes": {"type": "array", "minItems": 1, "uniqueItems": true, "items": {"type": "string", "enum": ["access", "media", "object_match", "provenance"]}}
+        }
+      }
+    },
+    "evidence_level": {"type": "string", "enum": ["E0_LEAD", "E1_INDEXED", "E2_PAGE_OPENED", "E3_MEDIA_CONFIRMED", "E4_QUALIFIED"]},
+    "failure_codes": {
+      "type": "array", "uniqueItems": true,
+      "items": {"type": "string", "enum": ["ACCESS_BLOCKED", "ACCESS_CHALLENGE", "SOFT_404", "NOT_FOUND", "PAGE_NOT_RENDERED", "IMAGE_NOT_RENDERED", "VIDEO_NOT_PLAYABLE", "MEDIA_PLACEHOLDER", "OBJECT_MISMATCH", "PROVENANCE_UNCONFIRMED", "DISCOVERY_ONLY", "DUPLICATE", "RIGHTS_UNASSESSED", "STALE_RECEIPT", "AGENT_SELF_APPROVAL", "OTHER"]}
+    },
+    "outcome": {"type": "string", "enum": ["qualified", "failed", "stale", "blocked"]}
+  },
+  "$defs": {
+    "access_state": {
+      "type": "object", "additionalProperties": false,
+      "required": ["mode", "state", "checked_url", "page_rendered", "canonical_url_resolved", "shareable_without_session", "http_status", "challenge_detected"],
+      "properties": {
+        "mode": {"type": "string", "enum": ["public", "signed_chrome", "subscription", "geo_or_age_gated"]},
+        "state": {"type": "string", "enum": ["accessible", "session_bound", "blocked", "challenge", "soft_404", "not_found"]},
+        "checked_url": {"type": "string", "format": "uri"}, "page_rendered": {"type": "boolean"}, "canonical_url_resolved": {"type": "boolean"},
+        "shareable_without_session": {"type": ["boolean", "string"], "enum": [true, false, "unknown"]},
+        "http_status": {"type": ["integer", "null"], "minimum": 100, "maximum": 599}, "challenge_detected": {"type": "boolean"}
+      }
+    },
+    "provenance_check": {
+      "type": "object", "additionalProperties": false,
+      "required": ["status", "accountable_url", "accountable_owner", "source_signal", "matched_object"],
+      "properties": {"status": {"type": "string", "enum": ["passed", "failed"]}, "accountable_url": {"type": ["string", "null"], "format": "uri"}, "accountable_owner": {"type": ["string", "null"], "minLength": 3}, "source_signal": {"type": "string", "enum": ["original_owner", "creator_credit", "accountable_curator", "official_distribution", "discovery_only"]}, "matched_object": {"type": "boolean"}}
+    },
+    "right": {"type": "object", "additionalProperties": false, "required": ["state", "basis"], "properties": {"state": {"type": "string", "enum": ["allowed", "prohibited", "permission_required", "unknown", "not_applicable"]}, "basis": {"type": "string", "minLength": 1}}},
+    "rights_scope": {"type": "object", "additionalProperties": false, "required": ["discoverable", "viewable", "shareable_without_session", "downloadable", "internal_board_use", "commercial_reuse"], "properties": {"discoverable": {"$ref": "#/$defs/right"}, "viewable": {"$ref": "#/$defs/right"}, "shareable_without_session": {"$ref": "#/$defs/right"}, "downloadable": {"$ref": "#/$defs/right"}, "internal_board_use": {"$ref": "#/$defs/right"}, "commercial_reuse": {"$ref": "#/$defs/right"}}}
+  },
+  "allOf": [
+    {"if": {"properties": {"modality": {"const": "image"}}}, "then": {"properties": {"media_check": {"properties": {"kind": {"const": "image"}, "image_render": {"type": "object"}, "video_playback": {"type": "null"}}}}}},
+    {"if": {"properties": {"modality": {"const": "video"}}}, "then": {"properties": {"media_check": {"properties": {"kind": {"const": "video"}, "image_render": {"type": "null"}, "video_playback": {"type": "object"}}}}}},
+    {
+      "if": {"properties": {"outcome": {"const": "qualified"}}},
+      "then": {
+        "properties": {
+          "freshness": {"properties": {"status": {"const": "fresh"}, "reverification_required": {"const": false}}},
+          "evidence_level": {"const": "E4_QUALIFIED"},
+          "capture_bindings": {"minItems": 1},
+          "failure_codes": {"maxItems": 0},
+          "access_state": {"properties": {"state": {"enum": ["accessible", "session_bound"]}, "page_rendered": {"const": true}, "canonical_url_resolved": {"const": true}, "challenge_detected": {"const": false}}},
+          "media_check": {"properties": {"status": {"const": "passed"}}},
+          "object_match": {"properties": {"status": {"const": "matched"}}},
+          "provenance_check": {"properties": {"status": {"const": "passed"}, "source_signal": {"enum": ["original_owner", "creator_credit", "accountable_curator", "official_distribution"]}, "matched_object": {"const": true}}},
+          "dedup_check": {"properties": {"status": {"enum": ["unique", "authorized_version"]}, "fingerprint_capture_ids": {"minItems": 1}, "comparison_set_sha256": {"type": "string"}, "phash_distance_threshold": {"const": 6}}}
+        }
+      }
+    },
+    {"if": {"properties": {"modality": {"const": "image"}, "outcome": {"const": "qualified"}}}, "then": {"properties": {"media_check": {"properties": {"image_render": {"properties": {"rendered": {"const": true}, "natural_width": {"type": "integer", "minimum": 240}, "natural_height": {"type": "integer", "minimum": 240}, "placeholder_detected": {"const": false}}}}}}}},
+    {
+      "if": {"properties": {"modality": {"const": "video"}, "outcome": {"const": "qualified"}}},
+      "then": {
+        "properties": {
+          "media_check": {
+            "properties": {
+              "video_playback": {
+                "properties": {
+                  "player_present": {"const": true},
+                  "playback_started": {"const": true},
+                  "observed_progress_seconds": {"type": "number", "exclusiveMinimum": 0},
+                  "duration_seconds": {"type": "number", "exclusiveMinimum": 0},
+                  "specific_work_matched": {"const": true}
+                }
+              }
+            }
+          },
+          "object_match": {"properties": {"matched_stable_id": {"const": true}}}
+        }
+      }
+    }
+  ]
+}

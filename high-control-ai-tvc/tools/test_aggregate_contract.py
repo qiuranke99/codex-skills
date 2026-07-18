@@ -31,6 +31,7 @@ EXPECTED_WORKFLOW_PROFILES = {
     "ai-video-omni-reference-prompt-director",
 }
 EXPECTED_AGGREGATE_EXCLUSIONS = {
+    "advertising-reference-research-director",
     "complex-product-identity-reconstruction-asset-locking",
 }
 
@@ -46,8 +47,8 @@ def main() -> int:
     excluded_names = list(manifest.get("excluded_from_aggregate_profile", []))
     if len(managed_names) != 15 or set(managed_names) != set(AGGREGATE_MEMBERS):
         raise AssertionError(f"unexpected aggregate managed inventory: {managed_names}")
-    if manifest.get("standalone_package_count") != 16:
-        raise AssertionError("repository standalone_package_count must remain exactly 16")
+    if manifest.get("standalone_package_count") != 17:
+        raise AssertionError("repository standalone_package_count must remain exactly 17")
     if set(excluded_names) != EXPECTED_AGGREGATE_EXCLUSIONS:
         raise AssertionError(f"unexpected aggregate exclusions: {excluded_names}")
     if set(excluded_names) & set(managed_names):
@@ -88,7 +89,7 @@ def main() -> int:
 
     print(
         "PASS: optional aggregate manages exactly 15 members; "
-        "excluded catalog entries remain outside aggregate receipts; all 16 packages remain standalone"
+        "excluded catalog entries remain outside aggregate receipts; all 17 packages remain standalone"
     )
     return 0
 

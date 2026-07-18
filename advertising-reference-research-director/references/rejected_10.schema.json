@@ -1,0 +1,39 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://local.codex/advertising-reference-research-director/rejected_10.schema.json",
+  "title": "Qualified but Rejected References of Exactly 10",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema_version", "run_id", "intent_id", "intent_version", "pack_id", "created_at", "rejected_candidate_count", "items", "curation_trace", "integrity_assertions"],
+  "properties": {
+    "schema_version": {"const": "1.0.0"},
+    "run_id": {"type": "string", "minLength": 1}, "intent_id": {"type": "string", "minLength": 1}, "intent_version": {"type": "string", "pattern": "^v[1-9][0-9]*$"}, "pack_id": {"type": "string", "minLength": 1},
+    "created_at": {"type": "string", "format": "date-time"},
+    "rejected_candidate_count": {"const": 10},
+    "items": {
+      "type": "array", "minItems": 10, "maxItems": 10,
+      "items": {
+        "type": "object", "additionalProperties": false,
+        "required": ["candidate_id", "shortlist_rank", "verification_receipt_id", "qualified_before_selection", "dominance_dimension", "dominance_reason", "stronger_candidate_class", "dominated_by_candidate_ids", "score_tie_break", "reuse_condition"],
+        "properties": {
+          "candidate_id": {"type": "string", "minLength": 1}, "shortlist_rank": {"type": "integer", "minimum": 1, "maximum": 30}, "verification_receipt_id": {"type": "string", "minLength": 1}, "qualified_before_selection": {"const": true},
+          "dominance_dimension": {"type": "string", "enum": ["relevance", "craft_signal", "source_authority", "freshness", "access_reliability", "link_durability", "evidence_completeness", "rights_risk", "diversity_contribution"]},
+          "dominance_reason": {"type": "string", "minLength": 1}, "stronger_candidate_class": {"type": "string", "minLength": 1},
+          "dominated_by_candidate_ids": {"type": "array", "minItems": 1, "uniqueItems": true, "items": {"type": "string", "minLength": 1}},
+          "score_tie_break": {"type": ["object", "null"], "additionalProperties": false, "required": ["key", "order", "applies_when"], "properties": {"key": {"const": "object.stable_id"}, "order": {"const": "ascending_lexicographic"}, "applies_when": {"const": "all_dimensions_equal"}}},
+          "reuse_condition": {"type": "string", "minLength": 1}
+        }
+      }
+    },
+    "curation_trace": {
+      "type": "object", "additionalProperties": false,
+      "required": ["relevance_curator_id", "diversity_curator_id", "root_synthesizer_id", "relevance_review_ref", "diversity_review_ref", "resolution_ref"],
+      "properties": {"relevance_curator_id": {"type": "string", "minLength": 1}, "diversity_curator_id": {"type": "string", "minLength": 1}, "root_synthesizer_id": {"type": "string", "minLength": 1}, "relevance_review_ref": {"type": "string", "minLength": 1}, "diversity_review_ref": {"type": "string", "minLength": 1}, "resolution_ref": {"type": ["string", "null"]}}
+    },
+    "integrity_assertions": {
+      "type": "object", "additionalProperties": false,
+      "required": ["rejected_subset_of_shortlist", "disjoint_from_selected", "union_with_selected_equals_shortlist", "candidate_ids_unique", "all_were_qualified", "all_have_dominance_reason"],
+      "properties": {"rejected_subset_of_shortlist": {"const": true}, "disjoint_from_selected": {"const": true}, "union_with_selected_equals_shortlist": {"const": true}, "candidate_ids_unique": {"const": true}, "all_were_qualified": {"const": true}, "all_have_dominance_reason": {"const": true}}
+    }
+  }
+}

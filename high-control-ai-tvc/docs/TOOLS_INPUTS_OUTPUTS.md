@@ -2,11 +2,11 @@
 
 ## 1. 系统组成
 
-仓库包含 16 个 standalone 顶层 Skill。High-Control 只把其中 13 个核心 Owner
+仓库包含 17 个 standalone 顶层 Skill。High-Control 只把其中 13 个核心 Owner
 与 2 个可选探索 Skill 组合成显式 opt-in aggregate compatibility/maintenance
 profile；manifest 的 `excluded_from_aggregate_profile` 条目只被该 profile
 排除，不进入受管清单、安装或发布回执。下面的 Owner 输入输出合同描述
-端到端组合方式，不改变全部 16 个包各自独立的 authority。
+端到端组合方式，不改变全部 17 个包各自独立的 authority。
 
 单个 Skill 的共同前置只有自身 `SKILL.md` 声明的输入与 package-local
 依赖；不需要 GitHub-latest attestation、suite receipt、pinned runtime、

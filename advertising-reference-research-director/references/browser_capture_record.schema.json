@@ -1,0 +1,77 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://local.codex/advertising-reference-research-director/browser_capture_record.schema.json",
+  "title": "Hash-bound browser capture record",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version", "capture_id", "run_id", "intent_id", "intent_version", "pack_id",
+    "phase", "candidate_id", "approach_id", "approach_plan_sha256", "captured_at",
+    "operator_agent_id", "surface", "record_origin", "observation", "source_record", "trust_boundary"
+  ],
+  "properties": {
+    "schema_version": {"const": "1.0.0"},
+    "capture_id": {"type": "string", "pattern": "^capture_[A-Za-z0-9._-]+$"},
+    "run_id": {"type": "string", "minLength": 1},
+    "intent_id": {"type": "string", "minLength": 1},
+    "intent_version": {"type": "string", "pattern": "^v[1-9][0-9]*$"},
+    "pack_id": {"type": "string", "minLength": 1},
+    "phase": {"type": "string", "enum": ["discovery", "final_verification", "provenance_recheck"]},
+    "candidate_id": {"type": ["string", "null"]},
+    "approach_id": {"type": "string", "minLength": 1},
+    "approach_plan_sha256": {"type": "string", "pattern": "^[a-f0-9]{64}$"},
+    "captured_at": {"type": "string", "format": "date-time"},
+    "operator_agent_id": {"type": "string", "minLength": 1},
+    "surface": {"type": "string", "enum": ["in_app_browser", "chrome_authenticated", "manual_visual_review"]},
+    "record_origin": {"type": "string", "enum": ["synthetic_fixture", "retrospective_import", "direct_browser_observation"]},
+    "observation": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["canonical_url", "asset_locator", "stable_id", "access_state", "media_check", "object_match", "provenance_check", "dedup_fingerprint"],
+      "properties": {
+        "canonical_url": {"type": "string", "format": "uri"},
+        "asset_locator": {"type": "string", "minLength": 1},
+        "stable_id": {"type": ["string", "null"]},
+        "access_state": {"type": "object"},
+        "media_check": {"type": "object"},
+        "object_match": {"type": "object"},
+        "provenance_check": {"type": "object"},
+        "dedup_fingerprint": {
+          "type": ["object", "null"], "additionalProperties": false,
+          "required": ["method", "input_asset_locator", "exact_or_manifest_sha256", "perceptual_hash", "sample_count", "sampled_at_seconds", "computed_at", "tool_name", "tool_version"],
+          "properties": {
+            "method": {"type": "string", "enum": ["image_content_sha256_dhash64", "video_sample_manifest_sha256_dhash64"]},
+            "input_asset_locator": {"type": "string", "minLength": 1},
+            "exact_or_manifest_sha256": {"type": "string", "pattern": "^[a-f0-9]{64}$"},
+            "perceptual_hash": {"type": "string", "pattern": "^[a-f0-9]{16}$"},
+            "sample_count": {"type": "integer", "minimum": 1},
+            "sampled_at_seconds": {"type": "array", "uniqueItems": true, "items": {"type": "number", "minimum": 0}},
+            "computed_at": {"type": "string", "format": "date-time"},
+            "tool_name": {"type": "string", "minLength": 1},
+            "tool_version": {"type": "string", "minLength": 1}
+          }
+        }
+      }
+    },
+    "source_record": {
+      "type": ["object", "null"],
+      "additionalProperties": false,
+      "required": ["path", "sha256", "json_pointer"],
+      "properties": {
+        "path": {"type": "string", "minLength": 1},
+        "sha256": {"type": "string", "pattern": "^[a-f0-9]{64}$"},
+        "json_pointer": {"type": ["string", "null"]}
+      }
+    },
+    "trust_boundary": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["cryptographic_authenticity", "rights_granted", "session_free_access_observed"],
+      "properties": {
+        "cryptographic_authenticity": {"const": "not_attested"},
+        "rights_granted": {"const": false},
+        "session_free_access_observed": {"type": ["boolean", "string"], "enum": [true, false, "unknown"]}
+      }
+    }
+  }
+}

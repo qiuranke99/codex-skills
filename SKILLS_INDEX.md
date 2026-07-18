@@ -14,7 +14,7 @@ Do not expose the same Skill name in both discovery roots.
 
 ## Independent Skill Packages
 
-The repository maintains 16 independently installable and runnable Skill
+The repository maintains 17 independently installable and runnable Skill
 packages. Fifteen may also be selected together as an optional High-Control AI
 TVC compatibility profile:
 
@@ -43,6 +43,7 @@ outside the distribution.
 | `multi-angle-product-identity-lock-board` | `D:\AI\skill\multi-angle-product-identity-lock-board` | Request a horizontal 16:9 six-view opaque-product board, publish the complete prompt pair, and expose approved product-geometry artifacts for an optional external integrator. | `D:\AI视觉工作室\.agents\skills\multi-angle-product-identity-lock-board` | Active |
 | `packaging-product-identity-label-lock-board` | `D:\AI\skill\packaging-product-identity-label-lock-board` | Build one compact borderless packaging video asset board with seven upright views, two source-grounded details by default, a source-cited copy ledger, deterministic overlays, evidence-bound QA, and an optional external Project Canon handoff. | `D:\AI视觉工作室\.agents\skills\packaging-product-identity-label-lock-board` | Active |
 | `material-sensitive-product-master-asset-board` | `D:\AI\skill\material-sensitive-product-master-asset-board` | Research exact-product, same-package-family, and packaging-archetype evidence with Browser-first provenance; separate research authority from generation rights; derive a 4–10-region material board from actual surface coverage; bind one delegated image worker, research-aware QA, handoff, and accepted records; and publish the full material-preserving prompt pair without requiring High-Control at runtime. | `D:\AI视觉工作室\.agents\skills\material-sensitive-product-master-asset-board` | Active |
+| `advertising-reference-research-director` | `D:\AI\skill\advertising-reference-research-director` | Route a creative decision to image, video, or both; build evidence-bound reference packs with exact candidate accounting, independent verification, curation, adversarial audit, and feedback learning. | Created in place | Active |
 | `ai-video-shot-script-director` | `D:\AI\skill\ai-video-shot-script-director` | Upgrade rough ideas or structured creative shot drafts into a validated Professional Shot Contract with stable Shot UIDs, closed timing, observable action, camera and continuity direction, inference provenance, and the shared Project Canon registry contract. | Created in place | Active |
 | `ai-video-global-look-lock` | `D:\AI\skill\ai-video-global-look-lock` | Freeze Look Core, legal Look States, per-shot Look Deltas, independent visual references, and exact downstream prompt inheritance without changing intrinsic identity or product facts. | Created in place | Active |
 | `ai-video-modular-storyboard` | `D:\AI\skill\ai-video-modular-storyboard` | Create exactly one independent editable frame per scripted shot, deterministic human review boards, and atomic one-shot or multi-shot replacement with dependency invalidation. | Created in place | Active |
@@ -50,7 +51,7 @@ outside the distribution.
 | `ai-video-keyframe-continuity-pack` | `D:\AI\skill\ai-video-keyframe-continuity-pack` | Create K1 per-shot Omni-reference anchors and continuity ledgers, then an immutable P1-bound K2 boundary supplement; never endpoint-frame controls. | Created in place | Active |
 | `ai-video-omni-reference-prompt-director` | `D:\AI\skill\ai-video-omni-reference-prompt-director` | Preflight and compile complete all-reference packages with Seedance 2.5-first semantics, capability-verified Seedance 2.0/provider renders, exact asset bindings, payloads, locks, and owner-routed selective revisions. | Created in place | Active |
 
-## Sixteenth Maintained Skill
+## Additional Standalone Reconstruction Skill
 
 `complex-product-identity-reconstruction-asset-locking` is an active,
 independently maintained package outside the optional 15-Skill High-Control profile.

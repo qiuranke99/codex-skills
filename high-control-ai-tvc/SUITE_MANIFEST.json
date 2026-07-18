@@ -6,7 +6,7 @@
   "opt_in_required": true,
   "controls_individual_skill_availability": false,
   "managed_inventory_policy": "skills_only",
-  "standalone_package_count": 16,
+  "standalone_package_count": 17,
   "repository": "qiuranke99/codex-skills",
   "subsystem_path": "high-control-ai-tvc",
   "source_repository": "qiuranke99/codex-skills",
@@ -27,6 +27,7 @@
     "endpoint_frame_interpolation"
   ],
   "excluded_from_aggregate_profile": [
+    "advertising-reference-research-director",
     "complex-product-identity-reconstruction-asset-locking"
   ],
   "skills": [

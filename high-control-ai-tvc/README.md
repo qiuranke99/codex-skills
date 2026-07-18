@@ -1,12 +1,12 @@
 # High-Control AI TVC Production System
 
 `codex-skills` 内显式 opt-in 的高控制全能参考 AI TVC 聚合兼容与维护
-profile。仓库根目录的 16 个顶层 Skill 各自独立安装、发现、调用和验证；
+profile。仓库根目录的 17 个顶层 Skill 各自独立安装、发现、调用和验证；
 每个包自己的 `SKILL.md`、资源与 package-local validator 才是该 Skill 的
 运行权威。`high-control-ai-tvc` 不决定任何单包是否 available 或 ready。
 当前 `all` profile 只管理 15 个 workflow 成员；manifest 的
 `excluded_from_aggregate_profile` 条目只是被该 profile 排除，不进入聚合安装
-或发布回执。仓库中的 16 个顶层包全部仍是 standalone Skill。
+或发布回执。仓库中的 17 个顶层包全部仍是 standalone Skill。
 
 本目录只保存可选的批量安装、不可变 snapshot、aggregate preflight、跨包
 兼容性验证、SOP 和流程图，不复制 Skill，也不保存客户项目。只有用户明确

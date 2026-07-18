@@ -165,8 +165,12 @@ from pathlib import Path
 from helper import EXPECTED_SKILL_FILE
 
 
+def resolve(value: str) -> Path:
+    return Path(value)
+
+
 def main() -> None:
-    assert Path(EXPECTED_SKILL_FILE).is_file()
+    assert resolve(EXPECTED_SKILL_FILE).is_file()
     assert Path("agents/openai.yaml").is_file()
 
 

@@ -20,7 +20,7 @@
 ## 适用范围
 
 本文件定义用户显式选择的 High-Control aggregate-managed 端到端工作流。
-仓库中的 16 个顶层 Skill 仍然独立安装、发现、调用和验证；其 package-local
+仓库中的 17 个顶层 Skill 仍然独立安装、发现、调用和验证；其 package-local
 合同不以本 SOP、suite manifest、receipt、release gate、pinned runtime 或
 兄弟包为前置条件。只调用某一个 Skill 时，直接遵守该包 `SKILL.md` 和本地
 validator。

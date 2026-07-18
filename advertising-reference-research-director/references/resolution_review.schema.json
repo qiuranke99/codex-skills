@@ -1,0 +1,28 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://local.codex/advertising-reference-research-director/resolution_review.schema.json",
+  "title": "Root Curation Resolution",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema_version", "resolution_id", "run_id", "intent_id", "intent_version", "pack_id", "synthesizer", "input_contract_sha256", "relevance_review_ref", "relevance_review_sha256", "diversity_review_ref", "diversity_review_sha256", "started_at", "completed_at", "decision", "rationale", "selected", "rejected"],
+  "properties": {
+    "schema_version": {"const": "1.0.0"},
+    "resolution_id": {"type": "string", "pattern": "^resolution_review_[A-Za-z0-9._-]+$"},
+    "run_id": {"type": "string", "minLength": 1},
+    "intent_id": {"type": "string", "minLength": 1},
+    "intent_version": {"type": "string", "pattern": "^v[1-9][0-9]*$"},
+    "pack_id": {"type": "string", "minLength": 1},
+    "synthesizer": {"type": "string", "minLength": 1},
+    "input_contract_sha256": {"type": "string", "pattern": "^[a-f0-9]{64}$"},
+    "relevance_review_ref": {"type": "string", "minLength": 1},
+    "relevance_review_sha256": {"type": "string", "pattern": "^[a-f0-9]{64}$"},
+    "diversity_review_ref": {"type": "string", "minLength": 1},
+    "diversity_review_sha256": {"type": "string", "pattern": "^[a-f0-9]{64}$"},
+    "started_at": {"type": "string", "format": "date-time"},
+    "completed_at": {"type": "string", "format": "date-time"},
+    "decision": {"const": "accepted_20_10_partition"},
+    "rationale": {"type": "string", "minLength": 20},
+    "selected": {"type": "array", "minItems": 20, "maxItems": 20, "uniqueItems": true, "items": {"type": "string", "minLength": 1}},
+    "rejected": {"type": "array", "minItems": 10, "maxItems": 10, "uniqueItems": true, "items": {"type": "string", "minLength": 1}}
+  }
+}

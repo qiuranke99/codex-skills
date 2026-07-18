@@ -381,10 +381,11 @@ def _path_up_moves(
         return None
     if isinstance(node, ast.Call):
         name = _call_name(node.func).casefold()
-        if name in {"resolve", "absolute", "expanduser"} or name.endswith(
-            (".resolve", ".absolute", ".expanduser")
-        ):
-            return _path_up_moves(node.func.value, assignments, seen)  # type: ignore[attr-defined]
+        if (
+            name in {"resolve", "absolute", "expanduser"}
+            or name.endswith((".resolve", ".absolute", ".expanduser"))
+        ) and isinstance(node.func, ast.Attribute):
+            return _path_up_moves(node.func.value, assignments, seen)
         if name in {"path", "pathlib.path", "os.fspath"} and node.args:
             return _path_up_moves(node.args[0], assignments, seen)
         if name.endswith("os.path.dirname") or name == "dirname":
@@ -1037,7 +1038,10 @@ def _copy_and_validate_isolation(
 
     try:
         with tempfile.TemporaryDirectory(prefix="standalone-skill-validation-") as temporary:
-            isolation_root = Path(temporary)
+            # macOS exposes /var as a symlink to /private/var.  Construct every
+            # isolated HOME/TMP/discovery path from one canonical root so
+            # package tests never receive two spellings for the same path.
+            isolation_root = Path(temporary).resolve(strict=True)
             discovery_root = isolation_root / "discovery"
             discovery_root.mkdir()
             isolated_package = discovery_root / source_package.name
@@ -1398,7 +1402,7 @@ def build_argument_parser() -> argparse.ArgumentParser:
         "--expected-count",
         type=int,
         default=None,
-        help="optional exact package-count assertion (use 16 for this repository)",
+        help="optional exact package-count assertion (use 17 for this repository)",
     )
     parser.add_argument(
         "--timeout",

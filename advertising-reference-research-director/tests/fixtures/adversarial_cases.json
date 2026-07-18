@@ -1,0 +1,252 @@
+[
+  {
+    "case_id": "pool_selected_19",
+    "mutation": "drop_selected_item",
+    "expected_code": "SCHEMA-01"
+  },
+  {
+    "case_id": "missing_receipt",
+    "mutation": "drop_receipt",
+    "expected_code": "VERIFY-01"
+  },
+  {
+    "case_id": "stale_receipt",
+    "mutation": "stale_receipt",
+    "expected_code": "FRESHNESS-01"
+  },
+  {
+    "case_id": "poster_only_video",
+    "mutation": "video_without_playback",
+    "expected_code": "SCHEMA-01"
+  },
+  {
+    "case_id": "discovery_only_provenance",
+    "mutation": "discovery_only_provenance",
+    "expected_code": "SCHEMA-01"
+  },
+  {
+    "case_id": "canonical_duplicate",
+    "mutation": "duplicate_url",
+    "expected_code": "DEDUP-01"
+  },
+  {
+    "case_id": "diversity_collapse",
+    "mutation": "collapse_diversity",
+    "expected_code": "DIVERSITY-01"
+  },
+  {
+    "case_id": "finder_self_verifies",
+    "mutation": "finder_is_verifier",
+    "expected_code": "AGENT-01"
+  },
+  {
+    "case_id": "auditor_failed",
+    "mutation": "audit_fail",
+    "expected_code": "SCHEMA-01"
+  },
+  {
+    "case_id": "feedback_no_version_change",
+    "mutation": "feedback_same_version",
+    "expected_code": "FEEDBACK-01"
+  },
+  {
+    "case_id": "collapsed_rights",
+    "mutation": "remove_rights_dimension",
+    "expected_code": "SCHEMA-01"
+  },
+  {
+    "case_id": "http_precheck_as_final",
+    "mutation": "http_precheck_receipt",
+    "expected_code": "VERIFY-01"
+  },
+  {
+    "case_id": "foreign_root_identity",
+    "mutation": "foreign_root_identity",
+    "expected_code": "CANDIDATE-01"
+  },
+  {
+    "case_id": "unrelated_receipt_binding",
+    "mutation": "unrelated_receipt_binding",
+    "expected_code": "VERIFY-01"
+  },
+  {
+    "case_id": "foreign_asset_evidence",
+    "mutation": "foreign_asset_evidence",
+    "expected_code": "VERIFY-02"
+  },
+  {
+    "case_id": "empty_passed_provenance",
+    "mutation": "empty_passed_provenance",
+    "expected_code": "PROVENANCE-01"
+  },
+  {
+    "case_id": "accessible_hard_404",
+    "mutation": "accessible_hard_404",
+    "expected_code": "VERIFY-03"
+  },
+  {
+    "case_id": "forbidden_access_mode",
+    "mutation": "forbidden_access_mode",
+    "expected_code": "VERIFY-03"
+  },
+  {
+    "case_id": "feedback_pending",
+    "mutation": "feedback_pending",
+    "expected_code": "FEEDBACK-01"
+  },
+  {
+    "case_id": "approaches_planned",
+    "mutation": "approaches_planned",
+    "expected_code": "AGENT-01"
+  },
+  {
+    "case_id": "missing_audit_evidence",
+    "mutation": "missing_audit_evidence",
+    "expected_code": "AUDIT-01"
+  },
+  {
+    "case_id": "blank_reference_board",
+    "mutation": "blank_reference_board",
+    "expected_code": "ARTIFACT_INTEGRITY"
+  },
+  {
+    "case_id": "rights_summary_mismatch",
+    "mutation": "rights_summary_mismatch",
+    "expected_code": "RIGHTS-01"
+  },
+  {
+    "case_id": "unknown_source_identity",
+    "mutation": "unknown_source_identity",
+    "expected_code": "PROVENANCE-01"
+  },
+  {
+    "case_id": "source_domain_url_mismatch",
+    "mutation": "source_domain_url_mismatch",
+    "expected_code": "PROVENANCE-01"
+  },
+  {
+    "case_id": "javascript_canonical_url",
+    "mutation": "javascript_canonical_url",
+    "expected_code": "SCHEMA-01"
+  },
+  {
+    "case_id": "feedback_missing_invalidated_ref",
+    "mutation": "feedback_missing_invalidated_ref",
+    "expected_code": "FEEDBACK-01"
+  },
+  {
+    "case_id": "empty_relevance_review",
+    "mutation": "empty_relevance_review",
+    "expected_code": "AGENT-01"
+  },
+  {
+    "case_id": "audit_artifact_self_assertion",
+    "mutation": "audit_artifact_self_assertion",
+    "expected_code": "AUDIT-01"
+  },
+  {
+    "case_id": "malformed_pack_contracts",
+    "mutation": "malformed_pack_contracts",
+    "expected_code": "ROUTE-02"
+  },
+  {
+    "case_id": "foreign_review_identity",
+    "mutation": "foreign_review_identity",
+    "expected_code": "AGENT-01"
+  },
+  {
+    "case_id": "feedback_wrong_completion_artifacts",
+    "mutation": "feedback_wrong_completion_artifacts",
+    "expected_code": "FEEDBACK-01"
+  },
+  {
+    "case_id": "subdomain_diversity_spoof",
+    "mutation": "subdomain_diversity_spoof",
+    "expected_code": "PROVENANCE-01"
+  },
+  {
+    "case_id": "feedback_false_delta",
+    "mutation": "feedback_false_delta",
+    "expected_code": "FEEDBACK-01"
+  },
+  {
+    "case_id": "feedback_mislabeled_snapshot",
+    "mutation": "feedback_mislabeled_snapshot",
+    "expected_code": "FEEDBACK-01"
+  },
+  {
+    "case_id": "registered_source_wrong_modality",
+    "mutation": "registered_source_wrong_modality",
+    "expected_code": "PROVENANCE-01"
+  },
+  {
+    "case_id": "feedback_two_event_false_bridge",
+    "mutation": "feedback_two_event_false_bridge",
+    "expected_code": "FEEDBACK-01"
+  },
+  {
+    "case_id": "missing_candidate_approach",
+    "mutation": "missing_candidate_approach",
+    "expected_code": "AGENT-01"
+  },
+  {
+    "case_id": "missing_receipt_duplicate_group",
+    "mutation": "missing_receipt_duplicate_group",
+    "expected_code": "VERIFY-01"
+  },
+  {
+    "case_id": "referenced_evidence_missing",
+    "mutation": "referenced_evidence_missing",
+    "expected_code": "ARTIFACT_INTEGRITY"
+  },
+  {
+    "case_id": "core_artifact_contract_duplicate",
+    "mutation": "core_artifact_contract_duplicate",
+    "expected_code": "SCHEMA-01"
+  },
+  {
+    "case_id": "core_artifact_schema_id_drift",
+    "mutation": "core_artifact_schema_id_drift",
+    "expected_code": "ARTIFACT_INTEGRITY"
+  },
+  {
+    "case_id": "core_artifact_noncanonical_path",
+    "mutation": "core_artifact_noncanonical_path",
+    "expected_code": "ARTIFACT_INTEGRITY"
+  },
+  {
+    "case_id": "referenced_evidence_duplicate",
+    "mutation": "referenced_evidence_duplicate",
+    "expected_code": "ARTIFACT_INTEGRITY"
+  },
+  {
+    "case_id": "referenced_evidence_hash_mismatch",
+    "mutation": "referenced_evidence_hash_mismatch",
+    "expected_code": "ARTIFACT_INTEGRITY"
+  },
+  {
+    "case_id": "referenced_evidence_purpose_mismatch",
+    "mutation": "referenced_evidence_purpose_mismatch",
+    "expected_code": "ARTIFACT_INTEGRITY"
+  },
+  {
+    "case_id": "feedback_unknown_real_ids",
+    "mutation": "feedback_unknown_ids",
+    "expected_code": "FEEDBACK-01"
+  },
+  {
+    "case_id": "feedback_report_self_proof",
+    "mutation": "feedback_report_self_proof",
+    "expected_code": "SCHEMA-01"
+  },
+  {
+    "case_id": "capture_session_free_mismatch",
+    "mutation": "capture_session_free_mismatch",
+    "expected_code": "CAPTURE-01"
+  },
+  {
+    "case_id": "report_trust_statement_drift",
+    "mutation": "report_trust_statement_drift",
+    "expected_code": "SCHEMA-01"
+  }
+]

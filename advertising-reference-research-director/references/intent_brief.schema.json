@@ -1,0 +1,206 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://local.codex/advertising-reference-research-director/intent_brief.schema.json",
+  "title": "Advertising Reference Research Intent Brief",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version", "run_id", "intent_id", "intent_version", "run_mode", "created_at",
+    "decision_to_inform", "deliverable_type", "modality_route", "routing",
+    "subject", "scene_scale", "human_presence", "visual_axes", "temporal_axes",
+    "must_have", "must_not_have", "positive_anchors", "negative_anchors",
+    "market_region", "languages", "freshness_need", "access_policy", "rights_scope",
+    "diversity_requirements", "clarification_questions", "route_reason_codes", "route_evidence", "assumptions", "approval"
+  ],
+  "properties": {
+    "schema_version": {"const": "1.0.0"},
+    "run_id": {"type": "string", "minLength": 1},
+    "intent_id": {"type": "string", "pattern": "^intent_[A-Za-z0-9._-]+$"},
+    "intent_version": {"type": "string", "pattern": "^v[1-9][0-9]*$"},
+    "run_mode": {"type": "string", "enum": ["test_fixture", "retrospective_smoke", "production_live"]},
+    "created_at": {"type": "string", "format": "date-time"},
+    "decision_to_inform": {"type": "string", "minLength": 1},
+    "deliverable_type": {"type": "string", "enum": ["reference_board", "moodboard", "preproduction_direction", "pitch_support", "competitive_review", "other"]},
+    "modality_route": {"type": "string", "enum": ["image", "video", "both"]},
+    "routing": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["strategy", "pack_contracts", "unified_territory_quota"],
+      "properties": {
+        "strategy": {"type": "string", "enum": ["single_modality", "parallel_packs", "unified_territory"]},
+        "pack_contracts": {
+          "type": "array", "minItems": 1, "maxItems": 2,
+          "items": {
+            "type": "object", "additionalProperties": false,
+            "required": ["pack_id", "modality", "qualified_target", "selected_target"],
+            "properties": {
+              "pack_id": {"type": "string", "minLength": 1},
+              "modality": {"type": "string", "enum": ["image", "video", "mixed"]},
+              "qualified_target": {"const": 30},
+              "selected_target": {"const": 20}
+            }
+          }
+        },
+        "unified_territory_quota": {
+          "type": ["object", "null"],
+          "additionalProperties": false,
+          "required": ["image_qualified_target", "video_qualified_target", "image_selected_target", "video_selected_target", "cross_modal_territory_min"],
+          "properties": {
+            "image_qualified_target": {"type": "integer", "minimum": 1, "maximum": 29},
+            "video_qualified_target": {"type": "integer", "minimum": 1, "maximum": 29},
+            "image_selected_target": {"type": "integer", "minimum": 1, "maximum": 19},
+            "video_selected_target": {"type": "integer", "minimum": 1, "maximum": 19},
+            "cross_modal_territory_min": {"type": "integer", "minimum": 1, "maximum": 6}
+          }
+        }
+      }
+    },
+    "subject": {"type": "string", "minLength": 1},
+    "scene_scale": {"type": "string", "enum": ["macro_product", "tabletop", "human_scale", "room_scale", "large_scale_set", "architecture", "landscape", "mixed", "unspecified"]},
+    "human_presence": {"type": "string", "enum": ["none", "hands_only", "partial_body", "full_body_single", "full_body_group", "mixed", "unspecified"]},
+    "visual_axes": {"type": "array", "minItems": 1, "uniqueItems": true, "items": {"type": "string", "minLength": 1}},
+    "temporal_axes": {"type": "array", "uniqueItems": true, "items": {"type": "string", "minLength": 1}},
+    "must_have": {"type": "array", "uniqueItems": true, "items": {"type": "string", "minLength": 1}},
+    "must_not_have": {"type": "array", "uniqueItems": true, "items": {"type": "string", "minLength": 1}},
+    "positive_anchors": {"type": "array", "items": {"$ref": "#/$defs/anchor"}},
+    "negative_anchors": {"type": "array", "items": {"$ref": "#/$defs/anchor"}},
+    "market_region": {"type": "array", "minItems": 1, "uniqueItems": true, "items": {"type": "string", "minLength": 1}},
+    "languages": {"type": "array", "minItems": 1, "uniqueItems": true, "items": {"type": "string", "minLength": 2}},
+    "freshness_need": {
+      "type": "object", "additionalProperties": false,
+      "required": ["content_max_age_days", "registry_reverify_max_age_days", "final_receipt_window_minutes"],
+      "properties": {
+        "content_max_age_days": {"type": ["integer", "null"], "minimum": 0},
+        "registry_reverify_max_age_days": {"type": "integer", "minimum": 0},
+        "final_receipt_window_minutes": {"type": "integer", "minimum": 1, "default": 30}
+      }
+    },
+    "access_policy": {
+      "type": "object", "additionalProperties": false,
+      "required": ["allow_public_web", "allow_signed_chrome", "allow_subscription", "allow_geo_or_age_gated", "public_shareable_required_for_delivery", "fallback_on_blocked"],
+      "properties": {
+        "allow_public_web": {"type": "boolean"},
+        "allow_signed_chrome": {"type": "boolean"},
+        "allow_subscription": {"type": "boolean"},
+        "allow_geo_or_age_gated": {"type": "boolean"},
+        "public_shareable_required_for_delivery": {"type": "boolean"},
+        "fallback_on_blocked": {"type": "boolean"}
+      }
+    },
+    "rights_scope": {"$ref": "#/$defs/rights_scope"},
+    "diversity_requirements": {
+      "type": "object", "additionalProperties": false,
+      "required": ["broad_brief", "min_domains", "min_source_families", "territory_count_min", "territory_count_max", "max_per_domain", "max_per_campaign_or_creator", "max_per_near_duplicate_group"],
+      "properties": {
+        "broad_brief": {"type": "boolean"},
+        "min_domains": {"type": "integer", "minimum": 1},
+        "min_source_families": {"type": "integer", "minimum": 1},
+        "territory_count_min": {"type": "integer", "minimum": 1},
+        "territory_count_max": {"type": "integer", "minimum": 1},
+        "max_per_domain": {"type": "integer", "minimum": 1},
+        "max_per_campaign_or_creator": {"type": "integer", "minimum": 1},
+        "max_per_near_duplicate_group": {"type": "integer", "minimum": 1}
+      }
+    },
+    "clarification_questions": {
+      "type": "array", "maxItems": 3,
+      "items": {
+        "type": "object", "additionalProperties": false,
+        "required": ["question", "answer", "asked_at", "effect_on_intent"],
+        "properties": {
+          "question": {"type": "string", "minLength": 1},
+          "answer": {"type": "string", "minLength": 1},
+          "asked_at": {"type": "string", "format": "date-time"},
+          "effect_on_intent": {"type": "string", "minLength": 1}
+        }
+      }
+    },
+    "route_reason_codes": {
+      "type": "array", "minItems": 1, "uniqueItems": true,
+      "items": {"type": "string", "enum": ["explicit_image_request", "explicit_video_request", "explicit_both_request", "static_composition_need", "temporal_mechanism_need", "mixed_decision_need", "insufficient_evidence_defaulted"]}
+    },
+    "route_evidence": {
+      "type": "object", "additionalProperties": false,
+      "required": ["declared_by_user", "evidence", "confidence"],
+      "properties": {
+        "declared_by_user": {"type": "boolean"},
+        "evidence": {"type": "array", "minItems": 1, "items": {"type": "string", "minLength": 1}},
+        "confidence": {"type": "number", "minimum": 0, "maximum": 1}
+      }
+    },
+    "assumptions": {"type": "array", "items": {"$ref": "#/$defs/assumption"}},
+    "approval": {
+      "type": "object", "additionalProperties": false,
+      "required": ["state", "approved_at", "approved_by"],
+      "properties": {
+        "state": {"type": "string", "enum": ["draft", "inferred_and_frozen", "user_confirmed"]},
+        "approved_at": {"type": ["string", "null"], "format": "date-time"},
+        "approved_by": {"type": ["string", "null"]}
+      }
+    }
+  },
+  "$defs": {
+    "anchor": {
+      "type": "object", "additionalProperties": false,
+      "required": ["label", "url", "reason"],
+      "properties": {
+        "label": {"type": "string", "minLength": 1},
+        "url": {"type": ["string", "null"], "format": "uri"},
+        "reason": {"type": "string", "minLength": 1}
+      }
+    },
+    "assumption": {
+      "type": "object", "additionalProperties": false,
+      "required": ["statement", "basis", "confidence", "reversible"],
+      "properties": {
+        "statement": {"type": "string", "minLength": 1},
+        "basis": {"type": "string", "enum": ["user_explicit", "user_evidence", "inference", "default_contract"]},
+        "confidence": {"type": "number", "minimum": 0, "maximum": 1},
+        "reversible": {"type": "boolean"}
+      }
+    },
+    "right": {
+      "type": "object", "additionalProperties": false,
+      "required": ["state", "basis"],
+      "properties": {
+        "state": {"type": "string", "enum": ["allowed", "prohibited", "permission_required", "unknown", "not_applicable"]},
+        "basis": {"type": "string"}
+      }
+    },
+    "rights_scope": {
+      "type": "object", "additionalProperties": false,
+      "required": ["discoverable", "viewable", "shareable_without_session", "downloadable", "internal_board_use", "commercial_reuse"],
+      "properties": {
+        "discoverable": {"$ref": "#/$defs/right"},
+        "viewable": {"$ref": "#/$defs/right"},
+        "shareable_without_session": {"$ref": "#/$defs/right"},
+        "downloadable": {"$ref": "#/$defs/right"},
+        "internal_board_use": {"$ref": "#/$defs/right"},
+        "commercial_reuse": {"$ref": "#/$defs/right"}
+      }
+    }
+  },
+  "allOf": [
+    {
+      "if": {"properties": {"modality_route": {"enum": ["image", "video"]}}},
+      "then": {"properties": {"routing": {"properties": {"strategy": {"const": "single_modality"}, "pack_contracts": {"maxItems": 1}, "unified_territory_quota": {"type": "null"}}}}}
+    },
+    {
+      "if": {
+        "properties": {
+          "modality_route": {"const": "both"},
+          "routing": {"properties": {"strategy": {"const": "parallel_packs"}}}
+        }
+      },
+      "then": {"properties": {"routing": {"properties": {"pack_contracts": {"minItems": 2, "maxItems": 2}, "unified_territory_quota": {"type": "null"}}}}}
+    },
+    {
+      "if": {
+        "properties": {
+          "routing": {"properties": {"strategy": {"const": "unified_territory"}}}
+        }
+      },
+      "then": {"properties": {"modality_route": {"const": "both"}, "routing": {"properties": {"pack_contracts": {"maxItems": 1}, "unified_territory_quota": {"type": "object"}}}}}
+    }
+  ]
+}

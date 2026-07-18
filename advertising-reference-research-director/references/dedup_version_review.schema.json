@@ -1,0 +1,36 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://local.codex/advertising-reference-research-director/dedup_version_review.schema.json",
+  "title": "Authorized near-duplicate version review",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema_version", "review_id", "run_id", "intent_id", "intent_version", "pack_id", "near_duplicate_group_id", "candidate_ids", "decision", "reviewer", "reviewed_at", "rationale", "fingerprint_evidence"],
+  "properties": {
+    "schema_version": {"const": "1.0.0"},
+    "review_id": {"type": "string", "pattern": "^dedup_review_[A-Za-z0-9._-]+$"},
+    "run_id": {"type": "string", "minLength": 1},
+    "intent_id": {"type": "string", "minLength": 1},
+    "intent_version": {"type": "string", "pattern": "^v[1-9][0-9]*$"},
+    "pack_id": {"type": "string", "minLength": 1},
+    "near_duplicate_group_id": {"type": "string", "minLength": 1},
+    "candidate_ids": {"type": "array", "minItems": 2, "uniqueItems": true, "items": {"type": "string", "minLength": 1}},
+    "decision": {"const": "authorized_version_comparison"},
+    "reviewer": {"type": "string", "minLength": 1},
+    "reviewed_at": {"type": "string", "format": "date-time"},
+    "rationale": {"type": "string", "minLength": 30},
+    "fingerprint_evidence": {
+      "type": "array", "minItems": 2,
+      "items": {
+        "type": "object", "additionalProperties": false,
+        "required": ["candidate_id", "capture_id", "exact_or_manifest_sha256", "perceptual_hash", "comparison_set_sha256"],
+        "properties": {
+          "candidate_id": {"type": "string", "minLength": 1},
+          "capture_id": {"type": "string", "pattern": "^capture_[A-Za-z0-9._-]+$"},
+          "exact_or_manifest_sha256": {"type": "string", "pattern": "^[a-f0-9]{64}$"},
+          "perceptual_hash": {"type": "string", "pattern": "^[a-f0-9]{16}$"},
+          "comparison_set_sha256": {"type": "string", "pattern": "^[a-f0-9]{64}$"}
+        }
+      }
+    }
+  }
+}

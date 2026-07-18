@@ -37,6 +37,7 @@ readback；它不是单包安装或调用条件。
 ├── scene-canon-asset-pack/
 ├── cinematic_shot_image_explorer/          # optional
 ├── cinematic_world_builder/                 # optional
+├── advertising-reference-research-director/ # excluded from aggregate only; still standalone
 └── complex-product-identity-reconstruction-asset-locking/ # excluded from aggregate only; still standalone
 ```
 

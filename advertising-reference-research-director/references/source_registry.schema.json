@@ -1,0 +1,105 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://local.codex/advertising-reference-research-director/source_registry.schema.json",
+  "title": "Dynamic Advertising Reference Source Registry",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema_version", "registry_id", "generated_at", "non_permanence_notice", "families", "sources"],
+  "properties": {
+    "schema_version": {"const": "1.0.0"},
+    "registry_id": {"type": "string", "minLength": 1},
+    "generated_at": {"type": "string", "format": "date-time"},
+    "non_permanence_notice": {"type": "string", "minLength": 1},
+    "families": {
+      "type": "array", "minItems": 10,
+      "items": {
+        "type": "object", "additionalProperties": false,
+        "required": ["family_id", "label", "modalities", "evidence_responsibilities", "bias_notes", "default_fallback_strategy"],
+        "properties": {
+          "family_id": {"type": "string", "minLength": 1}, "label": {"type": "string", "minLength": 1},
+          "modalities": {"type": "array", "minItems": 1, "uniqueItems": true, "items": {"type": "string", "enum": ["image", "video"]}},
+          "evidence_responsibilities": {"type": "array", "minItems": 1, "uniqueItems": true, "items": {"$ref": "#/$defs/responsibility"}},
+          "bias_notes": {"type": "array", "minItems": 1, "items": {"type": "string", "minLength": 1}},
+          "default_fallback_strategy": {"type": "string", "minLength": 1}
+        }
+      }
+    },
+    "sources": {
+      "type": "array", "minItems": 20,
+      "items": {
+        "type": "object", "additionalProperties": false,
+        "required": ["source_id", "family_id", "display_name", "canonical_url", "official_owner", "modalities", "object_tags", "intent_tags", "signal_type", "regions", "languages", "query_modes", "access", "linkability", "verification_requirements", "rights_scope", "bias_notes", "evidence_responsibilities", "fallback_source_ids", "last_verified_at", "last_verification_basis", "status"],
+        "properties": {
+          "source_id": {"type": "string", "minLength": 1}, "family_id": {"type": "string", "minLength": 1}, "display_name": {"type": "string", "minLength": 1},
+          "canonical_url": {"type": "string", "format": "uri"}, "official_owner": {"type": "string", "minLength": 1},
+          "modalities": {"type": "array", "minItems": 1, "uniqueItems": true, "items": {"type": "string", "enum": ["image", "video"]}},
+          "object_tags": {"type": "array", "minItems": 1, "uniqueItems": true, "items": {"type": "string", "minLength": 1}},
+          "intent_tags": {"type": "array", "minItems": 1, "uniqueItems": true, "items": {"type": "string", "minLength": 1}},
+          "signal_type": {"type": "array", "minItems": 1, "uniqueItems": true, "items": {"type": "string", "enum": ["original_publish", "creator_credit", "craft_signal", "award_signal", "visual_grammar", "current_ad_activity", "official_distribution", "social_discovery", "regional_signal"]}},
+          "regions": {"type": "array", "minItems": 1, "uniqueItems": true, "items": {"type": "string", "minLength": 1}},
+          "languages": {"type": "array", "minItems": 1, "uniqueItems": true, "items": {"type": "string", "minLength": 2}},
+          "query_modes": {"type": "array", "minItems": 1, "uniqueItems": true, "items": {"type": "string", "enum": ["site_search", "web_search", "category_browse", "credit_graph", "award_archive", "platform_search", "account_graph", "reverse_image", "manual_browse"]}},
+          "access": {"$ref": "#/$defs/access"},
+          "linkability": {"$ref": "#/$defs/linkability"},
+          "verification_requirements": {"$ref": "#/$defs/verification_requirements"},
+          "rights_scope": {"$ref": "#/$defs/rights_scope"},
+          "bias_notes": {"type": "array", "minItems": 1, "items": {"type": "string", "minLength": 1}},
+          "evidence_responsibilities": {"type": "array", "minItems": 1, "uniqueItems": true, "items": {"$ref": "#/$defs/responsibility"}},
+          "fallback_source_ids": {"type": "array", "minItems": 1, "uniqueItems": true, "items": {"type": "string", "minLength": 1}},
+          "last_verified_at": {"type": ["string", "null"], "format": "date-time"},
+          "last_verification_basis": {"type": ["string", "null"]},
+          "status": {"type": "string", "enum": ["active", "degraded", "blocked", "retired", "unverified"]}
+        },
+        "allOf": [
+          {
+            "if": {"properties": {"status": {"enum": ["active", "degraded"]}}},
+            "then": {"properties": {"last_verified_at": {"type": "string", "format": "date-time"}, "last_verification_basis": {"type": "string", "minLength": 1}}}
+          },
+          {
+            "if": {"properties": {"status": {"const": "unverified"}}},
+            "then": {"properties": {"last_verified_at": {"type": "null"}, "last_verification_basis": {"type": "null"}}}
+          }
+        ]
+      }
+    }
+  },
+  "$defs": {
+    "responsibility": {"type": "string", "enum": ["discovery_lead", "object_identity", "accountable_owner", "creator_credits", "publish_date_region", "image_render", "video_playback", "craft_context", "current_campaign_state", "rights_basis"]},
+    "access": {
+      "type": "object", "additionalProperties": false,
+      "required": ["login_for_depth", "paywall", "js_required", "signed_chrome", "geo_or_age_gate"],
+      "properties": {
+        "login_for_depth": {"type": "string", "enum": ["not_required", "optional", "required", "unknown"]},
+        "paywall": {"type": "string", "enum": ["none", "partial", "full", "unknown"]},
+        "js_required": {"type": ["boolean", "string"], "enum": [true, false, "unknown"]},
+        "signed_chrome": {"type": "string", "enum": ["not_required", "recommended", "required", "unknown"]},
+        "geo_or_age_gate": {"type": "string", "enum": ["none", "possible", "required", "unknown"]}
+      }
+    },
+    "linkability": {
+      "type": "object", "additionalProperties": false,
+      "required": ["canonical_item_url", "stable_id", "public_without_session", "deletion_risk"],
+      "properties": {
+        "canonical_item_url": {"type": ["boolean", "string"], "enum": [true, false, "unknown"]},
+        "stable_id": {"type": ["boolean", "string"], "enum": [true, false, "unknown"]},
+        "public_without_session": {"type": ["boolean", "string"], "enum": [true, false, "unknown"]},
+        "deletion_risk": {"type": "string", "enum": ["low", "medium", "high", "unknown"]}
+      }
+    },
+    "verification_requirements": {
+      "type": "object", "additionalProperties": false,
+      "required": ["page_render", "image_loaded", "video_playback", "owner_identity", "date_and_region"],
+      "properties": {
+        "page_render": {"type": "boolean"}, "image_loaded": {"type": "boolean"}, "video_playback": {"type": "boolean"}, "owner_identity": {"type": "boolean"}, "date_and_region": {"type": "boolean"}
+      }
+    },
+    "right": {"type": "object", "additionalProperties": false, "required": ["state", "basis"], "properties": {"state": {"type": "string", "enum": ["allowed", "prohibited", "permission_required", "unknown", "not_applicable"]}, "basis": {"type": "string"}}},
+    "rights_scope": {"type": "object", "additionalProperties": false, "required": ["discoverable", "viewable", "shareable_without_session", "downloadable", "internal_board_use", "commercial_reuse"], "properties": {"discoverable": {"$ref": "#/$defs/right"}, "viewable": {"$ref": "#/$defs/right"}, "shareable_without_session": {"$ref": "#/$defs/right"}, "downloadable": {"$ref": "#/$defs/right"}, "internal_board_use": {"$ref": "#/$defs/right"}, "commercial_reuse": {"$ref": "#/$defs/right"}}}
+  },
+  "allOf": [
+    {
+      "if": {"properties": {"sources": {"contains": {"properties": {"status": {"enum": ["active", "degraded"]}}}}}},
+      "then": true
+    }
+  ]
+}

@@ -2,7 +2,7 @@
 
 ## Scope and authority
 
-The 16 top-level Skills in this repository are independent packages. Each can
+The 17 top-level Skills in this repository are independent packages. Each can
 be copied or linked directly into a Codex discovery root and validated with its
 own package-local instructions. An individual Skill does not require
 `high-control-ai-tvc`, `SUITE_MANIFEST.json`, an aggregate receipt, a release
@@ -46,9 +46,9 @@ the machine is production-ready.
 
 - Default discovery root: `$HOME/.agents/skills`
 - Explicit aggregate `all` profile: 15 managed workflow members
-  (13 core + 2 optional explorers); `excluded_from_aggregate_profile` keeps the
-  16th standalone Skill outside aggregate installation and receipts only. All
-  16 top-level packages remain standalone.
+  (13 core + 2 optional explorers); `excluded_from_aggregate_profile` keeps two
+  standalone Skills outside aggregate installation and receipts only. All 17
+  top-level packages remain standalone.
 - Aggregate inventory: [`../SUITE_MANIFEST.json`](../SUITE_MANIFEST.json)
 - Aggregate runtime requirements: [`../config/runtime-requirements.json`](../config/runtime-requirements.json)
 

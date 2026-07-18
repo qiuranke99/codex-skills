@@ -17,10 +17,11 @@ profile 的清单：
 - 合计 15 个唯一顶层 Skill。
 
 `excluded_from_aggregate_profile` 声明
+`advertising-reference-research-director` 与
 `complex-product-identity-reconstruction-asset-locking` 只被当前 aggregate
-profile 排除，因此仓库共有 16 个 standalone 顶层 Skill。该字段只是聚合
-范围边界：批量工具必须验证该包存在，但不得管理它、写入安装或发布回执；
-它也不把其余 15 个包变成 High-Control 的从属包。
+profile 排除，因此仓库共有 17 个 standalone 顶层 Skill。该字段只是聚合
+范围边界：批量工具必须验证这些包存在，但不得管理它们、写入安装或发布
+回执；它也不把其余 15 个包变成 High-Control 的从属包。
 
 首个系统化批次保持现有 Skill 目录不重复、不另复制，也不为了安装便利
 改写 Skill 合同。每个顶层包独立拥有自身安装、发现、调用和验证权威。
