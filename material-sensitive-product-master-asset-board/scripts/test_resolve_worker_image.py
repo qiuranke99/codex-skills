@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Self-contained red/green tests for the standalone material board v4 chain."""
+"""Self-contained red/green tests for the standalone material board v5 chain."""
 
 from __future__ import annotations
 
@@ -24,10 +24,19 @@ SPAWN_FREEZER = SCRIPT_DIR / "freeze_worker_spawn.py"
 ENHANCEMENT_RENDERER = SCRIPT_DIR / "render_4k_enhancement_prompt.py"
 RESOLVER = SCRIPT_DIR / "resolve_worker_image.py"
 FINAL_BUILDER = SCRIPT_DIR / "build_final_result.py"
+INSPECTION_SCAFFOLDER = SCRIPT_DIR / "scaffold_board_inspection.py"
+INSPECTION_FREEZER = SCRIPT_DIR / "freeze_board_inspection.py"
+POST_GENERATION_FREEZER = SCRIPT_DIR / "freeze_post_generation_records.py"
 sys.path.insert(0, str(SCRIPT_DIR))
 from material_contract import (  # noqa: E402
     render_4k_enhancement_prompt_bytes,
     render_worker_exec_bytes,
+)
+from material_decision_records import (  # noqa: E402
+    build_accepted_record,
+    build_handoff_record,
+    build_qa_record,
+    fact_sources,
 )
 
 
@@ -594,27 +603,24 @@ def build_publication_fixture(base: Path, external_status: str = "not_ready") ->
             cleanup_defects=defects,
         )
     )
-    qa = attempt / "qa.json"
-    qa_value = {
-        "schema_version": "material_board_qa.v2",
+    qa_decision = attempt / "qa_decision.json"
+    sources_by_fact = fact_sources(contract)
+    decision_value = {
+        "schema_version": "material_board_qa_decision.v1",
         "attempt_id": "01",
-        "inspected": True,
-        "inspection_method": "main_agent_visual_inspection",
-        "board_path": str(fixture["board"]),
-        "image_sha256": sha256_file(fixture["board"]),
-        "observed_pixel_dimensions": {"width_px": 1672, "height_px": 941},
-        "worker_thread_id": worker["worker_thread_id"],
-        "image_generation_call_id": worker["image_generation_call_id"],
+        "comparison_mode": "source_to_board_visual_comparison",
         "assistant_qa_status": "passed",
         "production_approval_status": "not_granted",
         "board_gates": board_gates,
         "panel_results": [
             {
                 "panel_id": panel["panel_id"],
+                "source_aliases": panel["source_aliases"],
+                "invariant_ids": panel["invariant_ids"],
                 "status": "pass",
                 "source_fidelity": "pass",
-                "observed_content": f"Observed source-bound evidence for {panel['panel_id']}.",
-                "invariant_ids": panel["invariant_ids"],
+                "source_observation": f"Sources define the evidence job for {panel['panel_id']}.",
+                "board_observation": f"Board visibly preserves the source-bound evidence for {panel['panel_id']}.",
             }
             for panel in contract["panel_plan"]
         ],
@@ -622,9 +628,11 @@ def build_publication_fixture(base: Path, external_status: str = "not_ready") ->
             {
                 "invariant_id": invariant["invariant_id"],
                 "category": invariant["category"],
+                "source_aliases": sources_by_fact[invariant["fact_id"]],
                 "status": "pass",
                 "source_fidelity": "pass",
-                "observed_content": f"Observed invariant {invariant['invariant_id']} without drift.",
+                "source_observation": f"Sources establish invariant {invariant['invariant_id']}.",
+                "board_observation": f"Board preserves invariant {invariant['invariant_id']} without drift.",
             }
             for invariant in contract["critical_invariants"]
         ],
@@ -632,6 +640,25 @@ def build_publication_fixture(base: Path, external_status: str = "not_ready") ->
         "repair_required": False,
         "repair_reasons": [],
     }
+    write_json(qa_decision, decision_value)
+    manifest_record = {
+        "entries": manifest["ordered_references"],
+        "aliases": [item["alias"] for item in manifest["ordered_references"]],
+    }
+    qa = attempt / "qa.json"
+    qa_value = build_qa_record(
+        decision=decision_value,
+        decision_path=qa_decision.resolve(strict=False),
+        decision_sha256=sha256_file(qa_decision),
+        board_path=fixture["board"].resolve(strict=False),
+        board_sha256=sha256_file(fixture["board"]),
+        width_px=1672,
+        height_px=941,
+        worker_thread_id=worker["worker_thread_id"],
+        image_generation_call_id=worker["image_generation_call_id"],
+        contract=contract,
+        manifest=manifest_record,
+    )
     write_json(qa, qa_value)
     handoff = attempt / "material-test-asset_01_4k_handoff.json"
     external_states = {
@@ -644,58 +671,54 @@ def build_publication_fixture(base: Path, external_status: str = "not_ready") ->
         "rejected": ("failed", "rejected"),
     }
     external_qa_status, external_production_status = external_states[external_status]
-    handoff_value = {
-        "schema_version": "material_4k_handoff.v2",
-        "attempt_id": "01",
-        "generation_prompt_path": str(fixture["prompt"]),
-        "generation_prompt_sha256": sha256_file(fixture["prompt"]),
-        "enhancement_prompt_path": str(enhancement),
-        "enhancement_prompt_sha256": sha256_file(enhancement),
-        "codex_asset_board": {"path": str(fixture["board"]), "sha256": sha256_file(fixture["board"])},
-        "original_source_references": source_refs,
-        "source_contract_path": str(fixture["contract"]),
-        "source_contract_sha256": sha256_file(fixture["contract"]),
-        "source_fidelity_status": "passed",
-        "external_runtime_request": {
-            "aspect_ratio": "16:9",
-            "image_size": "4K",
-            "alternate_aspect_ratios_allowed": False,
-        },
-        "external_4k_status": external_status,
-        "external_4k_qa_status": external_qa_status,
-        "external_4k_production_approval_status": external_production_status,
-        "observed_defects": defects,
-    }
+    handoff_value = build_handoff_record(
+        attempt_id="01",
+        generation_prompt_path=fixture["prompt"].resolve(strict=False),
+        generation_prompt_sha256=sha256_file(fixture["prompt"]),
+        enhancement_prompt_path=enhancement.resolve(strict=False),
+        enhancement_prompt_sha256=sha256_file(enhancement),
+        inspection_path=qa.resolve(strict=False),
+        inspection_sha256=sha256_file(qa),
+        board_path=fixture["board"].resolve(strict=False),
+        board_sha256=sha256_file(fixture["board"]),
+        source_references=source_refs,
+        source_contract_path=fixture["contract"].resolve(strict=False),
+        source_contract_sha256=sha256_file(fixture["contract"]),
+        observed_defects=defects,
+        external_status=external_status,
+        external_qa_status=external_qa_status,
+        external_production_status=external_production_status,
+    )
     write_json(handoff, handoff_value)
     accepted_path = fixture["run"] / "accepted_attempt.json"
-    accepted = {
-        "schema_version": "material_accepted_attempt.v2",
-        "attempt_id": "01",
-        "reference_manifest_path": str(fixture["manifest"]),
+    accepted = build_accepted_record(attempt_id="01", paths_and_hashes={
+        "reference_manifest_path": str(fixture["manifest"].resolve(strict=False)),
         "reference_manifest_sha256": sha256_file(fixture["manifest"]),
-        "source_contract_path": str(fixture["contract"]),
+        "source_contract_path": str(fixture["contract"].resolve(strict=False)),
         "source_contract_sha256": sha256_file(fixture["contract"]),
-        "prompt_block_path": str(fixture["prompt_block"]),
+        "prompt_block_path": str(fixture["prompt_block"].resolve(strict=False)),
         "prompt_block_sha256": sha256_file(fixture["prompt_block"]),
-        "generation_prompt_path": str(fixture["prompt"]),
+        "generation_prompt_path": str(fixture["prompt"].resolve(strict=False)),
         "generation_prompt_sha256": sha256_file(fixture["prompt"]),
-        "enhancement_prompt_path": str(enhancement),
+        "enhancement_prompt_path": str(enhancement.resolve(strict=False)),
         "4k_enhancement_prompt_sha256": sha256_file(enhancement),
-        "worker_spawn_path": str(fixture["spawn"]),
+        "worker_spawn_path": str(fixture["spawn"].resolve(strict=False)),
         "worker_spawn_sha256": sha256_file(fixture["spawn"]),
-        "worker_exec_source_path": str(fixture["exec_source"]),
+        "worker_exec_source_path": str(fixture["exec_source"].resolve(strict=False)),
         "worker_exec_source_sha256": sha256_file(fixture["exec_source"]),
-        "worker_exec_receipt_path": str(fixture["exec_receipt"]),
+        "worker_exec_receipt_path": str(fixture["exec_receipt"].resolve(strict=False)),
         "worker_exec_receipt_sha256": sha256_file(fixture["exec_receipt"]),
-        "worker_result_path": str(fixture["result_json"]),
+        "worker_result_path": str(fixture["result_json"].resolve(strict=False)),
         "worker_result_sha256": sha256_file(fixture["result_json"]),
-        "board_path": str(fixture["board"]),
+        "board_path": str(fixture["board"].resolve(strict=False)),
         "image_sha256": sha256_file(fixture["board"]),
-        "inspection_path": str(qa),
+        "inspection_decision_path": str(qa_decision.resolve(strict=False)),
+        "inspection_decision_sha256": sha256_file(qa_decision),
+        "inspection_path": str(qa.resolve(strict=False)),
         "inspection_sha256": sha256_file(qa),
-        "handoff_path": str(handoff),
+        "handoff_path": str(handoff.resolve(strict=False)),
         "handoff_sha256": sha256_file(handoff),
-    }
+    })
     write_json(accepted_path, accepted)
     output = fixture["run"] / "material-test-asset_final_main_result.md"
     builder_command = [
@@ -717,6 +740,8 @@ def build_publication_fixture(base: Path, external_status: str = "not_ready") ->
         str(fixture["spawn"]),
         "--worker-result",
         str(fixture["result_json"]),
+        "--inspection-decision",
+        str(qa_decision),
         "--inspection",
         str(qa),
         "--reference-manifest",
@@ -728,9 +753,71 @@ def build_publication_fixture(base: Path, external_status: str = "not_ready") ->
         "--output",
         str(output),
     ]
+    inspection_freeze_command = [
+        sys.executable,
+        "-X",
+        "utf8",
+        str(INSPECTION_FREEZER),
+        "--run-dir",
+        str(fixture["run"]),
+        "--attempt-dir",
+        str(fixture["attempt"]),
+        "--board",
+        str(fixture["board"]),
+        "--worker-result",
+        str(fixture["result_json"]),
+        "--reference-manifest",
+        str(fixture["manifest"]),
+        "--source-contract",
+        str(fixture["contract"]),
+        "--decision-draft",
+        str(qa_decision),
+        "--inspection",
+        str(qa),
+    ]
+    post_generation_command = [
+        sys.executable,
+        "-X",
+        "utf8",
+        str(POST_GENERATION_FREEZER),
+        "--run-dir",
+        str(fixture["run"]),
+        "--attempt-dir",
+        str(fixture["attempt"]),
+        "--board",
+        str(fixture["board"]),
+        "--generation-prompt",
+        str(fixture["prompt"]),
+        "--worker-spawn",
+        str(fixture["spawn"]),
+        "--worker-result",
+        str(fixture["result_json"]),
+        "--inspection-decision",
+        str(qa_decision),
+        "--inspection",
+        str(qa),
+        "--reference-manifest",
+        str(fixture["manifest"]),
+        "--source-contract",
+        str(fixture["contract"]),
+        "--enhancement-prompt",
+        str(enhancement),
+        "--handoff",
+        str(handoff),
+        "--accepted-attempt",
+        str(accepted_path),
+        "--external-4k-status",
+        external_status,
+        "--external-4k-qa-status",
+        external_qa_status,
+        "--external-4k-production-approval-status",
+        external_production_status,
+    ]
     fixture.update(
         {
             "enhancement": enhancement,
+            "qa_decision": qa_decision,
+            "decision_value": decision_value,
             "qa": qa,
             "qa_value": qa_value,
             "handoff": handoff,
@@ -739,6 +826,8 @@ def build_publication_fixture(base: Path, external_status: str = "not_ready") ->
             "accepted": accepted,
             "output": output,
             "builder_command": builder_command,
+            "inspection_freeze_command": inspection_freeze_command,
+            "post_generation_command": post_generation_command,
         }
     )
     return fixture
@@ -1108,7 +1197,164 @@ class ResolverV4Tests(unittest.TestCase):
             )
 
 
-class FinalBuilderV4Tests(unittest.TestCase):
+class PostGenerationV5Tests(unittest.TestCase):
+    def test_scaffold_prefills_source_bindings_and_unfinished_draft_cannot_freeze(self) -> None:
+        with tempfile.TemporaryDirectory(prefix="material-v5-qa-scaffold-") as temp:
+            fixture = build_fixture(Path(temp))
+            resolved = run(fixture["resolve_command"])
+            self.assertEqual(resolved.returncode, 0, resolved.stderr)
+            decision = fixture["attempt"] / "qa_decision.json"
+            qa = fixture["attempt"] / "qa.json"
+            scaffold = run(
+                [
+                    sys.executable,
+                    "-X",
+                    "utf8",
+                    str(INSPECTION_SCAFFOLDER),
+                    "--run-dir",
+                    str(fixture["run"]),
+                    "--attempt-dir",
+                    str(fixture["attempt"]),
+                    "--reference-manifest",
+                    str(fixture["manifest"]),
+                    "--source-contract",
+                    str(fixture["contract"]),
+                    "--decision-draft",
+                    str(decision),
+                ]
+            )
+            self.assertEqual(scaffold.returncode, 0, scaffold.stderr)
+            value = json.loads(decision.read_text(encoding="utf-8"))
+            self.assertEqual(value["comparison_mode"], "source_to_board_visual_comparison")
+            self.assertTrue(all(item["source_aliases"] for item in value["panel_results"]))
+            self.assertTrue(all(item["source_aliases"] for item in value["invariant_results"]))
+            self.assertTrue(all(item["source_observation"] == "" for item in value["panel_results"]))
+            self.assertTrue(all(item["source_observation"] == "" for item in value["invariant_results"]))
+            self.assertTrue(all(item["board_observation"] == "" for item in value["invariant_results"]))
+            frozen = run(
+                [
+                    sys.executable,
+                    "-X",
+                    "utf8",
+                    str(INSPECTION_FREEZER),
+                    "--run-dir",
+                    str(fixture["run"]),
+                    "--attempt-dir",
+                    str(fixture["attempt"]),
+                    "--board",
+                    str(fixture["board"]),
+                    "--worker-result",
+                    str(fixture["result_json"]),
+                    "--reference-manifest",
+                    str(fixture["manifest"]),
+                    "--source-contract",
+                    str(fixture["contract"]),
+                    "--decision-draft",
+                    str(decision),
+                    "--inspection",
+                    str(qa),
+                ]
+            )
+            self.assertNotEqual(frozen.returncode, 0)
+            self.assertEqual(error_code(frozen), "blocked_board_inspection_invalid")
+            self.assertFalse(qa.exists())
+
+    def test_complete_inspection_and_post_generation_freezers_are_idempotent(self) -> None:
+        with tempfile.TemporaryDirectory(prefix="material-v5-freezer-idempotent-") as temp:
+            fixture = build_publication_fixture(Path(temp))
+            inspection = run(fixture["inspection_freeze_command"])
+            self.assertEqual(inspection.returncode, 0, inspection.stderr)
+            self.assertFalse(json.loads(inspection.stdout)["created"])
+            post = run(fixture["post_generation_command"])
+            self.assertEqual(post.returncode, 0, post.stderr)
+            self.assertEqual(
+                json.loads(post.stdout)["created"],
+                {"accepted_attempt": False, "enhancement_prompt": False, "handoff": False},
+            )
+
+    def test_source_observation_cannot_be_reused_as_board_observation(self) -> None:
+        with tempfile.TemporaryDirectory(prefix="material-v5-observation-copy-") as temp:
+            fixture = build_publication_fixture(Path(temp))
+            fixture["qa"].unlink()
+            decision = json.loads(fixture["qa_decision"].read_text(encoding="utf-8"))
+            decision["invariant_results"][0]["board_observation"] = decision[
+                "invariant_results"
+            ][0]["source_observation"]
+            write_json(fixture["qa_decision"], decision)
+            frozen = run(fixture["inspection_freeze_command"])
+            self.assertNotEqual(frozen.returncode, 0)
+            self.assertEqual(error_code(frozen), "blocked_board_inspection_invalid")
+            self.assertFalse(fixture["qa"].exists())
+
+    def test_post_generation_freezer_creates_commit_last_and_builder_accepts_it(self) -> None:
+        with tempfile.TemporaryDirectory(prefix="material-v5-freezer-green-") as temp:
+            fixture = build_publication_fixture(Path(temp))
+            for path in (fixture["accepted_path"], fixture["handoff"], fixture["enhancement"]):
+                path.unlink()
+            result = run(fixture["post_generation_command"])
+            self.assertEqual(result.returncode, 0, result.stderr)
+            self.assertEqual(
+                json.loads(result.stdout)["created"],
+                {"accepted_attempt": True, "enhancement_prompt": True, "handoff": True},
+            )
+            self.assertTrue(fixture["accepted_path"].is_file())
+            built = run(fixture["builder_command"])
+            self.assertEqual(built.returncode, 0, built.stderr)
+
+    def test_post_generation_preflight_conflict_never_writes_accepted_commit(self) -> None:
+        with tempfile.TemporaryDirectory(prefix="material-v5-freezer-conflict-") as temp:
+            fixture = build_publication_fixture(Path(temp))
+            fixture["accepted_path"].unlink()
+            fixture["handoff"].write_bytes(b"conflicting-handoff")
+            result = run(fixture["post_generation_command"])
+            self.assertNotEqual(result.returncode, 0)
+            self.assertEqual(error_code(result), "blocked_post_generation_output_conflict")
+            self.assertEqual(fixture["handoff"].read_bytes(), b"conflicting-handoff")
+            self.assertFalse(fixture["accepted_path"].exists())
+
+    def test_post_generation_reaudits_worker_rollout_before_acceptance(self) -> None:
+        with tempfile.TemporaryDirectory(prefix="material-v5-freezer-rollout-") as temp:
+            fixture = build_publication_fixture(Path(temp))
+            for path in (fixture["accepted_path"], fixture["handoff"], fixture["enhancement"]):
+                path.unlink()
+            earlier_turn = "019f0000-0000-7000-8000-000000000098"
+            fixture["events"][1:1] = [
+                {"type": "event_msg", "payload": {"type": "task_started", "turn_id": earlier_turn}},
+                {"type": "turn_context", "payload": {"turn_id": earlier_turn}},
+                {
+                    "type": "event_msg",
+                    "payload": {
+                        "type": "task_complete",
+                        "turn_id": earlier_turn,
+                        "last_agent_message": None,
+                    },
+                },
+            ]
+            write_events(fixture["rollout"], fixture["events"])
+            result = run(fixture["post_generation_command"])
+            self.assertNotEqual(result.returncode, 0)
+            self.assertEqual(error_code(result), "blocked_worker_task_count")
+            self.assertFalse(fixture["accepted_path"].exists())
+            self.assertFalse(fixture["handoff"].exists())
+            self.assertFalse(fixture["enhancement"].exists())
+
+    def test_post_generation_rejects_spawn_mutation_before_acceptance(self) -> None:
+        with tempfile.TemporaryDirectory(prefix="material-v5-freezer-spawn-") as temp:
+            fixture = build_publication_fixture(Path(temp))
+            for path in (fixture["accepted_path"], fixture["handoff"], fixture["enhancement"]):
+                path.unlink()
+            spawn = json.loads(fixture["spawn"].read_text(encoding="utf-8"))
+            spawn["pre_spawn_state"] = "mutated_after_resolver"
+            write_json(fixture["spawn"], spawn)
+            result = run(fixture["post_generation_command"])
+            self.assertNotEqual(result.returncode, 0)
+            self.assertEqual(error_code(result), "blocked_post_generation_records_invalid")
+            self.assertFalse(fixture["accepted_path"].exists())
+            self.assertFalse(fixture["handoff"].exists())
+            self.assertFalse(fixture["enhancement"].exists())
+
+
+class FinalBuilderV5Tests(unittest.TestCase):
     def test_green_builder_keeps_actual_external_status_and_non_exact_dimensions(self) -> None:
         with tempfile.TemporaryDirectory(prefix="material-v4-builder-green-") as temp:
             fixture = build_publication_fixture(Path(temp), external_status="not_ready")
@@ -1182,7 +1428,7 @@ class FinalBuilderV4Tests(unittest.TestCase):
             update_accepted_hash(fixture, "inspection_sha256", fixture["qa"])
             result = run(fixture["builder_command"])
             self.assertNotEqual(result.returncode, 0)
-            self.assertEqual(error_code(result), "blocked_4k_cleanup_scope_invalid")
+            self.assertEqual(error_code(result), "blocked_board_inspection_invalid")
             self.assertFalse(fixture["output"].exists())
 
     def test_forbidden_free_prose_4k_prompt_is_red_even_when_hashes_are_updated(self) -> None:
@@ -1320,9 +1566,7 @@ class FinalBuilderV4Tests(unittest.TestCase):
             update_accepted_hash(fixture, "inspection_sha256", fixture["qa"])
             result = run(fixture["builder_command"])
             self.assertNotEqual(result.returncode, 0)
-            self.assertEqual(
-                error_code(result), "blocked_repair_required_identity_topology_structure"
-            )
+            self.assertEqual(error_code(result), "blocked_board_inspection_invalid")
             self.assertFalse(fixture["output"].exists())
 
     def test_historical_topology_drift_defect_cannot_hide_behind_all_pass_labels(self) -> None:
@@ -1348,9 +1592,7 @@ class FinalBuilderV4Tests(unittest.TestCase):
             update_accepted_hash(fixture, "inspection_sha256", fixture["qa"])
             result = run(fixture["builder_command"])
             self.assertNotEqual(result.returncode, 0)
-            self.assertEqual(
-                error_code(result), "blocked_repair_required_identity_topology_structure"
-            )
+            self.assertEqual(error_code(result), "blocked_board_inspection_invalid")
             self.assertFalse(fixture["output"].exists())
 
     def test_handoff_missing_status_is_red_without_output(self) -> None:
@@ -1386,16 +1628,19 @@ class FinalBuilderV4Tests(unittest.TestCase):
             self.assertEqual(error_code(result), "blocked_board_inspection_invalid")
             self.assertFalse(fixture["output"].exists())
 
-    def test_legacy_accepted_v1_is_stably_blocked_without_output(self) -> None:
-        with tempfile.TemporaryDirectory(prefix="material-v4-legacy-accepted-") as temp:
-            fixture = build_publication_fixture(Path(temp))
-            accepted = json.loads(fixture["accepted_path"].read_text(encoding="utf-8"))
-            accepted["schema_version"] = "material_accepted_attempt.v1"
-            write_json(fixture["accepted_path"], accepted)
-            result = run(fixture["builder_command"])
-            self.assertNotEqual(result.returncode, 0)
-            self.assertEqual(error_code(result), "blocked_legacy_material_run_v1")
-            self.assertFalse(fixture["output"].exists())
+    def test_legacy_accepted_v1_and_v2_are_stably_blocked_without_output(self) -> None:
+        for schema in ("material_accepted_attempt.v1", "material_accepted_attempt.v2"):
+            with self.subTest(schema=schema), tempfile.TemporaryDirectory(
+                prefix="material-v5-legacy-accepted-"
+            ) as temp:
+                fixture = build_publication_fixture(Path(temp))
+                accepted = json.loads(fixture["accepted_path"].read_text(encoding="utf-8"))
+                accepted["schema_version"] = schema
+                write_json(fixture["accepted_path"], accepted)
+                result = run(fixture["builder_command"])
+                self.assertNotEqual(result.returncode, 0)
+                self.assertEqual(error_code(result), "blocked_legacy_material_run_v1")
+                self.assertFalse(fixture["output"].exists())
 
     def test_mutated_source_contract_is_red_without_output(self) -> None:
         with tempfile.TemporaryDirectory(prefix="material-v4-builder-contract-") as temp:

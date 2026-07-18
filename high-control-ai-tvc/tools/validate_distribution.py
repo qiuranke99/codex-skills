@@ -405,6 +405,8 @@ def _run_standalone_validator() -> List[str]:
             str(REPO_ROOT),
             "--expected-count",
             str(expected_count),
+            "--timeout",
+            "180",
             "--compact",
         ],
         text=True,

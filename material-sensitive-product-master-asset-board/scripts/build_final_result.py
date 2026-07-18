@@ -1,11 +1,10 @@
 #!/usr/bin/env python3
-"""Build one v4 final result only from a fully reverified material artifact chain."""
+"""Build one v5 final result only from a fully reverified material artifact chain."""
 
 from __future__ import annotations
 
 import argparse
 import json
-import re
 import sys
 from datetime import datetime
 from pathlib import Path
@@ -30,36 +29,22 @@ from material_contract import (
     sha256_bytes,
 )
 from resolve_worker_image import read_rollout, validate_worker_rollout
+from material_decision_records import (
+    ACCEPTED_KEYS as ACCEPTED_V5_KEYS,
+    BOARD_GATE_KEYS,
+    EXTERNAL_STATE_MATRIX,
+    HANDOFF_KEYS as HANDOFF_V5_KEYS,
+    QA_KEYS as QA_V5_KEYS,
+    RECORD_COMPILER,
+    build_accepted_record,
+    build_handoff_record,
+    build_qa_record,
+    render_record_bytes,
+    one_line_list,
+    validate_observed_defects,
+)
 
 
-ACCEPTED_KEYS = {
-    "schema_version",
-    "attempt_id",
-    "reference_manifest_path",
-    "reference_manifest_sha256",
-    "source_contract_path",
-    "source_contract_sha256",
-    "prompt_block_path",
-    "prompt_block_sha256",
-    "generation_prompt_path",
-    "generation_prompt_sha256",
-    "enhancement_prompt_path",
-    "4k_enhancement_prompt_sha256",
-    "worker_spawn_path",
-    "worker_spawn_sha256",
-    "worker_exec_source_path",
-    "worker_exec_source_sha256",
-    "worker_exec_receipt_path",
-    "worker_exec_receipt_sha256",
-    "worker_result_path",
-    "worker_result_sha256",
-    "board_path",
-    "image_sha256",
-    "inspection_path",
-    "inspection_sha256",
-    "handoff_path",
-    "handoff_sha256",
-}
 SPAWN_KEYS = {
     "schema_version",
     "attempt_id",
@@ -135,217 +120,8 @@ RESULT_KEYS = {
     "worker_exec_receipt_sha256",
     "output_distinct_from_all_sources",
 }
-QA_KEYS = {
-    "schema_version",
-    "attempt_id",
-    "inspected",
-    "inspection_method",
-    "board_path",
-    "image_sha256",
-    "observed_pixel_dimensions",
-    "worker_thread_id",
-    "image_generation_call_id",
-    "assistant_qa_status",
-    "production_approval_status",
-    "board_gates",
-    "panel_results",
-    "invariant_results",
-    "observed_defects",
-    "repair_required",
-    "repair_reasons",
-}
-BOARD_GATE_KEYS = {
-    "primary_anchor_clear",
-    "multi_angle_complementary",
-    "material_evidence_present",
-    "material_source_consistent",
-    "material_fidelity",
-    "critical_structure_fidelity",
-    "low_redundancy",
-    "panel_legibility",
-    "single_board_contract",
-    "no_poster_pollution",
-    "video_reference_ready",
-    "prompt_bound",
-    "identity_fidelity",
-    "topology_fidelity",
-    "structure_fidelity",
-    "state_window_source_supported",
-}
-HANDOFF_KEYS = {
-    "schema_version",
-    "attempt_id",
-    "generation_prompt_path",
-    "generation_prompt_sha256",
-    "enhancement_prompt_path",
-    "enhancement_prompt_sha256",
-    "codex_asset_board",
-    "original_source_references",
-    "source_contract_path",
-    "source_contract_sha256",
-    "source_fidelity_status",
-    "external_runtime_request",
-    "external_4k_status",
-    "external_4k_qa_status",
-    "external_4k_production_approval_status",
-    "observed_defects",
-}
-EXTERNAL_STATUSES = {
-    "not_ready",
-    "handoff_ready",
-    "blocked_runtime_controls",
-    "pending_external_generation",
-    "returned_unverified",
-    "verified",
-    "rejected",
-}
-DEFECT_CATEGORIES = {
-    "identity",
-    "material",
-    "topology",
-    "structure",
-    "label",
-    "state",
-    "artifact",
-}
-DEFECT_SEVERITIES = {"low", "medium", "high", "critical"}
-CLEANUP_OPERATIONS = {
-    "reduce_raster_aliasing",
-    "remove_compression_blocking",
-    "remove_background_dust",
-    "reduce_edge_halo",
-}
-EXTERNAL_STATE_MATRIX = {
-    "not_ready": {("not_started", "not_requested")},
-    "handoff_ready": {("not_started", "not_requested")},
-    "blocked_runtime_controls": {("not_started", "not_requested")},
-    "pending_external_generation": {("pending", "not_requested")},
-    "returned_unverified": {("pending", "not_requested")},
-    "verified": {("passed", "pending"), ("passed", "granted")},
-    "rejected": {("failed", "rejected")},
-}
-
-
 def same_path(value: Any, expected: Path) -> bool:
     return isinstance(value, str) and normalized_path(Path(value)) == normalized_path(expected)
-
-
-def one_line_list(value: Any, code: str, label: str) -> list[str]:
-    if not isinstance(value, list):
-        raise MaterialContractError(code, f"{label} must be a list")
-    result: list[str] = []
-    for item in value:
-        if not isinstance(item, str) or any(char in item for char in "\r\n\x00"):
-            raise MaterialContractError(code, f"{label} must contain one-line strings")
-        result.append(item)
-    if len(set(result)) != len(result):
-        raise MaterialContractError(code, f"{label} must contain unique values")
-    return result
-
-
-def validate_observed_defects(
-    value: Any,
-    *,
-    panel_ids: set[str],
-    invariant_ids: set[str],
-    source_aliases: set[str],
-) -> list[dict[str, Any]]:
-    code = "blocked_board_inspection_invalid"
-    if not isinstance(value, list):
-        raise MaterialContractError(code, "observed_defects must be a list")
-    normalized: list[dict[str, Any]] = []
-    defect_ids: set[str] = set()
-    for defect in value:
-        if not isinstance(defect, dict):
-            raise MaterialContractError(code, "observed defect must be an object")
-        require_exact_keys(
-            defect,
-            {
-                "defect_id",
-                "category",
-                "severity",
-                "description",
-                "panel_ids",
-                "invariant_ids",
-                "source_aliases",
-                "cleanup_eligible",
-                "cleanup_operation",
-            },
-            code,
-            "observed defect",
-        )
-        defect_id = defect["defect_id"]
-        category = defect["category"]
-        severity = defect["severity"]
-        description = defect["description"]
-        panels = defect["panel_ids"]
-        invariants = defect["invariant_ids"]
-        sources = defect["source_aliases"]
-        cleanup_eligible = defect["cleanup_eligible"]
-        cleanup_operation = defect["cleanup_operation"]
-        if (
-            not isinstance(defect_id, str)
-            or not re.fullmatch(r"[a-z][a-z0-9_-]{0,63}", defect_id)
-            or defect_id in defect_ids
-        ):
-            raise MaterialContractError(code, "defect_id is invalid or duplicated")
-        if category not in DEFECT_CATEGORIES or severity not in DEFECT_SEVERITIES:
-            raise MaterialContractError(code, f"invalid defect category/severity: {category}/{severity}")
-        if (
-            not isinstance(description, str)
-            or not description.strip()
-            or any(char in description for char in "\r\n\x00")
-        ):
-            raise MaterialContractError(code, "defect description must be one non-empty line")
-        if (
-            not isinstance(panels, list)
-            or not panels
-            or not all(isinstance(item, str) for item in panels)
-            or len(set(panels)) != len(panels)
-            or not set(panels) <= panel_ids
-        ):
-            raise MaterialContractError(code, f"defect {defect_id} has invalid panel_ids")
-        if (
-            not isinstance(invariants, list)
-            or not all(isinstance(item, str) for item in invariants)
-            or len(set(invariants)) != len(invariants)
-            or not set(invariants) <= invariant_ids
-        ):
-            raise MaterialContractError(code, f"defect {defect_id} has invalid invariant_ids")
-        if (
-            not isinstance(sources, list)
-            or not sources
-            or not all(isinstance(item, str) for item in sources)
-            or len(set(sources)) != len(sources)
-            or not set(sources) <= source_aliases
-        ):
-            raise MaterialContractError(code, f"defect {defect_id} has invalid source_aliases")
-        if type(cleanup_eligible) is not bool:
-            raise MaterialContractError(code, f"defect {defect_id} cleanup_eligible must be boolean")
-        if not isinstance(cleanup_operation, str):
-            raise MaterialContractError(
-                code,
-                f"defect {defect_id} cleanup_operation must be a string",
-            )
-        if cleanup_eligible:
-            if (
-                category != "artifact"
-                or severity not in {"low", "medium"}
-                or invariants
-                or cleanup_operation not in CLEANUP_OPERATIONS
-            ):
-                raise MaterialContractError(
-                    "blocked_4k_cleanup_scope_invalid",
-                    f"defect {defect_id} is not a non-critical raster-only cleanup",
-                )
-        elif cleanup_operation != "none":
-            raise MaterialContractError(
-                code,
-                f"defect {defect_id} must use cleanup_operation=none when cleanup is ineligible",
-            )
-        defect_ids.add(defect_id)
-        normalized.append(defect)
-    return normalized
 
 
 def build_parser() -> argparse.ArgumentParser:
@@ -357,6 +133,7 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument("--enhancement-prompt", required=True, type=Path)
     parser.add_argument("--worker-spawn", required=True, type=Path)
     parser.add_argument("--worker-result", required=True, type=Path)
+    parser.add_argument("--inspection-decision", required=True, type=Path)
     parser.add_argument("--inspection", required=True, type=Path)
     parser.add_argument("--reference-manifest", required=True, type=Path)
     parser.add_argument("--source-contract", required=True, type=Path)
@@ -396,19 +173,19 @@ def main() -> int:
             "blocked_publication_output_conflict", "final main result is create-only"
         )
 
-    accepted, _ = load_json_file(
+    accepted, accepted_bytes = load_json_file(
         accepted_path, "blocked_accepted_attempt_invalid", "accepted attempt"
     )
-    if accepted.get("schema_version") == "material_accepted_attempt.v1":
+    if accepted.get("schema_version") in {"material_accepted_attempt.v1", "material_accepted_attempt.v2"}:
         raise MaterialContractError(
-            "blocked_legacy_material_run_v1", "material_accepted_attempt.v1 cannot resume as v4"
+            "blocked_legacy_material_run_v1", "material_accepted_attempt.v1/v2 cannot resume as v5"
         )
-    require_exact_keys(accepted, ACCEPTED_KEYS, "blocked_accepted_attempt_invalid", "accepted attempt")
+    require_exact_keys(accepted, ACCEPTED_V5_KEYS, "blocked_accepted_attempt_invalid", "accepted attempt")
     attempt_id = accepted["attempt_id"]
-    if accepted["schema_version"] != "material_accepted_attempt.v2" or not isinstance(
+    if accepted["schema_version"] != "material_accepted_attempt.v3" or accepted["record_compiler"] != RECORD_COMPILER or not isinstance(
         attempt_id, str
     ) or not ATTEMPT_RE.fullmatch(attempt_id):
-        raise MaterialContractError("blocked_accepted_attempt_invalid", "invalid v2 accepted attempt")
+        raise MaterialContractError("blocked_accepted_attempt_invalid", "invalid v3 accepted attempt")
     attempt_dir = run_dir / "attempts" / attempt_id
     if not attempt_dir.is_dir():
         raise MaterialContractError("blocked_accepted_attempt_invalid", "accepted attempt directory missing")
@@ -431,6 +208,12 @@ def main() -> int:
         attempt_dir / "worker_result.json",
         "blocked_accepted_attempt_mismatch",
         "worker result",
+    )
+    decision_path = require_exact_path(
+        args.inspection_decision,
+        attempt_dir / "qa_decision.json",
+        "blocked_accepted_attempt_mismatch",
+        "inspection decision",
     )
     inspection_path = require_exact_path(
         args.inspection,
@@ -460,6 +243,17 @@ def main() -> int:
 
     manifest_record = load_reference_manifest(manifest_path, run_dir)
     contract_record = load_source_contract(contract_path, run_dir, manifest_record)
+    asset_id = contract_record["value"]["asset_id"]
+    expected_attempt_paths = {
+        generation_path: attempt_dir / f"{asset_id}_{attempt_id}_generation_prompt.md",
+        enhancement_path: attempt_dir / f"{asset_id}_{attempt_id}_4k_enhancement_prompt.md",
+        handoff_path: attempt_dir / f"{asset_id}_{attempt_id}_4k_handoff.json",
+    }
+    if any(normalized_path(actual) != normalized_path(expected) for actual, expected in expected_attempt_paths.items()):
+        raise MaterialContractError(
+            "blocked_accepted_attempt_mismatch",
+            "attempt artifact names do not match the asset/attempt contract",
+        )
     prompt_block_path = contract_record["prompt_block_path"]
     generation_bytes = read_prompt_bytes(
         generation_path, "blocked_prompt_pair_integrity", "generation prompt"
@@ -496,6 +290,7 @@ def main() -> int:
         "worker_spawn_path": spawn_path,
         "worker_result_path": worker_path,
         "board_path": board,
+        "inspection_decision_path": decision_path,
         "inspection_path": inspection_path,
         "handoff_path": handoff_path,
     }
@@ -509,6 +304,9 @@ def main() -> int:
     )
     worker, worker_bytes = load_json_file(
         worker_path, "blocked_worker_result_invalid", "worker result"
+    )
+    decision, decision_bytes = load_json_file(
+        decision_path, "blocked_board_inspection_invalid", "inspection decision"
     )
     inspection, inspection_bytes = load_json_file(
         inspection_path, "blocked_board_inspection_invalid", "board inspection"
@@ -525,6 +323,7 @@ def main() -> int:
         "worker_spawn_sha256": sha256_bytes(spawn_bytes),
         "worker_result_sha256": sha256_bytes(worker_bytes),
         "image_sha256": board_sha,
+        "inspection_decision_sha256": sha256_bytes(decision_bytes),
         "inspection_sha256": sha256_bytes(inspection_bytes),
         "handoff_sha256": sha256_bytes(handoff_bytes),
     }
@@ -646,7 +445,7 @@ def main() -> int:
     }
     if any(worker[field] != value for field, value in expected_worker_values.items()):
         raise MaterialContractError(
-            "blocked_publication_provenance_mismatch", "worker result does not bind the full v4 chain"
+            "blocked_publication_provenance_mismatch", "worker result does not bind the full v5 chain"
         )
     if worker["agent_path"] != spawn["agent_path"] or worker["parent_thread_id"] != spawn["parent_thread_id"]:
         raise MaterialContractError(
@@ -729,12 +528,30 @@ def main() -> int:
             "worker result no longer matches its live rollout or saved PNG",
         )
 
-    require_exact_keys(inspection, QA_KEYS, "blocked_board_inspection_invalid", "board inspection")
+    expected_inspection = build_qa_record(
+        decision=decision,
+        decision_path=decision_path,
+        decision_sha256=sha256_bytes(decision_bytes),
+        board_path=board,
+        board_sha256=board_sha,
+        width_px=board_metadata["width_px"],
+        height_px=board_metadata["height_px"],
+        worker_thread_id=worker["worker_thread_id"],
+        image_generation_call_id=worker["image_generation_call_id"],
+        contract=contract_record["value"],
+        manifest=manifest_record,
+    )
+    if inspection != expected_inspection or inspection_bytes != render_record_bytes(expected_inspection):
+        raise MaterialContractError(
+            "blocked_board_inspection_invalid",
+            "board inspection is not the deterministic rendering of qa_decision.json",
+        )
+    require_exact_keys(inspection, QA_V5_KEYS, "blocked_board_inspection_invalid", "board inspection")
     if (
-        inspection["schema_version"] != "material_board_qa.v2"
+        inspection["schema_version"] != "material_board_qa.v3"
         or inspection["attempt_id"] != attempt_id
         or inspection["inspected"] is not True
-        or inspection["inspection_method"] != "main_agent_visual_inspection"
+        or inspection["inspection_method"] != "main_agent_source_to_board_visual_inspection"
         or not same_path(inspection["board_path"], board)
         or inspection["image_sha256"] != board_sha
         or inspection["worker_thread_id"] != worker["worker_thread_id"]
@@ -786,7 +603,15 @@ def main() -> int:
             raise MaterialContractError("blocked_board_inspection_invalid", "invariant result must be object")
         require_exact_keys(
             actual,
-            {"invariant_id", "category", "status", "source_fidelity", "observed_content"},
+            {
+                "invariant_id",
+                "category",
+                "source_aliases",
+                "status",
+                "source_fidelity",
+                "source_observation",
+                "board_observation",
+            },
             "blocked_board_inspection_invalid",
             "invariant result",
         )
@@ -794,8 +619,10 @@ def main() -> int:
             actual["category"] != expected["category"]
             or actual["status"] != "pass"
             or actual["source_fidelity"] != "pass"
-            or not isinstance(actual["observed_content"], str)
-            or not actual["observed_content"].strip()
+            or not isinstance(actual["source_observation"], str)
+            or not actual["source_observation"].strip()
+            or not isinstance(actual["board_observation"], str)
+            or not actual["board_observation"].strip()
         ):
             if expected["category"] in {"identity", "topology", "structure"}:
                 raise MaterialContractError(
@@ -819,16 +646,27 @@ def main() -> int:
             raise MaterialContractError("blocked_board_inspection_invalid", "panel result must be object")
         require_exact_keys(
             actual,
-            {"panel_id", "status", "source_fidelity", "observed_content", "invariant_ids"},
+            {
+                "panel_id",
+                "source_aliases",
+                "status",
+                "source_fidelity",
+                "source_observation",
+                "board_observation",
+                "invariant_ids",
+            },
             "blocked_board_inspection_invalid",
             "panel result",
         )
         if (
             actual["status"] != "pass"
             or actual["source_fidelity"] != "pass"
+            or actual["source_aliases"] != expected["source_aliases"]
             or actual["invariant_ids"] != expected["invariant_ids"]
-            or not isinstance(actual["observed_content"], str)
-            or not actual["observed_content"].strip()
+            or not isinstance(actual["source_observation"], str)
+            or not actual["source_observation"].strip()
+            or not isinstance(actual["board_observation"], str)
+            or not actual["board_observation"].strip()
         ):
             raise MaterialContractError(
                 "blocked_board_inspection_invalid", f"panel failed: {expected['panel_id']}"
@@ -893,8 +731,12 @@ def main() -> int:
     if production_approval not in {"not_granted", "user_granted", "external_pipeline_granted"}:
         raise MaterialContractError("blocked_board_inspection_invalid", "invalid production approval status")
 
-    require_exact_keys(handoff, HANDOFF_KEYS, "blocked_4k_handoff_invalid", "4K handoff")
-    if handoff["schema_version"] != "material_4k_handoff.v2" or handoff["attempt_id"] != attempt_id:
+    require_exact_keys(handoff, HANDOFF_V5_KEYS, "blocked_4k_handoff_invalid", "4K handoff")
+    if (
+        handoff["schema_version"] != "material_4k_handoff.v3"
+        or handoff["record_compiler"] != RECORD_COMPILER
+        or handoff["attempt_id"] != attempt_id
+    ):
         raise MaterialContractError("blocked_4k_handoff_invalid", "handoff schema/attempt mismatch")
     board_ref = handoff["codex_asset_board"]
     if not isinstance(board_ref, dict):
@@ -918,6 +760,8 @@ def main() -> int:
         or handoff["generation_prompt_sha256"] != generation_sha
         or not same_path(handoff["enhancement_prompt_path"], enhancement_path)
         or handoff["enhancement_prompt_sha256"] != enhancement_sha
+        or not same_path(handoff["inspection_path"], inspection_path)
+        or handoff["inspection_sha256"] != sha256_bytes(inspection_bytes)
         or not same_path(board_ref["path"], board)
         or board_ref["sha256"] != board_sha
         or source_refs != expected_source_refs
@@ -926,7 +770,7 @@ def main() -> int:
         or handoff["source_fidelity_status"] != "passed"
         or runtime_request
         != {"aspect_ratio": "16:9", "image_size": "4K", "alternate_aspect_ratios_allowed": False}
-        or external_status not in EXTERNAL_STATUSES
+        or external_status not in EXTERNAL_STATE_MATRIX
         or external_qa_status not in {"not_started", "pending", "passed", "failed"}
         or external_production_status
         not in {"not_requested", "pending", "granted", "rejected"}
@@ -937,6 +781,65 @@ def main() -> int:
         raise MaterialContractError(
             "blocked_4k_handoff_invalid",
             "external 4K status, QA state, and production-approval state are contradictory",
+        )
+    expected_handoff = build_handoff_record(
+        attempt_id=attempt_id,
+        generation_prompt_path=generation_path,
+        generation_prompt_sha256=generation_sha,
+        enhancement_prompt_path=enhancement_path,
+        enhancement_prompt_sha256=enhancement_sha,
+        inspection_path=inspection_path,
+        inspection_sha256=sha256_bytes(inspection_bytes),
+        board_path=board,
+        board_sha256=board_sha,
+        source_references=expected_source_refs,
+        source_contract_path=contract_path,
+        source_contract_sha256=contract_record["sha256"],
+        observed_defects=cleanup_defects,
+        external_status=external_status,
+        external_qa_status=external_qa_status,
+        external_production_status=external_production_status,
+    )
+    if handoff != expected_handoff or handoff_bytes != render_record_bytes(expected_handoff):
+        raise MaterialContractError(
+            "blocked_4k_handoff_invalid",
+            "4K handoff is not the deterministic post-generation rendering",
+        )
+    expected_accepted = build_accepted_record(
+        attempt_id=attempt_id,
+        paths_and_hashes={
+            "reference_manifest_path": str(manifest_path),
+            "reference_manifest_sha256": manifest_record["sha256"],
+            "source_contract_path": str(contract_path),
+            "source_contract_sha256": contract_record["sha256"],
+            "prompt_block_path": str(prompt_block_path),
+            "prompt_block_sha256": contract_record["prompt_block_sha256"],
+            "generation_prompt_path": str(generation_path),
+            "generation_prompt_sha256": generation_sha,
+            "enhancement_prompt_path": str(enhancement_path),
+            "4k_enhancement_prompt_sha256": enhancement_sha,
+            "worker_spawn_path": str(spawn_path),
+            "worker_spawn_sha256": sha256_bytes(spawn_bytes),
+            "worker_exec_source_path": str(exec_path),
+            "worker_exec_source_sha256": sha256_bytes(exec_bytes),
+            "worker_exec_receipt_path": str(receipt_path),
+            "worker_exec_receipt_sha256": sha256_bytes(receipt_bytes),
+            "worker_result_path": str(worker_path),
+            "worker_result_sha256": sha256_bytes(worker_bytes),
+            "board_path": str(board),
+            "image_sha256": board_sha,
+            "inspection_decision_path": str(decision_path),
+            "inspection_decision_sha256": sha256_bytes(decision_bytes),
+            "inspection_path": str(inspection_path),
+            "inspection_sha256": sha256_bytes(inspection_bytes),
+            "handoff_path": str(handoff_path),
+            "handoff_sha256": sha256_bytes(handoff_bytes),
+        },
+    )
+    if accepted != expected_accepted or accepted_bytes != render_record_bytes(expected_accepted):
+        raise MaterialContractError(
+            "blocked_accepted_attempt_invalid",
+            "accepted attempt is not the deterministic post-generation commit record",
         )
 
     expected_output = run_dir / f"{contract_record['value']['asset_id']}_final_main_result.md"

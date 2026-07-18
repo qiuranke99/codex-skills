@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Shared, package-local validators for the material board v4 artifact chain."""
+"""Shared, package-local validators for the material board v5 artifact chain."""
 
 from __future__ import annotations
 
@@ -340,7 +340,7 @@ def load_reference_manifest(manifest_path: Path, run_dir: Path) -> dict[str, Any
     if manifest.get("schema_version") == "material_reference_bundle.v1":
         raise MaterialContractError(
             "blocked_legacy_material_run_v1",
-            "material_reference_bundle.v1 cannot be resumed as a v4 run",
+            "material_reference_bundle.v1 cannot be resumed as a v5 run",
         )
     required_manifest_keys = {
         "schema_version",

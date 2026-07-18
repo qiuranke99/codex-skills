@@ -1,6 +1,6 @@
 interface:
   display_name: "Material-Sensitive Product Master Asset Board"
-  short_description: "Source-bound material board with invariant QA and a verified prompt pair."
-  default_prompt: "Use $material-sensitive-product-master-asset-board with my local product references. Freeze source authority, exclusions, critical identity/material/structure invariants, and the 7-10 panel plan; publish the complete source-bound generation prompt before one non-decision worker attempt; bind and inspect the exact PNG; reject any cross-panel topology or structure drift; then publish the accepted board, the complete generation prompt and hash, and the complete image-specific 4K prompt and hash in the same final result."
+  short_description: "Source-bound material board with decision-rendered QA and a verified prompt pair."
+  default_prompt: "Use $material-sensitive-product-master-asset-board with my local product references. Freeze source authority, exclusions, critical identity/material/structure invariants, and the 7-10 panel plan; publish the complete source-bound generation prompt before one non-decision worker attempt; bind the exact PNG; inspect every frozen source and the board at original detail; complete the scaffolded source-to-board comparison; reject any topology or structure drift; then deterministically freeze QA, the image-specific 4K handoff, one accepted attempt, the complete generation prompt and hash, and the complete image-specific 4K prompt and hash in the same final result."
 policy:
   allow_implicit_invocation: false

@@ -1,13 +1,13 @@
 ---
 name: material-sensitive-product-master-asset-board
-description: "Use only when explicitly invoked with local references for one transparent, glass, acrylic, translucent, liquid, cream, gel, crystal-cut, mirror-metal, high-reflective, frosted, or multi-layer product whose video continuity is dominated by material behavior. Freeze source authority and identity/material/structure invariants, create exactly one text-free 16:9 master board through one non-decision image worker per attempt, inspect the bound PNG, and publish the complete generation plus image-specific 4K prompt pair. Do not use for low-risk six-view products, exact-copy packaging, mechanisms, scenes, characters, posters, or prompt-only work."
+description: "Use only when explicitly invoked with local references for one transparent, glass, acrylic, translucent, liquid, cream, gel, crystal-cut, mirror-metal, high-reflective, frosted, or multi-layer product whose video continuity is dominated by material behavior. Freeze source authority and identity/material/structure invariants, create exactly one text-free 16:9 master board through one non-decision image worker per attempt, compare the bound PNG directly with its frozen sources, and deterministically publish the complete generation plus image-specific 4K prompt pair. Do not use for low-risk six-view products, exact-copy packaging, mechanisms, scenes, characters, posters, or prompt-only work."
 ---
 
 # Material-Sensitive Product Master Asset Board
 
 Chinese name: 特殊材质产品总资产板
 
-`asset_board_contract_version: delegated_image_worker_prompt_pair_v4`
+`asset_board_contract_version: delegated_image_worker_prompt_pair_v5`
 
 Generate exactly one high-density, low-redundancy material master board. Product identity, material physics, and source evidence outrank visual showmanship. A prompt, a moodboard, several independent sheets, or an image without post-generation inspection is not the deliverable.
 
@@ -49,6 +49,7 @@ Use an active project output directory when one exists; otherwise use `outputs/m
   attempts/01/worker_spawn.json
   attempts/01/worker_result.json
   attempts/01/board.png
+  attempts/01/qa_decision.json
   attempts/01/qa.json
   attempts/01/<asset_id>_01_4k_enhancement_prompt.md
   attempts/01/<asset_id>_01_4k_handoff.json
@@ -125,11 +126,36 @@ Do not select a newest file, parse a decoy literal, accept recent-conversation i
 
 ## 5. Inspect Content Against Source Invariants
 
-Open the copied `board.png` with the image-inspection tool. The main agent writes `material_board_qa.v2` only after viewing that exact file. It binds attempt, board path/hash/dimensions, worker thread/call, source contract, and:
+Open the copied `board.png` and every frozen source image with the image-inspection tool at original detail. Do not judge from chat thumbnails or memory. Create the editable source-bound decision scaffold:
+
+```text
+<python> scripts/scaffold_board_inspection.py
+  --run-dir <run>
+  --attempt-dir <attempt>
+  --reference-manifest <run>/sources/reference-manifest.json
+  --source-contract <run>/sources/material-source-contract.json
+  --decision-draft <attempt>/qa_decision.json
+```
+
+For every planned panel and critical invariant, preserve the scaffolded source aliases and record two separate one-line observations: what the cited frozen sources show and what the board shows. `pending`, an empty board observation, copied source/board prose, reordered evidence, or an uncited source cannot freeze. Complete the gates, defects, repair state, assistant QA, and production approval, then run:
+
+```text
+<python> scripts/freeze_board_inspection.py
+  --run-dir <run>
+  --attempt-dir <attempt>
+  --board <attempt>/board.png
+  --worker-result <attempt>/worker_result.json
+  --reference-manifest <run>/sources/reference-manifest.json
+  --source-contract <run>/sources/material-source-contract.json
+  --decision-draft <attempt>/qa_decision.json
+  --inspection <attempt>/qa.json
+```
+
+The freezer emits create-only/idempotent `material_board_qa.v3`. It derives rather than accepts the board hash/dimensions, worker thread/call, source image list, decision path/hash, and inspection method. The decision owns only visual judgments:
 
 - a complete `board_gates` object for primary anchor, complementary angles, material evidence, source consistency, critical structure, low redundancy, panel legibility, single-board topology, no-poster pollution, state support, prompt binding, and video-reference readiness;
-- one `panel_results` entry for every planned panel and no others, citing the matching panel ID, observed content, and pass/fail result;
-- one `invariant_results` entry for every frozen critical invariant and no others, citing the invariant ID, observed evidence, and pass/fail result;
+- one `panel_results` entry for every planned panel and no others, citing the matching panel ID and source aliases, then recording distinct `source_observation` and `board_observation` fields plus the pass/fail result;
+- one `invariant_results` entry for every frozen critical invariant and no others, citing the invariant ID and source aliases, then recording distinct `source_observation` and `board_observation` fields plus the pass/fail result;
 - structured observed defects with exact `category`, `severity`, affected `panel_ids`, affected `invariant_ids`, `source_aliases`, `cleanup_eligible`, and `cleanup_operation` fields. Cleanup is legal only for `category: artifact`, `severity: low | medium`, an empty `invariant_ids` list, and one of `reduce_raster_aliasing`, `remove_compression_blocking`, `remove_background_dust`, or `reduce_edge_halo`; every other defect uses `cleanup_eligible: false` and `cleanup_operation: none`;
 - separate `assistant_qa_status` and `production_approval_status`.
 
@@ -139,28 +165,39 @@ Identity, topology, structure, material-state, label-identity, or source-consist
 
 ## 6. Create The Image-Specific 4K Handoff
 
-Only after all acceptance gates pass, render one complete image-specific 4K enhancement prompt from the accepted evidence:
+Only after `material_board_qa.v3` is frozen and passed, compile the complete post-generation record chain:
 
 ```text
-<python> scripts/render_4k_enhancement_prompt.py
+<python> scripts/freeze_post_generation_records.py
   --run-dir <run>
   --attempt-dir <attempt>
   --board <attempt>/board.png
+  --generation-prompt <attempt>/<asset>_<attempt_id>_generation_prompt.md
+  --worker-spawn <attempt>/worker_spawn.json
+  --worker-result <attempt>/worker_result.json
+  --inspection-decision <attempt>/qa_decision.json
   --inspection <attempt>/qa.json
   --reference-manifest <run>/sources/reference-manifest.json
   --source-contract <run>/sources/material-source-contract.json
   --enhancement-prompt <attempt>/<asset>_<attempt_id>_4k_enhancement_prompt.md
+  --handoff <attempt>/<asset>_<attempt_id>_4k_handoff.json
+  --accepted-attempt <run>/accepted_attempt.json
+  --external-4k-status <status>
+  --external-4k-qa-status <status>
+  --external-4k-production-approval-status <status>
 ```
 
-The package-local renderer binds the accepted board plus every frozen original reference, preserves panel topology and every invariant, and names only the exact cleanup operations authorized by QA. Free prose is not an authority surface. The final builder independently re-renders the expected UTF-8/LF bytes and requires byte equality; updated hashes cannot legalize a prompt that invents or repairs identity, topology, structure, fill, label, state, facets, highlights, or material microdetail.
+This package-local compiler re-audits the worker rollout and saved PNG, re-renders QA from `qa_decision.json`, and preflights every destination before its first write. It freezes the deterministic 4K prompt, `material_4k_handoff.v3`, and `material_accepted_attempt.v3`; `accepted_attempt.json` is written last as the commit marker. A same-byte rerun is idempotent. A conflicting enhancement, handoff, or accepted artifact writes no accepted commit.
 
-Request only `aspect_ratio: "16:9"` and `image_size: "4K"`, with no alternate ratio, crop, stretch, reframing, panel reorder, added panel, advertising treatment, or non-product-native text. Write `material_4k_handoff.v2` beside the prompt with `generation_prompt_path`, the accepted board, all original references, prompt hash, requested controls, source-fidelity status, actual `external_4k_status`, `external_4k_qa_status`, and `external_4k_production_approval_status`.
+The compiler binds the accepted board plus every frozen original reference, preserves panel topology and every invariant, and names only the exact cleanup operations authorized by QA. Free prose is not an authority surface. The final builder independently re-renders the QA, 4K prompt, handoff, and accepted bytes; updated hashes cannot legalize a prompt or record that invents or repairs identity, topology, structure, fill, label, state, facets, highlights, or material microdetail.
+
+Request only `aspect_ratio: "16:9"` and `image_size: "4K"`, with no alternate ratio, crop, stretch, reframing, panel reorder, added panel, advertising treatment, or non-product-native text. The v3 handoff directly binds the generation prompt, QA decision, frozen QA, accepted board, all original references, deterministic enhancement prompt, requested controls, source-fidelity status, actual `external_4k_status`, `external_4k_qa_status`, and `external_4k_production_approval_status`.
 
 The only legal external status matrix is: `not_ready`, `handoff_ready`, or `blocked_runtime_controls` with `not_started + not_requested`; `pending_external_generation` or `returned_unverified` with `pending + not_requested`; `verified` with `passed + (pending | granted)`; or `rejected` with `failed + rejected`. Prompt-pair readiness does not imply external readiness, verification, or approval.
 
 ## 7. Freeze One Accepted Attempt And Publish
 
-After the 4K prompt and handoff exist, create exactly one root `accepted_attempt.json` with schema `material_accepted_attempt.v2`. It directly binds absolute paths and hashes for the reference manifest, source contract, prompt block, `worker_exec_source_path`/`worker_exec_source_sha256`, `worker_exec_receipt_path`/`worker_exec_receipt_sha256`, worker spawn/result, board, QA, both prompt files, and handoff. Failed attempts remain immutable and cannot be selected.
+Do not hand-write QA, handoff, or accepted records. The post-generation compiler creates exactly one root `accepted_attempt.json` with schema `material_accepted_attempt.v3`. It directly binds absolute paths and hashes for the reference manifest, source contract, prompt block, `worker_exec_source_path`/`worker_exec_source_sha256`, `worker_exec_receipt_path`/`worker_exec_receipt_sha256`, worker spawn/result, board, QA decision, frozen QA, both prompt files, and handoff. Failed attempts remain immutable and cannot be selected.
 
 Run the package-local final builder with the exact accepted chain:
 
@@ -173,6 +210,7 @@ Run the package-local final builder with the exact accepted chain:
   --enhancement-prompt <attempt>/<asset>_<attempt_id>_4k_enhancement_prompt.md
   --worker-spawn <attempt>/worker_spawn.json
   --worker-result <attempt>/worker_result.json
+  --inspection-decision <attempt>/qa_decision.json
   --inspection <attempt>/qa.json
   --reference-manifest <run>/sources/reference-manifest.json
   --source-contract <run>/sources/material-source-contract.json
@@ -180,7 +218,7 @@ Run the package-local final builder with the exact accepted chain:
   --output <run>/<asset>_final_main_result.md
 ```
 
-The builder independently rehashes and revalidates every artifact, fully decodes the board, re-renders and byte-compares the 4K prompt, enforces the complete panel/invariant QA and external-state matrices, rejects repair-only defects, and publishes the handoff's actual external status rather than inventing readiness.
+The builder independently rehashes and revalidates every artifact, fully decodes the board, re-audits the worker rollout, and byte-compares the decision-rendered QA, 4K prompt, handoff, and accepted commit. It enforces complete panel/invariant comparisons and external-state matrices, rejects repair-only defects, and publishes the handoff's actual external status rather than inventing readiness. v1/v2 accepted records cannot resume as v5.
 
 Reopen `<asset_id>_final_main_result.md` and emit its exact complete contents as one non-empty `final` response. It must contain:
 
@@ -206,9 +244,9 @@ Also include observed dimensions and worker thread/call binding. If one response
 
 ## 8. Completion And Failure Conditions
 
-Complete only when frozen source bytes, source semantics, prompt block, generation prompt, deterministic exec, worker lineage, fully decoded PNG, actual visual inspection, per-panel/invariant QA, accepted record, image-specific handoff, artifact-backed payload, and displayed final response form one hash-bound chain.
+Complete only when frozen source bytes, source semantics, prompt block, generation prompt, deterministic exec, worker lineage, fully decoded PNG, direct source-to-board visual comparison, decision-rendered per-panel/invariant QA, compiler-created accepted record, image-specific handoff, artifact-backed payload, and displayed final response form one hash-bound chain.
 
-Failure includes an implicit worker, missing local source, sibling dependency, main-agent imagegen, hand-written source restatement, prompt wrapper, parser decoy, multiple worker tasks, unknown tool call, corrupt image, source/board hash collision, newest-file selection, uninspected board, topology false positive, 4K repair of identity/structure, overwritten artifact, legacy resume, empty final, or incomplete prompt pair.
+Failure includes an implicit worker, missing local source, sibling dependency, main-agent imagegen, hand-written source restatement, prompt wrapper, parser decoy, multiple worker tasks, unknown tool call, corrupt image, source/board hash collision, newest-file selection, uninspected source or board, copied/empty source-to-board observation, hand-written QA/handoff/accepted record, topology false positive, 4K repair of identity/structure, overwritten artifact, legacy resume, empty final, or incomplete prompt pair.
 
 Production approval remains `not_granted`, `user_granted`, or `external_pipeline_granted` and is never inferred from QA, imagegen success, handoff readiness, or external verification.
 

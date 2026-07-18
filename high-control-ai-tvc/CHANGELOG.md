@@ -1,5 +1,16 @@
 # Changelog
 
+## Unreleased — 2026-07-18
+
+- `material-sensitive-product-master-asset-board` 升级到 v5：从真实历史使用中
+  识别并移除手工拼接 QA、4K handoff 与 accepted attempt 的剩余维护面；新增
+  来源对板决策 scaffold、`material_board_qa.v3` 确定性冻结器，以及先全量
+  preflight、最后写 accepted commit 的后生图编译器；final builder 独立重放
+  worker rollout，并逐字节重渲染 QA、4K prompt、handoff 和 accepted record；
+  单包仍不依赖 High-Control。
+- 可选聚合验证器将根级 standalone validator 的单包上限显式设为 180 秒，
+  避免声明了较长确定性测试的独立包被 30 秒 CLI 默认值误判为无效配置。
+
 ## 2.0.0 — 2026-07-18
 
 - 将仓库根目录 16 个 Skill 确立为独立安装、发现、调用和验证的包；移除

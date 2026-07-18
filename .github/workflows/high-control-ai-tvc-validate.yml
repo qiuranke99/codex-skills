@@ -24,7 +24,7 @@ jobs:
         run: python .github/scripts/test_validate_standalone_skills.py
 
       - name: Validate all 16 Skills in isolated package roots
-        run: python .github/scripts/validate_standalone_skills.py --repo-root . --expected-count 16 --compact
+        run: python .github/scripts/validate_standalone_skills.py --repo-root . --expected-count 16 --timeout 180 --compact
 
   cross-platform:
     name: Optional aggregate / ${{ matrix.os }} / Python ${{ matrix.python }}

@@ -8,7 +8,6 @@ import json
 import sys
 from pathlib import Path
 
-from build_final_result import BOARD_GATE_KEYS, QA_KEYS, same_path, validate_observed_defects
 from material_contract import (
     ATTEMPT_RE,
     MaterialContractError,
@@ -17,11 +16,17 @@ from material_contract import (
     load_json_file,
     load_reference_manifest,
     load_source_contract,
+    normalized_path,
     render_4k_enhancement_prompt_bytes,
     require_exact_keys,
     require_exact_path,
     sha256_bytes,
 )
+from material_decision_records import BOARD_GATE_KEYS, QA_KEYS, validate_observed_defects
+
+
+def same_path(value: object, expected: Path) -> bool:
+    return isinstance(value, str) and normalized_path(Path(value)) == normalized_path(expected)
 
 
 def build_parser() -> argparse.ArgumentParser:
@@ -102,7 +107,7 @@ def main() -> int:
     )
     require_exact_keys(inspection, QA_KEYS, "blocked_board_inspection_invalid", "board inspection")
     if (
-        inspection["schema_version"] != "material_board_qa.v2"
+        inspection["schema_version"] != "material_board_qa.v3"
         or inspection["attempt_id"] != attempt_id
         or inspection["inspected"] is not True
         or not same_path(inspection["board_path"], board)
