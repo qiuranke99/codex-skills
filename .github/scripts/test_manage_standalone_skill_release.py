@@ -374,6 +374,13 @@ class StandaloneReleaseTests(unittest.TestCase):
                 release.trusted_python(linked / executable.name)
             release._remove_link(linked)
 
+    @unittest.skipIf(os.name == "nt", "POSIX executable aliases may be symlinks; Windows reparse executables stay forbidden")
+    def test_trusted_python_allows_final_posix_symlink(self) -> None:
+        with self.sandbox() as root:
+            alias = root / "python-alias"
+            alias.symlink_to(Path(sys.executable).resolve())
+            self.assertEqual(release.trusted_python(alias), Path(sys.executable).resolve())
+
     def test_active_receipt_write_failure_atomically_restores_prior_release(self) -> None:
         with self.sandbox() as root:
             repo, first_commit = self.make_repo(root)

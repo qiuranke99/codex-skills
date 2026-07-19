@@ -623,10 +623,14 @@ def aggregate_boundary(repo_root: Path, commit: str) -> dict[str, Any]:
 
 def trusted_python(python: Path) -> Path:
     candidate = _absolute(python)
-    _assert_no_reparse_chain(candidate, "trusted Python")
-    if _is_reparse(candidate) or not candidate.is_file():
+    _assert_no_reparse_chain(candidate.parent, "trusted Python parent")
+    if not candidate.is_file() or (os.name == "nt" and _is_reparse(candidate)):
         raise ReleaseError(f"RUNTIME_UNAVAILABLE: trusted Python must be a real executable file: {candidate}")
-    return candidate.resolve(strict=True)
+    resolved = candidate.resolve(strict=True)
+    _assert_no_reparse_chain(resolved, "resolved trusted Python")
+    if _is_reparse(resolved) or not resolved.is_file():
+        raise ReleaseError(f"RUNTIME_UNAVAILABLE: trusted Python target must be a real executable file: {resolved}")
+    return resolved
 
 
 def run_validation(package: Path, python: Path) -> dict[str, Any]:
