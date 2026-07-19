@@ -11,13 +11,23 @@ import uuid
 from pathlib import Path
 from typing import Any
 
-from validate_coverage_package import ContractError, read_json, validate_package
+from validate_coverage_package import (
+    ContractError,
+    accepted_prompt_handoff_payload,
+    read_json,
+    validate_package,
+)
 
 
 def write_bytes_atomic(path: Path, value: bytes) -> None:
+    path.parent.mkdir(parents=True, exist_ok=True)
     temporary = path.with_name(f".{path.name}.{uuid.uuid4().hex}.tmp")
-    temporary.write_bytes(value)
-    os.replace(temporary, path)
+    try:
+        temporary.write_bytes(value)
+        os.replace(temporary, path)
+    finally:
+        if temporary.exists():
+            temporary.unlink()
 
 
 def write_json_atomic(path: Path, value: dict[str, Any]) -> None:
@@ -28,6 +38,12 @@ def finalize(run_root: Path, terminal: str) -> dict[str, Any]:
     root = run_root.resolve()
     manifest_path = root / "00_manifest" / "COVERAGE_MANIFEST.json"
     original = manifest_path.read_bytes()
+    handoff_index_path = root / "40_handoff" / "ACCEPTED_PROMPT_INDEX.json"
+    handoff_document_path = root / "40_handoff" / "ACCEPTED_REGENERATION_PROMPTS.md"
+    original_handoff = {
+        path: path.read_bytes() if path.is_file() and not path.is_symlink() else None
+        for path in (handoff_index_path, handoff_document_path)
+    }
     manifest = read_json(manifest_path, "package_manifest_invalid")
     validate_package(root, "state")
     required = [view["view_id"] for view in manifest["views"] if view.get("required")]
@@ -56,6 +72,9 @@ def finalize(run_root: Path, terminal: str) -> dict[str, Any]:
     else:
         raise ContractError("delivery_terminal_invalid", f"unsupported terminal: {terminal}")
     try:
+        handoff_index, handoff_document = accepted_prompt_handoff_payload(root, manifest, approved, terminal)
+        write_bytes_atomic(handoff_document_path, handoff_document.encode("utf-8"))
+        write_json_atomic(handoff_index_path, handoff_index)
         if terminal == "package_ready":
             phase_order = ["all_required_views_approved", "coverage_approved", "handoff_finalized"]
             start_index = phase_order.index(manifest["state"]["current"])
@@ -70,6 +89,12 @@ def finalize(run_root: Path, terminal: str) -> dict[str, Any]:
         transitions.append(terminal)
     except Exception:
         write_bytes_atomic(manifest_path, original)
+        for path, value in original_handoff.items():
+            if value is None:
+                if path.exists() and not path.is_symlink() and path.is_file():
+                    path.unlink()
+            else:
+                write_bytes_atomic(path, value)
         raise
     return {**evidence, "transitions": transitions}
 

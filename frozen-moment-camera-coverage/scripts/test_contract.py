@@ -3,19 +3,24 @@
 
 from __future__ import annotations
 
+import base64
 import json
 import shutil
 import sqlite3
 import tempfile
 import unittest
 from copy import deepcopy
+from datetime import datetime, timezone
 from pathlib import Path
+from unittest.mock import patch
 
 from PIL import Image
 
 import compile_coverage_plan as compiler
 import finalize_coverage as finalizer
 import freeze_reference_bundle as freezer
+import inspection_runtime
+import prepare_repair_prompt as repairer
 import record_view_decision as recorder
 import resolve_worker_image as resolver
 import validate_coverage_package as validator
@@ -142,8 +147,9 @@ def synthetic_worker_events(
         {"type": "turn_context", "payload": {"turn_id": turn}},
         {"type": "inter_agent_communication_metadata", "payload": {"trigger_turn": True}},
         {"type": "response_item", "payload": {"type": "agent_message", "recipient": agent_path, "author": "/root", "content": [{"type": "input_text", "text": header}, {"type": "encrypted_content", "encrypted_content": ciphertext}], "internal_chat_message_metadata_passthrough": {"turn_id": turn}}},
-        {"type": "response_item", "payload": {"type": "custom_tool_call", "input": call_input}},
-        {"type": "event_msg", "payload": {"type": "image_generation_end", "status": "completed", "call_id": call_id, "saved_path": saved_path}},
+        {"type": "response_item", "payload": {"type": "custom_tool_call", "call_id": call_id, "input": call_input}},
+        {"type": "event_msg", "payload": {"type": "image_generation_end", "status": "completed", "call_id": call_id, "saved_path": saved_path, "revised_prompt": prompt}},
+        {"type": "response_item", "payload": {"type": "custom_tool_call_output", "call_id": call_id, "output": "Script completed\n"}},
         {"type": "event_msg", "payload": {"type": "agent_message", "phase": "final_answer", "message": ""}},
         {"type": "response_item", "payload": {"type": "message", "role": "assistant", "phase": "final_answer", "content": []}},
         {"type": "event_msg", "payload": {"type": "task_complete", "turn_id": turn, "last_agent_message": ""}},
@@ -160,7 +166,8 @@ def add_attempt(
     attempt_revision: int = 1,
 ) -> dict:
     view = next(item for item in manifest["views"] if item["view_id"] == view_id)
-    prompt = next(item for item in manifest["prompts"] if item["view_id"] == view_id)
+    base_prompt = next(item for item in manifest["prompts"] if item["view_id"] == view_id)
+    prompt = base_prompt
     attempt_id = f"{view_id}_A{attempt_revision:02d}"
     attempt_root = run_root / "10_runtime" / view_id / attempt_id
     reference_manifest_path = attempt_root / "reference-manifest.json"
@@ -197,6 +204,76 @@ def add_attempt(
     publication_path = run_root / "00_manifest" / "PROMPT_PUBLICATION.json"
     publication = json.loads(publication_path.read_text(encoding="utf-8"))
     publication_ms = publication["published_at_unix_ms"]
+    repair_publication_path: Path | None = None
+    repair_publication_sha256: str | None = None
+    repair_publication_ms: int | None = None
+    prior_bound = [
+        item for item in manifest["attempts"]
+        if item.get("view_id") == view_id and item.get("attempt_revision", 0) < attempt_revision
+    ]
+    if prior_bound:
+        previous = max(prior_bound, key=lambda item: item["attempt_revision"])
+        previous_inspection_path = run_root / previous["inspection_path"]
+        previous_inspection = json.loads(previous_inspection_path.read_text(encoding="utf-8"))
+        previous_worker_path = run_root / previous["worker_result_path"]
+        previous_worker = json.loads(previous_worker_path.read_text(encoding="utf-8"))
+        parent_prompt_path = run_root / previous["prompt_path"]
+        repair_prompt_path = run_root / "00_manifest" / "repair-prompts" / view_id / f"{attempt_id}.zh.txt"
+        repair_publication_path = (
+            run_root / "00_manifest" / "repair-prompts" / view_id / f"{attempt_id}.publication.json"
+        )
+        repair_text = repairer.repair_prompt_text(
+            parent_prompt=parent_prompt_path.read_text(encoding="utf-8"),
+            view_id=view_id,
+            attempt_id=attempt_id,
+            previous_attempt_id=previous["attempt_id"],
+            failure_codes=previous_inspection["failure_codes"],
+            repair_scope=previous_inspection["repair_scope"],
+            deviations=previous_inspection["observed_deviations"],
+        )
+        repair_prompt_path.parent.mkdir(parents=True, exist_ok=True)
+        repair_prompt_path.write_text(repair_text, encoding="utf-8", newline="\n")
+        repair_publication_ms = max(
+            publication_ms,
+            previous_worker["parent_completion_activity_ms"],
+        ) + 1000
+        repair_receipt = {
+            "schema_version": "frozen_moment_repair_prompt_publication.v1",
+            "publication_status": "repair_prompt_frozen",
+            "published_at_utc": datetime.fromtimestamp(
+                repair_publication_ms / 1000, tz=timezone.utc
+            ).isoformat(),
+            "published_at_unix_ms": repair_publication_ms,
+            "run_id": manifest["job"]["job_id"],
+            "view_id": view_id,
+            "attempt_id": attempt_id,
+            "attempt_revision": attempt_revision,
+            "previous_attempt_id": previous["attempt_id"],
+            "previous_attempt_revision": previous["attempt_revision"],
+            "previous_image_sha256": previous["image_sha256"],
+            "previous_inspection_path": previous["inspection_path"],
+            "previous_inspection_sha256": previous["inspection_sha256"],
+            "base_prompt_path": base_prompt["prompt_path"],
+            "base_prompt_sha256": base_prompt["prompt_sha256"],
+            "parent_prompt_path": previous["prompt_path"],
+            "parent_prompt_sha256": previous["prompt_sha256"],
+            "repair_prompt_path": repair_prompt_path.relative_to(run_root).as_posix(),
+            "repair_prompt_sha256": sha(repair_prompt_path),
+            "coverage_contract_sha256": manifest["coverage_contract_sha256"],
+            "source_evidence_sha256": manifest["source_evidence"]["source_evidence_sha256"],
+            "moment_canon_sha256": manifest["moment_canon"]["moment_canon_sha256"],
+            "camera_contract_sha256": view["camera_contract_sha256"],
+            "reference_plan_sha256": base_prompt["reference_plan_sha256"],
+            "failure_codes": previous_inspection["failure_codes"],
+            "repair_scope": previous_inspection["repair_scope"],
+        }
+        write_json(repair_publication_path, repair_receipt)
+        repair_publication_sha256 = sha(repair_publication_path)
+        prompt = {
+            **base_prompt,
+            "prompt_path": repair_prompt_path.relative_to(run_root).as_posix(),
+            "prompt_sha256": sha(repair_prompt_path),
+        }
     nonce = f"{index + 1:032x}"
     parent = "019f0000-0000-7000-8000-000000000001"
     thread = f"019f0000-0000-7000-8000-{index + 2:012x}"
@@ -224,7 +301,7 @@ def add_attempt(
         parent_events = resolver.read_rollout(parent_rollout)
     else:
         parent_events = [{"type": "session_meta", "payload": {"id": parent}}]
-    not_before_ms = publication_ms + 1000 + index * 1000
+    not_before_ms = max(publication_ms, repair_publication_ms or 0) + 1000 + index * 1000
     spawn_call_id = f"spawn-call-{index}"
     spawn_turn = f"parent-turn-{index}"
     task_name = agent_path.rsplit("/", 1)[-1]
@@ -252,7 +329,7 @@ def add_attempt(
 
     worker_path = attempt_root / "worker-result.json"
     coverage_snapshot_path = attempt_root / "coverage-manifest-at-resolution.json"
-    coverage_snapshot_path.write_bytes((run_root / "00_manifest" / "COVERAGE_MANIFEST.json").read_bytes())
+    write_json(coverage_snapshot_path, manifest)
     worker_result = {
         "schema_version": "frozen_moment_view_worker_result.v1",
         "ok": True,
@@ -275,6 +352,7 @@ def add_attempt(
         "parent_spawn_activity_ms": parent_trace["parent_spawn_activity_ms"],
         "parent_completion_event_index": parent_trace["parent_completion_event_index"],
         "parent_completion_activity_ms": parent_trace["parent_completion_activity_ms"],
+        "parent_completion_mode": parent_trace["parent_completion_mode"],
         "binding_mode": parent_trace["binding_mode"],
         "parent_spawn_chain_sha256": parent_trace["parent_spawn_chain_sha256"],
         "task_delivery_ciphertext_sha256": parent_trace["task_delivery_ciphertext_sha256"],
@@ -289,6 +367,9 @@ def add_attempt(
         "tool_prompt_sha256": prompt["prompt_sha256"],
         "prompt_binding_mode": "exact_bytes",
         "prompt_sha_match": True,
+        "prompt_authority_mode": "repair_prompt" if repair_publication_path is not None else "base_prompt",
+        "repair_publication_path": str(repair_publication_path.resolve()) if repair_publication_path is not None else None,
+        "repair_publication_sha256": repair_publication_sha256,
         "coverage_manifest_path": str((run_root / "00_manifest" / "COVERAGE_MANIFEST.json").resolve()),
         "coverage_manifest_snapshot_path": str(coverage_snapshot_path.resolve()),
         "coverage_manifest_sha256_at_resolution": sha(coverage_snapshot_path),
@@ -309,13 +390,15 @@ def add_attempt(
     }
     write_json(worker_path, worker_result)
     inspection_path = attempt_root / "main-inspection.json"
+    inspector_thread_id = f"019f1111-1111-7111-8111-{index + 1:012x}"
+    inspected_at_utc = "2026-07-19T00:00:00Z"
     inspection = {
         "schema_version": "frozen_moment_main_inspection.v1",
         "run_id": manifest["job"]["job_id"],
         "view_id": view_id,
         "attempt_id": attempt_id,
-        "inspector_task_id": "root",
-        "inspected_at_utc": "2026-07-19T00:00:00Z",
+        "inspector_task_id": inspector_thread_id,
+        "inspected_at_utc": inspected_at_utc,
         "worker_result_path": worker_path.relative_to(run_root).as_posix(),
         "worker_result_sha256": sha(worker_path),
         "image_path": image_path.relative_to(run_root).as_posix(),
@@ -323,6 +406,7 @@ def add_attempt(
         "moment_canon_sha256": manifest["moment_canon"]["moment_canon_sha256"],
         "camera_contract_sha256": view["camera_contract_sha256"],
         "prompt_sha256": prompt["prompt_sha256"],
+        "prompt_authority_mode": "repair_prompt" if repair_publication_path is not None else "base_prompt",
         "reference_bundle_sha256": reference_manifest["ordered_bundle_sha256"],
         "actual_dimensions": {"width_px": 96, "height_px": 64},
         "decision": decision,
@@ -336,12 +420,81 @@ def add_attempt(
         "evidence_summary": "Synthetic inspected fixture.",
     }
     write_json(inspection_path, inspection)
+    pixel_call_id = f"pixel-open-{index}"
+    pixel_events = [
+        {"timestamp": "2026-07-18T23:59:57Z", "type": "session_meta", "payload": {"id": inspector_thread_id}},
+        {
+            "timestamp": "2026-07-18T23:59:58Z",
+            "type": "response_item",
+            "payload": {
+                "type": "custom_tool_call",
+                "name": "exec",
+                "call_id": pixel_call_id,
+                "input": (
+                    "const r = await tools.view_image({path:"
+                    + json.dumps(str(image_path.resolve()))
+                    + ',detail:"original"}); image(r.image_url);'
+                ),
+            },
+        },
+        {
+            "timestamp": "2026-07-18T23:59:59Z",
+            "type": "response_item",
+            "payload": {
+                "type": "custom_tool_call_output",
+                "call_id": pixel_call_id,
+                "output": [
+                    {
+                        "type": "input_image",
+                        "image_url": "data:image/png;base64,"
+                        + base64.b64encode(image_path.read_bytes()).decode("ascii"),
+                    }
+                ],
+            },
+        },
+    ]
+    pixel_proof, pixel_slice = inspection_runtime.find_pixel_open(
+        events=pixel_events,
+        inspector_thread_id=inspector_thread_id,
+        image_path=image_path,
+        image_sha256=sha(image_path),
+        inspected_at_utc=inspected_at_utc,
+    )
+    pixel_slice_path = attempt_root / "main-inspection-runtime.jsonl"
+    pixel_slice_path.write_bytes(inspection_runtime.snapshot_bytes(pixel_slice))
+    inspector_rollout_path = run_root / "synthetic-codex" / "inspector" / f"{inspector_thread_id}.jsonl"
+    write_jsonl(inspector_rollout_path, pixel_events)
+    inspector_state_db = run_root / "synthetic-codex" / "state_5.sqlite"
+    inspector_state_db.parent.mkdir(parents=True, exist_ok=True)
+    connection = sqlite3.connect(inspector_state_db)
+    try:
+        connection.execute("CREATE TABLE IF NOT EXISTS threads (id TEXT PRIMARY KEY, rollout_path TEXT NOT NULL)")
+        connection.execute(
+            "INSERT OR REPLACE INTO threads(id, rollout_path) VALUES (?, ?)",
+            (inspector_thread_id, str(inspector_rollout_path.resolve())),
+        )
+        connection.commit()
+    finally:
+        connection.close()
+    pixel_receipt_path = attempt_root / "main-inspection-runtime-receipt.json"
+    pixel_receipt = {
+        **pixel_proof,
+        "run_id": manifest["job"]["job_id"],
+        "view_id": view_id,
+        "attempt_id": attempt_id,
+        "inspected_at_utc": inspected_at_utc,
+        "source_rollout_path": str(inspector_rollout_path.resolve()),
+        "rollout_slice_path": pixel_slice_path.relative_to(run_root).as_posix(),
+        "rollout_slice_sha256": sha(pixel_slice_path),
+    }
+    write_json(pixel_receipt_path, pixel_receipt)
     attempt = {
         "view_id": view_id,
         "attempt_id": attempt_id,
         "attempt_revision": attempt_revision,
         "prompt_path": prompt["prompt_path"],
         "prompt_sha256": prompt["prompt_sha256"],
+        "prompt_authority_mode": "repair_prompt" if repair_publication_path is not None else "base_prompt",
         "reference_manifest_path": reference_manifest_path.relative_to(run_root).as_posix(),
         "reference_manifest_sha256": sha(reference_manifest_path),
         "worker_result_path": worker_path.relative_to(run_root).as_posix(),
@@ -350,9 +503,14 @@ def add_attempt(
         "image_sha256": sha(image_path),
         "inspection_path": inspection_path.relative_to(run_root).as_posix(),
         "inspection_sha256": sha(inspection_path),
+        "inspection_runtime_receipt_path": pixel_receipt_path.relative_to(run_root).as_posix(),
+        "inspection_runtime_receipt_sha256": sha(pixel_receipt_path),
         "decision": decision,
         "failure_codes": [] if decision == "approved" else ["camera_family_distinctness"],
     }
+    if repair_publication_path is not None:
+        attempt["repair_publication_path"] = repair_publication_path.relative_to(run_root).as_posix()
+        attempt["repair_publication_sha256"] = repair_publication_sha256
     manifest["attempts"].append(attempt)
     view["status"] = "view_approved" if decision == "approved" else "repair_required"
     return attempt
@@ -562,6 +720,22 @@ class CompilerTests(unittest.TestCase):
             manifest = compiler.compile_package(spec, run_root)
             self.assertEqual(manifest["source_evidence"]["reference_plan_sha256"], reference_manifest["reference_plan_sha256"])
             self.assertTrue(all(item["reference_plan_sha256"] == reference_manifest["reference_plan_sha256"] for item in manifest["prompts"]))
+
+    def test_compiled_prompt_contains_complete_camera_family_scale_lock(self) -> None:
+        with tempfile.TemporaryDirectory() as temp:
+            run_root, manifest = compile_image_run(Path(temp) / "camera-family-prompt")
+            prompt_path = run_root / manifest["prompts"][0]["prompt_path"]
+            prompt = prompt_path.read_text(encoding="utf-8")
+            for token in (
+                "projection=perspective",
+                "focal_range=45-55mm_equiv",
+                "aperture_intent=match source depth character",
+                "subject_scale_policy=match_anchor_intent",
+                "机距、尺度与取景硬锁",
+                "主体像素比例、门洞比例、相机高度、负空间和裁切",
+                "不得通过后退、前移、变焦、扩画或裁切替代目标机位",
+            ):
+                self.assertIn(token, prompt)
 
     def test_rear_camera_cannot_demand_full_face_against_frozen_head(self) -> None:
         with tempfile.TemporaryDirectory() as temp:
@@ -965,11 +1139,88 @@ class DeliveryTests(unittest.TestCase):
                 attempt_id=attempt["attempt_id"],
                 worker_result_path=run_root / attempt["worker_result_path"],
                 inspection_path=run_root / attempt["inspection_path"],
+                state_db=run_root / "synthetic-codex" / "state_5.sqlite",
             )
             recorded = json.loads((run_root / "00_manifest" / "COVERAGE_MANIFEST.json").read_text(encoding="utf-8"))
             self.assertEqual(result["state"]["current"], "view_approved")
             self.assertEqual(recorded["attempts"][0]["attempt_id"], attempt["attempt_id"])
             self.assertEqual(recorded["qa"]["runtime_evidence_origin"], "live_runtime")
+
+    def test_record_view_decision_rejects_skipped_bound_revision(self) -> None:
+        with tempfile.TemporaryDirectory() as temp:
+            run_root, manifest = compile_image_run(Path(temp) / "revision-budget", mode="generate_and_package")
+            original_manifest = deepcopy(manifest)
+            first = manifest["views"][0]["view_id"]
+            attempt = add_attempt(run_root, manifest, first, 0, decision="rejected", attempt_revision=2)
+            write_json(run_root / "00_manifest" / "COVERAGE_MANIFEST.json", original_manifest)
+
+            with self.assertRaises(recorder.ContractError) as caught:
+                recorder.record_decision(
+                    run_root,
+                    view_id=first,
+                    attempt_id=attempt["attempt_id"],
+                    worker_result_path=run_root / attempt["worker_result_path"],
+                    inspection_path=run_root / attempt["inspection_path"],
+                    state_db=run_root / "synthetic-codex" / "state_5.sqlite",
+                )
+            self.assertEqual(caught.exception.code, "attempt_ledger_invalid")
+
+    def test_self_written_inspection_without_pixel_open_receipt_fails(self) -> None:
+        with tempfile.TemporaryDirectory() as temp:
+            run_root, manifest = compile_image_run(Path(temp) / "inspection-no-runtime", mode="generate_and_package")
+            first = manifest["views"][0]["view_id"]
+            attempt = add_approved_attempt(run_root, manifest, first, 0)
+            Path(run_root / attempt["inspection_runtime_receipt_path"]).unlink()
+            manifest["qa"].update(
+                {
+                    "required_view_ids": [view["view_id"] for view in manifest["views"] if view["required"]],
+                    "approved_required_view_ids": [first],
+                    "all_required_views_approved": False,
+                    "max_parallel_workers": 1,
+                    "unknown_inflight_call_count": 0,
+                    "runtime_evidence_origin": "deterministic_fixture",
+                }
+            )
+            manifest["state"] = {"current": "view_approved", "terminal_state": None}
+            write_json(run_root / "00_manifest" / "COVERAGE_MANIFEST.json", manifest)
+            with self.assertRaises(validator.ContractError) as caught:
+                validator.validate_package(run_root, "state")
+            self.assertIn(
+                caught.exception.code,
+                {"inspection_runtime_receipt_missing", "inspection_runtime_receipt_invalid"},
+            )
+
+    def test_forged_pixel_open_slice_fails_even_when_hashes_are_resigned(self) -> None:
+        with tempfile.TemporaryDirectory() as temp:
+            run_root, manifest = compile_image_run(Path(temp) / "inspection-forged-runtime", mode="generate_and_package")
+            first = manifest["views"][0]["view_id"]
+            attempt = add_approved_attempt(run_root, manifest, first, 0)
+            receipt_path = run_root / attempt["inspection_runtime_receipt_path"]
+            receipt = json.loads(receipt_path.read_text(encoding="utf-8"))
+            slice_path = run_root / receipt["rollout_slice_path"]
+            events = resolver.read_rollout(slice_path)
+            output = next(event for event in events if event.get("payload", {}).get("type") == "custom_tool_call_output")
+            output["payload"]["output"] = [{"type": "input_text", "text": "no pixels"}]
+            write_jsonl(slice_path, [{key: value for key, value in event.items() if key != "_line"} for event in events])
+            receipt["rollout_slice_sha256"] = sha(slice_path)
+            receipt["output_event_sha256"] = inspection_runtime.event_sha256(output)
+            write_json(receipt_path, receipt)
+            attempt["inspection_runtime_receipt_sha256"] = sha(receipt_path)
+            manifest["qa"].update(
+                {
+                    "required_view_ids": [view["view_id"] for view in manifest["views"] if view["required"]],
+                    "approved_required_view_ids": [first],
+                    "all_required_views_approved": False,
+                    "max_parallel_workers": 1,
+                    "unknown_inflight_call_count": 0,
+                    "runtime_evidence_origin": "deterministic_fixture",
+                }
+            )
+            manifest["state"] = {"current": "view_approved", "terminal_state": None}
+            write_json(run_root / "00_manifest" / "COVERAGE_MANIFEST.json", manifest)
+            with self.assertRaises(validator.ContractError) as caught:
+                validator.validate_package(run_root, "state")
+            self.assertEqual(caught.exception.code, "inspection_runtime_pixel_open_missing")
 
     def test_complete_generated_delivery(self) -> None:
         with tempfile.TemporaryDirectory() as temp:
@@ -1012,9 +1263,13 @@ class DeliveryTests(unittest.TestCase):
             first = manifest["views"][0]["view_id"]
             add_approved_attempt(run_root, manifest, first, 0)
             finalize_generated_manifest(run_root, manifest, [first], "partial_handoff_ready")
-            result = validator.validate_package(run_root, "delivery")
+            manifest["state"] = {"current": "blocked_attempt_budget", "terminal_state": None}
+            write_json(run_root / "00_manifest" / "COVERAGE_MANIFEST.json", manifest)
+            result = finalizer.finalize(run_root, "partial_handoff_ready")
             self.assertEqual(result["terminal_state"], "partial_handoff_ready")
             self.assertFalse(result["all_required_views_approved"])
+            self.assertTrue((run_root / "40_handoff" / "ACCEPTED_PROMPT_INDEX.json").is_file())
+            self.assertTrue((run_root / "40_handoff" / "ACCEPTED_REGENERATION_PROMPTS.md").is_file())
 
     def test_premature_package_ready_fails(self) -> None:
         with tempfile.TemporaryDirectory() as temp:
@@ -1203,6 +1458,130 @@ class DeliveryTests(unittest.TestCase):
             self.assertEqual(caught.exception.code, "partial_state_invalid")
 
 
+class RepairPromptTests(unittest.TestCase):
+    def repair_ready_run(self, base: Path) -> tuple[Path, dict, str]:
+        run_root, manifest = compile_image_run(base, mode="generate_and_package")
+        view_id = manifest["views"][0]["view_id"]
+        add_attempt(run_root, manifest, view_id, 0, decision="repair_required", attempt_revision=1)
+        required = [view["view_id"] for view in manifest["views"] if view["required"]]
+        manifest["qa"].update(
+            {
+                "required_view_ids": required,
+                "approved_required_view_ids": [],
+                "all_required_views_approved": False,
+                "max_parallel_workers": 1,
+                "unknown_inflight_call_count": 0,
+                "runtime_evidence_origin": "deterministic_fixture",
+            }
+        )
+        manifest["state"] = {"current": "repair_required", "terminal_state": None}
+        write_json(run_root / "00_manifest" / "COVERAGE_MANIFEST.json", manifest)
+        validator.validate_package(run_root, "state")
+        return run_root, manifest, view_id
+
+    def test_prepare_repair_is_idempotent_and_preserves_base_contract(self) -> None:
+        with tempfile.TemporaryDirectory() as temp:
+            run_root, manifest, view_id = self.repair_ready_run(Path(temp) / "repair-idempotent")
+            base_prompt_set = manifest["prompt_set_sha256"]
+            coverage_contract = manifest["coverage_contract_sha256"]
+            base_prompt = next(item for item in manifest["prompts"] if item["view_id"] == view_id)
+            base_bytes = (run_root / base_prompt["prompt_path"]).read_bytes()
+            first = repairer.prepare_repair(run_root, view_id=view_id, attempt_id=f"{view_id}_A02", attempt_revision=2)
+            second = repairer.prepare_repair(run_root, view_id=view_id, attempt_id=f"{view_id}_A02", attempt_revision=2)
+            current = json.loads((run_root / "00_manifest" / "COVERAGE_MANIFEST.json").read_text(encoding="utf-8"))
+            self.assertFalse(first["idempotent"])
+            self.assertTrue(second["idempotent"])
+            self.assertEqual(first["prompt_sha256"], second["prompt_sha256"])
+            self.assertEqual(current["prompt_set_sha256"], base_prompt_set)
+            self.assertEqual(current["coverage_contract_sha256"], coverage_contract)
+            self.assertEqual((run_root / base_prompt["prompt_path"]).read_bytes(), base_bytes)
+
+    def test_repair_prompt_and_receipt_tamper_fail_closed(self) -> None:
+        for target in ("prompt", "receipt"):
+            with self.subTest(target=target), tempfile.TemporaryDirectory() as temp:
+                run_root, manifest, view_id = self.repair_ready_run(Path(temp) / f"repair-tamper-{target}")
+                prepared = repairer.prepare_repair(run_root, view_id=view_id, attempt_id=f"{view_id}_A02", attempt_revision=2)
+                prompt_path = Path(prepared["prompt_path"])
+                receipt_path = Path(prepared["publication_path"])
+                if target == "prompt":
+                    prompt_path.write_text(prompt_path.read_text(encoding="utf-8") + "tamper\n", encoding="utf-8", newline="\n")
+                else:
+                    receipt = json.loads(receipt_path.read_text(encoding="utf-8"))
+                    receipt["repair_scope"].append("tamper")
+                    write_json(receipt_path, receipt)
+                with self.assertRaises(resolver.ContractError) as caught:
+                    resolver.load_repair_publication(
+                        run_root=run_root,
+                        manifest=manifest,
+                        publication_path=receipt_path,
+                        expected_prompt=prompt_path,
+                        view_id=view_id,
+                        attempt_id=f"{view_id}_A02",
+                        attempt_revision=2,
+                    )
+                self.assertEqual(caught.exception.code, "blocked_repair_prompt_invalid")
+
+    def test_repair_requires_exact_predecessor_revision_and_budget(self) -> None:
+        with tempfile.TemporaryDirectory() as temp:
+            base = Path(temp)
+            run_root, _, view_id = self.repair_ready_run(base / "repair-gates")
+            cases = (
+                (f"{view_id}_A03", 3, "blocked_attempt_budget"),
+                (f"{view_id}_A99", 2, "blocked_repair_prompt_invalid"),
+            )
+            for attempt_id, revision, code in cases:
+                with self.subTest(attempt_id=attempt_id, revision=revision):
+                    with self.assertRaises(validator.ContractError) as caught:
+                        repairer.prepare_repair(run_root, view_id=view_id, attempt_id=attempt_id, attempt_revision=revision)
+                    self.assertEqual(caught.exception.code, code)
+            empty_root, empty_manifest = compile_image_run(base / "repair-no-predecessor", mode="generate_and_package")
+            empty_view = empty_manifest["views"][0]["view_id"]
+            with self.assertRaises(validator.ContractError) as caught:
+                repairer.prepare_repair(empty_root, view_id=empty_view, attempt_id=f"{empty_view}_A02", attempt_revision=2)
+            self.assertEqual(caught.exception.code, "blocked_repair_prompt_invalid")
+
+    def test_repair_publication_transaction_cleans_partial_files(self) -> None:
+        with tempfile.TemporaryDirectory() as temp:
+            run_root, _, view_id = self.repair_ready_run(Path(temp) / "repair-transaction")
+            prompt_path = run_root / "00_manifest" / "repair-prompts" / view_id / f"{view_id}_A02.zh.txt"
+            receipt_path = run_root / "00_manifest" / "repair-prompts" / view_id / f"{view_id}_A02.publication.json"
+            with patch.object(repairer, "write_json_atomic", side_effect=OSError("synthetic receipt failure")):
+                with self.assertRaises(OSError):
+                    repairer.prepare_repair(run_root, view_id=view_id, attempt_id=f"{view_id}_A02", attempt_revision=2)
+            self.assertFalse(prompt_path.exists())
+            self.assertFalse(receipt_path.exists())
+
+    def test_complete_handoff_uses_accepted_repair_prompt(self) -> None:
+        with tempfile.TemporaryDirectory() as temp:
+            run_root, manifest = compile_image_run(Path(temp) / "accepted-repair-handoff", mode="generate_and_package")
+            required = [view["view_id"] for view in manifest["views"] if view["required"]]
+            repaired_view = required[0]
+            add_attempt(run_root, manifest, repaired_view, 0, decision="repair_required", attempt_revision=1)
+            repaired = add_attempt(run_root, manifest, repaired_view, 1, decision="approved", attempt_revision=2)
+            for index, view_id in enumerate(required[1:], start=4):
+                add_approved_attempt(run_root, manifest, view_id, index)
+            manifest["qa"].update(
+                {
+                    "required_view_ids": required,
+                    "approved_required_view_ids": required,
+                    "all_required_views_approved": True,
+                    "max_parallel_workers": 1,
+                    "unknown_inflight_call_count": 0,
+                    "runtime_evidence_origin": "deterministic_fixture",
+                }
+            )
+            manifest["state"] = {"current": "all_required_views_approved", "terminal_state": None}
+            write_json(run_root / "00_manifest" / "COVERAGE_MANIFEST.json", manifest)
+            finalizer.finalize(run_root, "package_ready")
+            index = json.loads((run_root / "40_handoff" / "ACCEPTED_PROMPT_INDEX.json").read_text(encoding="utf-8"))
+            accepted = next(item for item in index["accepted_prompts"] if item["view_id"] == repaired_view)
+            document = (run_root / "40_handoff" / "ACCEPTED_REGENERATION_PROMPTS.md").read_text(encoding="utf-8")
+            self.assertEqual(accepted["prompt_authority_mode"], "repair_prompt")
+            self.assertEqual(accepted["prompt_path"], repaired["prompt_path"])
+            self.assertEqual(accepted["prompt_sha256"], repaired["prompt_sha256"])
+            self.assertIn(f"【版本化修复尝试：{repaired_view} / {repaired['attempt_id']}】", document)
+
+
 class ResolverTraceTests(unittest.TestCase):
     def setUp(self) -> None:
         self.parent = "019f0000-0000-7000-8000-000000000001"
@@ -1226,8 +1605,9 @@ class ResolverTraceTests(unittest.TestCase):
             {"type": "turn_context", "payload": {"turn_id": self.turn}},
             {"type": "inter_agent_communication_metadata", "payload": {"trigger_turn": True}},
             {"type": "response_item", "payload": {"type": "agent_message", "recipient": self.agent_path, "author": "/root", "content": [{"type": "input_text", "text": header}, {"type": "encrypted_content", "encrypted_content": self.ciphertext}], "internal_chat_message_metadata_passthrough": {"turn_id": self.turn}}},
-            {"type": "response_item", "payload": {"type": "custom_tool_call", "input": call_input}},
-            {"type": "event_msg", "payload": {"type": "image_generation_end", "status": "completed", "call_id": self.call_id, "saved_path": self.saved_path}},
+            {"type": "response_item", "payload": {"type": "custom_tool_call", "call_id": self.call_id, "input": call_input}},
+            {"type": "event_msg", "payload": {"type": "image_generation_end", "status": "completed", "call_id": self.call_id, "saved_path": self.saved_path, "revised_prompt": self.prompt.decode()}},
+            {"type": "response_item", "payload": {"type": "custom_tool_call_output", "call_id": self.call_id, "output": "Script completed\n"}},
             {"type": "event_msg", "payload": {"type": "agent_message", "phase": "final_answer", "message": ""}},
             {"type": "response_item", "payload": {"type": "message", "role": "assistant", "phase": "final_answer", "content": []}},
             {"type": "event_msg", "payload": {"type": "task_complete", "turn_id": self.turn, "last_agent_message": ""}},
@@ -1246,6 +1626,32 @@ class ResolverTraceTests(unittest.TestCase):
             {"type": "event_msg", "payload": {"type": "sub_agent_activity", "kind": "completed", "occurred_at_ms": 3000, "agent_thread_id": self.thread, "agent_path": self.agent_path}},
         ]
 
+    def parent_mailbox_events(self, *, sender: str | None = None, payload_text: str = "") -> list[dict]:
+        events = self.parent_events()
+        events.pop()
+        author = sender or self.agent_path
+        header = (
+            f"Message Type: FINAL_ANSWER\nTask name: /root\nSender: {author}\nPayload:\n"
+            f"{payload_text}"
+        )
+        events.extend(
+            [
+                {"type": "inter_agent_communication_metadata", "payload": {"trigger_turn": False}},
+                {
+                    "timestamp": "2026-07-19T08:28:27.000Z",
+                    "type": "response_item",
+                    "payload": {
+                        "type": "agent_message",
+                        "author": author,
+                        "recipient": "/root",
+                        "content": [{"type": "input_text", "text": header}],
+                        "internal_chat_message_metadata_passthrough": {"turn_id": "parent-turn"},
+                    },
+                },
+            ]
+        )
+        return events
+
     def test_valid_worker_trace(self) -> None:
         evidence = resolver.validate_worker_rollout(
             events=self.worker_events(),
@@ -1258,6 +1664,85 @@ class ResolverTraceTests(unittest.TestCase):
             expected_references=self.references,
         )
         self.assertEqual(evidence["call_id"], self.call_id)
+
+    def test_exec_and_generation_call_ids_are_distinct_namespaces_but_prompt_bound(self) -> None:
+        events = self.worker_events()
+        internal_call_id = "exec-internal-image-call"
+        events[6]["payload"]["call_id"] = internal_call_id
+        events[6]["payload"]["saved_path"] = f"C:/codex/generated_images/thread/{internal_call_id}.png"
+        evidence = resolver.validate_worker_rollout(
+            events=events,
+            thread_id=self.thread,
+            agent_path=self.agent_path,
+            parent_thread_id=self.parent,
+            view_id=self.view,
+            nonce=self.nonce,
+            expected_prompt_bytes=self.prompt,
+            expected_references=self.references,
+        )
+        self.assertEqual(evidence["call_id"], internal_call_id)
+
+    def test_image_completion_prompt_mismatch_fails_closed(self) -> None:
+        events = self.worker_events()
+        events[6]["payload"]["revised_prompt"] = "Different image request\n"
+        with self.assertRaises(resolver.ContractError) as caught:
+            resolver.validate_worker_rollout(
+                events=events,
+                thread_id=self.thread,
+                agent_path=self.agent_path,
+                parent_thread_id=self.parent,
+                view_id=self.view,
+                nonce=self.nonce,
+                expected_prompt_bytes=self.prompt,
+                expected_references=self.references,
+            )
+        self.assertEqual(caught.exception.code, "blocked_worker_image_event_prompt_mismatch")
+
+    def test_hidden_image_input_argument_fails_closed(self) -> None:
+        events = self.worker_events()
+        events[5]["payload"]["input"] = (
+            "await tools.image_gen__imagegen("
+            + json.dumps(
+                {
+                    "prompt": self.prompt.decode(),
+                    "referenced_image_paths": [str(path) for path in self.references],
+                    "num_last_images_to_include": 1,
+                }
+            )
+            + ");"
+        )
+        with self.assertRaises(resolver.ContractError) as caught:
+            resolver.validate_worker_rollout(
+                events=events,
+                thread_id=self.thread,
+                agent_path=self.agent_path,
+                parent_thread_id=self.parent,
+                view_id=self.view,
+                nonce=self.nonce,
+                expected_prompt_bytes=self.prompt,
+                expected_references=self.references,
+            )
+        self.assertEqual(caught.exception.code, "blocked_worker_tool_arguments_invalid")
+
+    def test_zero_reference_anchor_rejects_conversation_image_input(self) -> None:
+        events = self.worker_events()
+        events[5]["payload"]["input"] = (
+            "await tools.image_gen__imagegen("
+            + json.dumps({"prompt": self.prompt.decode(), "num_last_images_to_include": 1})
+            + ");"
+        )
+        with self.assertRaises(resolver.ContractError) as caught:
+            resolver.validate_worker_rollout(
+                events=events,
+                thread_id=self.thread,
+                agent_path=self.agent_path,
+                parent_thread_id=self.parent,
+                view_id=self.view,
+                nonce=self.nonce,
+                expected_prompt_bytes=self.prompt,
+                expected_references=[],
+            )
+        self.assertEqual(caught.exception.code, "blocked_worker_tool_arguments_invalid")
 
     def test_valid_worker_trace_with_multiline_template_literal(self) -> None:
         events = self.worker_events()
@@ -1304,6 +1789,127 @@ class ResolverTraceTests(unittest.TestCase):
             )
         self.assertEqual(caught.exception.code, "blocked_worker_call_unparseable")
 
+    def test_valid_worker_trace_with_static_prompt_shorthand_and_raw_reference(self) -> None:
+        events = self.worker_events()
+        raw_references = ", ".join(f"String.raw`{path}`" for path in self.references)
+        events[5]["payload"]["input"] = (
+            "const prompt = `Exact prompt\\n`;\n"
+            "const result = await tools.image_gen__imagegen({\n"
+            "  prompt,\n"
+            f"  referenced_image_paths: [{raw_references}]\n"
+            "});\n"
+            "generatedImage(result);"
+        )
+        evidence = resolver.validate_worker_rollout(
+            events=events,
+            thread_id=self.thread,
+            agent_path=self.agent_path,
+            parent_thread_id=self.parent,
+            view_id=self.view,
+            nonce=self.nonce,
+            expected_prompt_bytes=self.prompt,
+            expected_references=self.references,
+        )
+        self.assertEqual(evidence["tool_prompt_sha256"], resolver.sha256_bytes(self.prompt))
+
+    def test_valid_worker_trace_with_static_raw_prompt(self) -> None:
+        events = self.worker_events()
+        raw_references = ", ".join(f"String.raw`{path}`" for path in self.references)
+        events[5]["payload"]["input"] = (
+            "await tools.image_gen__imagegen({\n"
+            "  prompt: String.raw`Exact prompt\n`,\n"
+            f"  referenced_image_paths: [{raw_references}]\n"
+            "});"
+        )
+        evidence = resolver.validate_worker_rollout(
+            events=events,
+            thread_id=self.thread,
+            agent_path=self.agent_path,
+            parent_thread_id=self.parent,
+            view_id=self.view,
+            nonce=self.nonce,
+            expected_prompt_bytes=self.prompt,
+            expected_references=self.references,
+        )
+        self.assertEqual(evidence["tool_prompt_sha256"], resolver.sha256_bytes(self.prompt))
+
+    def test_dynamic_raw_prompt_fails_closed(self) -> None:
+        events = self.worker_events()
+        references = json.dumps([str(path) for path in self.references])
+        events[5]["payload"]["input"] = (
+            "const suffix = 'prompt';\n"
+            "await tools.image_gen__imagegen({"
+            f"prompt: String.raw`Exact ${{suffix}}`, referenced_image_paths: {references}"
+            "});"
+        )
+        with self.assertRaises(resolver.ContractError) as caught:
+            resolver.validate_worker_rollout(
+                events=events,
+                thread_id=self.thread,
+                agent_path=self.agent_path,
+                parent_thread_id=self.parent,
+                view_id=self.view,
+                nonce=self.nonce,
+                expected_prompt_bytes=self.prompt,
+                expected_references=self.references,
+            )
+        self.assertEqual(caught.exception.code, "blocked_worker_call_unparseable")
+
+    def test_prompt_shorthand_mutations_fail_closed(self) -> None:
+        sources = [
+            "let prompt = `Exact prompt\\n`;",
+            "var prompt = `Exact prompt\\n`;",
+            "const prompt = `Exact prompt\\n`; prompt += `x`;",
+            "const prompt = `Exact prompt\\n`; const prompt = `Exact prompt\\n`;",
+            "const prompt = `Exact prompt\\n` + '';",
+            "const prompt = makePrompt();",
+            "const prompt = `Exact ${{suffix}}`;",
+        ]
+        for declaration in sources:
+            with self.subTest(declaration=declaration):
+                events = self.worker_events()
+                references = json.dumps([str(path) for path in self.references])
+                events[5]["payload"]["input"] = (
+                    f"{declaration}\n"
+                    "const result = await tools.image_gen__imagegen({"
+                    f"prompt, referenced_image_paths: {references}"
+                    "});"
+                )
+                with self.assertRaises(resolver.ContractError) as caught:
+                    resolver.validate_worker_rollout(
+                        events=events,
+                        thread_id=self.thread,
+                        agent_path=self.agent_path,
+                        parent_thread_id=self.parent,
+                        view_id=self.view,
+                        nonce=self.nonce,
+                        expected_prompt_bytes=self.prompt,
+                        expected_references=self.references,
+                    )
+                self.assertEqual(caught.exception.code, "blocked_worker_call_unparseable")
+
+    def test_dynamic_raw_reference_fails_closed(self) -> None:
+        events = self.worker_events()
+        events[5]["payload"]["input"] = (
+            "const prompt = `Exact prompt\\n`;\n"
+            "const suffix = 'ref-1.png';\n"
+            "const result = await tools.image_gen__imagegen({"
+            "prompt, referenced_image_paths: [String.raw`run/${suffix}`]"
+            "});"
+        )
+        with self.assertRaises(resolver.ContractError) as caught:
+            resolver.validate_worker_rollout(
+                events=events,
+                thread_id=self.thread,
+                agent_path=self.agent_path,
+                parent_thread_id=self.parent,
+                view_id=self.view,
+                nonce=self.nonce,
+                expected_prompt_bytes=self.prompt,
+                expected_references=self.references,
+            )
+        self.assertEqual(caught.exception.code, "blocked_worker_call_unparseable")
+
     def test_two_calls_fail(self) -> None:
         events = self.worker_events()
         events.insert(6, deepcopy(events[5]))
@@ -1318,9 +1924,48 @@ class ResolverTraceTests(unittest.TestCase):
             resolver.validate_worker_rollout(events=events, thread_id=self.thread, agent_path=self.agent_path, parent_thread_id=self.parent, view_id=self.view, nonce=self.nonce, expected_prompt_bytes=self.prompt, expected_references=self.references)
         self.assertEqual(caught.exception.code, "blocked_worker_tool_violation")
 
+    def test_safe_same_cell_wait_continuation_passes(self) -> None:
+        events = self.worker_events()
+        image_call_id = "exec-call"
+        events[5]["payload"]["call_id"] = image_call_id
+        events[7]["payload"] = {"type": "custom_tool_call_output", "call_id": image_call_id, "output": "Script running with cell ID 1\nWall time 120.0 seconds\nOutput:\n"}
+        events.insert(8, {"type": "response_item", "payload": {"type": "function_call", "name": "wait", "arguments": json.dumps({"cell_id": "1", "yield_time_ms": 120000, "max_tokens": 1000}), "call_id": "wait-call"}})
+        events.insert(9, {"type": "response_item", "payload": {"type": "function_call_output", "call_id": "wait-call", "output": "Script completed\nWall time 0.0 seconds\nOutput:\n"}})
+        evidence = resolver.validate_worker_rollout(events=events, thread_id=self.thread, agent_path=self.agent_path, parent_thread_id=self.parent, view_id=self.view, nonce=self.nonce, expected_prompt_bytes=self.prompt, expected_references=self.references)
+        self.assertEqual(evidence["call_id"], self.call_id)
+
+    def test_unsafe_wait_continuations_fail_closed(self) -> None:
+        mutations = [
+            {"cell_id": "2", "yield_time_ms": 120000, "max_tokens": 1000},
+            {"cell_id": "1", "yield_time_ms": 120000, "max_tokens": 1000, "terminate": True},
+            {"cell_id": "1", "yield_time_ms": 120001, "max_tokens": 1000},
+            {"cell_id": "1", "yield_time_ms": 120000, "max_tokens": 10001},
+            {"cell_id": "1", "yield_time_ms": 120000, "max_tokens": 1000, "extra": "no"},
+        ]
+        for arguments in mutations:
+            with self.subTest(arguments=arguments):
+                events = self.worker_events()
+                image_call_id = "exec-call"
+                events[5]["payload"]["call_id"] = image_call_id
+                events[7]["payload"] = {"type": "custom_tool_call_output", "call_id": image_call_id, "output": "Script running with cell ID 1\n"}
+                events.insert(8, {"type": "response_item", "payload": {"type": "function_call", "name": "wait", "arguments": json.dumps(arguments), "call_id": "wait-call"}})
+                events.insert(9, {"type": "response_item", "payload": {"type": "function_call_output", "call_id": "wait-call", "output": "Script completed\n"}})
+                with self.assertRaises(resolver.ContractError) as caught:
+                    resolver.validate_worker_rollout(events=events, thread_id=self.thread, agent_path=self.agent_path, parent_thread_id=self.parent, view_id=self.view, nonce=self.nonce, expected_prompt_bytes=self.prompt, expected_references=self.references)
+                self.assertEqual(caught.exception.code, "blocked_worker_tool_violation")
+
     def test_prompt_mismatch_fails(self) -> None:
         with self.assertRaises(resolver.ContractError) as caught:
             resolver.validate_worker_rollout(events=self.worker_events(), thread_id=self.thread, agent_path=self.agent_path, parent_thread_id=self.parent, view_id=self.view, nonce=self.nonce, expected_prompt_bytes=b"Other\n", expected_references=self.references)
+        self.assertEqual(caught.exception.code, "blocked_worker_prompt_mismatch")
+
+    def test_missing_terminal_lf_prompt_fails_exact_binding(self) -> None:
+        events = self.worker_events()
+        transported = self.prompt.decode("utf-8").removesuffix("\n")
+        events[5]["payload"]["input"] = "const r = await tools.image_gen__imagegen(" + json.dumps({"prompt": transported, "referenced_image_paths": [str(path) for path in self.references]}) + ");"
+        events[6]["payload"]["revised_prompt"] = transported
+        with self.assertRaises(resolver.ContractError) as caught:
+            resolver.validate_worker_rollout(events=events, thread_id=self.thread, agent_path=self.agent_path, parent_thread_id=self.parent, view_id=self.view, nonce=self.nonce, expected_prompt_bytes=self.prompt, expected_references=self.references)
         self.assertEqual(caught.exception.code, "blocked_worker_prompt_mismatch")
 
     def test_reference_order_mismatch_fails(self) -> None:
@@ -1330,7 +1975,7 @@ class ResolverTraceTests(unittest.TestCase):
 
     def test_nonempty_final_fails(self) -> None:
         events = self.worker_events()
-        events[7]["payload"]["message"] = "done"
+        events[8]["payload"]["message"] = "done"
         with self.assertRaises(resolver.ContractError) as caught:
             resolver.validate_worker_rollout(events=events, thread_id=self.thread, agent_path=self.agent_path, parent_thread_id=self.parent, view_id=self.view, nonce=self.nonce, expected_prompt_bytes=self.prompt, expected_references=self.references)
         self.assertEqual(caught.exception.code, "blocked_worker_nonempty_final")
@@ -1347,6 +1992,38 @@ class ResolverTraceTests(unittest.TestCase):
             not_before_ms=1000,
         )
         self.assertEqual(result["binding_mode"], "parent_spawn_cipher_chain_v1")
+
+    def test_valid_parent_spawn_chain_with_empty_mailbox_completion(self) -> None:
+        result = resolver.validate_parent_spawn_chain(
+            events=self.parent_mailbox_events(),
+            parent_thread_id=self.parent,
+            worker_thread_id=self.thread,
+            agent_path=self.agent_path,
+            view_id=self.view,
+            nonce=self.nonce,
+            ciphertext=self.ciphertext,
+            not_before_ms=1000,
+        )
+        self.assertEqual(result["parent_completion_mode"], "empty_final_mailbox_receipt")
+
+    def test_spoofed_or_nonempty_parent_mailbox_completion_fails_closed(self) -> None:
+        for events in (
+            self.parent_mailbox_events(sender="/root/not-the-worker"),
+            self.parent_mailbox_events(payload_text="done"),
+        ):
+            with self.subTest(events=events[-1]["payload"]):
+                with self.assertRaises(resolver.ContractError) as caught:
+                    resolver.validate_parent_spawn_chain(
+                        events=events,
+                        parent_thread_id=self.parent,
+                        worker_thread_id=self.thread,
+                        agent_path=self.agent_path,
+                        view_id=self.view,
+                        nonce=self.nonce,
+                        ciphertext=self.ciphertext,
+                        not_before_ms=1000,
+                    )
+                self.assertEqual(caught.exception.code, "blocked_worker_spawn_chain_mismatch")
 
     def test_parent_fork_context_fails(self) -> None:
         with self.assertRaises(resolver.ContractError) as caught:

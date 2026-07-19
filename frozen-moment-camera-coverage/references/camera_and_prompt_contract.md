@@ -84,7 +84,7 @@ Compile every view into an independently usable prompt in this order:
 2. list ordered references and exact role scopes;
 3. freeze identity, body, pose, head, expression, gaze, wardrobe, asymmetry, contacts, and props;
 4. freeze scene topology, temporal state, and world-space lights;
-5. state the family and target camera tuple;
+5. state the complete family and target camera tuple, including projection, focal range/policy, aperture intent, orbit radius/elevation, subject-scale policy, framing, crop, and the source-equivalent framing lock rather than silently dropping frozen family fields;
 6. state expected occlusion, reveal, and common anchors;
 7. state evidence status of hidden regions and the uncertainty policy;
 8. state optics, focus, depth, palette, texture, and grain intent;

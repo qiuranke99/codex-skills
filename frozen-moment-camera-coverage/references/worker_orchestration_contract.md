@@ -29,9 +29,11 @@ The complete nonce must appear in the observable task name. Never guess a worker
 Give the worker only:
 
 - exact view and attempt IDs;
-- exact frozen prompt text and prompt path/hash;
+- exact frozen prompt bytes and prompt path/hash, including the compiler's terminal LF;
 - exact ordered run-scoped reference paths and manifest/hash;
 - instruction to call built-in image generation once and end with no text.
+
+The image-generation argument object is exact: `prompt` plus `referenced_image_paths` for a nonempty frozen bundle, or `prompt` alone for a zero-reference anchor. `num_last_images_to_include` and every unlisted property are forbidden. On Windows, serialize reference paths with forward slashes or a static `String.raw` literal. Never place a backslash path such as `\10_runtime` in a plain JavaScript template/string: escape interpretation can abort the wrapper before generation, and the worker has no retry authority. The main agent must validate transport serialization before spawn.
 
 Do not give it alternative prompts, creative options, source interpretation tasks, QA rubrics, repair authority, or publishing work.
 
@@ -47,24 +49,29 @@ The worker must not:
 - inspect, approve, reject, repair, or publish;
 - emit a textual final response.
 
+One narrow runtime continuation is allowed after the single generation call yields: `wait` may target only the exact cell ID named by that call's running receipt, must be non-terminating, must stay within the frozen duration/output bounds, and must have one matching output. No other function call, different cell, termination, more than five continuations, or second image call is valid.
+
 ## Exact binding
 
 Resolve one worker using the current Codex state database and exact canonical agent path. Bind:
 
-- parent thread, worker thread, worker turn, spawn call, and encrypted task delivery;
+- parent thread, worker thread, worker turn, spawn call, encrypted task delivery, and exactly one completion receipt;
 - full nonce, view ID, attempt ID, and attempt revision;
-- exactly one image-generation call and completion event;
+- exactly one outer image-exec call, one matching wrapper output, and one inner image-generation completion event;
 - exact prompt bytes and ordered reference paths;
-- returned call ID and the path derived from worker thread plus call ID;
+- exact frozen prompt repeated by the inner completion event;
+- the inner generation call ID and the path derived from worker thread plus that call ID;
 - copied run image bytes, dimensions, format, and SHA-256.
 
-Reject wrong parent, wrong worker, ambiguous thread, nonce reuse, call reuse, prompt/reference drift, non-empty worker final, missing completion, a newest-file guess, or a saved path that does not equal the thread/call-derived path.
+The outer `exec` call ID and inner generation-event call ID are different runtime namespaces and must not be equated. Bind them by exclusive containment and ordering: one outer wrapper, no second image call, an exact revised-prompt match, one inner completion, its thread-derived saved path, and the matching wrapper or bounded-wait receipts. Reject wrong parent, wrong worker, ambiguous thread, nonce reuse, call reuse, prompt/reference drift, hidden image inputs, non-empty worker final, missing completion, a newest-file guess, or a saved path that does not equal the thread/inner-call-derived path.
 
-Use `prompt_binding_mode: exact_bytes`. Do not add transport-normalization exceptions without new live evidence and dedicated negative tests.
+The completion receipt may be either one matching `sub_agent_activity` completion event or the current runtime's one empty `FINAL_ANSWER` mailbox receipt. The mailbox form must immediately follow `inter_agent_communication_metadata` with `trigger_turn: false`, use the exact worker path as sender, use the exact parent path as recipient, carry the spawn turn ID, and contain no payload text. If both forms appear, or either is ambiguous, reject the chain.
+
+Use `prompt_binding_mode: exact_bytes`. Prompt dispatch must preserve the compiler's terminal LF; use an out-of-band sentinel or place a static template literal's closing delimiter on the following line. Do not describe the prompt as ending at its final punctuation, because that strips the LF. Do not add transport-normalization exceptions without new live evidence and dedicated negative tests.
 
 ## Reference freezing
 
-Copy one to five ordered original-source references into each attempt directory. The first text-generated V00 instead uses the explicit zero-reference bundle and omits the image tool's reference parameter. Reject symlinks, path escape, nested or unlisted files, duplicate aliases, duplicate frozen paths, changed bytes, wrong first authority, every generated view-bridge role, and every non-null bridge-origin field.
+Copy one to five ordered original-source references into each attempt directory only after the current run has compiled. Bind the attempt bundle to the current compiled manifest's source-evidence, Moment-Canon, and reference-plan digests; never reuse those digest values from another run. The first text-generated V00 instead uses the explicit zero-reference bundle and omits the image tool's reference parameter. Reject symlinks, path escape, nested or unlisted files, duplicate aliases, duplicate frozen paths, changed bytes, wrong first authority, every generated view-bridge role, and every non-null bridge-origin field.
 
 Record source evidence, Moment Canon, reference plan, per-file, and ordered-bundle hashes. A generated output cannot replace or supplement the original moment anchor in v1.
 
@@ -87,5 +94,9 @@ Worker success means only that one bound call returned an image. It never means 
 ## Repair and invalidation
 
 Record root cause, preserved invariants, mutable repair fields, new prompt/reference hashes, and the superseded attempt. Repairs must use a fresh worker, nonce, call, and inspection.
+
+Create repairs only with `scripts/prepare_repair_prompt.py`. It writes the fixed attempt-scoped paths `00_manifest/repair-prompts/<view>/<attempt>.zh.txt` and `.publication.json` transactionally. The receipt binds the immediately preceding failed attempt, image and inspection, base and parent prompts, failure codes, repair scope, Canon, camera, reference plan, coverage contract, and publication checkpoint. It may not reuse any historical prompt hash, skip a revision, exceed the frozen budget, follow an approved attempt, or mutate `manifest.prompts`, `prompt_set_sha256`, `coverage_contract_sha256`, or the base publication.
+
+The worker resolver, decision recorder, state/stage/delivery validator, and resolution snapshot all replay the repair receipt. A retry without this authority fails closed.
 
 Do not overwrite rejected or superseded attempts. Keep them under the run evidence tree with reasons.

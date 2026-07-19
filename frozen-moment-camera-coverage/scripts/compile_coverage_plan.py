@@ -746,6 +746,12 @@ def compile_prompt(
     lighting = "；".join(str(item) for item in moment.get("lighting", [])) or "光源固定于世界空间"
     look = "；".join(str(item) for item in moment.get("look", [])) or "保持已声明视觉质感"
     visibility = json.dumps(view.get("visibility", {}), ensure_ascii=False, separators=(",", ":"))
+    focal_range = family.get("focal_length_equiv_mm")
+    focal_range_text = (
+        "unknown_policy_bound"
+        if focal_range is None
+        else f"{focal_range[0]:g}-{focal_range[1]:g}mm_equiv"
+    )
     lines = [
         f"任务：{context['task_definition']}",
         f"参考图顺序与职责：{references}。各参考只影响其声明范围，原始 moment_anchor 始终拥有最高权威。",
@@ -756,8 +762,16 @@ def compile_prompt(
             f"azimuth={view['azimuth_deg']:g}°；elevation={view['elevation_deg']:g}°；"
             f"radius_ratio={family['orbit_radius_ratio']:g}；roll={family['roll_deg']:g}°；"
             f"look_at={family['look_at_target']}；focus={family['focus_target']}；"
-            f"focal_policy={family['focal_policy']}；shot_scale={family['shot_scale']}；"
-            f"framing={family['framing_policy']}；crop={family['crop_policy']}。"
+            f"projection={family['projection']}；focal_policy={family['focal_policy']}；"
+            f"focal_range={focal_range_text}；aperture_intent={family.get('aperture_intent', 'match_source_depth_character')}；"
+            f"shot_scale={family['shot_scale']}；framing={family['framing_policy']}；crop={family['crop_policy']}；"
+            f"subject_scale_policy={family['subject_scale_policy']}。"
+        ),
+        (
+            "机距、尺度与取景硬锁：orbit radius、camera height/elevation、focal compression、subject pixel proportion、"
+            "negative-space level、framing 与 crop 均为同一摄影机族的不变量。若目标视角与来源机位等价，必须逐项匹配"
+            "来源中的主体像素比例、门洞比例、相机高度、负空间和裁切；其他方位也只能由同半径同焦段的自然透视得到，"
+            "不得通过后退、前移、变焦、扩画或裁切替代目标机位。"
         ),
         f"遮挡与揭示：{visibility}。只接受由该机位自然造成的遮挡、显露、透视和视角相关材质变化。",
         f"未见区域：uncertainty_policy={uncertainty_policy}；任何未由来源直接支持的新显露区域必须标记 inferred 或 unknown，不得写成真实恢复。",

@@ -16,6 +16,7 @@ from typing import Any
 
 from PIL import Image, UnidentifiedImageError
 
+import inspection_runtime
 import resolve_worker_image as worker_resolver
 
 
@@ -565,6 +566,43 @@ def validate_inspection(
     decision = inspection.get("decision")
     if decision not in {"approved", "rejected", "repair_required"} or attempt.get("decision") != decision:
         raise ContractError("inspection_invalid", "inspection and attempt decisions are invalid or inconsistent")
+    runtime_receipt_path = resolve_artifact(
+        root,
+        attempt.get("inspection_runtime_receipt_path"),
+        "inspection_runtime_receipt_missing",
+    )
+    runtime_receipt = read_json(runtime_receipt_path, "inspection_runtime_receipt_invalid")
+    if sha256_file(runtime_receipt_path) != attempt.get("inspection_runtime_receipt_sha256"):
+        raise ContractError("inspection_runtime_receipt_mismatch", "pixel-open receipt hash mismatch")
+    for field, expected in (
+        ("schema_version", "frozen_moment_pixel_open_receipt.v1"),
+        ("run_id", manifest["job"]["job_id"]),
+        ("view_id", view["view_id"]),
+        ("attempt_id", attempt["attempt_id"]),
+        ("inspector_thread_id", inspection.get("inspector_task_id")),
+        ("image_sha256", image_sha),
+        ("inspected_at_utc", inspection.get("inspected_at_utc")),
+    ):
+        if runtime_receipt.get(field) != expected:
+            raise ContractError("inspection_runtime_receipt_mismatch", f"pixel-open receipt {field} differs")
+    runtime_slice_path = resolve_artifact(
+        root,
+        runtime_receipt.get("rollout_slice_path"),
+        "inspection_runtime_receipt_missing",
+    )
+    try:
+        inspection_runtime.replay_receipt(
+            root=root,
+            receipt=runtime_receipt,
+            slice_events=worker_resolver.read_rollout(runtime_slice_path),
+            inspector_thread_id=str(inspection.get("inspector_task_id", "")),
+            image_path=image_path,
+            image_sha256=image_sha,
+            inspected_at_utc=str(inspection.get("inspected_at_utc", "")),
+        )
+    except (inspection_runtime.InspectionRuntimeError, worker_resolver.ContractError) as exc:
+        code = getattr(exc, "code", "inspection_runtime_receipt_invalid")
+        raise ContractError(code, str(exc)) from exc
     checks = inspection.get("hard_checks")
     if not isinstance(checks, list):
         raise ContractError("inspection_invalid", "hard_checks must be a list")
@@ -599,6 +637,7 @@ def validate_attempts(root: Path, manifest: dict[str, Any], context: dict[str, A
     seen_images: set[str] = set()
     approved_by_view: dict[str, str] = {}
     attempts_by_view: dict[str, list[dict[str, Any]]] = {view_id: [] for view_id in view_by_id}
+    revisions_by_view: dict[str, list[int]] = {view_id: [] for view_id in view_by_id}
     queue_records: list[dict[str, Any]] = []
     queue_parent_thread: str | None = None
     for attempt in attempts:
@@ -611,14 +650,22 @@ def validate_attempts(root: Path, manifest: dict[str, Any], context: dict[str, A
         if attempt_id in seen_attempts:
             raise ContractError("attempt_ledger_invalid", f"attempt ID reused: {attempt_id}")
         seen_attempts.add(attempt_id)
+        revision = attempt.get("attempt_revision")
+        maximum = manifest["job"]["max_attempts_per_view"]
+        if (
+            not isinstance(revision, int)
+            or isinstance(revision, bool)
+            or not 1 <= revision <= maximum
+            or revision != len(revisions_by_view[view_id]) + 1
+        ):
+            raise ContractError("attempt_ledger_invalid", f"bound attempt revisions must be contiguous from one: {attempt_id}")
+        revisions_by_view[view_id].append(revision)
         attempts_by_view[view_id].append(attempt)
         if len(attempts_by_view[view_id]) > manifest["job"]["max_attempts_per_view"]:
             raise ContractError("blocked_attempt_budget", f"attempt budget exceeded for {view_id}")
         prompt_path = resolve_artifact(root, attempt.get("prompt_path"), "attempt_ledger_invalid")
         if not prompt_path.is_file() or sha256_file(prompt_path) != attempt.get("prompt_sha256"):
             raise ContractError("attempt_prompt_mismatch", f"attempt prompt changed: {attempt_id}")
-        if attempt.get("prompt_sha256") != prompt_by_view[view_id]["prompt_sha256"]:
-            raise ContractError("attempt_prompt_mismatch", f"attempt uses a non-frozen view prompt: {attempt_id}")
         reference_path = resolve_artifact(root, attempt.get("reference_manifest_path"), "worker_result_lineage_mismatch")
         if not reference_path.is_file() or sha256_file(reference_path) != attempt.get("reference_manifest_sha256"):
             raise ContractError("worker_result_lineage_mismatch", f"attempt reference manifest is missing or changed: {attempt_id}")
@@ -640,6 +687,54 @@ def validate_attempts(root: Path, manifest: dict[str, Any], context: dict[str, A
             raise ContractError("worker_result_hash_mismatch", f"worker result changed: {attempt_id}")
         if worker.get("schema_version") != "frozen_moment_view_worker_result.v1" or worker.get("ok") is not True:
             raise ContractError("worker_result_invalid", f"worker result schema/status invalid: {attempt_id}")
+        prior_bound = attempts_by_view[view_id][:-1]
+        authority_mode = attempt.get("prompt_authority_mode", "base_prompt")
+        worker_authority_mode = worker.get("prompt_authority_mode", "base_prompt")
+        repair_authority: dict[str, Any] | None = None
+        if prior_bound:
+            if authority_mode != "repair_prompt" or worker_authority_mode != "repair_prompt":
+                raise ContractError("blocked_repair_prompt_required", f"bound retry lacks versioned repair authority: {attempt_id}")
+            repair_path = resolve_artifact(
+                root, attempt.get("repair_publication_path"), "blocked_repair_prompt_invalid"
+            )
+            if (
+                sha256_file(repair_path) != attempt.get("repair_publication_sha256")
+                or Path(str(worker.get("repair_publication_path", ""))).resolve() != repair_path
+                or worker.get("repair_publication_sha256") != attempt.get("repair_publication_sha256")
+            ):
+                raise ContractError("blocked_repair_prompt_invalid", f"repair publication lineage differs: {attempt_id}")
+            try:
+                repair_authority = worker_resolver.load_repair_publication(
+                    run_root=root,
+                    manifest=manifest,
+                    publication_path=repair_path,
+                    expected_prompt=prompt_path,
+                    view_id=view_id,
+                    attempt_id=attempt_id,
+                    attempt_revision=revision,
+                )
+            except worker_resolver.ContractError as exc:
+                raise ContractError("blocked_repair_prompt_invalid", f"repair publication failed: {exc.code}: {exc.detail}") from exc
+            if (
+                repair_authority["prompt_sha256"] != attempt.get("prompt_sha256")
+                or repair_authority["publication_sha256"] != attempt.get("repair_publication_sha256")
+                or not isinstance(worker.get("not_before_ms"), int)
+                or isinstance(worker.get("not_before_ms"), bool)
+                or worker["not_before_ms"] < repair_authority["published_at_unix_ms"]
+            ):
+                raise ContractError("blocked_repair_prompt_invalid", f"repair prompt or publication checkpoint differs: {attempt_id}")
+        else:
+            if authority_mode != "base_prompt" or worker_authority_mode != "base_prompt":
+                raise ContractError("attempt_prompt_mismatch", f"first bound attempt must use base prompt authority: {attempt_id}")
+            if (
+                attempt.get("prompt_path") != prompt_by_view[view_id]["prompt_path"]
+                or attempt.get("prompt_sha256") != prompt_by_view[view_id]["prompt_sha256"]
+                or attempt.get("repair_publication_path") is not None
+                or attempt.get("repair_publication_sha256") is not None
+                or worker.get("repair_publication_path") is not None
+                or worker.get("repair_publication_sha256") is not None
+            ):
+                raise ContractError("attempt_prompt_mismatch", f"base attempt prompt authority differs: {attempt_id}")
         for field, expected in (
             ("run_id", manifest["job"]["job_id"]),
             ("view_id", view_id),
@@ -720,6 +815,42 @@ def validate_attempts(root: Path, manifest: dict[str, Any], context: dict[str, A
         ):
             raise ContractError("worker_result_lineage_mismatch", f"worker, parent, or coverage snapshot evidence is unavailable: {attempt_id}")
         coverage_at_resolution = read_json(coverage_snapshot, "worker_result_lineage_mismatch")
+        snapshot_prior = [
+            item for item in coverage_at_resolution.get("attempts", [])
+            if isinstance(item, dict) and item.get("view_id") == view_id
+            and isinstance(item.get("attempt_revision"), int) and item["attempt_revision"] < revision
+        ]
+        snapshot_current_or_later = [
+            item for item in coverage_at_resolution.get("attempts", [])
+            if isinstance(item, dict) and item.get("view_id") == view_id
+            and isinstance(item.get("attempt_revision"), int) and item["attempt_revision"] >= revision
+        ]
+        if canonical_json(snapshot_prior) != canonical_json(prior_bound) or snapshot_current_or_later:
+            raise ContractError(
+                "worker_result_lineage_mismatch",
+                f"coverage snapshot does not contain the exact predecessor ledger: {attempt_id}",
+            )
+        if repair_authority is not None:
+            repair_snapshot_path = resolve_artifact(
+                root, attempt.get("repair_publication_path"), "blocked_repair_prompt_invalid"
+            )
+            try:
+                snapshot_repair_authority = worker_resolver.load_repair_publication(
+                    run_root=root,
+                    manifest=coverage_at_resolution,
+                    publication_path=repair_snapshot_path,
+                    expected_prompt=prompt_path,
+                    view_id=view_id,
+                    attempt_id=attempt_id,
+                    attempt_revision=revision,
+                )
+            except worker_resolver.ContractError as exc:
+                raise ContractError(
+                    "worker_result_lineage_mismatch",
+                    f"coverage snapshot cannot replay repair authority: {exc.code}: {exc.detail}",
+                ) from exc
+            if snapshot_repair_authority["publication_sha256"] != repair_authority["publication_sha256"]:
+                raise ContractError("worker_result_lineage_mismatch", f"snapshot repair receipt differs: {attempt_id}")
         try:
             snapshot_contract = {
                 key: coverage_at_resolution[key]
@@ -743,7 +874,7 @@ def validate_attempts(root: Path, manifest: dict[str, Any], context: dict[str, A
             or coverage_at_resolution.get("coverage_contract_sha256") != sha256_bytes(canonical_json(snapshot_contract))
             or coverage_at_resolution.get("coverage_contract_sha256") != manifest["coverage_contract_sha256"]
             or not isinstance(snapshot_prompt, dict)
-            or snapshot_prompt.get("prompt_sha256") != attempt["prompt_sha256"]
+            or snapshot_prompt.get("prompt_sha256") != prompt_by_view[view_id]["prompt_sha256"]
         ):
             raise ContractError("worker_result_lineage_mismatch", f"coverage snapshot differs from the frozen contract: {attempt_id}")
         try:
@@ -781,6 +912,7 @@ def validate_attempts(root: Path, manifest: dict[str, Any], context: dict[str, A
             ("parent_spawn_activity_ms", parent_trace["parent_spawn_activity_ms"]),
             ("parent_completion_event_index", parent_trace["parent_completion_event_index"]),
             ("parent_completion_activity_ms", parent_trace["parent_completion_activity_ms"]),
+            ("parent_completion_mode", parent_trace["parent_completion_mode"]),
             ("parent_spawn_chain_sha256", parent_trace["parent_spawn_chain_sha256"]),
         ):
             if worker.get(field) != expected:
@@ -986,6 +1118,104 @@ def validate_prompt_only(root: Path, manifest: dict[str, Any], context: dict[str
     return {"terminal_state": "prompt_package_ready", "approved_required_view_ids": []}
 
 
+def accepted_prompt_handoff_payload(
+    root: Path,
+    manifest: dict[str, Any],
+    approved_view_ids: list[str],
+    terminal: str,
+) -> tuple[dict[str, Any], str]:
+    accepted: list[dict[str, Any]] = []
+    document: list[str] = [
+        f"# Accepted Frozen Moment Regeneration Prompts — {manifest['job']['job_id']}",
+        "",
+        f"- Terminal: `{terminal}`",
+        f"- Base prompt set SHA-256: `{manifest['prompt_set_sha256']}`",
+        f"- Coverage contract SHA-256: `{manifest['coverage_contract_sha256']}`",
+        "",
+    ]
+    for view_id in approved_view_ids:
+        attempts = [
+            item for item in manifest.get("attempts", [])
+            if item.get("view_id") == view_id and item.get("decision") == "approved"
+        ]
+        if len(attempts) != 1:
+            raise ContractError("accepted_prompt_handoff_invalid", f"accepted view lacks one approved attempt: {view_id}")
+        attempt = attempts[0]
+        prompt_path = resolve_artifact(root, attempt.get("prompt_path"), "accepted_prompt_handoff_invalid")
+        if not prompt_path.is_file() or sha256_file(prompt_path) != attempt.get("prompt_sha256"):
+            raise ContractError("accepted_prompt_handoff_invalid", f"accepted prompt changed: {view_id}")
+        authority_mode = attempt.get("prompt_authority_mode", "base_prompt")
+        repair_path = attempt.get("repair_publication_path")
+        repair_sha = attempt.get("repair_publication_sha256")
+        if authority_mode == "repair_prompt":
+            resolved_repair = resolve_artifact(root, repair_path, "accepted_prompt_handoff_invalid")
+            if not resolved_repair.is_file() or sha256_file(resolved_repair) != repair_sha:
+                raise ContractError("accepted_prompt_handoff_invalid", f"accepted repair receipt changed: {view_id}")
+        elif authority_mode != "base_prompt" or repair_path is not None or repair_sha is not None:
+            raise ContractError("accepted_prompt_handoff_invalid", f"accepted prompt authority is invalid: {view_id}")
+        record = {
+            "view_id": view_id,
+            "attempt_id": attempt["attempt_id"],
+            "attempt_revision": attempt["attempt_revision"],
+            "prompt_authority_mode": authority_mode,
+            "prompt_path": attempt["prompt_path"],
+            "prompt_sha256": attempt["prompt_sha256"],
+            "repair_publication_path": repair_path,
+            "repair_publication_sha256": repair_sha,
+            "image_path": attempt["image_path"],
+            "image_sha256": attempt["image_sha256"],
+            "inspection_path": attempt["inspection_path"],
+            "inspection_sha256": attempt["inspection_sha256"],
+        }
+        accepted.append(record)
+        document.extend(
+            [
+                f"## {view_id} — {attempt['attempt_id']}",
+                "",
+                f"- Prompt authority: `{authority_mode}`",
+                f"- Prompt SHA-256: `{attempt['prompt_sha256']}`",
+                f"- Image SHA-256: `{attempt['image_sha256']}`",
+                "",
+                prompt_path.read_text(encoding="utf-8").rstrip(),
+                "",
+            ]
+        )
+    document_text = "\n".join(document).rstrip() + "\n"
+    index = {
+        "schema_version": "frozen_moment_accepted_prompt_handoff.v1",
+        "job_id": manifest["job"]["job_id"],
+        "terminal": terminal,
+        "coverage_completeness": "full_required_set" if terminal == "package_ready" else "partial_required_set",
+        "base_prompt_set_sha256": manifest["prompt_set_sha256"],
+        "coverage_contract_sha256": manifest["coverage_contract_sha256"],
+        "approved_view_ids": approved_view_ids,
+        "accepted_prompts": accepted,
+        "prompt_document_path": "40_handoff/ACCEPTED_REGENERATION_PROMPTS.md",
+        "prompt_document_sha256": sha256_bytes(document_text.encode("utf-8")),
+    }
+    return index, document_text
+
+
+def validate_accepted_prompt_handoff(
+    root: Path,
+    manifest: dict[str, Any],
+    approved_view_ids: list[str],
+    terminal: str,
+) -> None:
+    index, expected_document = accepted_prompt_handoff_payload(root, manifest, approved_view_ids, terminal)
+    index_path = root / "40_handoff" / "ACCEPTED_PROMPT_INDEX.json"
+    actual = read_json(index_path, "accepted_prompt_handoff_invalid")
+    if actual != index:
+        raise ContractError("accepted_prompt_handoff_invalid", "accepted prompt index differs from approved attempt evidence")
+    document_path = resolve_artifact(root, actual.get("prompt_document_path"), "accepted_prompt_handoff_invalid")
+    if (
+        not document_path.is_file()
+        or document_path.read_bytes() != expected_document.encode("utf-8")
+        or sha256_file(document_path) != actual.get("prompt_document_sha256")
+    ):
+        raise ContractError("accepted_prompt_handoff_invalid", "accepted regeneration prompt document differs")
+
+
 def validate_generated(root: Path, manifest: dict[str, Any], context: dict[str, Any], mode: str, through_view: str | None) -> dict[str, Any]:
     attempt_evidence = validate_attempts(root, manifest, context)
     required = context["required_ids"]
@@ -1040,7 +1270,9 @@ def validate_generated(root: Path, manifest: dict[str, Any], context: dict[str, 
         if current == "blocked_attempt_budget":
             exhausted = [
                 view_id for view_id in required
-                if view_id not in approved and len(attempt_evidence["attempts_by_view"][view_id]) >= manifest["job"]["max_attempts_per_view"]
+                if view_id not in approved
+                and len(attempt_evidence["attempts_by_view"][view_id])
+                >= manifest["job"]["max_attempts_per_view"]
             ]
             if not exhausted:
                 raise ContractError("state_transition_invalid", "blocked_attempt_budget requires an exhausted required view")
@@ -1074,6 +1306,7 @@ def validate_generated(root: Path, manifest: dict[str, Any], context: dict[str, 
             raise ContractError("partial_state_invalid", "partial handoff lacks blocker reasons for remaining views")
     else:
         raise ContractError("delivery_terminal_invalid", "generated delivery must end at package_ready or partial_handoff_ready")
+    validate_accepted_prompt_handoff(root, manifest, approved, terminal)
     return {"terminal_state": terminal, "approved_required_view_ids": approved, "all_required_views_approved": all_approved}
 
 

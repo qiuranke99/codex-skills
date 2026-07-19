@@ -132,24 +132,38 @@ For each attempt:
 
 1. Capture a time checkpoint and create a fresh 32-hex nonce.
 2. Spawn one fresh `fork_turns="none"` worker named `frozen_coverage_image_<view-id-lower>_<nonce>`.
-3. Give it exactly one frozen prompt, one view/attempt ID, and the ordered run-scoped references.
+3. Freeze the attempt reference bundle only after compilation, taking `source_evidence_sha256`, `moment_canon_sha256`, and `reference_plan_sha256` from that current run's manifest. Never carry these digests across runs. Give the worker exactly one frozen prompt, including the compiler's terminal LF byte, one view/attempt ID, and the ordered run-scoped references. Show prompt boundaries with an out-of-band sentinel or a code literal whose closing delimiter is on the line after the final prompt sentence; prose such as “ends at the final period” drops the LF and invalidates exact binding. On Windows, serialize every reference path with forward slashes or a static `String.raw` literal; a plain JavaScript template/string containing backslashes such as `\10_runtime` can fail before generation and invalidates that worker.
 4. Require exactly one built-in image-generation call and an empty final response.
 5. Wait for that worker to finish before starting another.
 6. Bind its exact thread, call, prompt, references, and returned image with `scripts/resolve_worker_image.py`; preserve immutable parent-rollout and coverage-manifest snapshots in the attempt directory.
 
 The worker must not interpret evidence, choose or modify a view, change the prompt, retry, inspect, approve, repair, publish, or delegate.
 
+If the single image call yields because it exceeds one execution window, the worker may only issue bounded, non-terminating `wait` continuations for that exact yielded cell. This is continuation of the same call, not authority for another generation or any other tool. The resolver verifies the yielded-cell receipt, cell ID, argument bounds, matching outputs, ordering, and maximum continuation count.
+
+The image call uses an exact argument allowlist: `prompt` plus `referenced_image_paths` only when the frozen bundle is nonempty. Conversation-history image inputs and every undeclared argument are forbidden. Validate transport serialization before spawning; the worker is not authorized to repair a syntax failure or issue a second wrapper call. The outer `exec` receipt and the inner image-generation event use different call-ID namespaces; the resolver binds them through one-wrapper containment, one exact frozen/revised prompt, one completion event, one saved path, and matching wrapper/wait receipts.
+
 Do not start a replacement while the prior call state is unknown. Use at most two attempts per view by default.
 
 ### 5. Inspect actual pixels
 
-Open the original references and each bound generated image. Write `main-inspection.json` for every attempt. Use the hard gates in `references/qa_and_completion_contract.md`.
+Open the original references and each bound generated image with `view_image` at `original` detail. Write `main-inspection.json` for every attempt, using the exact current Codex thread UUID as `inspector_task_id` and an inspection timestamp after the pixel-open completion. Use the hard gates in `references/qa_and_completion_contract.md`.
 
 After writing the inspection, atomically append the bound attempt and decision to the manifest:
 
 ```powershell
 python scripts/record_view_decision.py <run-root> --view-id <view-id> --attempt-id <attempt-id> --worker-result <worker-result.json> --inspection <main-inspection.json>
 ```
+
+That command resolves the inspector thread from local Codex state, verifies that the exact bound image bytes appeared in a completed original-detail `view_image` output before the inspection timestamp, and freezes a hashed rollout slice plus `main-inspection-runtime-receipt.json`. A self-written inspection or receipt cannot advance state.
+
+When that command enters `repair_required`, do not overwrite the base prompt. Freeze one attempt-scoped repair prompt and publication receipt:
+
+```powershell
+python scripts/prepare_repair_prompt.py <run-root> --view-id <view-id> --attempt-id <view-id>_A02 --attempt-revision 2
+```
+
+Publish the complete repair prompt and both prompt/receipt hashes before the next worker. Freeze a new attempt reference bundle, use a fresh nonce and worker, and pass both `--expected-prompt <repair-prompt>` and `--repair-publication <repair-publication.json>` to `resolve_worker_image.py`. The base prompt set, base publication, and coverage-contract hash remain immutable; accepted repair lineage is attempt-scoped and replayed from the resolution snapshot.
 
 Reject any required view with changed subject pose, gaze, contact, handedness, scene topology, world-space light, camera-family invariants, unsupported salient invention, lineage ambiguity, crop/zoom masquerade, mirror, or duplicate/near-duplicate coverage.
 
@@ -206,7 +220,7 @@ Repair and incomplete paths:
 
 ```text
 inspection_pending -> repair_required -> generation_in_progress
-inspection_pending -> blocked_attempt_budget -> partial_coverage -> partial_handoff_ready
+inspection_pending -> blocked_attempt_budget -> partial_handoff_ready
 ```
 
 Enter `all_required_views_approved` only when every required view has a bound image, a passing main-agent inspection, approved lineage, and current `view_approved` status. Never let repair, exhausted attempts, optional-only coverage, or prompt-only artifacts enter `coverage_approved`.
@@ -226,6 +240,7 @@ Always return:
 - per-view inspection and rejection reasons;
 - independent accepted images;
 - portable master-regeneration prompts;
+- `40_handoff/ACCEPTED_PROMPT_INDEX.json` and `40_handoff/ACCEPTED_REGENERATION_PROMPTS.md`, which point to each view's actually accepted base or repair prompt;
 - terminal state and unresolved required views.
 
 Call the result `source-anchored plausible coverage`. Do not call it a recovered real reverse angle, a geometric reconstruction, or proof of a shared physical scene.

@@ -100,7 +100,29 @@
       "type": "array",
       "items": {
         "type": "object",
-        "required": ["view_id", "attempt_id", "attempt_revision", "prompt_path", "prompt_sha256", "reference_manifest_path", "reference_manifest_sha256", "worker_result_path", "worker_result_sha256", "image_path", "image_sha256", "inspection_path", "inspection_sha256", "decision", "failure_codes"]
+        "required": ["view_id", "attempt_id", "attempt_revision", "prompt_path", "prompt_sha256", "reference_manifest_path", "reference_manifest_sha256", "worker_result_path", "worker_result_sha256", "image_path", "image_sha256", "inspection_path", "inspection_sha256", "inspection_runtime_receipt_path", "inspection_runtime_receipt_sha256", "decision", "failure_codes"],
+        "properties": {
+          "view_id": {"type": "string"},
+          "attempt_id": {"type": "string"},
+          "attempt_revision": {"type": "integer", "minimum": 1},
+          "prompt_path": {"type": "string"},
+          "prompt_sha256": {"$ref": "#/$defs/sha256"},
+          "prompt_authority_mode": {"enum": ["base_prompt", "repair_prompt"]},
+          "repair_publication_path": {"type": "string"},
+          "repair_publication_sha256": {"$ref": "#/$defs/sha256"},
+          "reference_manifest_path": {"type": "string"},
+          "reference_manifest_sha256": {"$ref": "#/$defs/sha256"},
+          "worker_result_path": {"type": "string"},
+          "worker_result_sha256": {"$ref": "#/$defs/sha256"},
+          "image_path": {"type": "string"},
+          "image_sha256": {"$ref": "#/$defs/sha256"},
+          "inspection_path": {"type": "string"},
+          "inspection_sha256": {"$ref": "#/$defs/sha256"},
+          "inspection_runtime_receipt_path": {"type": "string"},
+          "inspection_runtime_receipt_sha256": {"$ref": "#/$defs/sha256"},
+          "decision": {"enum": ["approved", "rejected", "repair_required"]},
+          "failure_codes": {"type": "array", "items": {"type": "string"}}
+        }
       }
     },
     "qa": {

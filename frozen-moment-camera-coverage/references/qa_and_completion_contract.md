@@ -2,7 +2,9 @@
 
 ## Main inspection record
 
-Write one `frozen_moment_main_inspection.v1` record per bound attempt. Bind the run, view, attempt, inspector task, worker-result path/hash, image path/hash, Moment Canon hash, camera-contract hash, prompt hash, reference-bundle hash, actual dimensions, decision, hard checks, failure codes, repair scope, deviations, and evidence summary.
+Write one `frozen_moment_main_inspection.v1` record per bound attempt. Bind the run, view, attempt, exact inspector thread UUID, inspection time, worker-result path/hash, image path/hash, Moment Canon hash, camera-contract hash, prompt hash, reference-bundle hash, actual dimensions, decision, hard checks, failure codes, repair scope, deviations, and evidence summary.
+
+`record_view_decision.py` must resolve that thread from local Codex state and prove that a completed `view_image` call at `original` detail exposed the exact bound image bytes before `inspected_at_utc`. It freezes the matching call/output events as a hashed rollout slice and records a `frozen_moment_pixel_open_receipt.v1`. Every later state, stage, and delivery validation replays the slice, decodes the actual returned image bytes, and recomputes their hash. Missing, forged, late, wrong-thread, wrong-path, or hash-mismatched pixel evidence fails closed.
 
 Allowed decisions:
 
@@ -55,7 +57,7 @@ Treat weak crop/zoom, homography, mirror, or perceptual similarity as `review_re
 
 For each view record required flag, attempt budget/count, attempt IDs, accepted attempt, current status, artifact paths/hashes, supersession, decisions, and failure codes. Required approval must point to exactly one current accepted attempt.
 
-Default budget is two. Exhaustion enters `blocked_attempt_budget`; it never enters repair or success again without a new explicit user decision that changes the budget.
+Default budget is two exact-bound attempts. `attempt_revision` is contiguous from one and counts only attempts whose worker, call, image, and lineage were successfully bound. A call whose binding fails is unknown runtime state: stop safely and resolve that uncertainty; it cannot be entered as evidence, consume a fabricated revision, or self-authorize a skipped revision. All state, finalization, and delivery arithmetic uses the same bound-attempt count. Exhaustion enters `blocked_attempt_budget`; it never enters repair or success again without a new explicit user decision that changes the budget.
 
 ## Partial handoff
 
@@ -90,6 +92,7 @@ Zero approved views is a blocker, not a partial handoff. Partial output can pres
 - all required views are `view_approved`;
 - `all_required_views_approved`, `coverage_approved`, and `handoff_finalized` are true in that order;
 - prompts, references, accepted images, inspections, and handoff artifacts match their hashes.
+- `ACCEPTED_PROMPT_INDEX.json` and `ACCEPTED_REGENERATION_PROMPTS.md` reproduce the exact prompt bytes and lineage of every accepted attempt, including attempt-scoped repair prompts rather than silently falling back to the base prompt.
 
 ### `partial_handoff_ready`
 
