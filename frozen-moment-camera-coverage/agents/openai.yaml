@@ -1,0 +1,7 @@
+interface:
+  display_name: "Frozen Moment Camera Coverage"
+  short_description: "Explore one frozen moment from controlled camera positions."
+  default_prompt: "Use $frozen-moment-camera-coverage to freeze this moment, compile controlled camera coverage, publish every complete prompt and ordered reference binding, and optionally generate and inspect each view."
+
+policy:
+  allow_implicit_invocation: false

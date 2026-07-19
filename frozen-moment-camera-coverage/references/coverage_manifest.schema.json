@@ -1,0 +1,187 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://example.invalid/frozen-moment-camera-coverage/coverage_manifest.schema.json",
+  "title": "Frozen Moment Camera Coverage Manifest",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "job",
+    "source_evidence",
+    "evidence_ledger",
+    "moment_canon",
+    "camera_families",
+    "views",
+    "prompts",
+    "attempts",
+    "qa",
+    "state",
+    "prompt_set_sha256",
+    "coverage_contract_sha256",
+    "compiled_at_utc"
+  ],
+  "properties": {
+    "schema_version": {"const": "frozen_moment_coverage_manifest.v1"},
+    "job": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["job_id", "mode", "input_mode", "coverage_profile", "uncertainty_policy", "max_attempts_per_view"],
+      "properties": {
+        "job_id": {"type": "string", "minLength": 1},
+        "mode": {"enum": ["prompt_only", "generate_and_package"]},
+        "input_mode": {"enum": ["image_anchor", "text_anchor"]},
+        "coverage_profile": {"enum": ["targeted_views", "minimum_ring", "robust_ring", "custom"]},
+        "uncertainty_policy": {"enum": ["source_bounded", "conservative_hypothesis", "design_expansion"]},
+        "max_attempts_per_view": {"type": "integer", "minimum": 1, "maximum": 10},
+        "full_coverage_claim": {"type": "boolean"},
+        "generation_phase": {"enum": ["all", "moment_anchor", "coverage"]}
+      }
+    },
+    "source_evidence": {
+      "type": "object",
+      "required": ["reference_manifest_path", "reference_manifest_sha256", "ordered_reference_bundle_sha256", "reference_plan_sha256", "source_evidence_sha256"],
+      "properties": {
+        "reference_manifest_path": {"type": ["string", "null"]},
+        "reference_manifest_sha256": {"anyOf": [{"$ref": "#/$defs/sha256"}, {"type": "null"}]},
+        "ordered_reference_bundle_sha256": {"$ref": "#/$defs/sha256"},
+        "reference_plan_sha256": {"$ref": "#/$defs/sha256"},
+        "source_evidence_sha256": {"$ref": "#/$defs/sha256"},
+        "anchor_phase_manifest_path": {"type": "string", "minLength": 1},
+        "anchor_phase_manifest_sha256": {"$ref": "#/$defs/sha256"},
+        "anchor_phase_publication_path": {"type": "string", "minLength": 1},
+        "anchor_phase_publication_sha256": {"$ref": "#/$defs/sha256"},
+        "anchor_phase_prompt_document_path": {"type": "string", "minLength": 1},
+        "anchor_phase_prompt_document_sha256": {"$ref": "#/$defs/sha256"}
+      }
+    },
+    "evidence_ledger": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["observed", "source_corroborated", "inferred", "unknown", "approved_canon"],
+      "properties": {
+        "observed": {"type": "array", "items": {"$ref": "#/$defs/evidence"}},
+        "source_corroborated": {"type": "array", "items": {"$ref": "#/$defs/evidence"}},
+        "inferred": {"type": "array", "items": {"$ref": "#/$defs/evidence"}},
+        "unknown": {"type": "array", "items": {"$ref": "#/$defs/evidence"}},
+        "approved_canon": {"type": "array", "items": {"$ref": "#/$defs/evidence"}}
+      }
+    },
+    "moment_canon": {
+      "type": "object",
+      "required": ["moment_id", "canon_status", "subjects", "scene_topology", "temporal_state", "lighting", "look", "prohibited_changes", "moment_canon_sha256"],
+      "properties": {
+        "moment_id": {"type": "string", "minLength": 1},
+        "canon_status": {"enum": ["synthetic_unrendered", "source_anchored", "approved_canon"]},
+        "subjects": {"type": "array", "minItems": 1, "items": {"type": "object"}},
+        "scene_topology": {"$ref": "#/$defs/nonempty_strings"},
+        "temporal_state": {"$ref": "#/$defs/nonempty_strings"},
+        "lighting": {"$ref": "#/$defs/nonempty_strings"},
+        "look": {"$ref": "#/$defs/nonempty_strings"},
+        "prohibited_changes": {"$ref": "#/$defs/nonempty_strings"},
+        "moment_canon_sha256": {"$ref": "#/$defs/sha256"}
+      }
+    },
+    "camera_families": {
+      "type": "array",
+      "minItems": 1,
+      "items": {"$ref": "#/$defs/family"}
+    },
+    "views": {
+      "type": "array",
+      "minItems": 1,
+      "items": {"$ref": "#/$defs/view"}
+    },
+    "prompts": {
+      "type": "array",
+      "minItems": 1,
+      "items": {"$ref": "#/$defs/prompt"}
+    },
+    "attempts": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["view_id", "attempt_id", "attempt_revision", "prompt_path", "prompt_sha256", "reference_manifest_path", "reference_manifest_sha256", "worker_result_path", "worker_result_sha256", "image_path", "image_sha256", "inspection_path", "inspection_sha256", "decision", "failure_codes"]
+      }
+    },
+    "qa": {
+      "type": "object",
+      "required": ["required_view_ids", "approved_required_view_ids", "all_required_views_approved", "main_inspection_required", "runtime_evidence_origin"]
+    },
+    "state": {
+      "type": "object",
+      "required": ["current", "terminal_state"],
+      "properties": {
+        "current": {"enum": ["prompts_locked", "generation_in_progress", "inspection_pending", "view_approved", "repair_required", "blocked_attempt_budget", "all_required_views_approved", "coverage_approved", "handoff_finalized", "prompt_package_ready", "package_ready", "partial_handoff_ready"]},
+        "terminal_state": {"enum": [null, "prompt_package_ready", "package_ready", "partial_handoff_ready"]}
+      }
+    },
+    "prompt_set_sha256": {"$ref": "#/$defs/sha256"},
+    "coverage_contract_sha256": {"$ref": "#/$defs/sha256"},
+    "compiled_at_utc": {"type": "string", "minLength": 1}
+  },
+  "$defs": {
+    "sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+    "nonempty_strings": {"type": "array", "minItems": 1, "items": {"type": "string", "minLength": 1}},
+    "evidence": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["evidence_id", "scope", "claim", "source_ids", "confidence", "conflict_state"],
+      "properties": {
+        "evidence_id": {"type": "string", "minLength": 1},
+        "scope": {"type": "string", "minLength": 1},
+        "claim": {"type": "string", "minLength": 1},
+        "source_ids": {"type": "array", "items": {"type": "string"}},
+        "confidence": {"enum": ["low", "medium", "high"]},
+        "conflict_state": {"enum": ["none", "resolved", "unresolved"]}
+      }
+    },
+    "family": {
+      "type": "object",
+      "required": ["family_id", "family_kind", "coordinate_frame_id", "varying_fields", "orbit_radius_ratio", "orbit_elevation_deg", "roll_deg", "look_at_target", "focus_target", "focal_policy", "shot_scale", "framing_policy", "crop_policy", "subject_scale_policy"],
+      "properties": {
+        "family_id": {"type": "string", "minLength": 1},
+        "family_kind": {"enum": ["master", "portrait"]},
+        "coordinate_frame_id": {"type": "string"},
+        "varying_fields": {"type": "array", "items": {"type": "string"}},
+        "orbit_radius_ratio": {"type": "number", "exclusiveMinimum": 0},
+        "orbit_elevation_deg": {"type": "number"},
+        "roll_deg": {"type": "number"},
+        "look_at_target": {"type": "string"},
+        "focus_target": {"type": "string"},
+        "focal_policy": {"type": "string"},
+        "shot_scale": {"type": "string"},
+        "framing_policy": {"type": "string"},
+        "crop_policy": {"type": "string"},
+        "subject_scale_policy": {"type": "string"}
+      }
+    },
+    "view": {
+      "type": "object",
+      "required": ["view_id", "family_id", "coverage_role", "required", "azimuth_deg", "elevation_deg", "camera_contract_sha256", "visibility", "evidence_risk", "status"],
+      "properties": {
+        "view_id": {"type": "string", "pattern": "^[A-Z][A-Z0-9_-]{1,31}$"},
+        "family_id": {"type": "string"},
+        "coverage_role": {"type": "string"},
+        "required": {"type": "boolean"},
+        "azimuth_deg": {"type": "number"},
+        "elevation_deg": {"type": "number"},
+        "camera_contract_sha256": {"$ref": "#/$defs/sha256"},
+        "visibility": {"type": "object"},
+        "evidence_risk": {"enum": ["low", "medium", "high", "hypothesis_heavy"]},
+        "status": {"type": "string"}
+      }
+    },
+    "prompt": {
+      "type": "object",
+      "required": ["view_id", "language", "prompt_path", "prompt_sha256", "reference_plan_sha256", "published"],
+      "properties": {
+        "view_id": {"type": "string"},
+        "language": {"enum": ["zh", "en"]},
+        "prompt_path": {"type": "string"},
+        "prompt_sha256": {"$ref": "#/$defs/sha256"},
+        "reference_plan_sha256": {"$ref": "#/$defs/sha256"},
+        "published": {"type": "boolean"}
+      }
+    }
+  }
+}

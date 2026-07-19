@@ -1,0 +1,83 @@
+{
+  "schema_version": "frozen_moment_coverage_input.v1",
+  "job": {
+    "job_id": "example-run-001",
+    "mode": "prompt_only",
+    "input_mode": "image_anchor",
+    "coverage_profile": "minimum_ring",
+    "uncertainty_policy": "conservative_hypothesis",
+    "prompt_languages": ["zh"],
+    "max_attempts_per_view": 2
+  },
+  "source_evidence": {
+    "rights_state": "user_supplied",
+    "reference_manifest_path": "C:/absolute/run/00_manifest/REFERENCE_BINDINGS.json",
+    "azimuth_basis": "subject_forward",
+    "azimuth_basis_evidence": "observed"
+  },
+  "evidence_ledger": {
+    "observed": [
+      {
+        "evidence_id": "E001",
+        "scope": "subject.pose",
+        "claim": "The subject stands with the left hand touching the doorway.",
+        "source_ids": ["source_01"],
+        "confidence": "high",
+        "conflict_state": "none"
+      }
+    ],
+    "source_corroborated": [],
+    "inferred": [],
+    "unknown": [],
+    "approved_canon": []
+  },
+  "moment_canon": {
+    "moment_id": "M001",
+    "canon_status": "source_anchored",
+    "subjects": [
+      {
+        "subject_id": "subject_01",
+        "identity": "the source actor",
+        "pose": "standing still in the doorway",
+        "head_expression_gaze": "preserve the exact source head direction, restrained expression, and gaze target",
+        "wardrobe": "preserve the source wardrobe and asymmetry",
+        "contacts": ["left hand touches the doorway", "right hand remains in coat pocket"]
+      }
+    ],
+    "scene_topology": ["doorway remains fixed", "room and visible furniture retain their source-relative positions"],
+    "temporal_state": ["same frozen instant"],
+    "lighting": ["all visible light sources remain fixed in world space"],
+    "look": ["preserve source palette, contrast, texture, and grain"],
+    "prohibited_changes": ["subject_repose", "head_turn", "gaze_change", "contact_change", "scene_relayout", "mirror", "camera_relative_relight"]
+  },
+  "camera_families": [
+    {
+      "family_id": "MASTER_A",
+      "family_kind": "master",
+      "coordinate_frame_id": "SUBJECT_FRAME_A",
+      "projection": "perspective",
+      "azimuth_basis": "subject_forward",
+      "varying_fields": ["azimuth_deg"],
+      "orbit_radius_ratio": 1.0,
+      "orbit_elevation_deg": 0.0,
+      "roll_deg": 0.0,
+      "look_at_target": "subject_01.upper_torso",
+      "focus_target": "subject_01.near_eye_plane",
+      "focal_policy": "lock_source_estimate",
+      "focal_length_equiv_mm": [45.0, 55.0],
+      "aperture_intent": "match source depth character",
+      "shot_scale": "medium",
+      "framing_policy": "natural_projection_from_locked_camera",
+      "crop_policy": "native_full_frame_no_post_crop",
+      "subject_scale_policy": "match_anchor_intent"
+    }
+  ],
+  "views": [],
+  "prompt_context": {
+    "task_definition": "Recreate the same frozen instant while moving only the camera.",
+    "identity_pose_contact_lock": "Keep identity, age, body, pose, balance, head, expression, gaze, wardrobe, asymmetry, hands, props, and contacts unchanged.",
+    "scene_time_light_lock": "Keep scene topology, object positions, temporal state, and all light sources fixed in world space.",
+    "look_contract": "Match the source camera character, depth, palette, texture, and grain without cosmetic retouching.",
+    "negative_contract": "No mirroring, subject rotation, new action, new gaze, crop or zoom substitute, scene relayout, camera-following beauty light, added person, text, logo, or unsupported salient detail."
+  }
+}

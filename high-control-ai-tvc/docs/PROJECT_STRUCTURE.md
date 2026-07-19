@@ -38,7 +38,8 @@ readback；它不是单包安装或调用条件。
 ├── cinematic_shot_image_explorer/          # optional
 ├── cinematic_world_builder/                 # optional
 ├── advertising-reference-research-director/ # excluded from aggregate only; still standalone
-└── complex-product-identity-reconstruction-asset-locking/ # excluded from aggregate only; still standalone
+├── complex-product-identity-reconstruction-asset-locking/ # excluded from aggregate only; still standalone
+└── frozen-moment-camera-coverage/            # excluded from aggregate only; still standalone
 ```
 
 不要把同名 Skill 同时暴露到多个 Codex discovery root。独立任务只安装实际
