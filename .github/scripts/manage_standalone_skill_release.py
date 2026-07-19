@@ -20,6 +20,7 @@ import os
 import re
 import shutil
 import socket
+import stat
 import subprocess
 import sys
 import time
@@ -190,7 +191,17 @@ def _tree_manifest(root: Path) -> list[dict[str, Any]]:
 def _is_junction(path: Path) -> bool:
     native = getattr(os.path, "isjunction", None)
     try:
-        return bool(native and native(path))
+        if native:
+            return bool(native(path))
+        if os.name != "nt":
+            return False
+        value = os.lstat(path)
+        attributes = getattr(value, "st_file_attributes", 0)
+        reparse_tag = getattr(value, "st_reparse_tag", 0)
+        return bool(
+            attributes & 0x400
+            and reparse_tag == getattr(stat, "IO_REPARSE_TAG_MOUNT_POINT", 0xA0000003)
+        )
     except OSError:
         return False
 
@@ -219,7 +230,14 @@ def _assert_no_reparse_chain(path: Path, label: str) -> None:
     cursor = _absolute(path)
     while True:
         if _is_reparse(cursor):
-            raise ReleaseError(f"UNSAFE_PATH: {label} contains a redirected component: {cursor}")
+            allowed_macos_aliases = {
+                Path("/var"): Path("/private/var"),
+                Path("/tmp"): Path("/private/tmp"),
+                Path("/etc"): Path("/private/etc"),
+            }
+            expected = allowed_macos_aliases.get(cursor) if sys.platform == "darwin" else None
+            if expected is None or cursor.resolve(strict=True) != expected:
+                raise ReleaseError(f"UNSAFE_PATH: {label} contains a redirected component: {cursor}")
         parent = cursor.parent
         if parent == cursor:
             break
@@ -840,7 +858,19 @@ def discovery_conflicts(discovery_root: Path, cwd: Path | None = None) -> list[s
 
 
 def _same_path(left: Path, right: Path) -> bool:
-    return os.path.normcase(str(_absolute(left))) == os.path.normcase(str(_absolute(right)))
+    left_absolute = _absolute(left)
+    right_absolute = _absolute(right)
+    try:
+        if _lexists(left_absolute) and _lexists(right_absolute):
+            return os.path.samefile(left_absolute, right_absolute)
+    except OSError:
+        pass
+    try:
+        left_value = left_absolute.resolve(strict=False)
+        right_value = right_absolute.resolve(strict=False)
+    except OSError:
+        left_value, right_value = left_absolute, right_absolute
+    return os.path.normcase(str(left_value)) == os.path.normcase(str(right_value))
 
 
 def _link_target(link: Path) -> Path | None:
