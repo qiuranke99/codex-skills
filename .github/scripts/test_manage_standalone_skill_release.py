@@ -240,7 +240,7 @@ class StandaloneReleaseTests(unittest.TestCase):
             self.assertGreaterEqual(protection["checked_file_count"], 4)
             self.assertGreaterEqual(protection["checked_directory_count"], 3)
             self.assertEqual(remote.call_count, 5)
-            fetch.assert_called_once_with(repo, commit)
+            fetch.assert_called_once_with(repo.resolve(), commit)
             self.assertFalse((state / "transaction.json").exists())
 
     def test_accepted_commit_mismatch_stops_before_materialization(self) -> None:
