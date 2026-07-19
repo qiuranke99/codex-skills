@@ -138,12 +138,98 @@ def read_rollout(path: Path) -> list[dict[str, Any]]:
     return events
 
 
+def decode_static_js_template_literal(source: str, key: str) -> str:
+    if not source.startswith("`"):
+        raise ContractError("blocked_worker_call_unparseable", f"argument {key} is not a template literal")
+    output: list[str] = []
+    index = 1
+    simple_escapes = {
+        "`": "`",
+        "\\": "\\",
+        "$": "$",
+        "n": "\n",
+        "r": "\r",
+        "t": "\t",
+        "b": "\b",
+        "f": "\f",
+        "v": "\v",
+        "0": "\0",
+    }
+    while index < len(source):
+        character = source[index]
+        if character == "`":
+            return "".join(output)
+        if character == "$" and index + 1 < len(source) and source[index + 1] == "{":
+            raise ContractError(
+                "blocked_worker_call_unparseable",
+                f"argument {key} contains dynamic template interpolation",
+            )
+        if character != "\\":
+            output.append(character)
+            index += 1
+            continue
+        index += 1
+        if index >= len(source):
+            break
+        escaped = source[index]
+        if escaped in {"\n", "\r"}:
+            if escaped == "\r" and index + 1 < len(source) and source[index + 1] == "\n":
+                index += 1
+            index += 1
+            continue
+        if escaped in simple_escapes:
+            if escaped == "0" and index + 1 < len(source) and source[index + 1].isdigit():
+                raise ContractError(
+                    "blocked_worker_call_unparseable",
+                    f"argument {key} contains an ambiguous numeric escape",
+                )
+            output.append(simple_escapes[escaped])
+            index += 1
+            continue
+        if escaped == "x":
+            digits = source[index + 1 : index + 3]
+            if len(digits) != 2 or not re.fullmatch(r"[0-9A-Fa-f]{2}", digits):
+                raise ContractError("blocked_worker_call_unparseable", f"argument {key} has an invalid hex escape")
+            output.append(chr(int(digits, 16)))
+            index += 3
+            continue
+        if escaped == "u":
+            if index + 1 < len(source) and source[index + 1] == "{":
+                close = source.find("}", index + 2)
+                digits = source[index + 2 : close] if close != -1 else ""
+                if not digits or not re.fullmatch(r"[0-9A-Fa-f]{1,6}", digits):
+                    raise ContractError("blocked_worker_call_unparseable", f"argument {key} has an invalid Unicode escape")
+                codepoint = int(digits, 16)
+                if codepoint > 0x10FFFF or 0xD800 <= codepoint <= 0xDFFF:
+                    raise ContractError("blocked_worker_call_unparseable", f"argument {key} has an invalid Unicode codepoint")
+                output.append(chr(codepoint))
+                index = close + 1
+                continue
+            digits = source[index + 1 : index + 5]
+            if len(digits) != 4 or not re.fullmatch(r"[0-9A-Fa-f]{4}", digits):
+                raise ContractError("blocked_worker_call_unparseable", f"argument {key} has an invalid Unicode escape")
+            codepoint = int(digits, 16)
+            if 0xD800 <= codepoint <= 0xDFFF:
+                raise ContractError("blocked_worker_call_unparseable", f"argument {key} has an unsupported surrogate escape")
+            output.append(chr(codepoint))
+            index += 5
+            continue
+        raise ContractError(
+            "blocked_worker_call_unparseable",
+            f"argument {key} contains an unsupported template escape: \\{escaped}",
+        )
+    raise ContractError("blocked_worker_call_unparseable", f"argument {key} has an unterminated template literal")
+
+
 def extract_js_json_value(source: str, key: str) -> Any:
     match = re.search(rf"(?<![A-Za-z0-9_])[\"']?{re.escape(key)}[\"']?\s*:\s*", source)
     if match is None:
         raise ContractError("blocked_worker_call_unparseable", f"missing image-generation argument: {key}")
+    encoded = source[match.end() :].lstrip()
+    if encoded.startswith("`"):
+        return decode_static_js_template_literal(encoded, key)
     try:
-        value, _ = JSON_DECODER.raw_decode(source[match.end() :])
+        value, _ = JSON_DECODER.raw_decode(encoded)
     except json.JSONDecodeError as exc:
         raise ContractError("blocked_worker_call_unparseable", f"argument {key} is not a JSON literal: {exc}") from exc
     return value

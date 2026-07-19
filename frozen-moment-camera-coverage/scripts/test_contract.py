@@ -1259,6 +1259,51 @@ class ResolverTraceTests(unittest.TestCase):
         )
         self.assertEqual(evidence["call_id"], self.call_id)
 
+    def test_valid_worker_trace_with_multiline_template_literal(self) -> None:
+        events = self.worker_events()
+        escaped_prompt = self.prompt.decode().replace("\\", "\\\\").replace("`", "\\`").replace("$", "\\$")
+        references = json.dumps([str(path) for path in self.references])
+        events[5]["payload"]["input"] = (
+            "const result = await tools.image_gen__imagegen({\n"
+            f"  referenced_image_paths: {references},\n"
+            f"  prompt: `{escaped_prompt}`\n"
+            "});\n"
+            "generatedImage(result);"
+        )
+        evidence = resolver.validate_worker_rollout(
+            events=events,
+            thread_id=self.thread,
+            agent_path=self.agent_path,
+            parent_thread_id=self.parent,
+            view_id=self.view,
+            nonce=self.nonce,
+            expected_prompt_bytes=self.prompt,
+            expected_references=self.references,
+        )
+        self.assertEqual(evidence["call_id"], self.call_id)
+
+    def test_dynamic_template_prompt_fails_closed(self) -> None:
+        events = self.worker_events()
+        references = json.dumps([str(path) for path in self.references])
+        events[5]["payload"]["input"] = (
+            "const suffix = 'prompt';\n"
+            "const result = await tools.image_gen__imagegen({"
+            f"referenced_image_paths: {references}, prompt: `Exact ${{suffix}}`"
+            "});"
+        )
+        with self.assertRaises(resolver.ContractError) as caught:
+            resolver.validate_worker_rollout(
+                events=events,
+                thread_id=self.thread,
+                agent_path=self.agent_path,
+                parent_thread_id=self.parent,
+                view_id=self.view,
+                nonce=self.nonce,
+                expected_prompt_bytes=self.prompt,
+                expected_references=self.references,
+            )
+        self.assertEqual(caught.exception.code, "blocked_worker_call_unparseable")
+
     def test_two_calls_fail(self) -> None:
         events = self.worker_events()
         events.insert(6, deepcopy(events[5]))
