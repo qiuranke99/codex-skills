@@ -2,6 +2,11 @@
 
 ## Unreleased — 2026-07-18
 
+- 仓库 standalone 边界扩展为 20 个独立包：新增
+  `blender-production-governor` 与 `img2threejs-production-governor` 两个
+  machine-wide 治理包，并将二者明确列入 aggregate 排除清单；High-Control
+  仍只管理原有 15 个成员，发布控制器、隔离校验、边界测试和文档统一为
+  `20 standalone = 15 aggregate + 5 excluded`。
 - `material-sensitive-product-master-asset-board` 升级到 v6：新增 Browser-first
   `exact_variant → same_package_family → packaging_archetype` 研究合同、证据等级、
   生成使用权隔离、身份冲突裁决、逐 surface 覆盖与受限三维结构重建；来源覆盖

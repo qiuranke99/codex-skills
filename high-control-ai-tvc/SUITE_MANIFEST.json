@@ -6,7 +6,7 @@
   "opt_in_required": true,
   "controls_individual_skill_availability": false,
   "managed_inventory_policy": "skills_only",
-  "standalone_package_count": 18,
+  "standalone_package_count": 20,
   "repository": "qiuranke99/codex-skills",
   "subsystem_path": "high-control-ai-tvc",
   "source_repository": "qiuranke99/codex-skills",
@@ -28,8 +28,10 @@
   ],
   "excluded_from_aggregate_profile": [
     "advertising-reference-research-director",
+    "blender-production-governor",
     "complex-product-identity-reconstruction-asset-locking",
-    "frozen-moment-camera-coverage"
+    "frozen-moment-camera-coverage",
+    "img2threejs-production-governor"
   ],
   "skills": [
     {
