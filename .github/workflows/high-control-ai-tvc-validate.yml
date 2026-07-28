@@ -29,8 +29,8 @@ jobs:
       - name: Test the package-scoped standalone release controller
         run: python .github/scripts/test_manage_standalone_skill_release.py
 
-      - name: Validate all 18 Skills in isolated package roots
-        run: python .github/scripts/validate_standalone_skills.py --repo-root . --expected-count 18 --timeout 180 --compact
+      - name: Validate all 20 Skills in isolated package roots
+        run: python .github/scripts/validate_standalone_skills.py --repo-root . --expected-count 20 --timeout 180 --compact
 
   cross-platform:
     name: Optional aggregate / ${{ matrix.os }} / Python ${{ matrix.python }}

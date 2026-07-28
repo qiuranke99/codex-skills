@@ -1,0 +1,6 @@
+interface:
+  display_name: "img2threejs Production Governor"
+  short_description: "Route img2threejs by speed, fidelity, and visual gates."
+  default_prompt: "Use $img2threejs-production-governor before planning or executing this img2threejs task."
+policy:
+  allow_implicit_invocation: true
