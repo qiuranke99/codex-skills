@@ -245,7 +245,7 @@ final_classification_target:
 先估算场景规模，再选择：
 
 - 交互 Blender MCP；
-- 单进程 background Blender；
+- 一个或多个写入边界相互隔离的 background Blender lane；
 - 轻量代理场景；
 - EEVEE 预演；
 - Cycles/CPU/外部 GPU 或渲染农场；
@@ -588,9 +588,11 @@ Blender 包完成时只能标记 `ai_control_package_ready`。AI 生成和合成
 - 输出审片版和最终母版；
 - 对母版重新执行时长、分辨率、帧率、色彩和播放验证。
 
-关闭 Blender 后从最终交付场景冷重开，验证贴图、HDRI、字体、LUT、
-linked library 和模拟缓存均可解析；重新渲染至少一个已批准代表帧，
-并与批准结果比较。仅在原进程内保存后读取不构成冷重开验收。
+仅关闭并重开本 lane 自有的 Blender 实例，从最终交付场景执行冷重开，
+验证贴图、HDRI、字体、LUT、linked library 和模拟缓存均可解析；不得为
+完成本 lane 的冷重开而关闭、终止或干扰其他 lane 的 Blender 进程或 MCP
+会话。重新渲染至少一个已批准代表帧，并与批准结果比较。仅在原进程内
+保存后读取不构成冷重开验收。
 
 终态先为 `final_cgi_render_candidate`；只有 8.1 至 8.8 的全部适用门
 均为 `PASS`，才允许 `final_cgi_render_approved`。这显式包括 Final
@@ -694,7 +696,22 @@ Master（含冷重开与代表帧复渲）。任何 `N/A` 必须已在路线合�
 - 保存后独立重开检查；
 - 当前 MCP 未在任务中热加载时的受控替代路径。
 
-大型场景保持单进程。不要因一段时间无输出就并发启动多个诊断实例。
+默认允许同一项目或不同项目中的多个 background Blender lane 并行。
+禁止创建、服从或等待项目级／机器级 lock、lockfile、lease、marker、
+“全部 Blender 已退出／保持空闲”条件，也禁止以系统中存在任意
+`blender.exe` 为由要求无关任务等待。
+
+每个 lane 必须独占自己的可写 `.blend`、输出文件模式、模拟／烘焙缓存、
+临时目录和日志；冻结源资产只读时可以并发共享。使用 MCP 时，每个交互
+lane 还必须拥有独立 session 或 endpoint。只有这些精确资源或同一交互式
+Blender/MCP 会话实际冲突时才串行化，而且互斥范围不得扩大到其他 lane。
+项目根目录、仓库路径、线程树、项目 ID、进程名称或某个宽泛父目录均不得
+充当互斥资源键。
+
+大型场景根据现场 RAM、VRAM、CPU、磁盘空间与 I/O 证据节流尚未启动的
+lane，不设固定进程数，也不因进程数量中止无冲突任务。同一 lane 长时间
+无输出时，先检查原 PID、日志、输出增长和资源状态；不得对同一可写目标
+重复启动诊断实例。
 
 ### 11.3 混合策略
 

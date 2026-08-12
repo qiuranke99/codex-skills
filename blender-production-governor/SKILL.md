@@ -37,6 +37,14 @@ missing authority file.
   inspection and targeted iteration. Use background Blender for deterministic,
   heavy, or reopen validation. Combine them when useful; MCP is a control
   surface, not a quality level.
+- Permit concurrent Blender processes when they belong to isolated lanes with
+  distinct writable scenes, outputs, caches, temporary paths, and logs. When
+  MCP is used, give each interactive lane a distinct session or endpoint.
+  Never create, honor, or wait on a machine-wide or project-wide lock,
+  lockfile, lease, marker, "all Blender idle" condition, or process-name gate.
+  Serialize only the exact writable resource or live MCP session that actually
+  conflicts; apply the handbook's live resource-budget gate only to work that
+  has not started, without stopping unrelated running lanes.
 - Execute the maker-checker loop throughout production:
   `build -> render -> inspect -> issue ledger -> targeted fix -> regression -> checkpoint`.
 - Keep structure, visual appearance, temporal behavior, asset health, and
