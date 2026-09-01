@@ -15,20 +15,10 @@ Do not expose the same Skill name in both discovery roots.
 ## Independent Skill Packages
 
 The repository maintains 21 independently installable and runnable Skill
-packages. Fifteen may also be selected together as an optional High-Control AI
-TVC compatibility profile:
-
-- 13 core production Skills: six workflow owners plus seven Canon Asset Owners;
-- 2 optional cinematic exploration Skills;
-- one unique top-level directory per Skill, with no duplicate copies.
-
-The optional profile's SOP, SVG, bulk installation tools, compatibility
-manifest and workstation preflight live under
-[`high-control-ai-tvc/`](high-control-ai-tvc/README.md). None is a prerequisite
-for installing, invoking or accepting one Skill.
-The production endpoint is a provider-ready P2 package. Actual paid video
-generation, music, final editing, color mastering and independent output QC are
-outside the distribution.
+packages. Each has one unique top-level directory, its own `SKILL.md`, and no
+duplicate runtime copy in this repository. A package may be copied, linked,
+invoked, tested, and accepted without any sibling package or repository-level
+runtime authority.
 
 ## Maintained Skills
 
@@ -42,7 +32,8 @@ outside the distribution.
 | `scene-canon-asset-pack` | `D:\AI\skill\scene-canon-asset-pack` | Explicit-only six-image Scene Canon pack: publish all six frozen prompts first, then complete a serial continuity-dependent non-decision-worker queue with motion envelope, coverage graph, strict runtime receipts, structured QA, and one-to-one 4K handoff. | `D:\AI视觉工作室\.agents\skills\scene-canon-asset-pack` | Active |
 | `multi-angle-product-identity-lock-board` | `D:\AI\skill\multi-angle-product-identity-lock-board` | Request a horizontal 16:9 six-view opaque-product board, publish the complete prompt pair, and expose approved product-geometry artifacts for an optional external integrator. | `D:\AI视觉工作室\.agents\skills\multi-angle-product-identity-lock-board` | Active |
 | `packaging-product-identity-label-lock-board` | `D:\AI\skill\packaging-product-identity-label-lock-board` | Build one compact borderless packaging video asset board with seven upright views, two source-grounded details by default, a source-cited copy ledger, deterministic overlays, evidence-bound QA, and an optional external Project Canon handoff. | `D:\AI视觉工作室\.agents\skills\packaging-product-identity-label-lock-board` | Active |
-| `material-sensitive-product-master-asset-board` | `D:\AI\skill\material-sensitive-product-master-asset-board` | Research exact-product, same-package-family, and packaging-archetype evidence with Browser-first provenance; separate research authority from generation rights; derive a 4–10-region material board from actual surface coverage; bind one delegated image worker, research-aware QA, handoff, and accepted records; and publish the full material-preserving prompt pair without requiring High-Control at runtime. | `D:\AI视觉工作室\.agents\skills\material-sensitive-product-master-asset-board` | Active |
+| `material-sensitive-product-master-asset-board` | `D:\AI\skill\material-sensitive-product-master-asset-board` | Research exact-product, same-package-family, and packaging-archetype evidence with Browser-first provenance; separate research authority from generation rights; derive a 4–10-region material board from actual surface coverage; bind one delegated image worker, research-aware QA, handoff, and accepted records; and publish the full material-preserving prompt pair without any repository-level runtime dependency. | `D:\AI视觉工作室\.agents\skills\material-sensitive-product-master-asset-board` | Active |
+| `complex-product-identity-reconstruction-asset-locking` | `complex-product-identity-reconstruction-asset-locking` | Reconstruct a source-evidenced identity model for complex multi-part, mechanical, multi-material, or stateful products; then build independent camera assets, risk-specific diagnostics, a primary upload bundle, and per-asset 4K handoff without inventing unsupported topology or state. | Created in place | Active |
 | `advertising-reference-research-director` | `D:\AI\skill\advertising-reference-research-director` | Route a creative decision to image, video, or both; build evidence-bound reference packs with exact candidate accounting, independent verification, curation, adversarial audit, and feedback learning. | Created in place | Active |
 | `blender-production-governor` | `D:\AI\skill\blender-production-governor` | Govern every Blender or Blender MCP task by final-pixel ownership; force the complete handbook read, route work to diagnostic, AI-reference previs, hybrid AI/CG control, or final CGI, and enforce structure, visual, temporal, asset-health, render, safety, and delivery gates. | Created in place | Active |
 | `img2threejs-production-governor` | `D:\AI\skill\img2threejs-production-governor` | Govern every img2threejs task by the minimum sufficient route; enforce early visual checkpoints, bounded time and correction loops, evidence economy, method-fit escalation, human-visual supremacy, and static approval before video. | Created in place | Active |
@@ -55,35 +46,33 @@ outside the distribution.
 | `ai-video-keyframe-continuity-pack` | `D:\AI\skill\ai-video-keyframe-continuity-pack` | Create K1 per-shot Omni-reference anchors and continuity ledgers, then an immutable P1-bound K2 boundary supplement; never endpoint-frame controls. | Created in place | Active |
 | `ai-video-omni-reference-prompt-director` | `D:\AI\skill\ai-video-omni-reference-prompt-director` | Preflight and compile complete all-reference packages with Seedance 2.5-first semantics, capability-verified Seedance 2.0/provider renders, exact asset bindings, payloads, locks, and owner-routed selective revisions. | Created in place | Active |
 
-## Additional Standalone Packages
+## Package-specific maintenance notes
 
-`complex-product-identity-reconstruction-asset-locking` is an active,
-independently maintained package outside the optional 15-Skill High-Control profile.
-Its canonical path is
+`complex-product-identity-reconstruction-asset-locking` is an active standalone
+package. Its canonical path is
 `complex-product-identity-reconstruction-asset-locking` relative to this
 checkout, and this workstation exposes it through the matching junction under
 `$HOME/.codex/skills`.
 
-`advertising-reference-research-director` and
-`frozen-moment-camera-coverage` are also independent packages excluded from
-that aggregate profile. The latter has a dedicated package-scoped immutable
-release controller at `.github/scripts/manage_standalone_skill_release.py`;
-its receipt and discovery entry never claim authority over aggregate members.
+`frozen-moment-camera-coverage` has a dedicated package-scoped immutable release
+controller at `.github/scripts/manage_standalone_skill_release.py`. Its receipt,
+snapshot and discovery entry describe that package only and must never claim
+authority over a sibling Skill.
 
 `reference-guided-image-reconstruction-director` is a prompt-only standalone
-package excluded from the aggregate profile. It may inspect supplied images
-read-only, but it never generates or edits pixels and never operates an
-external image platform; the user executes its reconstruction package manually.
+package. It may inspect supplied images read-only, but it never generates or
+edits pixels and never operates an external image platform; the user executes
+its reconstruction package manually.
 
-`blender-production-governor` is a machine-wide standalone governance package
-outside the aggregate profile. Its canonical copy is
+`blender-production-governor` is a machine-wide standalone governance package.
+Its canonical copy is
 `D:\AI\skill\blender-production-governor`; this workstation exposes exactly
 one discovery junction under `$HOME/.agents/skills`. Implicit invocation is
 enabled so every Blender or Blender MCP task must read its complete production
 handbook before Blender-specific action.
 
 `img2threejs-production-governor` is a machine-wide standalone governance
-package outside the aggregate profile. Its canonical copy is
+package. Its canonical copy is
 `D:\AI\skill\img2threejs-production-governor`; this workstation exposes
 exactly one discovery junction under `$HOME/.agents/skills`. Implicit
 invocation is enabled so every img2threejs task must first select the minimum
@@ -111,9 +100,7 @@ state, not the current cross-platform installation contract.
 ### Historical pending entries for the six newly published Skills
 
 These targets were not live in the 2026-07-10 snapshot. Install any one package
-directly, or explicitly choose the optional bulk installer under
-`high-control-ai-tvc/tools/`; in either case audit legacy roots first and do not
-create duplicate discovery entries.
+directly after auditing legacy roots; do not create duplicate discovery entries.
 
 | Pending Codex entry | Repository target |
 | --- | --- |
@@ -142,9 +129,9 @@ The following classes are intentionally excluded from this archive:
   `$HOME/.agents/skills` by default. Existing `.codex/skills` entries are legacy
   and must be audited before migration; never keep two live copies of one name.
 - Skill packages may be installed independently and need not remain siblings.
-  An explicitly selected High-Control workflow may discover several completed
-  package artifacts and integrate them externally, but cannot become a runtime
-  dependency of those packages.
+  An explicitly selected external orchestrator may discover several completed
+  package artifacts and integrate them, but cannot become a runtime dependency
+  of those packages.
 - High-angle character continuity is maintained inside `character-final-lock-board` as the `high_angle_evidence` mode; the former standalone package was retired on 2026-07-10.
 - Previous entries and obsolete duplicate sources were moved to `D:\AI\skill-migration-backups\20260527-112423`.
 - Do not add loose skill files directly under `D:\AI\skill`; each skill must live in its own folder containing `SKILL.md`.

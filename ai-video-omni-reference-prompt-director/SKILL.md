@@ -7,8 +7,9 @@ description: "Preflight, compile, or revise a provider-ready multimodal referenc
 
 This Skill is a self-contained entrypoint. Consume a hash-locked inventory of
 the supplied production artifacts; do not require the packages that produced
-them, a suite release receipt, or a sibling directory. A shared Project Canon
-or multi-Skill pipeline may be attached as optional integration context.
+them, a repository-level release receipt, or a sibling directory. A shared
+Project Canon or multi-Skill pipeline may be attached as optional integration
+context.
 
 中文名：AI 视频全能参考提示词导演
 

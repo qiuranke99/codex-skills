@@ -1,16 +1,16 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "ai-video-acceptance-gap-report.schema.json",
-  "title": "AI Video Suite Acceptance Gap Report",
+  "title": "AI Video Prompt Director Acceptance Gap Report",
   "type": "object",
   "additionalProperties": false,
   "required": [
-    "schema_version", "suite_version", "candidate_id", "audit_round", "audit_roles",
+    "schema_version", "package_version", "candidate_id", "audit_round", "audit_roles",
     "gaps", "validation_commands", "exit_gate", "final_status"
   ],
   "properties": {
-    "schema_version": {"const": "ai-video-acceptance-gap-report.v1"},
-    "suite_version": {"type": "string", "pattern": "^[0-9]+\\.[0-9]+\\.[0-9]+$"},
+    "schema_version": {"const": "ai-video-acceptance-gap-report.v2"},
+    "package_version": {"type": "string", "pattern": "^[0-9]+\\.[0-9]+\\.[0-9]+$"},
     "candidate_id": {"type": "string", "minLength": 1},
     "audit_round": {"type": "integer", "minimum": 1},
     "audit_roles": {

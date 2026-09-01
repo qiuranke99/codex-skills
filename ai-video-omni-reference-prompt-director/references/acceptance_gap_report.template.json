@@ -1,6 +1,6 @@
 {
-  "schema_version": "ai-video-acceptance-gap-report.v1",
-  "suite_version": "1.0.0",
+  "schema_version": "ai-video-acceptance-gap-report.v2",
+  "package_version": "1.0.0",
   "candidate_id": "CANDIDATE_ID",
   "audit_round": 1,
   "audit_roles": [

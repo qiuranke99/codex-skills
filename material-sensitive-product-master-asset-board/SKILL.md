@@ -15,9 +15,7 @@ A research report, moodboard, prompt, several unbound sheets, uninspected image,
 
 ## Standalone Runtime Boundary
 
-This package is independently installable, discoverable, invokable, testable, and usable. Resolve scripts, references, requirements, schemas, and test cases relative to this `SKILL.md`. Runtime may not probe, import, synchronize, or require a neighboring Skill, aggregate router, Studio repository, High-Control release manager, or fixed checkout path.
-
-The High-Control AI TVC workflow is a publication and distribution verification gate for the maintained repository. It is not a runtime dependency and must not be mentioned as a prerequisite to a user invoking a copied or separately installed package.
+This package is independently installable, discoverable, invokable, testable, and usable. Resolve scripts, references, requirements, schemas, and test cases relative to this `SKILL.md`. Runtime may not probe, import, synchronize, or require a neighboring Skill, repository-level router or release manager, Studio repository, or fixed checkout path.
 
 Use Python 3.11 or 3.12 with Pillow. If Pillow is absent, install this package's `requirements.txt`. If no supported decoder can be made available, return `blocked_material_decoder_unavailable`; never infer media validity from an extension or header alone.
 

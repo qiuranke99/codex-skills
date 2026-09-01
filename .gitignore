@@ -23,8 +23,3 @@ Thumbs.db
 outputs/
 local-projects/
 client-projects/
-
-# High-Control AI TVC local runtime.
-high-control-ai-tvc/.venv/
-high-control-ai-tvc/validation-report.json
-high-control-ai-tvc/**/*.tmp

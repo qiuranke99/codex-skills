@@ -46,43 +46,31 @@ Before changing a skill:
 
 ## Root Hygiene
 
-The root should stay sparse. Keep durable root files limited to project coordination, inventory, top-level Skill packages, `.github/`, and the single `high-control-ai-tvc/` production-system distribution. Skill implementation content belongs inside its own skill directory.
+The root should stay sparse. Keep durable root files limited to project
+coordination, inventory, top-level Skill packages, and `.github/`. Skill
+implementation content belongs inside its own Skill directory.
 
-## High-Control AI TVC Production System
+## Standalone Skill Independence
 
 - Every top-level Skill is independently installable, discoverable, invocable,
-  and testable. Its own package is the runtime authority. No Skill may require
-  `high-control-ai-tvc`, a suite receipt, a release-control launcher, or a
-  sibling package before performing its declared core work.
-- Treat `high-control-ai-tvc/SUITE_MANIFEST.json` only as the inventory for the
-  explicitly selected 15-Skill aggregate compatibility profile. Never copy the
-  Skill packages into the subsystem, and never use that manifest to decide
-  whether an individual Skill is ready.
-- Cross-Skill transformations belong to the optional aggregate integrator.
-  Standalone packages emit portable, hash-bound artifacts; they do not import
-  sibling implementations at runtime.
-- The supported route is Omni / all-reference / multimodal
-  reference-to-video. Do not substitute T2V, standalone single-image I2V,
-  first/last-frame, endpoint-frame, or interpolation workflows.
-- The production endpoint is a provider-ready P2 package. This repository does
-  not submit paid video generations and does not own music, final editing,
-  color mastering, or independent output QC.
-- Ordinary directing gaps are inference work. Do not return a rough script to
-  the user merely because it lacks professional camera, blocking, continuity,
-  product-use, or timing language. Exact claims, packaging copy, regulated
-  facts, identity, and mechanism evidence remain source-bound.
-- Before changing the aggregate compatibility contract, installer, release
-  manager, or end-to-end SOP, read `high-control-ai-tvc/docs/SOP.md` in full
-  and run aggregate validation. A change confined to one Skill requires that
-  package's own tests plus the root standalone-isolation validator; aggregate
-  validation is integration regression, never an invocation gate.
+  and testable. Its own package is the sole runtime authority.
+- No Skill may require a repository-level router, release receipt, sibling
+  package, fixed checkout path, or hidden chat state before performing its
+  declared core work.
+- A Skill may emit portable, hash-bound artifacts for an optional external
+  consumer, but it must not import or execute sibling implementations at
+  runtime.
+- A change confined to one Skill requires that package's own tests plus the
+  root standalone-isolation validator. Repository tooling must discover Skill
+  packages from their own `SKILL.md` files rather than from a central curated
+  inventory.
 
 ## Public Repository Data Boundary
 
 - Never commit customer scripts, private briefs, identities, reference media,
-  Project Canon, storyboards, keyframes, V1/V2 media, P2 payloads, provider
-  credentials, `.env` files, certificates, or secrets.
-- Real production projects live outside this repository. The installer only
-  exposes Skill directories to Codex; it does not import project data.
+  production manifests, storyboards, keyframes, generated media, provider
+  payloads, credentials, `.env` files, certificates, or secrets.
+- Real production projects live outside this repository. Installing or exposing
+  a Skill directory to Codex must never import project data.
 - Public visibility is not evidence that third-party assets or customer data
   may be redistributed.

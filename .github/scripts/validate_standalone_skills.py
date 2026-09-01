@@ -2,9 +2,9 @@
 """Validate that every top-level Skill package works as an isolated package.
 
 The validator intentionally uses only the Python standard library and never
-imports or executes anything from ``high-control-ai-tvc``.  Each directory
-directly below the repository root that contains ``SKILL.md`` is treated as a
-published Skill package.
+imports or executes sibling packages or repository-level orchestration code.
+Each directory directly below the repository root that contains ``SKILL.md``
+is treated as a published Skill package.
 
 Exit codes are stable:
 
@@ -229,7 +229,7 @@ def _scan_forbidden_markers(
         result.add_issue(
             Issue(
                 E_FORBIDDEN_RELEASE_GATE,
-                f"SKILL.md contains forbidden High-Control release coupling: {marker_name}",
+                f"SKILL.md contains forbidden repository-level release coupling: {marker_name}",
                 _display_path(skill_path, repo_root),
                 line,
                 _line_evidence(text, line),
@@ -1300,8 +1300,8 @@ def validate_repository(
     packages = discover_skill_packages(repo_root)
     package_names = [path.name for path in packages]
     # Dependency scanning includes every visible top-level directory, not only
-    # directories with SKILL.md.  This deliberately catches references to
-    # repository subsystems such as high-control-ai-tvc.
+    # directories with SKILL.md. This deliberately catches dependencies on any
+    # sibling package or repository-level subsystem.
     sibling_names = sorted(
         child.name
         for child in repo_root.iterdir()

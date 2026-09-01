@@ -67,22 +67,11 @@ class StandaloneReleaseTests(unittest.TestCase):
             )
             + "\n",
         )
-        members = [f"fixture-member-{index:02d}" for index in range(release.EXPECTED_AGGREGATE_MEMBERS)]
-        excluded = sorted(release.EXPECTED_EXCLUDED_SKILLS)
-        for name in [*members, *[item for item in excluded if item != release.SKILL_NAME]]:
-            write(repo / name / "SKILL.md", f"---\nname: {name}\ndescription: fixture\n---\n")
         write(
-            repo / "high-control-ai-tvc" / "SUITE_MANIFEST.json",
-            json.dumps(
-                {
-                    "standalone_package_count": release.EXPECTED_STANDALONE_PACKAGES,
-                    "excluded_from_aggregate_profile": excluded,
-                    "skills": [{"name": name} for name in members],
-                },
-                sort_keys=True,
-            )
-            + "\n",
+            repo / "independent-fixture-skill" / "SKILL.md",
+            "---\nname: independent-fixture-skill\ndescription: unrelated fixture\n---\n",
         )
+        write(repo / "independent-fixture-skill" / "marker.txt", "unrelated\n")
         subprocess.run(["git", "add", "."], cwd=repo, check=True)
         subprocess.run(["git", "commit", "-qm", "fixture"], cwd=repo, check=True)
         return repo, self.head(repo)
@@ -99,6 +88,19 @@ class StandaloneReleaseTests(unittest.TestCase):
         subprocess.run(["git", "add", str(package / "SKILL.md")], cwd=repo, check=True)
         subprocess.run(["git", "commit", "-qm", marker], cwd=repo, check=True)
         return self.head(repo)
+
+    def legacy_receipt(self, receipt: dict[str, object]) -> dict[str, object]:
+        value = json.loads(json.dumps(receipt))
+        value["schema_version"] = release.LEGACY_RECEIPT_SCHEMA
+        value["controls_aggregate_members"] = False
+        value["aggregate_boundary"] = {
+            "manifest_sha256": "a" * 64,
+            "standalone_package_count": 21,
+            "aggregate_member_count": 15,
+            "aggregate_exclusion_count": 6,
+            "target_excluded": True,
+        }
+        return value
 
     @contextlib.contextmanager
     def sandbox(self):
@@ -176,18 +178,19 @@ class StandaloneReleaseTests(unittest.TestCase):
         with self.offline_remote(commit):
             return release.sync(repo, state, discovery, Path(sys.executable), commit, canonical)
 
-    def test_materialize_and_verify_exact_21_15_6_boundary(self) -> None:
+    def test_materialize_and_verify_exact_target_tree_without_shared_inventory(self) -> None:
         with self.sandbox() as root:
             repo, commit = self.make_repo(root)
             releases = root / "releases"
             releases.mkdir()
             package = release.materialize_snapshot(repo, commit, releases)
             evidence = release.verify_snapshot(repo, commit, package)
-            boundary = release.aggregate_boundary(repo, commit)
             self.assertEqual(evidence["package_tree_oid"], release.package_tree_oid(repo, commit))
-            self.assertEqual(boundary["standalone_package_count"], 21)
-            self.assertEqual(boundary["aggregate_member_count"], 15)
-            self.assertEqual(boundary["aggregate_exclusion_count"], 6)
+            self.assertEqual(
+                {item["path"] for item in evidence["file_manifest"]},
+                {"SKILL.md", "agents/openai.yaml", "scripts/test_contract.py", "standalone-validation.json"},
+            )
+            self.assertFalse((package / "independent-fixture-skill").exists())
 
     def test_snapshot_content_tamper_is_rejected(self) -> None:
         with self.sandbox() as root:
@@ -209,18 +212,21 @@ class StandaloneReleaseTests(unittest.TestCase):
             self.assertEqual(first["deterministic_test_count"], 1)
             self.assertFalse(any(path.name == "__pycache__" for path in package.rglob("__pycache__")))
 
-    def test_aggregate_membership_of_target_is_rejected(self) -> None:
+    def test_unrelated_skill_change_does_not_change_target_tree(self) -> None:
         with self.sandbox() as root:
-            repo, _commit = self.make_repo(root)
-            manifest_path = repo / "high-control-ai-tvc" / "SUITE_MANIFEST.json"
-            manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
-            manifest["excluded_from_aggregate_profile"].remove(release.SKILL_NAME)
-            manifest["skills"].append({"name": release.SKILL_NAME})
-            write(manifest_path, json.dumps(manifest, sort_keys=True) + "\n")
+            repo, first_commit = self.make_repo(root)
+            first_tree = release.package_tree_oid(repo, first_commit)
+            write(repo / "independent-fixture-skill" / "marker.txt", "changed independently\n")
             subprocess.run(["git", "add", "."], cwd=repo, check=True)
-            subprocess.run(["git", "commit", "-qm", "bad boundary"], cwd=repo, check=True)
-            with self.assertRaisesRegex(release.ReleaseError, "target must be excluded"):
-                release.aggregate_boundary(repo, self.head(repo))
+            subprocess.run(["git", "commit", "-qm", "unrelated change"], cwd=repo, check=True)
+            second_commit = self.head(repo)
+            self.assertNotEqual(first_commit, second_commit)
+            self.assertEqual(first_tree, release.package_tree_oid(repo, second_commit))
+            releases = root / "releases"
+            releases.mkdir()
+            package = release.materialize_snapshot(repo, second_commit, releases)
+            release.verify_snapshot(repo, second_commit, package)
+            self.assertFalse((package / "marker.txt").exists())
 
     def test_real_sync_and_check_use_real_junction_acl_and_optional_canonical(self) -> None:
         with self.sandbox() as root:
@@ -242,6 +248,93 @@ class StandaloneReleaseTests(unittest.TestCase):
             self.assertEqual(remote.call_count, 5)
             fetch.assert_called_once_with(repo.resolve(), commit)
             self.assertFalse((state / "transaction.json").exists())
+
+    def test_v2_receipt_is_strictly_package_scoped(self) -> None:
+        with self.sandbox() as root:
+            repo, commit = self.make_repo(root)
+            state, discovery = root / "state", root / "discovery"
+            self.sync_fixture(repo, commit, state, discovery)
+            receipt = json.loads((state / "active-release.json").read_text(encoding="utf-8"))
+            self.assertEqual(receipt["schema_version"], release.RECEIPT_SCHEMA)
+            self.assertEqual(
+                set(receipt),
+                {
+                    "schema_version", "skill_name", "scope", "repository",
+                    "accepted_remote_commit", "release_commit", "package_tree_oid", "file_manifest",
+                    "file_manifest_sha256", "snapshot_root", "snapshot_write_protection", "validation",
+                    "canonical_comparison", "remote_observations", "previous_release", "rollback_active",
+                    "activation",
+                },
+            )
+
+    def test_legacy_active_receipt_requires_sync_and_migrates_with_rollback(self) -> None:
+        with self.sandbox() as root:
+            repo, first_commit = self.make_repo(root)
+            state, discovery = root / "state", root / "discovery"
+            self.sync_fixture(repo, first_commit, state, discovery)
+            receipt_path = state / "active-release.json"
+            current = json.loads(receipt_path.read_text(encoding="utf-8"))
+            legacy = self.legacy_receipt(current)
+            unknown = json.loads(json.dumps(legacy))
+            unknown["unexpected"] = True
+            with self.assertRaisesRegex(release.ReleaseError, "legacy top-level shape differs"):
+                release.validate_receipt_identity(
+                    unknown, release.state_paths(state), discovery, allow_legacy=True
+                )
+            wrong_type = json.loads(json.dumps(legacy))
+            wrong_type["aggregate_boundary"]["aggregate_member_count"] = "15"
+            with self.assertRaisesRegex(release.ReleaseError, "legacy release metadata differs"):
+                release.validate_receipt_identity(
+                    wrong_type, release.state_paths(state), discovery, allow_legacy=True
+                )
+            write(receipt_path, json.dumps(legacy, sort_keys=True) + "\n")
+            legacy_bytes = receipt_path.read_bytes()
+            prior_target = (discovery / release.SKILL_NAME).resolve(strict=True)
+
+            with mock.patch.object(release, "remote_head") as remote:
+                with self.assertRaisesRegex(release.ReleaseError, "LEGACY_RECEIPT_REQUIRES_SYNC"):
+                    release.check(repo, state, discovery, Path(sys.executable), first_commit)
+            remote.assert_not_called()
+
+            second_commit = self.change_package(repo, "legacy-migration")
+            outcomes: list[object] = [
+                second_commit,
+                second_commit,
+                second_commit,
+                release.ReleaseError("REMOTE_UNSTABLE: advanced"),
+            ]
+            with self.offline_remote(second_commit, outcomes):
+                with self.assertRaisesRegex(release.ReleaseError, "REMOTE_UNSTABLE"):
+                    release.sync(repo, state, discovery, Path(sys.executable), second_commit)
+            self.assertEqual(receipt_path.read_bytes(), legacy_bytes)
+            self.assertEqual((discovery / release.SKILL_NAME).resolve(strict=True), prior_target)
+            self.assertFalse((state / "transaction.json").exists())
+
+            with self.offline_remote(second_commit):
+                result = release.sync(repo, state, discovery, Path(sys.executable), second_commit)
+            migrated = json.loads(receipt_path.read_text(encoding="utf-8"))
+            self.assertEqual(result["status"], "STANDALONE_READY_LATEST")
+            self.assertEqual(migrated["schema_version"], release.RECEIPT_SCHEMA)
+            self.assertEqual(len(migrated), 17)
+            self.assertEqual(migrated["previous_release"]["release_commit"], first_commit)
+
+    def test_discovery_conflicts_detect_duplicate_in_another_root(self) -> None:
+        with self.sandbox() as root:
+            home = root / "home"
+            selected = home / ".agents" / "skills"
+            duplicate = home / ".codex" / "skills" / release.SKILL_NAME
+            selected.mkdir(parents=True)
+            duplicate.mkdir(parents=True)
+            cwd = root / "project"
+            cwd.mkdir()
+            with (
+                mock.patch.object(release.Path, "home", return_value=home),
+                mock.patch.dict(os.environ, {"CODEX_HOME": ""}, clear=False),
+            ):
+                conflicts = release.discovery_conflicts(selected, cwd=cwd)
+            normalized = {os.path.normcase(path) for path in conflicts}
+            self.assertIn(os.path.normcase(str(duplicate.resolve())), normalized)
+            self.assertNotIn(os.path.normcase(str(selected / release.SKILL_NAME)), normalized)
 
     def test_accepted_commit_mismatch_stops_before_materialization(self) -> None:
         with self.sandbox() as root:
@@ -440,6 +533,38 @@ class StandaloneReleaseTests(unittest.TestCase):
                 with self.assertRaisesRegex(release.ReleaseError, "STOP_AFTER_RECOVERY"):
                     release.sync(repo, state, discovery, Path(sys.executable), second_commit)
             self.assertFalse((state / "transaction.json").exists())
+            self.assertEqual((state / "active-release.json").read_bytes(), prior_receipt)
+            self.assertEqual((discovery / release.SKILL_NAME).resolve(strict=True), prior_target)
+
+    def test_process_restart_recovers_legacy_candidate_journal(self) -> None:
+        with self.sandbox() as root:
+            repo, first_commit = self.make_repo(root)
+            state, discovery = root / "state", root / "discovery"
+            self.sync_fixture(repo, first_commit, state, discovery)
+            prior_receipt = (state / "active-release.json").read_bytes()
+            prior_target = (discovery / release.SKILL_NAME).resolve(strict=True)
+            second_commit = self.change_package(repo, "legacy-crash-candidate")
+
+            def crash(point: str) -> None:
+                if point == "after_new_active":
+                    raise SimulatedCrash("simulated process termination")
+
+            with self.offline_remote(second_commit), mock.patch.object(release, "_fault", side_effect=crash):
+                with self.assertRaises(SimulatedCrash):
+                    release.sync(repo, state, discovery, Path(sys.executable), second_commit)
+            journal_path = state / "transaction.json"
+            journal = json.loads(journal_path.read_text(encoding="utf-8"))
+            journal["candidate"]["receipt"] = self.legacy_receipt(journal["candidate"]["receipt"])
+            write(journal_path, json.dumps(journal, sort_keys=True) + "\n")
+
+            with (
+                mock.patch.object(release, "remote_head", side_effect=release.ReleaseError("STOP_AFTER_RECOVERY")),
+                mock.patch.object(release, "fetch_exact"),
+                mock.patch.object(release, "discovery_conflicts", return_value=[]),
+            ):
+                with self.assertRaisesRegex(release.ReleaseError, "STOP_AFTER_RECOVERY"):
+                    release.sync(repo, state, discovery, Path(sys.executable), second_commit)
+            self.assertFalse(journal_path.exists())
             self.assertEqual((state / "active-release.json").read_bytes(), prior_receipt)
             self.assertEqual((discovery / release.SKILL_NAME).resolve(strict=True), prior_target)
 

@@ -192,7 +192,7 @@ if __name__ == "__main__":
             self.assertEqual(report["packages"][0]["checks"]["deterministic_test"]["status"], "pass")
             self.assertEqual(_tree_snapshot(repo_root), before, "validator modified the source fixture repository")
 
-    def test_forbidden_high_control_gate_is_red_and_non_mutating(self) -> None:
+    def test_forbidden_legacy_repository_gate_is_red_and_non_mutating(self) -> None:
         with tempfile.TemporaryDirectory(prefix="standalone-gate-red-") as temporary:
             repo_root = Path(temporary) / "repo"
             repo_root.mkdir()

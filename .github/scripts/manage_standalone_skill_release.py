@@ -1,10 +1,10 @@
 #!/usr/bin/env python3
 """Publish and verify the frozen-moment-camera-coverage standalone Skill.
 
-This controller is intentionally outside the optional High-Control aggregate.
-It materializes only the target package from an exact GitHub ``main`` commit,
-freezes that package, activates one discovery link, and writes a package-scoped
-receipt.  It never installs or rewrites sibling Skills.
+This package-scoped controller materializes only the target Skill from an exact
+GitHub ``main`` commit, freezes that snapshot, activates one discovery link, and
+writes a standalone receipt.  It never installs, validates, or rewrites sibling
+Skills.
 """
 
 from __future__ import annotations
@@ -37,7 +37,8 @@ REPOSITORY = "qiuranke99/codex-skills"
 REPOSITORY_ID = 1264973746
 REMOTE_URL = "https://github.com/qiuranke99/codex-skills.git"
 BRANCH = "main"
-RECEIPT_SCHEMA = "frozen-moment-camera-coverage-release.v1"
+RECEIPT_SCHEMA = "frozen-moment-camera-coverage-release.v2"
+LEGACY_RECEIPT_SCHEMA = "frozen-moment-camera-coverage-release.v1"
 STATE_SCHEMA = "frozen-moment-camera-coverage-release-state.v1"
 LOCK_SCHEMA = "frozen-moment-camera-coverage-release-lock.v1"
 TRANSACTION_SCHEMA = "frozen-moment-camera-coverage-release-transaction.v1"
@@ -45,19 +46,6 @@ SHA_RE = re.compile(r"^[0-9a-f]{40,64}$")
 COMMIT_RE = re.compile(r"^[0-9a-f]{40}$")
 SHA256_RE = re.compile(r"^[0-9a-f]{64}$")
 TRANSACTION_ID_RE = re.compile(r"^[0-9a-f]{32}$")
-EXPECTED_STANDALONE_PACKAGES = 21
-EXPECTED_AGGREGATE_MEMBERS = 15
-EXPECTED_AGGREGATE_EXCLUSIONS = 6
-EXPECTED_EXCLUDED_SKILLS = {
-    "advertising-reference-research-director",
-    "blender-production-governor",
-    "complex-product-identity-reconstruction-asset-locking",
-    "img2threejs-production-governor",
-    "reference-guided-image-reconstruction-director",
-    SKILL_NAME,
-}
-
-
 def _noop_fault(_point: str) -> None:
     """Test seam for simulating abrupt process termination at durable phases."""
 
@@ -595,53 +583,6 @@ def materialize_snapshot(repo_root: Path, commit: str, releases: Path) -> Path:
     return package
 
 
-def aggregate_boundary(repo_root: Path, commit: str) -> dict[str, Any]:
-    raw_bytes = _git(
-        repo_root,
-        ["show", f"{commit}:high-control-ai-tvc/SUITE_MANIFEST.json"],
-        binary=True,
-    )
-    try:
-        manifest = json.loads(raw_bytes.decode("utf-8"))
-    except (UnicodeDecodeError, json.JSONDecodeError) as exc:
-        raise ReleaseError("AGGREGATE_BOUNDARY_VIOLATION: manifest is not valid UTF-8 JSON") from exc
-    members = [item.get("name") for item in manifest.get("skills", []) if isinstance(item, dict)]
-    excluded = manifest.get("excluded_from_aggregate_profile", [])
-    if SKILL_NAME in members or SKILL_NAME not in excluded:
-        raise ReleaseError("AGGREGATE_BOUNDARY_VIOLATION: target must be excluded and unmanaged")
-    top_level = _git(repo_root, ["ls-tree", "-d", "--name-only", commit]).splitlines()
-    standalone = 0
-    for name in top_level:
-        probe = subprocess.run(
-            ["git", "cat-file", "-e", f"{commit}:{name}/SKILL.md"],
-            cwd=repo_root,
-            stdout=subprocess.DEVNULL,
-            stderr=subprocess.DEVNULL,
-            check=False,
-        )
-        standalone += probe.returncode == 0
-    declared = manifest.get("standalone_package_count")
-    if (
-        declared != standalone
-        or len(members) + len(excluded) != standalone
-        or standalone != EXPECTED_STANDALONE_PACKAGES
-        or len(members) != EXPECTED_AGGREGATE_MEMBERS
-        or len(excluded) != EXPECTED_AGGREGATE_EXCLUSIONS
-        or set(excluded) != EXPECTED_EXCLUDED_SKILLS
-    ):
-        raise ReleaseError(
-            f"AGGREGATE_BOUNDARY_VIOLATION: declared={declared}; discovered={standalone}; "
-            f"managed={len(members)}; excluded={len(excluded)}; exclusion_set={sorted(excluded)}"
-        )
-    return {
-        "manifest_sha256": hashlib.sha256(raw_bytes).hexdigest(),
-        "standalone_package_count": standalone,
-        "aggregate_member_count": len(members),
-        "aggregate_exclusion_count": len(excluded),
-        "target_excluded": True,
-    }
-
-
 def trusted_python(python: Path) -> Path:
     candidate = _absolute(python)
     _assert_no_reparse_chain(candidate.parent, "trusted Python parent")
@@ -917,21 +858,54 @@ def validate_receipt_identity(
     expected_python: Path | None = None,
     accepted_commit: str | None = None,
     expected_release_commit: str | None = None,
+    allow_legacy: bool = False,
 ) -> dict[str, Any]:
     expected_keys = {
-        "schema_version", "skill_name", "scope", "controls_aggregate_members", "repository",
+        "schema_version", "skill_name", "scope", "repository",
         "accepted_remote_commit", "release_commit", "package_tree_oid", "file_manifest",
-        "file_manifest_sha256", "snapshot_root", "snapshot_write_protection", "aggregate_boundary",
+        "file_manifest_sha256", "snapshot_root", "snapshot_write_protection",
         "validation", "canonical_comparison", "remote_observations", "previous_release",
         "rollback_active", "activation",
     }
-    if not isinstance(value, dict) or set(value) != expected_keys:
+    legacy_only_keys = {"controls_aggregate_members", "aggregate_boundary"}
+    if not isinstance(value, dict):
         raise _receipt_error("top-level shape differs")
+    schema = value.get("schema_version")
+    if schema == LEGACY_RECEIPT_SCHEMA:
+        if not allow_legacy:
+            raise ReleaseError("LEGACY_RECEIPT_REQUIRES_SYNC: run sync to migrate the active release")
+        if set(value) != expected_keys | legacy_only_keys:
+            raise _receipt_error("legacy top-level shape differs")
+        boundary = value["aggregate_boundary"]
+        boundary_keys = {
+            "manifest_sha256", "standalone_package_count", "aggregate_member_count",
+            "aggregate_exclusion_count", "target_excluded",
+        }
+        if (
+            value["controls_aggregate_members"] is not False
+            or not isinstance(boundary, dict)
+            or set(boundary) != boundary_keys
+            or not isinstance(boundary["manifest_sha256"], str)
+            or not SHA256_RE.fullmatch(boundary["manifest_sha256"])
+            or type(boundary["standalone_package_count"]) is not int
+            or type(boundary["aggregate_member_count"]) is not int
+            or type(boundary["aggregate_exclusion_count"]) is not int
+            or boundary["standalone_package_count"] < 1
+            or boundary["aggregate_member_count"] < 0
+            or boundary["aggregate_exclusion_count"] < 1
+            or boundary["standalone_package_count"]
+            != boundary["aggregate_member_count"] + boundary["aggregate_exclusion_count"]
+            or boundary["target_excluded"] is not True
+        ):
+            raise _receipt_error("legacy release metadata differs")
+    elif schema == RECEIPT_SCHEMA:
+        if set(value) != expected_keys:
+            raise _receipt_error("top-level shape differs")
+    else:
+        raise _receipt_error("receipt schema differs")
     if (
-        value["schema_version"] != RECEIPT_SCHEMA
-        or value["skill_name"] != SKILL_NAME
+        value["skill_name"] != SKILL_NAME
         or value["scope"] != "standalone_skill_release"
-        or value["controls_aggregate_members"] is not False
         or value["repository"] != {
             "github_repository_id": REPOSITORY_ID,
             "full_name": REPOSITORY,
@@ -985,15 +959,6 @@ def validate_receipt_identity(
         or (os.name != "nt" and protection["principal_sid"] is not None)
     ):
         raise _receipt_error("write protection evidence differs")
-    boundary = value["aggregate_boundary"]
-    if not isinstance(boundary, dict) or boundary != {
-        "manifest_sha256": boundary.get("manifest_sha256"),
-        "standalone_package_count": EXPECTED_STANDALONE_PACKAGES,
-        "aggregate_member_count": EXPECTED_AGGREGATE_MEMBERS,
-        "aggregate_exclusion_count": EXPECTED_AGGREGATE_EXCLUSIONS,
-        "target_excluded": True,
-    } or not isinstance(boundary["manifest_sha256"], str) or not SHA256_RE.fullmatch(boundary["manifest_sha256"]):
-        raise _receipt_error("aggregate boundary evidence differs")
     validation = value["validation"]
     if not isinstance(validation, dict) or set(validation) != {
         "status", "python_executable", "python_version", "pillow_version", "deterministic_test",
@@ -1066,6 +1031,7 @@ def load_receipt(
     expected_python: Path | None = None,
     accepted_commit: str | None = None,
     expected_release_commit: str | None = None,
+    allow_legacy: bool = False,
 ) -> dict[str, Any]:
     _real_file(path, "release receipt")
     try:
@@ -1079,6 +1045,7 @@ def load_receipt(
         expected_python=expected_python,
         accepted_commit=accepted_commit,
         expected_release_commit=expected_release_commit,
+        allow_legacy=allow_legacy,
     )
 
 
@@ -1119,7 +1086,13 @@ def _prior_receipt_bytes(transaction: dict[str, Any]) -> bytes | None:
         raise ReleaseError("TRANSACTION_TAMPERED: prior receipt encoding is invalid") from exc
 
 
-def _validate_transaction(value: Any, paths: dict[str, Path], discovery_root: Path) -> dict[str, Any]:
+def _validate_transaction(
+    value: Any,
+    paths: dict[str, Path],
+    discovery_root: Path,
+    *,
+    allow_legacy_candidate: bool = False,
+) -> dict[str, Any]:
     expected_keys = {
         "schema_version", "skill_name", "transaction_id", "phase", "state_root", "discovery_root",
         "destination", "temporary", "backup", "candidate", "prior", "post_activation_remote",
@@ -1151,7 +1124,9 @@ def _validate_transaction(value: Any, paths: dict[str, Path], discovery_root: Pa
     candidate = value["candidate"]
     if not isinstance(candidate, dict) or set(candidate) != {"snapshot_root", "receipt"}:
         raise ReleaseError("TRANSACTION_TAMPERED: candidate shape differs")
-    receipt = validate_receipt_identity(candidate["receipt"], paths, discovery_root)
+    receipt = validate_receipt_identity(
+        candidate["receipt"], paths, discovery_root, allow_legacy=allow_legacy_candidate
+    )
     if not isinstance(candidate["snapshot_root"], str) or not _same_path(
         Path(candidate["snapshot_root"]), Path(receipt["snapshot_root"])
     ):
@@ -1173,7 +1148,9 @@ def _validate_transaction(value: Any, paths: dict[str, Path], discovery_root: Pa
             prior_value = json.loads(raw.decode("utf-8"))
         except (UnicodeDecodeError, json.JSONDecodeError) as exc:
             raise ReleaseError("TRANSACTION_TAMPERED: prior receipt is unreadable") from exc
-        prior_receipt = validate_receipt_identity(prior_value, paths, discovery_root)
+        prior_receipt = validate_receipt_identity(
+            prior_value, paths, discovery_root, allow_legacy=True
+        )
         if not isinstance(prior["target"], str) or not _same_path(
             Path(prior["target"]), Path(prior_receipt["snapshot_root"])
         ):
@@ -1181,20 +1158,38 @@ def _validate_transaction(value: Any, paths: dict[str, Path], discovery_root: Pa
     return value
 
 
-def _load_transaction(paths: dict[str, Path], discovery_root: Path) -> dict[str, Any]:
+def _load_transaction(
+    paths: dict[str, Path],
+    discovery_root: Path,
+    *,
+    allow_legacy_candidate: bool = False,
+) -> dict[str, Any]:
     _real_file(paths["journal"], "transaction journal")
     try:
         value = json.loads(paths["journal"].read_text(encoding="utf-8"))
     except (OSError, UnicodeDecodeError, json.JSONDecodeError) as exc:
         raise ReleaseError("TRANSACTION_TAMPERED: journal is unreadable") from exc
-    return _validate_transaction(value, paths, discovery_root)
+    return _validate_transaction(
+        value, paths, discovery_root, allow_legacy_candidate=allow_legacy_candidate
+    )
 
 
-def _write_transaction(paths: dict[str, Path], transaction: dict[str, Any], phase: str) -> None:
+def _write_transaction(
+    paths: dict[str, Path],
+    transaction: dict[str, Any],
+    phase: str,
+    *,
+    allow_legacy_candidate: bool = False,
+) -> None:
     if phase not in TRANSACTION_PHASES:
         raise ReleaseError(f"TRANSACTION_INVALID: unsupported phase {phase}")
     transaction["phase"] = phase
-    _validate_transaction(transaction, paths, Path(transaction["discovery_root"]))
+    _validate_transaction(
+        transaction,
+        paths,
+        Path(transaction["discovery_root"]),
+        allow_legacy_candidate=allow_legacy_candidate,
+    )
     _atomic_json(paths["journal"], transaction)
 
 
@@ -1207,7 +1202,9 @@ def _begin_transaction(
     prior_raw: bytes | None = None
     prior_target = _link_target(destination)
     if _lexists(paths["receipt"]):
-        prior_receipt = load_receipt(paths["receipt"], paths, discovery_root)
+        prior_receipt = load_receipt(
+            paths["receipt"], paths, discovery_root, allow_legacy=True
+        )
         prior_raw = paths["receipt"].read_bytes()
         if prior_target is None or not _same_path(prior_target, Path(prior_receipt["snapshot_root"])):
             raise ReleaseError("DISCOVERY_DRIFT: active receipt and discovery target differ")
@@ -1271,8 +1268,18 @@ def _activate_transaction(paths: dict[str, Path], transaction: dict[str, Any]) -
     _write_transaction(paths, transaction, "switched")
 
 
-def _rollback_transaction(paths: dict[str, Path], transaction: dict[str, Any]) -> None:
-    _write_transaction(paths, transaction, "rolling_back")
+def _rollback_transaction(
+    paths: dict[str, Path],
+    transaction: dict[str, Any],
+    *,
+    allow_legacy_candidate: bool = False,
+) -> None:
+    _write_transaction(
+        paths,
+        transaction,
+        "rolling_back",
+        allow_legacy_candidate=allow_legacy_candidate,
+    )
     destination = Path(transaction["destination"])
     temporary = Path(transaction["temporary"])
     backup = Path(transaction["backup"])
@@ -1331,10 +1338,12 @@ def _finalize_transaction(paths: dict[str, Path], transaction: dict[str, Any]) -
 def _recover_transaction(paths: dict[str, Path], discovery_root: Path) -> str | None:
     if not _lexists(paths["journal"]):
         return None
-    transaction = _load_transaction(paths, discovery_root)
+    transaction = _load_transaction(paths, discovery_root, allow_legacy_candidate=True)
     if transaction["phase"] == "verified":
         try:
-            active_receipt = load_receipt(paths["receipt"], paths, discovery_root)
+            active_receipt = load_receipt(
+                paths["receipt"], paths, discovery_root, allow_legacy=True
+            )
             committed = active_receipt["activation"]["transaction_id"] == transaction["transaction_id"]
             active = _link_target(Path(transaction["destination"]))
             candidate = Path(transaction["candidate"]["snapshot_root"])
@@ -1344,7 +1353,7 @@ def _recover_transaction(paths: dict[str, Path], discovery_root: Path) -> str | 
         if committed:
             _finalize_transaction(paths, transaction)
             return "finalized_verified_transaction"
-    _rollback_transaction(paths, transaction)
+    _rollback_transaction(paths, transaction, allow_legacy_candidate=True)
     return "rolled_back_incomplete_transaction"
 
 
@@ -1377,9 +1386,6 @@ def _check_locked(
     protection = assert_write_protection(package)
     if receipt["snapshot_write_protection"] != protection:
         raise _receipt_error("write protection evidence differs")
-    boundary = aggregate_boundary(repo_root, commit)
-    if receipt["aggregate_boundary"] != boundary:
-        raise _receipt_error("aggregate boundary differs")
     destination = discovery_root / SKILL_NAME
     active = _link_target(destination)
     if active is None or not _same_path(active, package):
@@ -1403,7 +1409,6 @@ def _check_locked(
         "package_tree_oid": git_evidence["package_tree_oid"],
         "discovery_entry": str(destination),
         "snapshot_root": str(package),
-        "aggregate_boundary": boundary,
         "canonical_compared": comparison is not None,
     }
 
@@ -1450,7 +1455,6 @@ def sync(
         fetch_exact(repo_root, accepted_commit)
         package = materialize_snapshot(repo_root, accepted_commit, paths["releases"])
         git_evidence = verify_snapshot(repo_root, accepted_commit, package)
-        boundary = aggregate_boundary(repo_root, accepted_commit)
         validation = run_validation(package, python)
         second = remote_head(repo_root, accepted_commit)
         comparison = _canonical_comparison(canonical, git_evidence["file_manifest"])
@@ -1459,7 +1463,9 @@ def sync(
         third = remote_head(repo_root, accepted_commit)
         previous_release = None
         if _lexists(paths["receipt"]):
-            previous = load_receipt(paths["receipt"], paths, discovery_root)
+            previous = load_receipt(
+                paths["receipt"], paths, discovery_root, allow_legacy=True
+            )
             previous_release = {
                 "release_commit": previous["release_commit"],
                 "package_tree_oid": previous["package_tree_oid"],
@@ -1471,7 +1477,6 @@ def sync(
             "schema_version": RECEIPT_SCHEMA,
             "skill_name": SKILL_NAME,
             "scope": "standalone_skill_release",
-            "controls_aggregate_members": False,
             "repository": {
                 "github_repository_id": REPOSITORY_ID,
                 "full_name": REPOSITORY,
@@ -1485,7 +1490,6 @@ def sync(
             "file_manifest_sha256": hashlib.sha256(_canonical_json(git_evidence["file_manifest"])).hexdigest(),
             "snapshot_root": str(package),
             "snapshot_write_protection": protection,
-            "aggregate_boundary": boundary,
             "validation": validation,
             "canonical_comparison": comparison,
             "remote_observations": [first, second, third],

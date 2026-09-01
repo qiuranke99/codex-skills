@@ -6,7 +6,7 @@ These scenarios are the maintained acceptance map for contract v6. A test is gre
 
 | ID | Scenario | Required evidence |
 |---|---|---|
-| G01 | Standalone package | Package copied alone to an empty discovery root; all package tests and package-local CLIs run with repository siblings unavailable and `PYTHONPATH` cleared. No High-Control, Studio, aggregate, or adjacent Skill path is required at runtime. |
+| G01 | Standalone package | Package copied alone to an empty discovery root; all package tests and package-local CLIs run with repository siblings unavailable and `PYTHONPATH` cleared. No repository-level orchestrator, Studio, or adjacent Skill path is required at runtime. |
 | G02 | Single clear front accepted | One fully decoded local front image freezes as `source_coverage_profile: clear_front_only`; no request for additional user images occurs before audited research. |
 | G03 | Browser-first research | When in-app Browser is available, the run records actual visited exact-variant, same-family, and packaging-archetype queries/URLs, captures/evidence, timestamps, and evidence classes. |
 | G04 | Audited fallback | When in-app Browser transport is unavailable, the exact failure is recorded and audited fallback queries are attempted for all three lanes. If every online surface is unavailable, all lanes record `blocked` and a conflict-free source-visible identity may complete a coverage-limited board without hidden-view fabrication. |
@@ -27,7 +27,7 @@ These scenarios are the maintained acceptance map for contract v6. A test is gre
 | ID | Scenario | Expected result |
 |---|---|---|
 | R01 | Implicit routing attempts a worker. | `blocked_worker_authorization` |
-| R02 | Runtime imports a neighboring Skill, aggregate router, Studio file, fixed release path, or High-Control manager. | standalone validation failure |
+| R02 | Runtime imports a neighboring Skill, repository-level router or release manager, Studio file, or fixed release path. | standalone validation failure |
 | R03 | Source is truncated, corrupt, mislabeled, symlink-escaped, duplicated, or mutates after freeze. | exact `blocked_reference_*`; no overwrite |
 | R04 | One front image is aliased as front, three-quarter, side, rear, and bottom to manufacture multiview authority. | `blocked_panel_view_authority_laundering` or `blocked_material_source_contract_invalid` |
 | R05 | Search result is graded exact solely because it is visually similar, purple/clear, same capacity, or from a marketplace aggregator. | `blocked_research_fact_authority` or `blocked_identity_resolution_invalid` |
@@ -63,7 +63,7 @@ These scenarios are the maintained acceptance map for contract v6. A test is gre
 | H09 | Same-family exactness laundering | Confirmed sibling mold may support bounded geometry reconstruction but cannot prove exact variant copy, liquid, print, marks, or engineering dimensions. |
 | H10 | Browser outage | In-app Browser `Transport closed` is recorded; auditable fallback evidence can proceed. If fallback attempts are also `blocked`, a conflict-free direct source identity contracts output to source-only rather than hallucinating hidden views. |
 | H11 | Research/reference rights split | Exact-variant official public media contributes observations with `selected_generation_reference: false` but is absent from `reference-manifest.json` and worker arguments. |
-| H12 | Standalone release extraction | The package copied outside the High-Control checkout remains discoverable/invokable and passes package validation; High-Control is tested only as distribution integration. |
+| H12 | Standalone release extraction | The package copied from the repository into an empty discovery root remains discoverable, invokable, and passes package-local validation without sibling access. |
 
 ## Runtime Evidence Boundary
 
