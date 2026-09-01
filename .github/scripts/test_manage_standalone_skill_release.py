@@ -332,9 +332,13 @@ class StandaloneReleaseTests(unittest.TestCase):
                 mock.patch.dict(os.environ, {"CODEX_HOME": ""}, clear=False),
             ):
                 conflicts = release.discovery_conflicts(selected, cwd=cwd)
-            normalized = {os.path.normcase(path) for path in conflicts}
-            self.assertIn(os.path.normcase(str(duplicate.resolve())), normalized)
-            self.assertNotIn(os.path.normcase(str(selected / release.SKILL_NAME)), normalized)
+            self.assertTrue(any(release._same_path(Path(path), duplicate) for path in conflicts))
+            self.assertFalse(
+                any(
+                    release._same_path(Path(path), selected / release.SKILL_NAME)
+                    for path in conflicts
+                )
+            )
 
     def test_accepted_commit_mismatch_stops_before_materialization(self) -> None:
         with self.sandbox() as root:
