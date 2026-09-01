@@ -1,0 +1,7 @@
+interface:
+  display_name: "Reference-Guided Image Reconstruction Director"
+  short_description: "Build prompt-only manual reconstruction packages"
+  default_prompt: "Use $reference-guided-image-reconstruction-director to inspect these images read-only and deliver a prompt-only, reference-constrained reconstruction package for my manual execution on an external platform. Never generate or edit pixels or operate the platform. Separate semantic high-resolution intent from evidenced pixel dimensions and settings; never claim prompt-guaranteed 4K."
+
+policy:
+  allow_implicit_invocation: true

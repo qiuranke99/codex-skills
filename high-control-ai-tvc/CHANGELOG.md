@@ -1,5 +1,14 @@
 # Changelog
 
+## Unreleased — 2026-09-01
+
+- 仓库 standalone 边界扩展为 21 个独立包：新增
+  `reference-guided-image-reconstruction-director`，保持其 prompt-only、
+  manual-external、no-pixel-generation 边界，并将其明确列入 aggregate 排除
+  清单；High-Control 仍只管理原有 15 个成员，发布控制器、隔离校验、边界
+  测试、CI 与文档统一为
+  `21 standalone = 15 aggregate + 6 excluded`。
+
 ## Unreleased — 2026-07-18
 
 - 仓库 standalone 边界扩展为 20 个独立包：新增

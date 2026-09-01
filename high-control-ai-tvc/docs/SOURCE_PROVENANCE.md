@@ -20,9 +20,10 @@ profile 的清单：
 `advertising-reference-research-director` 与
 `blender-production-governor`、
 `complex-product-identity-reconstruction-asset-locking`、
-`frozen-moment-camera-coverage`、`img2threejs-production-governor`
+`frozen-moment-camera-coverage`、`img2threejs-production-governor` 与
+`reference-guided-image-reconstruction-director`
 只被当前 aggregate profile 排除，因此仓库共有
-20 个 standalone 顶层 Skill。该字段只是聚合
+21 个 standalone 顶层 Skill。该字段只是聚合
 范围边界：批量工具必须验证这些包存在，但不得管理它们、写入安装或发布
 回执；它也不把其余 15 个包变成 High-Control 的从属包。
 

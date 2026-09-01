@@ -1,6 +1,6 @@
 # Codex Skills
 
-公开维护的个人 Codex Skill 仓库。仓库根目录的 20 个 Skill 都是独立
+公开维护的个人 Codex Skill 仓库。仓库根目录的 21 个 Skill 都是独立
 安装、独立发现、独立调用、独立验证的包；每个包自己的 `SKILL.md` 和
 包内 validator 是其运行权威。
 
@@ -69,7 +69,7 @@ python .github/scripts/manage_standalone_skill_release.py check `
 
 `sync` 只物化这个包的精确 Git tree，冻结快照并切换唯一 discovery junction；
 `check` 重新核验远端提交、包 tree、逐文件哈希、只读保护、运行时测试、聚合
-排除边界和唯一 discovery。它不安装、更新或签署其余 19 个包。
+排除边界和唯一 discovery。它不安装、更新或签署其余 20 个包。
 
 ## 可选：High-Control AI TVC 聚合工作流
 
@@ -141,7 +141,7 @@ Master Prompt 从粗脚本开始。真实客户项目应位于本 Public 仓库�
 
 ## Skill 清单
 
-仓库当前维护 20 个独立 Skill；完整人读清单见
+仓库当前维护 21 个独立 Skill；完整人读清单见
 [`SKILLS_INDEX.md`](SKILLS_INDEX.md)。
 
 [`high-control-ai-tvc/SUITE_MANIFEST.json`](high-control-ai-tvc/SUITE_MANIFEST.json)
@@ -173,15 +173,16 @@ Master Prompt 从粗脚本开始。真实客户项目应位于本 Public 仓库�
 - `cinematic_shot_image_explorer`
 - `cinematic_world_builder`
 
-### 独立研究、重建、治理与镜头覆盖 5 个
+### 独立研究、重建、治理与镜头覆盖 6 个
 
 - `advertising-reference-research-director`
 - `complex-product-identity-reconstruction-asset-locking`
+- `reference-guided-image-reconstruction-director`
 - `frozen-moment-camera-coverage`
 - `blender-production-governor`
 - `img2threejs-production-governor`
 
-上述 20 个 Skill 在仓库根目录各保留一个唯一包目录。任何包的核心能力都
+上述 21 个 Skill 在仓库根目录各保留一个唯一包目录。任何包的核心能力都
 不得依赖 sibling 目录；跨 Skill 组合由显式选择的外部编排层消费各包已经
 完成并验收的工件。
 
@@ -214,10 +215,10 @@ Windows legacy `.doc/.rtf` 不是可移植输入；先用 Word 或受信任转�
 
 ## 验证
 
-先运行与 High-Control 无关的 20 包独立性验证：
+先运行与 High-Control 无关的 21 包独立性验证：
 
 ```bash
-python .github/scripts/validate_standalone_skills.py --repo-root . --expected-count 20 --timeout 180
+python .github/scripts/validate_standalone_skills.py --repo-root . --expected-count 21 --timeout 180
 ```
 
 只有在修改或采用可选聚合 profile 时，再运行：
@@ -229,7 +230,7 @@ python high-control-ai-tvc/tools/validate_ai_video_aggregate.py --suite-root .
 ```
 
 GitHub Actions 在 Ubuntu、macOS 与 Windows 上验证 Python 3.11/3.12、
-20 包独立性、可选 15 包聚合兼容性、安装生命周期和 PowerShell/POSIX
+21 包独立性、可选 15 包聚合兼容性、安装生命周期和 PowerShell/POSIX
 语法。真实工作站
 仍须通过本机完整 preflight；CI 不能替代 Image Generation、V2 工具或
 第三方 provider 权限的人工确认。

@@ -176,7 +176,7 @@ class StandaloneReleaseTests(unittest.TestCase):
         with self.offline_remote(commit):
             return release.sync(repo, state, discovery, Path(sys.executable), commit, canonical)
 
-    def test_materialize_and_verify_exact_20_15_5_boundary(self) -> None:
+    def test_materialize_and_verify_exact_21_15_6_boundary(self) -> None:
         with self.sandbox() as root:
             repo, commit = self.make_repo(root)
             releases = root / "releases"
@@ -185,9 +185,9 @@ class StandaloneReleaseTests(unittest.TestCase):
             evidence = release.verify_snapshot(repo, commit, package)
             boundary = release.aggregate_boundary(repo, commit)
             self.assertEqual(evidence["package_tree_oid"], release.package_tree_oid(repo, commit))
-            self.assertEqual(boundary["standalone_package_count"], 20)
+            self.assertEqual(boundary["standalone_package_count"], 21)
             self.assertEqual(boundary["aggregate_member_count"], 15)
-            self.assertEqual(boundary["aggregate_exclusion_count"], 5)
+            self.assertEqual(boundary["aggregate_exclusion_count"], 6)
 
     def test_snapshot_content_tamper_is_rejected(self) -> None:
         with self.sandbox() as root:

@@ -1402,7 +1402,7 @@ def build_argument_parser() -> argparse.ArgumentParser:
         "--expected-count",
         type=int,
         default=None,
-        help="optional exact package-count assertion (use 20 for this repository)",
+        help="optional exact package-count assertion (use 21 for this repository)",
     )
     parser.add_argument(
         "--timeout",

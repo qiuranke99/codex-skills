@@ -45,14 +45,15 @@ SHA_RE = re.compile(r"^[0-9a-f]{40,64}$")
 COMMIT_RE = re.compile(r"^[0-9a-f]{40}$")
 SHA256_RE = re.compile(r"^[0-9a-f]{64}$")
 TRANSACTION_ID_RE = re.compile(r"^[0-9a-f]{32}$")
-EXPECTED_STANDALONE_PACKAGES = 20
+EXPECTED_STANDALONE_PACKAGES = 21
 EXPECTED_AGGREGATE_MEMBERS = 15
-EXPECTED_AGGREGATE_EXCLUSIONS = 5
+EXPECTED_AGGREGATE_EXCLUSIONS = 6
 EXPECTED_EXCLUDED_SKILLS = {
     "advertising-reference-research-director",
     "blender-production-governor",
     "complex-product-identity-reconstruction-asset-locking",
     "img2threejs-production-governor",
+    "reference-guided-image-reconstruction-director",
     SKILL_NAME,
 }
 

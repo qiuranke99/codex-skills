@@ -2,7 +2,7 @@
 
 Migration date: 2026-05-27
 
-Last updated: 2026-07-28
+Last updated: 2026-09-01
 
 Windows canonical checkout used by the existing workstation: `D:\AI\skill`
 
@@ -14,7 +14,7 @@ Do not expose the same Skill name in both discovery roots.
 
 ## Independent Skill Packages
 
-The repository maintains 20 independently installable and runnable Skill
+The repository maintains 21 independently installable and runnable Skill
 packages. Fifteen may also be selected together as an optional High-Control AI
 TVC compatibility profile:
 
@@ -47,6 +47,7 @@ outside the distribution.
 | `blender-production-governor` | `D:\AI\skill\blender-production-governor` | Govern every Blender or Blender MCP task by final-pixel ownership; force the complete handbook read, route work to diagnostic, AI-reference previs, hybrid AI/CG control, or final CGI, and enforce structure, visual, temporal, asset-health, render, safety, and delivery gates. | Created in place | Active |
 | `img2threejs-production-governor` | `D:\AI\skill\img2threejs-production-governor` | Govern every img2threejs task by the minimum sufficient route; enforce early visual checkpoints, bounded time and correction loops, evidence economy, method-fit escalation, human-visual supremacy, and static approval before video. | Created in place | Active |
 | `frozen-moment-camera-coverage` | `D:\AI\skill\frozen-moment-camera-coverage` | Compile a reference image or text-defined anchor into evidence-bounded, camera-only frozen-moment coverage; publish every complete prompt before optional serial generation; verify exact worker lineage, actual pixels, and honest complete or partial handoff. | Created in place | Active |
+| `reference-guided-image-reconstruction-director` | `reference-guided-image-reconstruction-director` | Compile one target and optional references into a prompt-only, manually executed reconstruction package with attribute-level authority, staged routing, explicit 4K evidence limits, closed contract validation, and no pixel generation or platform automation. | `C:\Users\Administrator\.codex\skills\reference-guided-image-reconstruction-director` | Active |
 | `ai-video-shot-script-director` | `D:\AI\skill\ai-video-shot-script-director` | Upgrade rough ideas or structured creative shot drafts into a validated Professional Shot Contract with stable Shot UIDs, closed timing, observable action, camera and continuity direction, inference provenance, and the shared Project Canon registry contract. | Created in place | Active |
 | `ai-video-global-look-lock` | `D:\AI\skill\ai-video-global-look-lock` | Freeze Look Core, legal Look States, per-shot Look Deltas, independent visual references, and exact downstream prompt inheritance without changing intrinsic identity or product facts. | Created in place | Active |
 | `ai-video-modular-storyboard` | `D:\AI\skill\ai-video-modular-storyboard` | Create exactly one independent editable frame per scripted shot, deterministic human review boards, and atomic one-shot or multi-shot replacement with dependency invalidation. | Created in place | Active |
@@ -68,6 +69,11 @@ checkout, and this workstation exposes it through the matching junction under
 that aggregate profile. The latter has a dedicated package-scoped immutable
 release controller at `.github/scripts/manage_standalone_skill_release.py`;
 its receipt and discovery entry never claim authority over aggregate members.
+
+`reference-guided-image-reconstruction-director` is a prompt-only standalone
+package excluded from the aggregate profile. It may inspect supplied images
+read-only, but it never generates or edits pixels and never operates an
+external image platform; the user executes its reconstruction package manually.
 
 `blender-production-governor` is a machine-wide standalone governance package
 outside the aggregate profile. Its canonical copy is
