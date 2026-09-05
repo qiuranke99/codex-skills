@@ -47,24 +47,27 @@ Do not merge these modes into a vague one-pass rewrite. A revised package must r
 
 ## 2. Read The Contracts
 
-Before work, read:
+Read the contracts for the selected mode:
 
 - `references/artifact_contract.md`
 - `references/capability_profiles.md`
-- `references/canonical_ir.schema.json`
-- `references/canonical_ir_template.json`
-- `references/generation_unit_preflight.schema.json`
-- `references/generation_unit_preflight.template.json`
-- `references/binding_manifest.schema.json`
-- `references/dependency_lockfile.schema.json`
-- `references/provider_payload_manifest.schema.json`
-- `references/feedback_route.schema.json`
-- `references/seedance_prompt_template.md`
-- `references/feedback_routing.md`
-- `references/acceptance_gap_loop.md`
-- `references/acceptance_gap_report.schema.json`
 - `references/qa_checklist.md`
-- `test_cases.md`
+
+For `preflight`, also read `generation_unit_preflight.schema.json` and
+`generation_unit_preflight.template.json` under `references/`.
+
+For `compile`, also read the canonical IR schema/template, binding manifest,
+dependency lockfile, provider payload manifest, and `seedance_prompt_template.md`
+under `references/`.
+
+For `revise`, read the relevant compile contracts plus
+`references/feedback_route.schema.json` and `references/feedback_routing.md`.
+
+Package maintenance scenarios are in `test_cases.md`. Ordinary production
+tasks do not run a three-role development audit, create an acceptance-gap
+report, or repeat the complete source test suite. Validate the actual P1/P2
+package with the mode's declared validator; broaden checks only for a changed
+dependency, failure, or unresolved concern.
 
 Do not invent provider limits from memory, a model name, a UI label, or a promotional claim.
 

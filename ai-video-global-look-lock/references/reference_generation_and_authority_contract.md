@@ -19,10 +19,9 @@ Every approved reference is a first-class asset. Keep its human/internal `refere
 1. Freeze a single-image generation specification and prompt.
 2. Persist the prompt hash.
 3. Generate one clean independent full-frame image.
-4. End the generation turn at the image call.
-5. On a later continuation, inspect the actual image.
-6. Record actual dimensions, file hash when bytes are available, and inspection result.
-7. Approve, repair only this reference, or reject it.
+4. Inspect the actual completed image as soon as the current tool and host permit. Continue in the same turn when possible; defer only for an actual pending result or host boundary.
+5. Record actual dimensions, file hash when bytes are available, and inspection result.
+6. Validate, repair only this reference, or reject it; user approval remains explicit.
 
 Do not generate one multi-panel board and crop cells into machine inputs. A human contact sheet is a deterministic derivative and never part of `look_reference_set`.
 

@@ -46,6 +46,6 @@
 - [ ] Each generated/promoted image has a verified `file_sha256`.
 - [ ] Each generated image has an exact persisted prompt sidecar.
 - [ ] Every prompt sidecar byte hash is verified.
-- [ ] One manifest update receipt registers exact K1/projection/anchor artifacts and K2 when present.
-- [ ] Visual inspection occurred after the terminal image-generation turn.
+- [ ] When Project Canon registration was requested, its manifest update receipt registers exact K1/projection/anchor artifacts and K2 when present.
+- [ ] Visual inspection examined the actual completed image; a turn boundary alone is not inspection evidence.
 - [ ] Validator exits zero before `package_status: packaged`.

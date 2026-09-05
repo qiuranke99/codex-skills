@@ -56,17 +56,18 @@ Do not use this Skill to:
 
 ## 2. Read The Contracts
 
-Read these files before producing a package:
+Read the package contract, applicable continuity rules, and QA requirements:
 
 - `references/artifact_contract.md`
 - `references/keyframe_manifest.schema.json`
 - `references/keyframe_manifest_template.json`
-- `references/boundary_supplement.schema.json`
-- `references/boundary_supplement.template.json`
 - `references/continuity_projection.schema.json`
 - `references/continuity_and_promotion_rules.md`
 - `references/qa_checklist.md`
-- `test_cases.md`
+
+Read `references/boundary_supplement.schema.json` and
+`references/boundary_supplement.template.json` when producing K2. Maintenance
+scenarios live in `test_cases.md`; they are not an extra production preflight.
 
 Do not redefine their field names ad hoc.
 
@@ -197,9 +198,9 @@ For each planned anchor:
 5. Preserve the storyboard's camera, framing, placement, and screen direction.
 6. Preserve the timing anchor's action state without implying start/end-frame interpolation.
 7. Persist and hash the exact prompt sidecar before generation.
-8. Set `terminal_generation_call: pending`, then make the image-generation call the final action of that turn.
+8. Set `terminal_generation_call: pending`, then call the image tool under its current runtime contract.
 
-On a later continuation, inspect the actual image, record dimensions and `file_sha256`, run the QA checklist, and set `terminal_generation_call: executed`. A returned image is stage-complete, not package-complete.
+Set the legacy field `terminal_generation_call: executed` only from an actual completed call; its name does not require ending the turn. Once the result is available, inspect the image, record dimensions and `file_sha256`, and apply the QA checklist. Continue in the same turn when the host permits; otherwise preserve pending state for the real continuation. A returned but uninspected image is not package-complete.
 
 Never generate a multi-panel keyframe sheet and crop it. Never upscale, repaint, or relabel an uninspected output as approved.
 

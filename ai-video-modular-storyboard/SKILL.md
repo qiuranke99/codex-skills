@@ -42,14 +42,16 @@ to stop: infer conservative directing detail and record it.
 
 ## Canonical Resources
 
-Read before producing or changing assets:
+Read the package contract and manifest guidance for the requested work:
 
 - `references/storyboard_contract.md` — ownership, generation, review, transaction, invalidation, and completion rules.
 - `references/storyboard_manifest.schema.json` — machine-readable package contract.
 - `references/storyboard_manifest_template.json` — minimum manifest example.
-- `references/change_transaction.schema.json` — atomic one-shot and multi-shot replacement record.
-- `references/review_board_contract.md` — deterministic human-review board rules.
-- `test_cases.md` — positive, adversarial, and regression fixtures.
+
+Read `references/change_transaction.schema.json` when replacing frames, and
+`references/review_board_contract.md` when composing the human review board.
+Maintainers use `test_cases.md` for regression scenarios; it is not a separate
+runtime preflight for each generated frame.
 
 The deterministic human review-board compositor uses Pillow. Treat Pillow as an explicit runtime dependency for `scripts/build_review_board.py`; missing Pillow blocks only review-board composition, not independent frame generation or preservation. Do not replace it with a generative multi-panel image.
 
@@ -61,7 +63,7 @@ Use independent low-cost frames to test shot order, representative instant, comp
 
 ### `look_applied_final`
 
-Rebuild or promote every required frame only after character/product/scene assets and the Global Look version are bound. Preserve the approved composition while applying identity, geometry, material, packaging, scene, wardrobe, and look evidence. A frame is downstream-ready only after later-turn visual inspection and approval.
+Rebuild or promote every required frame only after character/product/scene assets and the Global Look version are bound. Preserve the approved composition while applying identity, geometry, material, packaging, scene, wardrobe, and look evidence. A frame is downstream-ready only after actual post-generation visual inspection and approval.
 
 Promotion is evidence-gated: a structure frame may be promoted without regeneration only if it already passes every final identity, product, scene, material, packaging, continuity, and look check.
 
@@ -85,7 +87,7 @@ Generate every storyboard frame as an independent full-frame image. Set `generat
 
 Do not confuse storyboard annotation with intrinsic scene content. Source-authorized packaging copy, a product mark, or in-world signage may remain visible only under `intrinsic_text_policy: source_authorized_only`, with one exact Project Canon artifact reference per source in `intrinsic_text_source_refs`. Each reference must resolve to a current downstream-eligible product, packaging, label, scene, environment, location, or signage asset, cover the shot, appear in the generation prompt, and be included in the frame dependencies. Otherwise use `intrinsic_text_policy: none_visible` and an empty reference list. This binding proves provenance only; it is not OCR evidence and does not certify exact spelling, logo geometry, legal copy, QR codes, or barcodes.
 
-Before each image call, freeze the frame prompt and persist its path/hash. Every prompt repeats the exact Global Directing block. A `look_applied_final` prompt additionally repeats the exact Global Look Core, assigned Look State, resolved first-class Look Reference **artifact IDs** (never the State's internal `reference_id` aliases), then the legal Shot Look Delta; the frame artifact depends on those exact reference hashes. `structure_draft` must not claim those final-look blocks. Mark the artifact `generating`. The image call is terminal for that turn. In a later continuation inspect the actual image, record actual dimensions and `file_sha256`, compare it with source authorities and adjacent shots, and only then set approval.
+Before each image call, freeze the frame prompt and persist its path/hash. Every prompt repeats the exact Global Directing block. A `look_applied_final` prompt additionally repeats the exact Global Look Core, assigned Look State, resolved first-class Look Reference **artifact IDs** (never the State's internal `reference_id` aliases), then the legal Shot Look Delta; the frame artifact depends on those exact reference hashes. `structure_draft` must not claim those final-look blocks. Mark the artifact `generating`. Follow the current image-tool contract. Once the result is available, inspect the actual image, record dimensions and `file_sha256`, and compare it with source authorities and adjacent shots. Continue this work in the same turn when the host permits; preserve pending state only if the real tool requires waiting or a continuation. Only inspected evidence can support approval; do not grant user approval yourself.
 
 If one frame fails, regenerate only that `shot_uid`. Do not regenerate unaffected frames to make a prettier board.
 

@@ -123,7 +123,7 @@ Create only the Look States necessary to cover real project variation. One scene
 
 Use supplied references where they truthfully prove the intended look. Generate only missing hero, state or risk validation frames. Every machine-generated reference must be an independent clean image; do not create a multi-panel image and crop it into model inputs. A human contact sheet may be deterministically composed from approved independent references, but it is never the machine source of truth.
 
-Before a built-in image call, freeze the reference specification and generation prompt. The image call must be terminal for that generation turn. On a later continuation, inspect the actual output, record dimensions and integrity state, compare it against Look Core and intrinsic boundaries, and approve or repair only that reference. Never treat an uninspected generation as locked.
+Before a built-in image call, freeze the reference specification and generation prompt. Follow the current image-tool contract. Once its completed result is available, inspect the actual output, record dimensions and integrity state, and compare it against Look Core and intrinsic boundaries. Continue in the same turn when the host permits; defer only for a real pending result or host boundary. Validate or repair only that reference, while keeping explicit user approval separate. Never treat an uninspected generation as locked.
 
 Read `references/reference_generation_and_authority_contract.md` before generation.
 
@@ -164,7 +164,7 @@ post state, and invoke the explicit transition handoff described below. When no
 registry is supplied, omit the receipt and complete the standalone artifact;
 never fabricate registry evidence or search for a sibling writer.
 
-Deliver one authoritative JSON artifact conforming to `global_look_contract.schema.json`, the approved independent reference images, the manifest update receipt, and a concise human-readable rendering. The JSON must contain:
+Deliver one authoritative JSON artifact conforming to `global_look_contract.schema.json`, the approved independent reference images and a concise human-readable rendering. Include a manifest update receipt only when Project Canon registration was requested and completed. The JSON must contain:
 
 - shared envelope: `contract_version`, `artifact_id`, `owner_skill`, `version`, `sha256`, `approval_status`, `dependencies`, `affected_shot_uids`, `stale_reason`;
 - complete project Shot UID set and project constraints;

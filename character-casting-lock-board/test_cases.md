@@ -15,11 +15,11 @@
 11. **No decorative expansion**: never add expressions, silhouettes, generic poses, product ads, or scene panels.
 12. **Runtime capability**: record `runtime_capability_snapshot`; do not claim model, seed, raster, or native 4K provenance unless exposed.
 13. **Prompt trace**: freeze `final_generation_prompt`, compute `generation_prompt_sha256`, and set `prompt_disclosed_before_generation: true` before the image call.
-14. **Terminal call**: set `terminal_generation_call: pending` before generation; only the later tool/runtime trace may prove `executed`; emit no text and call no tool after image generation in that turn.
-15. **Multi-board package**: advance at most one generation call per turn; review or repair A before generating B, C, or D.
+14. **Completed tool result**: set the legacy field `terminal_generation_call: pending` before generation; only an actual completed call proves `executed`. Inspect its result in the same turn when the host permits.
+15. **Multi-board package**: review or repair A before generating B, C, or D; multiple authorized boards may progress in one turn when tool results and dependencies permit.
 16. **Status separation**: before generation, keep `assistant_qa_status: pending_post_generation_inspection` and `production_approval_status: not_granted`; only explicit user or external-pipeline authorization may grant production approval.
-17. **Later visual review**: only a later independent inspection may set assistant QA to `passed`, `conditional`, or `failed`.
-18. **Repair**: freeze and disclose a new exact prompt and hash before a corrective terminal call; never attach a rejected prompt hash to a repaired image.
+17. **Actual visual review**: only inspection of the actual completed image may set assistant QA to `passed`, `conditional`, or `failed`; a turn boundary is not evidence.
+18. **Repair**: freeze and disclose a new exact prompt and hash before a corrective image call; inspect the result and never attach a rejected prompt hash to a repaired image.
 19. **Prompt-only false success**: a prompt without the image call does not complete the Skill.
 20. **Unavailable runtime**: return `hard_blocked_generation_runtime`; do not claim an image or approval.
 21. **Built-in request**: every main or extension `final_generation_prompt` requests one horizontal 16:9 board and offers no alternate ratio.
@@ -33,7 +33,7 @@
 29. **Topology preservation**: 4K enhancement preserves A's portrait/front/back/side topology and each extension's approved evidence job without adding panels, faces, people, or styling systems.
 30. **External status separation**: `handoff_ready`, `pending_external_generation`, `returned_unverified`, `verified`, and `rejected` remain distinct from assistant QA and production approval.
 31. **Accepted-board count invariant**: `generation_attempt_count` includes every original or repair call; `generated_board_count` counts unique accepted/current board IDs only and equals `finalized_4k_prompt_count == 4k_prompt_hash_count == 4k_handoff_sidecar_count`.
-32. **Continuation state**: every terminal generation turn is only stage-complete with `task_finalization_status: awaiting_post_generation_continuation`; the next continuation resumes inspection and prompt-pair finalization.
+32. **Continuation state**: preserve pending state only for an actual pending result or host boundary; completed, accessible results advance through inspection and prompt-pair finalization without an artificial pause.
 33. **Sidecar integrity**: before publication, reread each board's two prompt sidecars as original UTF-8/LF bytes and recompute both hashes; a missing sidecar or mismatch yields `blocked_prompt_pair_integrity` with no reconstruction.
 34. **Final main result**: one later `final`-channel result includes, for every generated board, the complete inline `final_generation_prompt`, `generation_prompt_sha256`, `final_4k_enhancement_prompt`, and `4k_enhancement_prompt_sha256`; commentary, paths, sidecars, excerpts, summaries, or hashes alone fail.
 35. **Published identity and count**: the final response itself declares published states only when `published_board_ids == accepted_board_ids` and `published_prompt_pair_count == generated_board_count`.
@@ -51,8 +51,8 @@
 - Main board remains text-free portrait/front/back/side casting documentation.
 - Extension boards require a named evidence-closing risk.
 - The seven shared runtime fields are present.
-- Prompt disclosure precedes the terminal image-generation call.
-- No post-generation prompt or QA response is required in the same turn.
+- Prompt disclosure precedes the image-generation call.
+- Post-generation inspection and prompt delivery continue as soon as the current tool and host permit.
 - `assistant_qa_status` and `production_approval_status` are independent.
 - `built_in_prompt_aspect_ratio_request: "horizontal 16:9"` and `built_in_dimensions_policy: evidence_only_nonblocking` are present.
 - `final_4k_enhancement_prompt`, `4k_enhancement_prompt_sha256`, and `finalized_post_inspection` are present.
