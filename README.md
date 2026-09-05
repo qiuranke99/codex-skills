@@ -1,6 +1,6 @@
 # Codex Skills
 
-公开维护的个人 Codex Skill 仓库。仓库根目录的 20 个 Skill 都是独立
+公开维护的个人 Codex Skill 仓库。仓库根目录的 17 个 Skill 都是独立
 安装、独立发现、独立调用、独立验证的包；每个包自己的 `SKILL.md` 及其
 包内可用的资源、脚本和 validator 是其唯一运行权威。
 
@@ -52,7 +52,7 @@ $material-sensitive-product-master-asset-board
 
 ## Skill 清单
 
-仓库当前维护 20 个独立 Skill；完整的人读清单、用途、canonical path 和
+仓库当前维护 17 个独立 Skill；完整的人读清单、用途、canonical path 和
 discovery 说明见 [`SKILLS_INDEX.md`](SKILLS_INDEX.md)。每个 Skill 在仓库
 根目录只保留一个唯一包目录。
 
@@ -86,12 +86,12 @@ $python = Join-Path $runtime 'Scripts\python.exe'
 
 ## 验证
 
-先测试仓库级 standalone validator，再在隔离副本中验证全部 20 个包：
+先测试仓库级 standalone validator，再在隔离副本中验证全部 17 个包：
 
 ```bash
 python .github/scripts/test_validate_standalone_skills.py
 python .github/scripts/validate_standalone_skills.py \
-  --repo-root . --expected-count 20 --timeout 180
+  --repo-root . --expected-count 17 --timeout 180
 python .github/scripts/run_undeclared_standalone_tests.py \
   --repo-root . --timeout 180
 ```

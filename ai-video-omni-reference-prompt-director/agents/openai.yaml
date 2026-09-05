@@ -1,6 +1,0 @@
-interface:
-  display_name: "AI Video Omni-Reference Prompt Director"
-  short_description: "Compile approved multimodal controls into video prompts."
-  default_prompt: "Use $ai-video-omni-reference-prompt-director with this supplied hash-locked artifact inventory to create P1 preflight, then compile or revise P2 when K2/V2 inputs are supplied. Bind every relevant non-conflicting asset, inject exact Directing and Look blocks, enforce verified provider limits, and never require producer packages or fall back to text-only or endpoint-frame generation."
-policy:
-  allow_implicit_invocation: true

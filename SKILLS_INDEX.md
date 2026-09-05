@@ -14,7 +14,7 @@ Do not expose the same Skill name in both discovery roots.
 
 ## Independent Skill Packages
 
-The repository maintains 20 independently installable and runnable Skill
+The repository maintains 17 independently installable and runnable Skill
 packages. Each has one unique top-level directory, its own `SKILL.md`, and no
 duplicate runtime copy in this repository. A package may be copied, linked,
 invoked, tested, and accepted without any sibling package or repository-level
@@ -28,14 +28,12 @@ runtime authority.
 | `character-casting-lock-board` | `D:\AI\skill\character-casting-lock-board` | Request horizontal 16:9 text-free casting boards with complete prompt pairs; casting stays pre-Canon unless explicitly selected as terminal character authority by an external integrator. | `D:\AI视觉工作室\.agents\skills\character-casting-lock-board` | Active |
 | `single-face-character-lock-board` | `D:\AI\skill\single-face-character-lock-board` | Request a horizontal 16:9 one-face topology board, publish the complete topology-preserving prompt pair, and expose approved identity/wardrobe artifacts for an optional external integrator. | `D:\AI视觉工作室\.agents\skills\single-face-character-lock-board` | Active |
 | `cinematic_shot_image_explorer` | `D:\AI\skill\cinematic_shot_image_explorer` | Turn ideas, rough prompts, reference images, products, characters, scenes, or visual directions into exactly 10 cinematic film-still image prompts and 10 generated images. | `D:\AI视觉工作室\.agents\skills\cinematic_shot_image_explorer` | Active |
-| `cinematic_world_builder` | `D:\AI\skill\cinematic_world_builder` | Turn ideas, settings, atmospheres, cultures, places, names, genres, image descriptions, or reference images into a coherent cinematic world and exactly 9 film-still visual prompts. | `D:\AI视觉工作室\.agents\skills\cinematic_world_builder` | Active |
 | `multi-angle-product-identity-lock-board` | `D:\AI\skill\multi-angle-product-identity-lock-board` | Request a horizontal 16:9 six-view opaque-product board, publish the complete prompt pair, and expose approved product-geometry artifacts for an optional external integrator. | `D:\AI视觉工作室\.agents\skills\multi-angle-product-identity-lock-board` | Active |
 | `packaging-product-identity-label-lock-board` | `D:\AI\skill\packaging-product-identity-label-lock-board` | Build one compact borderless packaging video asset board with seven upright views, two source-grounded details by default, a source-cited copy ledger, deterministic overlays, evidence-bound QA, and an optional external Project Canon handoff. | `D:\AI视觉工作室\.agents\skills\packaging-product-identity-label-lock-board` | Active |
 | `material-sensitive-product-master-asset-board` | `D:\AI\skill\material-sensitive-product-master-asset-board` | Research exact-product, same-package-family, and packaging-archetype evidence with Browser-first provenance; separate research authority from generation rights; derive a 4–10-region material board from actual surface coverage; bind one delegated image worker, research-aware QA, handoff, and accepted records; and publish the full material-preserving prompt pair without any repository-level runtime dependency. | `D:\AI视觉工作室\.agents\skills\material-sensitive-product-master-asset-board` | Active |
 | `complex-product-identity-reconstruction-asset-locking` | `complex-product-identity-reconstruction-asset-locking` | Reconstruct a source-evidenced identity model for complex multi-part, mechanical, multi-material, or stateful products; then build independent camera assets, risk-specific diagnostics, a primary upload bundle, and per-asset 4K handoff without inventing unsupported topology or state. | Created in place | Active |
 | `advertising-reference-research-director` | `D:\AI\skill\advertising-reference-research-director` | Route a creative decision to image, video, or both; build evidence-bound reference packs with exact candidate accounting, independent verification, curation, adversarial audit, and feedback learning. | Created in place | Active |
 | `blender-production-governor` | `D:\AI\skill\blender-production-governor` | Govern every Blender or Blender MCP task by final-pixel ownership; force the complete handbook read, route work to diagnostic, AI-reference previs, hybrid AI/CG control, or final CGI, and enforce structure, visual, temporal, asset-health, render, safety, and delivery gates. | Created in place | Active |
-| `img2threejs-production-governor` | `D:\AI\skill\img2threejs-production-governor` | Govern every img2threejs task by the minimum sufficient route; enforce early visual checkpoints, bounded time and correction loops, evidence economy, method-fit escalation, human-visual supremacy, and static approval before video. | Created in place | Active |
 | `frozen-moment-camera-coverage` | `D:\AI\skill\frozen-moment-camera-coverage` | Compile a reference image or text-defined anchor into evidence-bounded, camera-only frozen-moment coverage; publish every complete prompt before optional serial generation; verify exact worker lineage, actual pixels, and honest complete or partial handoff. | Created in place | Active |
 | `reference-guided-image-reconstruction-director` | `reference-guided-image-reconstruction-director` | Compile one target and optional references into a prompt-only, manually executed reconstruction package with attribute-level authority, staged routing, explicit 4K evidence limits, closed contract validation, and no pixel generation or platform automation. | `C:\Users\Administrator\.codex\skills\reference-guided-image-reconstruction-director` | Active |
 | `ai-video-shot-script-director` | `D:\AI\skill\ai-video-shot-script-director` | Upgrade rough ideas or structured creative shot drafts into a validated Professional Shot Contract with stable Shot UIDs, closed timing, observable action, camera and continuity direction, inference provenance, and the shared Project Canon registry contract. | Created in place | Active |
@@ -43,7 +41,6 @@ runtime authority.
 | `ai-video-modular-storyboard` | `D:\AI\skill\ai-video-modular-storyboard` | Create exactly one independent editable frame per scripted shot, deterministic human review boards, and atomic one-shot or multi-shot replacement with dependency invalidation. | Created in place | Active |
 | `ai-video-timed-animatic-previs-director` | `D:\AI\skill\ai-video-timed-animatic-previs-director` | Build a whole-ad V1 timing animatic and P1/K2-bound per-generation-unit V2 control previs with motion and physics tracks plus live media-probe evidence. | Created in place | Active |
 | `ai-video-keyframe-continuity-pack` | `D:\AI\skill\ai-video-keyframe-continuity-pack` | Create K1 per-shot Omni-reference anchors and continuity ledgers, then an immutable P1-bound K2 boundary supplement; never endpoint-frame controls. | Created in place | Active |
-| `ai-video-omni-reference-prompt-director` | `D:\AI\skill\ai-video-omni-reference-prompt-director` | Preflight and compile complete all-reference packages with Seedance 2.5-first semantics, capability-verified Seedance 2.0/provider renders, exact asset bindings, payloads, locks, and owner-routed selective revisions. | Created in place | Active |
 
 ## Package-specific maintenance notes
 
@@ -70,13 +67,7 @@ one discovery junction under `$HOME/.agents/skills`. Implicit invocation is
 enabled so every Blender or Blender MCP task must read its complete production
 handbook before Blender-specific action.
 
-`img2threejs-production-governor` is a machine-wide standalone governance
-package. Its canonical copy is
-`D:\AI\skill\img2threejs-production-governor`; this workstation exposes
-exactly one discovery junction under `$HOME/.agents/skills`. Implicit
-invocation is enabled so every img2threejs task must first select the minimum
-sufficient route and accept the matching time, visual, evidence, method-fit,
-and static-before-video gates.
+
 
 ## Legacy workstation discovery snapshot
 
@@ -90,7 +81,6 @@ state, not the current cross-platform installation contract.
 | `C:\Users\Administrator\.codex\skills\character-casting-lock-board` | `D:\AI\skill\character-casting-lock-board` |
 | `C:\Users\Administrator\.codex\skills\single-face-character-lock-board` | `D:\AI\skill\single-face-character-lock-board` |
 | `C:\Users\Administrator\.codex\skills\cinematic_shot_image_explorer` | `D:\AI\skill\cinematic_shot_image_explorer` |
-| `C:\Users\Administrator\.codex\skills\cinematic_world_builder` | `D:\AI\skill\cinematic_world_builder` |
 | `C:\Users\Administrator\.codex\skills\multi-angle-product-identity-lock-board` | `D:\AI\skill\multi-angle-product-identity-lock-board` |
 | `C:\Users\Administrator\.codex\skills\packaging-product-identity-label-lock-board` | `D:\AI\skill\packaging-product-identity-label-lock-board` |
 | `C:\Users\Administrator\.codex\skills\material-sensitive-product-master-asset-board` | `D:\AI\skill\material-sensitive-product-master-asset-board` |
@@ -107,7 +97,6 @@ directly after auditing legacy roots; do not create duplicate discovery entries.
 | `C:\Users\Administrator\.codex\skills\ai-video-modular-storyboard` | `D:\AI\skill\ai-video-modular-storyboard` |
 | `C:\Users\Administrator\.codex\skills\ai-video-timed-animatic-previs-director` | `D:\AI\skill\ai-video-timed-animatic-previs-director` |
 | `C:\Users\Administrator\.codex\skills\ai-video-keyframe-continuity-pack` | `D:\AI\skill\ai-video-keyframe-continuity-pack` |
-| `C:\Users\Administrator\.codex\skills\ai-video-omni-reference-prompt-director` | `D:\AI\skill\ai-video-omni-reference-prompt-director` |
 
 ## Skipped Sources
 
