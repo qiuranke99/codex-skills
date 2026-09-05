@@ -200,7 +200,7 @@ For each planned anchor:
 7. Persist and hash the exact prompt sidecar before generation.
 8. Set `terminal_generation_call: pending`, then call the image tool under its current runtime contract.
 
-Set the legacy field `terminal_generation_call: executed` only from an actual completed call; its name does not require ending the turn. Once the result is available, inspect the image, record dimensions and `file_sha256`, and apply the QA checklist. Continue in the same turn when the host permits; otherwise preserve pending state for the real continuation. A returned but uninspected image is not package-complete.
+Set the legacy field `terminal_generation_call: executed` only from an actual completed call; its name does not require ending the turn. Once the result is available, inspect the image, record dimensions and `file_sha256`, and apply the QA checklist. Continue in the same turn when the host permits; otherwise preserve pending state for the real continuation. A returned but uninspected image is not package-complete. Record real positive integer `generation_turn` and `inspection_turn` values. They may be equal when the returned image was inspected in that turn; inspection must never precede generation, and turn numbers alone do not prove visual QA.
 
 Never generate a multi-panel keyframe sheet and crop it. Never upscale, repaint, or relabel an uninspected output as approved.
 

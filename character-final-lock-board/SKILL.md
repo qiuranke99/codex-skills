@@ -17,6 +17,8 @@ completion.
 
 Contract version: `asset_board_contract_version: built_in_nonblocking_prompt_pair_v2`.
 
+Legacy fields such as `terminal_generation_call` and `generation_terminal_pending` retain their names for artifact compatibility. They do not require an extra user turn. Prompt freezing, the successful image result, actual visual inspection, and prompt-pair publication must remain in that causal order.
+
 Generate one comprehensive final character lock board. Keep one selected identity and one coherent wardrobe system across every panel. This is not a candidate sheet, fashion layout, scene image, or prompt-only workflow.
 
 ## 1. Resolve Inputs

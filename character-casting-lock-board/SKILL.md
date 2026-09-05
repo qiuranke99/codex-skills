@@ -16,6 +16,8 @@ optional integration never changes this Skill's input status or completion.
 
 Contract version: `asset_board_contract_version: built_in_nonblocking_prompt_pair_v2`.
 
+Legacy fields such as `terminal_generation_call` and `generation_terminal_pending` retain their names for artifact compatibility. They do not require an extra user turn. Prompt freezing, the successful image result, actual visual inspection, and prompt-pair publication must remain in that causal order.
+
 中文名称：角色选角锁定板
 
 Create a text-free production asset that borrows the observational discipline of a film casting contact sheet without inheriting names, numbers, measurements, notes, labels, or film-edge text. Keep this Skill narrow: it locks one selected character through a fixed portrait/front/back/side topology. It is not a universal character-board workflow.
