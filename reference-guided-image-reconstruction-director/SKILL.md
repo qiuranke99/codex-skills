@@ -14,13 +14,11 @@ The terminal deliverable from this Skill is text: diagnosis, authority decisions
 ## Prompt-Only Hard Boundary
 
 - Set every structured contract to `execution_boundary: manual_external_prompt_only`.
-- This Skill must **NEVER** invoke, delegate to, authorize, or suggest a Codex invocation of `imagegen`, `image2gen`, `image_gen__imagegen`, or any other image generation or image editing tool. This remains absolute even when the user explicitly asks Codex to generate, edit, restore, upscale, or composite the image.
-- When the user asks for direct generation, state this product boundary briefly and continue by delivering the complete manual external-platform package. Direct-copy verbs such as “create,” “edit,” and “reconstruct” are prompt content addressed to the user-operated platform, not actions for Codex to execute.
+- This Skill produces manual external-platform prompt plans; it does not generate or edit pixels. Direct-copy verbs such as “create,” “edit,” and “reconstruct” address the user-operated platform.
+- If the user requests direct generation or editing, route that task to the appropriate available image tool or Skill instead of imposing this manual workflow. Carry forward the user's reference roles and composition constraints, and do not label tool-generated output as a user-manual external result.
 - Read-only visual inspection of supplied or user-imported images, including `view_image`, is allowed. Do not alter pixels, create masks, or render candidates. Do not use any image generation/editing tool for QA.
 - Do not call third-party APIs or automate browser/platform login, upload, submission, polling, download, account, or session actions. The user performs those actions manually on Nano Banana 2 or another chosen high-resolution platform.
 - A request for “4K,” “high resolution,” or a pixel size is a target and a platform-settings recommendation. Semantic prompt text cannot guarantee actual pixel dimensions, native resolution, or successful upscaling; report the required platform control as observed, user-reported, or unknown.
-- Keep the structured resolution claim internally consistent: `prompt_guarantees_dimensions` is always `false`; `unknown` dimensions use `dimensions_evidence_type: none` and carry no width/height object; `known`, `observed`, and `user_reported` pair respectively with `authoritative_record`, `inspected_file_metadata`, and `user_report`, plus positive integer width and height. An explicit missingness statement cannot support a non-unknown state. These checks validate declaration consistency, not whether the evidence is true.
-- In `direct_copy_prompts`, `semantic_target`, and `settings_evidence`, reject affirmative native-4K or exact-pixel commitments while preserving genuine caveats such as “No prompt guarantees native 4K” or “提示词不能保证原生4K.” These authoritative strings must never name `imagegen`, `image2gen`, `image_gen__imagegen`, or direct Codex or this Skill to act. Optional `user_request` and `notes` may preserve such user wording only as non-authoritative text. Ordinary external-platform imperatives such as “create,” “edit,” and “reconstruct” remain valid.
 
 ## Non-Negotiable Boundaries
 
@@ -36,7 +34,7 @@ The terminal deliverable from this Skill is text: diagnosis, authority decisions
 
 1. Inventory the target and all references. Verify that there is exactly one target; zero references is valid.
 2. Visually diagnose pixel defects separately from semantic geometry, perspective, occlusion, count, identity, text, material, and lighting defects.
-3. Build an attribute-level authority matrix. Validate every raw scope before normalization: require lowercase ASCII dotted `snake_case`, with at most one trailing `.*`; reject uppercase, whitespace, empty segments, punctuation, and embedded/repeated wildcards. Global `*` is deny-only. After raw validation, only documented lowercase legacy aliases may map to qualified paths. Every resolved row has exactly one primary. Cross-check every reference assignment against its permission record in both directions. Overlapping root, wildcard, and child scopes must resolve to the same primary/allow source sets or be split into non-overlapping rows. Every reference needs bounded allowed attributes plus a non-empty `deny_attributes` / must-not-inherit scope covering all protected structure; unlimited reference authority is invalid.
+3. Assign one primary source per attribute and bound what every reference may and may not change. Resolve conflicting composition, identity, material, and style authority before writing prompts. Use the exact scope grammar and validation rules in [reference-authority-contract.md](references/reference-authority-contract.md) only when producing a structured JSON contract.
 4. Normalize every removal into an explicit exception, whether or not `preserve_all` is true. Include shadows, reflections, contact traces, occlusion residue, revealed background, and reference-driven reintroduction in the removal closure, and make every reference deny all removed entities.
 5. Route the base task to one of the modes below. Add an exact-asset composite lane when identity or text must remain exact.
 6. Produce a stage-by-stage manual upload and exclusion list, direct-copy prompts, narrow negative constraints, platform-parameter guidance, hard QA gates, and a directional retry plan. For each actionable external stage, at least one listed input must be a primary/allow source for every attribute that stage requires. Put the target first in `pixel`, `local`, `isomorphic`, and `structure`; put the approved master first in `realism`.
@@ -61,9 +59,11 @@ Read [prompt-compilation.md](references/prompt-compilation.md) after the mode an
 
 Read [failure-modes-and-qa.md](references/failure-modes-and-qa.md) before accepting an intermediate master, assessing a final candidate, or preparing a retry.
 
-## Required Default Output
+## Output
 
-Return, in this order:
+Follow the user's requested language, template, length, and deliverable. For a prompt-only request, return the clean copyable prompt plus essential upload instructions; keep diagnostic notes brief. A full report or structured contract is optional unless requested or needed to resolve conflicting authority.
+
+When a full reconstruction report is requested, use these components:
 
 1. `diagnosis`: observed defects, uncertainty, and why pixel restoration is or is not sufficient.
 2. `source_and_decision_ledgers`: preserved source facts and explicit user decisions.
@@ -76,4 +76,11 @@ Return, in this order:
 9. `directional_retry_plan`: change only the defect-owning stage or source scope while preserving already accepted invariants.
 10. `status`: use `prompt_package_ready` for every fresh text package. Candidate/retry states require an actual user-manual external result imported with provenance; blocked states remain available when evidence is insufficient.
 
-When a structured reconstruction contract is requested, it must explicitly contain `execution_boundary`, `delivery_state`, `external_result_provenance`, `platform_parameter_guidance`, `assets`, `intent`, non-empty `authority`, `reference_permissions`, a non-empty actionable or blocked `stages` plan, `truth_sensitive`, and `status`. A fresh package uses `execution_boundary: manual_external_prompt_only`, `delivery_state: prompt_plan`, an empty provenance array, no `candidate_result` asset, and `status: prompt_package_ready`. Every imported `candidate_result` must be bound by a valid provenance row and must not claim `approved: true`. Structured objects are closed to the fields documented in [reference-authority-contract.md](references/reference-authority-contract.md); callable or automation fields are invalid, while optional `user_request` and `notes` strings preserve non-authoritative wording only. JSON duplicate keys are invalid at every depth and are rejected before validation. Stage inputs must follow the asset-role, actual-authority-source, base, and ordering rules in the authority contract. Every `required_exact` attribute needs covering resolved authority whose primary is valid exact evidence, and that primary evidence itself must be listed in a compatible manual external stage; using only a secondary evidence asset is insufficient. `exact_asset` evidence enters `composite`, not structural reconstruction. A structure-only plan cannot use `candidate_unapproved`. Validate the contract with `scripts/validate_reconstruction_contract.py` before handoff. A passing contract proves internal consistency only; it does not generate pixels, operate a platform, verify claimed provenance, mint human approval, or prove visual quality or factual correctness.
+When a structured reconstruction contract is requested, use the complete schema
+and examples in [reference-authority-contract.md](references/reference-authority-contract.md)
+and run `scripts/validate_reconstruction_contract.py` before handoff. A fresh
+text package uses `execution_boundary: manual_external_prompt_only`,
+`delivery_state: prompt_plan`, and `status: prompt_package_ready`. Candidate
+states require a real imported external result with provenance. A passing
+contract proves internal consistency only, not pixels, provenance truth,
+dimensions, visual quality, or human approval.

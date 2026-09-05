@@ -55,15 +55,15 @@ The ten disclosed prompts are a complete, portable handoff artifact. Generate th
 ## Default image generation settings
 
 默认使用 Codex 内置 /image gen。
-默认模型目标：GPT image2。
-默认输出：4K 高清画质。
+默认追求清晰细节；模型与分辨率以当前工具实际提供的能力为准。
+4K 是输出设置目标，提示词中的“4K”不能保证原生尺寸。交付时只报告文件元数据核实的实际尺寸。
 默认画幅：若用户未指定，优先使用 16:9。
 若用户明确指定其他画幅、风格、数量或清晰度，以用户要求为准。
 若用户明确要求“只输出提示词，不生成图片”或“只要提示词”，则跳过生图步骤。
 
 ## Output contract
 
-必须输出精确 10 个提示。不要多于 10 个。不要少于 10 个。不要解释。不要总结。不要输出额外分析。不要输出制作建议，除非用户明确要求。
+用户未另定数量时，必须输出精确 10 个提示；指定数量时，本文各处的 10 均替换为该数量。保持提示词可直接复制，遵循用户指定的格式，不附加无关分析。
 
 每个提示必须包含：
 
@@ -206,7 +206,7 @@ The ten disclosed prompts are a complete, portable handoff artifact. Generate th
 
 ## Required negative suffix
 
-每个提示末尾必须添加：
+使用默认电影写实风格时，每个提示末尾添加以下约束；用户指定的风格或构图与其冲突时，只保留兼容部分：
 
 ```text
 无干净数字锐度、无CGI外观、无海报构图、无居中肖像、无黑边

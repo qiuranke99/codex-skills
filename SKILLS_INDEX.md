@@ -2,7 +2,7 @@
 
 Migration date: 2026-05-27
 
-Last updated: 2026-09-01
+Last updated: 2026-09-05
 
 Windows canonical checkout used by the existing workstation: `D:\AI\skill`
 
@@ -27,18 +27,18 @@ runtime authority.
 | `character-final-lock-board` | `D:\AI\skill\character-final-lock-board` | Request a horizontal 16:9 final character board with nonblocking built-in dimensions, retain `high_angle_evidence: required / optional / off`, publish the complete prompt pair, and expose approved identity/wardrobe artifacts for an optional external integrator. | `D:\AI视觉工作室\.agents\skills\character-final-lock-board` | Active |
 | `character-casting-lock-board` | `D:\AI\skill\character-casting-lock-board` | Request horizontal 16:9 text-free casting boards with complete prompt pairs; casting stays pre-Canon unless explicitly selected as terminal character authority by an external integrator. | `D:\AI视觉工作室\.agents\skills\character-casting-lock-board` | Active |
 | `single-face-character-lock-board` | `D:\AI\skill\single-face-character-lock-board` | Request a horizontal 16:9 one-face topology board, publish the complete topology-preserving prompt pair, and expose approved identity/wardrobe artifacts for an optional external integrator. | `D:\AI视觉工作室\.agents\skills\single-face-character-lock-board` | Active |
-| `cinematic_shot_image_explorer` | `D:\AI\skill\cinematic_shot_image_explorer` | Turn ideas, rough prompts, reference images, products, characters, scenes, or visual directions into exactly 10 cinematic film-still image prompts and 10 generated images. | `D:\AI视觉工作室\.agents\skills\cinematic_shot_image_explorer` | Active |
+| `cinematic_shot_image_explorer` | `D:\AI\skill\cinematic_shot_image_explorer` | Turn ideas or references into cinematic prompts and matching images; default to 10 while honoring the requested count and style, and report only measured output dimensions. | `D:\AI视觉工作室\.agents\skills\cinematic_shot_image_explorer` | Active |
 | `cinematic_world_builder` | `D:\AI\skill\cinematic_world_builder` | Turn ideas, settings, atmospheres, cultures, places, names, genres, image descriptions, or reference images into a coherent cinematic world and exactly 9 film-still visual prompts. | `D:\AI视觉工作室\.agents\skills\cinematic_world_builder` | Active |
 | `scene-canon-asset-pack` | `D:\AI\skill\scene-canon-asset-pack` | Explicit-only six-image Scene Canon pack: publish all six frozen prompts first, then complete a serial continuity-dependent non-decision-worker queue with motion envelope, coverage graph, strict runtime receipts, structured QA, and one-to-one 4K handoff. | `D:\AI视觉工作室\.agents\skills\scene-canon-asset-pack` | Active |
 | `multi-angle-product-identity-lock-board` | `D:\AI\skill\multi-angle-product-identity-lock-board` | Request a horizontal 16:9 six-view opaque-product board, publish the complete prompt pair, and expose approved product-geometry artifacts for an optional external integrator. | `D:\AI视觉工作室\.agents\skills\multi-angle-product-identity-lock-board` | Active |
 | `packaging-product-identity-label-lock-board` | `D:\AI\skill\packaging-product-identity-label-lock-board` | Build one compact borderless packaging video asset board with seven upright views, two source-grounded details by default, a source-cited copy ledger, deterministic overlays, evidence-bound QA, and an optional external Project Canon handoff. | `D:\AI视觉工作室\.agents\skills\packaging-product-identity-label-lock-board` | Active |
 | `material-sensitive-product-master-asset-board` | `D:\AI\skill\material-sensitive-product-master-asset-board` | Research exact-product, same-package-family, and packaging-archetype evidence with Browser-first provenance; separate research authority from generation rights; derive a 4–10-region material board from actual surface coverage; bind one delegated image worker, research-aware QA, handoff, and accepted records; and publish the full material-preserving prompt pair without any repository-level runtime dependency. | `D:\AI视觉工作室\.agents\skills\material-sensitive-product-master-asset-board` | Active |
 | `complex-product-identity-reconstruction-asset-locking` | `complex-product-identity-reconstruction-asset-locking` | Reconstruct a source-evidenced identity model for complex multi-part, mechanical, multi-material, or stateful products; then build independent camera assets, risk-specific diagnostics, a primary upload bundle, and per-asset 4K handoff without inventing unsupported topology or state. | Created in place | Active |
-| `advertising-reference-research-director` | `D:\AI\skill\advertising-reference-research-director` | Route a creative decision to image, video, or both; build evidence-bound reference packs with exact candidate accounting, independent verification, curation, adversarial audit, and feedback learning. | Created in place | Active |
+| `advertising-reference-research-director` | `D:\AI\skill\advertising-reference-research-director` | Find and verify image/video references at the requested scale; retain source and credit research, observed media evidence, selection reasons, and access limits without fixed candidate quotas or a mandatory audit pipeline. | Created in place | Active |
 | `blender-production-governor` | `D:\AI\skill\blender-production-governor` | Govern every Blender or Blender MCP task by final-pixel ownership; force the complete handbook read, route work to diagnostic, AI-reference previs, hybrid AI/CG control, or final CGI, and enforce structure, visual, temporal, asset-health, render, safety, and delivery gates. | Created in place | Active |
 | `img2threejs-production-governor` | `D:\AI\skill\img2threejs-production-governor` | Govern every img2threejs task by the minimum sufficient route; enforce early visual checkpoints, bounded time and correction loops, evidence economy, method-fit escalation, human-visual supremacy, and static approval before video. | Created in place | Active |
 | `frozen-moment-camera-coverage` | `D:\AI\skill\frozen-moment-camera-coverage` | Compile a reference image or text-defined anchor into evidence-bounded, camera-only frozen-moment coverage; publish every complete prompt before optional serial generation; verify exact worker lineage, actual pixels, and honest complete or partial handoff. | Created in place | Active |
-| `reference-guided-image-reconstruction-director` | `reference-guided-image-reconstruction-director` | Compile one target and optional references into a prompt-only, manually executed reconstruction package with attribute-level authority, staged routing, explicit 4K evidence limits, closed contract validation, and no pixel generation or platform automation. | `C:\Users\Administrator\.codex\skills\reference-guided-image-reconstruction-director` | Active |
+| `reference-guided-image-reconstruction-director` | `reference-guided-image-reconstruction-director` | Plan manual composition-preserving reconstruction with bounded reference authority; respect the requested output format and route direct image execution to the appropriate tool. | `C:\Users\Administrator\.codex\skills\reference-guided-image-reconstruction-director` | Active |
 | `ai-video-shot-script-director` | `D:\AI\skill\ai-video-shot-script-director` | Upgrade rough ideas or structured creative shot drafts into a validated Professional Shot Contract with stable Shot UIDs, closed timing, observable action, camera and continuity direction, inference provenance, and the shared Project Canon registry contract. | Created in place | Active |
 | `ai-video-global-look-lock` | `D:\AI\skill\ai-video-global-look-lock` | Freeze Look Core, legal Look States, per-shot Look Deltas, independent visual references, and exact downstream prompt inheritance without changing intrinsic identity or product facts. | Created in place | Active |
 | `ai-video-modular-storyboard` | `D:\AI\skill\ai-video-modular-storyboard` | Create exactly one independent editable frame per scripted shot, deterministic human review boards, and atomic one-shot or multi-shot replacement with dependency invalidation. | Created in place | Active |
@@ -60,9 +60,10 @@ snapshot and discovery entry describe that package only and must never claim
 authority over a sibling Skill.
 
 `reference-guided-image-reconstruction-director` is a prompt-only standalone
-package. It may inspect supplied images read-only, but it never generates or
-edits pixels and never operates an external image platform; the user executes
-its reconstruction package manually.
+package. It may inspect supplied images read-only; the user executes its
+reconstruction package manually. Requests for direct image generation or editing
+route to the appropriate image tool or Skill instead of entering this manual
+workflow. Tool-generated output cannot be labeled as a manual external result.
 
 `blender-production-governor` is a machine-wide standalone governance package.
 Its canonical copy is

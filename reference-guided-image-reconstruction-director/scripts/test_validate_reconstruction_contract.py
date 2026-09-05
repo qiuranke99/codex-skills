@@ -1443,44 +1443,6 @@ class ContractBehaviorTests(unittest.TestCase):
         self.assertEqual("prompt_plan", result["summary"]["delivery_state"])
         self.assertEqual(0, result["summary"]["imported_results"])
 
-    def test_static_prompt_only_product_boundary(self) -> None:
-        behavior_files = [
-            SKILL_ROOT / "SKILL.md",
-            SKILL_ROOT / "agents" / "openai.yaml",
-            SKILL_ROOT / "references" / "workflow-modes.md",
-            SKILL_ROOT / "references" / "reference-authority-contract.md",
-            SKILL_ROOT / "references" / "prompt-compilation.md",
-            SKILL_ROOT / "references" / "failure-modes-and-qa.md",
-        ]
-        texts = {
-            path.relative_to(SKILL_ROOT).as_posix(): path.read_text(encoding="utf-8")
-            for path in behavior_files
-        }
-        combined = "\n".join(texts.values())
-        skill_text = texts["SKILL.md"]
-        self.assertIn("Prompt-Only Hard Boundary", skill_text)
-        self.assertIn("manual_external_prompt_only", skill_text)
-        self.assertIn("Do not use any image generation/editing tool for QA", skill_text)
-        self.assertIn("Implicit-routing boundary", skill_text)
-        self.assertIn("prompt_guarantees_dimensions", combined)
-        self.assertIn("dimensions_evidence_type", combined)
-        for tool_name in ("imagegen", "image2gen", "image_gen__imagegen"):
-            self.assertIn(tool_name, skill_text)
-        forbidden_legacy_branches = (
-            "Generate or edit pixels only when",
-            "authorized visual capability",
-            "permission to generate or edit pixels",
-            "generation permission and current visual capability",
-            "when regeneration is authorized",
-        )
-        for phrase in forbidden_legacy_branches:
-            self.assertNotIn(phrase, combined)
-        self.assertNotIn("image_gen__imagegen(", combined)
-        self.assertNotIn("use an image tool for QA", combined)
-        self.assertNotIn("Generative stage assigned truth-sensitive text", combined)
-        self.assertNotIn("laundry", combined.lower())
-        self.assertNotIn("洗衣房", combined)
-
     def test_cli_duplicate_execution_boundary_key_is_rejected(self) -> None:
         raw = json.dumps(valid_pixel_contract())
         raw = duplicate_json_fragment(
