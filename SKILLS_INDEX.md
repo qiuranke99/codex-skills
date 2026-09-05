@@ -2,7 +2,7 @@
 
 Migration date: 2026-05-27
 
-Last updated: 2026-09-01
+Last updated: 2026-09-05
 
 Windows canonical checkout used by the existing workstation: `D:\AI\skill`
 
@@ -14,7 +14,7 @@ Do not expose the same Skill name in both discovery roots.
 
 ## Independent Skill Packages
 
-The repository maintains 21 independently installable and runnable Skill
+The repository maintains 20 independently installable and runnable Skill
 packages. Each has one unique top-level directory, its own `SKILL.md`, and no
 duplicate runtime copy in this repository. A package may be copied, linked,
 invoked, tested, and accepted without any sibling package or repository-level
@@ -29,7 +29,6 @@ runtime authority.
 | `single-face-character-lock-board` | `D:\AI\skill\single-face-character-lock-board` | Request a horizontal 16:9 one-face topology board, publish the complete topology-preserving prompt pair, and expose approved identity/wardrobe artifacts for an optional external integrator. | `D:\AI视觉工作室\.agents\skills\single-face-character-lock-board` | Active |
 | `cinematic_shot_image_explorer` | `D:\AI\skill\cinematic_shot_image_explorer` | Turn ideas, rough prompts, reference images, products, characters, scenes, or visual directions into exactly 10 cinematic film-still image prompts and 10 generated images. | `D:\AI视觉工作室\.agents\skills\cinematic_shot_image_explorer` | Active |
 | `cinematic_world_builder` | `D:\AI\skill\cinematic_world_builder` | Turn ideas, settings, atmospheres, cultures, places, names, genres, image descriptions, or reference images into a coherent cinematic world and exactly 9 film-still visual prompts. | `D:\AI视觉工作室\.agents\skills\cinematic_world_builder` | Active |
-| `scene-canon-asset-pack` | `D:\AI\skill\scene-canon-asset-pack` | Explicit-only six-image Scene Canon pack: publish all six frozen prompts first, then complete a serial continuity-dependent non-decision-worker queue with motion envelope, coverage graph, strict runtime receipts, structured QA, and one-to-one 4K handoff. | `D:\AI视觉工作室\.agents\skills\scene-canon-asset-pack` | Active |
 | `multi-angle-product-identity-lock-board` | `D:\AI\skill\multi-angle-product-identity-lock-board` | Request a horizontal 16:9 six-view opaque-product board, publish the complete prompt pair, and expose approved product-geometry artifacts for an optional external integrator. | `D:\AI视觉工作室\.agents\skills\multi-angle-product-identity-lock-board` | Active |
 | `packaging-product-identity-label-lock-board` | `D:\AI\skill\packaging-product-identity-label-lock-board` | Build one compact borderless packaging video asset board with seven upright views, two source-grounded details by default, a source-cited copy ledger, deterministic overlays, evidence-bound QA, and an optional external Project Canon handoff. | `D:\AI视觉工作室\.agents\skills\packaging-product-identity-label-lock-board` | Active |
 | `material-sensitive-product-master-asset-board` | `D:\AI\skill\material-sensitive-product-master-asset-board` | Research exact-product, same-package-family, and packaging-archetype evidence with Browser-first provenance; separate research authority from generation rights; derive a 4–10-region material board from actual surface coverage; bind one delegated image worker, research-aware QA, handoff, and accepted records; and publish the full material-preserving prompt pair without any repository-level runtime dependency. | `D:\AI视觉工作室\.agents\skills\material-sensitive-product-master-asset-board` | Active |
@@ -92,7 +91,6 @@ state, not the current cross-platform installation contract.
 | `C:\Users\Administrator\.codex\skills\single-face-character-lock-board` | `D:\AI\skill\single-face-character-lock-board` |
 | `C:\Users\Administrator\.codex\skills\cinematic_shot_image_explorer` | `D:\AI\skill\cinematic_shot_image_explorer` |
 | `C:\Users\Administrator\.codex\skills\cinematic_world_builder` | `D:\AI\skill\cinematic_world_builder` |
-| `C:\Users\Administrator\.codex\skills\scene-canon-asset-pack` | `D:\AI\skill\scene-canon-asset-pack` |
 | `C:\Users\Administrator\.codex\skills\multi-angle-product-identity-lock-board` | `D:\AI\skill\multi-angle-product-identity-lock-board` |
 | `C:\Users\Administrator\.codex\skills\packaging-product-identity-label-lock-board` | `D:\AI\skill\packaging-product-identity-label-lock-board` |
 | `C:\Users\Administrator\.codex\skills\material-sensitive-product-master-asset-board` | `D:\AI\skill\material-sensitive-product-master-asset-board` |
