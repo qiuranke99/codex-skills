@@ -61,12 +61,11 @@ Read these files before producing a package:
 - `references/artifact_contract.md`
 - `references/keyframe_manifest.schema.json`
 - `references/keyframe_manifest_template.json`
-- `references/boundary_supplement.schema.json`
-- `references/boundary_supplement.template.json`
 - `references/continuity_projection.schema.json`
 - `references/continuity_and_promotion_rules.md`
 - `references/qa_checklist.md`
-- `test_cases.md`
+
+Read `references/boundary_supplement.schema.json` and `references/boundary_supplement.template.json` only for K2 boundary-supplement work. Read `test_cases.md` for maintenance or a matching regression.
 
 Do not redefine their field names ad hoc.
 
@@ -197,9 +196,9 @@ For each planned anchor:
 5. Preserve the storyboard's camera, framing, placement, and screen direction.
 6. Preserve the timing anchor's action state without implying start/end-frame interpolation.
 7. Persist and hash the exact prompt sidecar before generation.
-8. Set `terminal_generation_call: pending`, then make the image-generation call the final action of that turn.
+8. Set `terminal_generation_call: pending`, then submit the frozen prompt. The legacy field name is retained for compatibility; it records execution, not a requirement to end the user turn.
 
-On a later continuation, inspect the actual image, record dimensions and `file_sha256`, run the QA checklist, and set `terminal_generation_call: executed`. A returned image is stage-complete, not package-complete.
+After the tool returns an accessible image, inspect it in the same task when the host permits continuation. Only if the actual tool or host ends the turn, persist pending inspection and resume at the next available continuation. Do not require the user to say "continue" merely to perform QA. Generation success alone never proves visual approval. Mark `terminal_generation_call: executed` only from a successful tool result. Record the real `generation_turn` and `inspection_turn`; they may be equal when the image returned and was inspected within the same turn, but inspection must never precede generation. Record dimensions and `file_sha256` and run the QA checklist before approval. A returned image is stage-complete, not package-complete.
 
 Never generate a multi-panel keyframe sheet and crop it. Never upscale, repaint, or relabel an uninspected output as approved.
 

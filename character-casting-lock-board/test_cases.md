@@ -15,11 +15,11 @@
 11. **No decorative expansion**: never add expressions, silhouettes, generic poses, product ads, or scene panels.
 12. **Runtime capability**: record `runtime_capability_snapshot`; do not claim model, seed, raster, or native 4K provenance unless exposed.
 13. **Prompt trace**: freeze `final_generation_prompt`, compute `generation_prompt_sha256`, and set `prompt_disclosed_before_generation: true` before the image call.
-14. **Terminal call**: set `terminal_generation_call: pending` before generation; only the later tool/runtime trace may prove `executed`; emit no text and call no tool after image generation in that turn.
-15. **Multi-board package**: advance at most one generation call per turn; review or repair A before generating B, C, or D.
+14. **Runtime continuation**: set `terminal_generation_call: pending` before generation; only the actual tool result may prove `executed`. Inspect in the same turn when supported; otherwise preserve pending state for the next available continuation.
+15. **Multi-board package**: advance serially by accepted board; review or repair A before generating B, C, or D, without requiring a new user message for each board.
 16. **Status separation**: before generation, keep `assistant_qa_status: pending_post_generation_inspection` and `production_approval_status: not_granted`; only explicit user or external-pipeline authorization may grant production approval.
 17. **Later visual review**: only a later independent inspection may set assistant QA to `passed`, `conditional`, or `failed`.
-18. **Repair**: freeze and disclose a new exact prompt and hash before a corrective terminal call; never attach a rejected prompt hash to a repaired image.
+18. **Repair**: freeze and disclose a new exact prompt and hash before a corrective image call; never attach a rejected prompt hash to a repaired image.
 19. **Prompt-only false success**: a prompt without the image call does not complete the Skill.
 20. **Unavailable runtime**: return `hard_blocked_generation_runtime`; do not claim an image or approval.
 21. **Built-in request**: every main or extension `final_generation_prompt` requests one horizontal 16:9 board and offers no alternate ratio.
@@ -51,8 +51,8 @@
 - Main board remains text-free portrait/front/back/side casting documentation.
 - Extension boards require a named evidence-closing risk.
 - The seven shared runtime fields are present.
-- Prompt disclosure precedes the terminal image-generation call.
-- No post-generation prompt or QA response is required in the same turn.
+- Prompt disclosure precedes the image-generation call.
+- Actual host limits govern continuation; the Skill does not forbid same-turn QA or require a routine user "continue".
 - `assistant_qa_status` and `production_approval_status` are independent.
 - `built_in_prompt_aspect_ratio_request: "horizontal 16:9"` and `built_in_dimensions_policy: evidence_only_nonblocking` are present.
 - `final_4k_enhancement_prompt`, `4k_enhancement_prompt_sha256`, and `finalized_post_inspection` are present.

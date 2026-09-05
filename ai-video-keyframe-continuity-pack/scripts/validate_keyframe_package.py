@@ -933,8 +933,8 @@ def _validate_package(
                         if reference_id not in exact_prompt_text:
                             errors.append(f"{shot}/{frame_id}: look reference {reference_id} missing from generation prompt")
                 gt, it = frame.get("generation_turn"), frame.get("inspection_turn")
-                if not isinstance(gt, int) or not isinstance(it, int) or it <= gt:
-                    errors.append(f"{shot}/{frame_id}: later visual inspection must follow generation")
+                if type(gt) is not int or type(it) is not int or gt < 1 or it < gt:
+                    errors.append(f"{shot}/{frame_id}: visual inspection cannot precede generation; turn indices must be positive integers")
             elif source == "validated_storyboard_promotion":
                 if frame.get("terminal_generation_call") != "not_applicable_promoted":
                     errors.append(f"{shot}/{frame_id}: promoted frame terminal state invalid")

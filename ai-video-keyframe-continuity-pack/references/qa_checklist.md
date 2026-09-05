@@ -47,5 +47,5 @@
 - [ ] Each generated image has an exact persisted prompt sidecar.
 - [ ] Every prompt sidecar byte hash is verified.
 - [ ] One manifest update receipt registers exact K1/projection/anchor artifacts and K2 when present.
-- [ ] Visual inspection occurred after the terminal image-generation turn.
+- [ ] Visual inspection occurred after the actual image result returned; same-turn inspection is allowed when the host permits it. Turn numbers alone are not proof of pixel inspection.
 - [ ] Validator exits zero before `package_status: packaged`.

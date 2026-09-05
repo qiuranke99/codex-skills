@@ -1,6 +1,6 @@
 ---
 name: character-final-lock-board
-description: "Use when the user provides one or more person/model references, optional wardrobe, shoe, accessory, or prop references, and wants one horizontal 16:9-requested character lock board for AI image or video continuity. Generate a text-free board with portrait, complete multi-angle body views, expressions, details, and silhouettes; support high-angle evidence as required, optional, or off. Freeze the generation prompt before the terminal image call, then inspect the result and publish the complete generation and image-specific 4K prompt pair in the later final main result. Run directly from this package; downstream AI-video project handoff is optional. Do not use for candidate comparison, the exactly-one-face headless-body topology, or prompt-only delivery."
+description: "Use when the user provides one or more person/model references, optional wardrobe, shoe, accessory, or prop references, and wants one horizontal 16:9-requested character lock board for AI image or video continuity. Generate a text-free board with portrait, complete multi-angle body views, expressions, details, and silhouettes; support high-angle evidence as required, optional, or off. Freeze the generation prompt before the image call, then inspect the result and publish the complete generation and image-specific 4K prompt pair in the final main result. Run directly from this package; downstream AI-video project handoff is optional. Do not use for candidate comparison, the exactly-one-face headless-body topology, or prompt-only delivery."
 ---
 
 # Character Final Lock Board
@@ -16,6 +16,8 @@ that optional integration never changes this Skill's input status or
 completion.
 
 Contract version: `asset_board_contract_version: built_in_nonblocking_prompt_pair_v2`.
+
+Legacy fields such as `terminal_generation_call` and `generation_terminal_pending` retain their names for artifact compatibility. They do not require an extra user turn. Prompt freezing, the successful image result, actual visual inspection, and prompt-pair publication must remain in that causal order.
 
 Generate one comprehensive final character lock board. Keep one selected identity and one coherent wardrobe system across every panel. This is not a candidate sheet, fashion layout, scene image, or prompt-only workflow.
 
@@ -105,11 +107,11 @@ Before the image-generation call:
 6. Persist the generation prompt before generation as `<asset_id>_generation_prompt.md` and record the prompt state in `asset_record.yaml`. The sidecar bytes must be exactly the normalized prompt text with no BOM, heading, fence, frontmatter, or metadata wrapper. This sidecar is mandatory because later publication must reread its original bytes. If persistence or readback is unavailable, return `blocked_generation_prompt_persistence` before image generation.
 7. Present the exact generation prompt and its hash before generation. Set `prompt_disclosed_before_generation: true`; state that the inspected-board-specific 4K prompt will be delivered only after later visual inspection with the original references available.
 8. Set `terminal_generation_call: pending`, `assistant_qa_status: pending_post_generation_inspection`, `built_in_dimensions_policy: evidence_only_nonblocking`, `task_finalization_status: generation_terminal_pending`, `main_result_prompt_pair_status: pending`, `external_4k_status: not_ready`, and `production_approval_status: not_granted`.
-9. Call image generation as the final action of the turn.
+9. Call image generation with the frozen prompt and source bindings. Follow the current host/tool continuation contract.
 
-Do not send text, call another tool, reconstruct the prompt, inspect the image, or claim visual success after the generation call in the same turn. The generation result itself completes that turn. If the tool contract later permits post-call actions, preserve this ordering unless exact prompt traceability remains equally strong.
+After the tool returns an accessible image, inspect it in the same task when the host permits continuation. Only if the actual tool or host ends the turn, persist pending inspection and resume at the next available continuation. Do not require the user to say "continue" merely to perform QA. Generation success alone never proves visual approval. Preserve the frozen prompt bytes; never reconstruct them after generation.
 
-On the next continuation, when the tool trace proves `terminal_generation_call: executed` and the board is available but not yet inspected, promote `task_finalization_status` from `generation_terminal_pending` to `awaiting_post_generation_continuation` and set `4k_enhancement_prompt_status: awaiting_post_generation_inspection`. Advance to `finalized_post_inspection` only after the actual board passes the later-turn inspection gate. If the host does not automatically continue after the terminal image call, the executed tool trace leaves the task at `awaiting_post_generation_continuation`; the next continuation must resume inspection and prompt-pair finalization. The generation turn is stage-complete, never task-complete. A failed or missing call never enters the awaiting state.
+When the tool returns, or on the next available continuation if the host ended the turn, and the tool trace proves `terminal_generation_call: executed` and the board is available but not yet inspected, promote `task_finalization_status` from `generation_terminal_pending` to `awaiting_post_generation_continuation` and set `4k_enhancement_prompt_status: awaiting_post_generation_inspection`. Advance to `finalized_post_inspection` only after the actual board passes the post-generation inspection gate. If the actual host does not permit immediate continuation after the image call, the executed tool trace leaves the task at `awaiting_post_generation_continuation`; the next continuation must resume inspection and prompt-pair finalization. The generation turn is stage-complete, never task-complete. A failed or missing call never enters the awaiting state.
 
 If the prompt cannot be frozen or the image tool is unavailable, return `hard_blocked_generation_runtime` without presenting a substitute run as successful.
 
@@ -163,7 +165,7 @@ Generation result:
 
 - `<asset_id>_final_lock_board.png` or the native result returned by the generator.
 
-Later-turn 4K handoff artifacts:
+Post-generation 4K handoff artifacts:
 
 - `<asset_id>_4k_enhancement_prompt.md`
 - `<asset_id>_4k_handoff.yaml`
@@ -232,11 +234,11 @@ assistant_qa_status: pending_post_generation_inspection
 production_approval_status: not_granted
 ```
 
-`terminal_generation_call` is a state machine: keep it `pending` before the call and change it to `executed` only from the tool/runtime trace on a later turn. `assistant_qa_status` and `production_approval_status` are independent. Without an independent later visual review, assistant QA remains `pending_post_generation_inspection`; production approval remains `not_granted` until the user or an authorized external pipeline explicitly changes it to `user_granted` or `external_pipeline_granted`.
+`terminal_generation_call` is a state machine: keep it `pending` before the call and change it to `executed` only from the actual tool/runtime result. `assistant_qa_status` and `production_approval_status` are independent. Without an independent later visual review, assistant QA remains `pending_post_generation_inspection`; production approval remains `not_granted` until the user or an authorized external pipeline explicitly changes it to `user_granted` or `external_pipeline_granted`.
 
-## 8. Later-Turn Visual Review
+## 8. Post-Generation Visual Review
 
-Only on a later turn with the generated image available, inspect it and check:
+After the generated image is available, inspect it and check:
 
 - one identity and one wardrobe system remain consistent;
 - all mandatory views and full heads/feet are present;
@@ -250,13 +252,13 @@ Read the original built-in result file header and record its width, height, obse
 
 Set `assistant_qa_status` to `passed`, `conditional`, or `failed`. Keep `production_approval_status` unchanged.
 
-If one repair is justified, build a new complete prompt, freeze and disclose its new hash before calling image generation. The repair call is again the final action of its turn. Never claim that a rejected attempt and a repaired image share the same prompt hash.
+If one repair is justified, build a new complete prompt, freeze and disclose its new hash before calling image generation. The repair follows the same host-dependent generation and inspection sequence. Never claim that a rejected attempt and a repaired image share the same prompt hash.
 
 Do not finalize a 4K handoff for identity drift, missing core views, a wrong board topology, a missing required high-angle panel, or invented content. Repair or reject the Codex board first. A source-faithful board with only resolution, noise, edge, or microtexture limitations may proceed to the 4K handoff.
 
 ## 9. Finalize The 4K Handoff
 
-Only after later-turn visual inspection, replace the draft with one image-specific `final_4k_enhancement_prompt`. Treat the Codex board as the layout and continuity reference, not as sufficient high-frequency evidence. The external reference bundle must contain both:
+Only after post-generation visual inspection, replace the draft with one image-specific `final_4k_enhancement_prompt`. Treat the Codex board as the layout and continuity reference, not as sufficient high-frequency evidence. The external reference bundle must contain both:
 
 - the actual Codex-generated board;
 - the original person, wardrobe, shoe, accessory, and prop references used to create it.
@@ -319,10 +321,10 @@ A generation turn is stage-complete only when:
 - input status was `ready`;
 - `high_angle_evidence` was resolved;
 - the exact prompt and hash were disclosed before generation;
-- image generation was called as the terminal action;
-- the result remains `task_finalization_status: awaiting_post_generation_continuation`, pending visual review, prompt-pair publication, and production approval.
+- image generation returned successfully under the current host contract;
+- any uninspected result remains `task_finalization_status: awaiting_post_generation_continuation`; pending visual review, prompt-pair publication and production approval remain distinct.
 
-The Skill task completes only after the later final main result contains the complete verified prompt pair and `main_result_prompt_pair_status: published`. Built-in pixel dimensions remain non-blocking evidence; a ratio mismatch cannot cause content failure, repair, demotion, or handoff blocking. `external_4k_status: handoff_ready` still requires later inspection, the source-bound enhancement prompt, original references plus the Codex board, SHA-256 creation, and sidecar creation. Production-complete state additionally requires an external result with `external_4k_status: verified`; production approval remains a separate explicit grant.
+The Skill task completes only after the final main result contains the complete verified prompt pair and `main_result_prompt_pair_status: published`. Built-in pixel dimensions remain non-blocking evidence; a ratio mismatch cannot cause content failure, repair, demotion, or handoff blocking. `external_4k_status: handoff_ready` still requires later inspection, the source-bound enhancement prompt, original references plus the Codex board, SHA-256 creation, and sidecar creation. Production-complete state additionally requires an external result with `external_4k_status: verified`; production approval remains a separate explicit grant.
 
 Prompt-only output, an unresolved identity conflict, a missing image call, a pre-generation draft presented as final, an external result with an unverified aspect ratio or size, or a post-hoc reconstructed prompt is not success.
 

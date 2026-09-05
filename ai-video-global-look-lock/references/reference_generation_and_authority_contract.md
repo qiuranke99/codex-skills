@@ -19,8 +19,8 @@ Every approved reference is a first-class asset. Keep its human/internal `refere
 1. Freeze a single-image generation specification and prompt.
 2. Persist the prompt hash.
 3. Generate one clean independent full-frame image.
-4. End the generation turn at the image call.
-5. On a later continuation, inspect the actual image.
+4. Wait for the actual tool result; do not infer that an image call must end the task.
+5. Inspect the returned image as soon as the host allows. If the host ends the turn, retain pending inspection and resume at the next available continuation without asking for a routine "continue".
 6. Record actual dimensions, file hash when bytes are available, and inspection result.
 7. Approve, repair only this reference, or reject it.
 

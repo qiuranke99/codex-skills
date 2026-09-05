@@ -1,6 +1,6 @@
 ---
 name: character-casting-lock-board
-description: "Use when the user provides character references and needs text-free horizontal 16:9-requested casting-board assets for one selected character: one large frontal portrait plus complete front, back, and side full-body views, with narrowly justified extension boards when source-backed continuity risk requires them. Resolve identity ambiguity before generation; freeze each generation prompt before its terminal image call, then inspect every board and publish every complete generation and image-specific 4K prompt pair in one later final main result. Run directly from this package; downstream AI-video project handoff is optional. Do not use for candidate comparison, general character sheets, poster or lookbook layouts, or prompt-only delivery."
+description: "Use when the user provides character references and needs text-free horizontal 16:9-requested casting-board assets for one selected character: one large frontal portrait plus complete front, back, and side full-body views, with narrowly justified extension boards when source-backed continuity risk requires them. Resolve identity ambiguity before generation; freeze each generation prompt before its image call, then inspect every board and publish every complete generation and image-specific 4K prompt pair in one final main result. Run directly from this package; downstream AI-video project handoff is optional. Do not use for candidate comparison, general character sheets, poster or lookbook layouts, or prompt-only delivery."
 ---
 
 # Character Casting Lock Board
@@ -15,6 +15,8 @@ only after this Skill completes and production approval is explicit; that
 optional integration never changes this Skill's input status or completion.
 
 Contract version: `asset_board_contract_version: built_in_nonblocking_prompt_pair_v2`.
+
+Legacy fields such as `terminal_generation_call` and `generation_terminal_pending` retain their names for artifact compatibility. They do not require an extra user turn. Prompt freezing, the successful image result, actual visual inspection, and prompt-pair publication must remain in that causal order.
 
 中文名称：角色选角锁定板
 
@@ -101,7 +103,7 @@ Every extension must close one named risk. It must remain text-free, neutral, so
 
 Record the planned `board_set` before generation. Generate the main board first. A failed main board must be repaired or rejected before any extension is generated.
 
-## 5. Freeze Each Prompt Before Its Terminal Call
+## 5. Freeze Each Prompt Before Generation
 
 Use the available built-in image-generation capability directly. Do not claim a model, seed, exact size, or native 4K provenance unless exposed by the runtime.
 
@@ -116,13 +118,13 @@ For each board, before its image-generation call:
 6. Assign a monotonically increasing `attempt_id`, persist `<asset_id>_<board_id>_attempt_<attempt_id>_generation_prompt.md`, and update the attempt state in `asset_record.yaml` before generation. The sidecar bytes must be exactly the normalized prompt text with no BOM, heading, fence, frontmatter, or metadata wrapper. This sidecar is mandatory because later publication must reread the accepted attempt's original bytes. If persistence or readback is unavailable, return `blocked_generation_prompt_persistence` before image generation.
 7. Present the exact generation prompt, board ID, and hash. Set `prompt_disclosed_before_generation: true`; state that the inspected-board-specific 4K prompt will be delivered only after later visual inspection with the original references available.
 8. Set `terminal_generation_call: pending`, `assistant_qa_status: pending_post_generation_inspection`, `built_in_dimensions_policy: evidence_only_nonblocking`, `task_finalization_status: generation_terminal_pending`, `main_result_prompt_pair_status: pending`, `external_4k_status: not_ready`, and `production_approval_status: not_granted` for this board/package.
-9. Call image generation as the final action of the turn.
+9. Call image generation with the frozen prompt and source bindings. Follow the current host/tool continuation contract.
 
-Do not send text, call another tool, inspect the result, reconstruct a prompt, or claim visual success after generation in that turn. The returned image is the terminal result.
+After the tool returns an accessible image, inspect it in the same task when the host permits continuation. Only if the actual tool or host ends the turn, persist pending inspection and resume at the next available continuation. Do not require the user to say "continue" merely to perform QA. Generation success alone never proves visual approval. Preserve the frozen prompt bytes; never reconstruct them after generation.
 
-On the next continuation for that board, when the tool trace proves `terminal_generation_call: executed` and the board is available but not yet inspected, promote `task_finalization_status` from `generation_terminal_pending` to `awaiting_post_generation_continuation`, increment `generation_attempt_count` exactly once, and set its `4k_enhancement_prompt_status: awaiting_post_generation_inspection`. Count every executed original or repair call as an attempt; do not increment `generated_board_count` yet. Advance to `finalized_post_inspection` only after that actual board passes later-turn inspection. If the host does not automatically continue, the executed tool trace leaves the package at `awaiting_post_generation_continuation`; the next continuation must resume that board's inspection and prompt-pair finalization. Each generation turn is stage-complete, never package-complete. A failed or missing call never enters the awaiting state or increments the attempt count.
+When the tool returns, or on the next available continuation if the host ended the turn, and the tool trace proves `terminal_generation_call: executed` and the board is available but not yet inspected, promote `task_finalization_status` from `generation_terminal_pending` to `awaiting_post_generation_continuation`, increment `generation_attempt_count` exactly once, and set its `4k_enhancement_prompt_status: awaiting_post_generation_inspection`. Count every executed original or repair call as an attempt; do not increment `generated_board_count` yet. Advance to `finalized_post_inspection` only after that actual board passes post-generation inspection. If the actual host does not permit immediate continuation, the executed tool trace leaves the package at `awaiting_post_generation_continuation`; the next continuation must resume that board's inspection and prompt-pair finalization. Each generation turn is stage-complete, never package-complete. A failed or missing call never enters the awaiting state or increments the attempt count.
 
-Because each generation call is terminal, a multi-board package advances one board per turn. On a later continuation, inspect the preceding board first; repair it if necessary, otherwise freeze the next extension prompt and generate it as that turn's final action. Do not claim the package complete until every planned board has later-turn visual QA.
+A multi-board package advances serially by inspected board. Inspect the preceding board first; repair it if necessary, otherwise freeze and generate the next extension when the host permits. A separate user message is not a generation gate. Do not claim the package complete until every planned board has post-generation visual QA.
 
 If the exact prompt cannot be frozen or image generation is unavailable, return `hard_blocked_generation_runtime`. Prompt-only delivery is not success.
 
@@ -162,7 +164,7 @@ Maintain:
 - one finalized 4K enhancement prompt and one 4K handoff sidecar per visually accepted board;
 - `asset_record.yaml` with the planned board set and every per-board generation and enhancement hash;
 - generated image results;
-- an optional later-turn `qa_report.md`.
+- an optional post-generation `qa_report.md`.
 
 Use `<asset_id>_<board_id>_4k_enhancement_prompt.md` and `<asset_id>_<board_id>_4k_handoff.yaml` for each finalized board. Keep A, B, C, and D records independent; never reuse one board's enhancement prompt or hash for another board.
 
@@ -240,11 +242,11 @@ boards:
 production_approval_status: not_granted
 ```
 
-`terminal_generation_call` stays `pending` until the tool/runtime trace proves `executed` on a later turn. `assistant_qa_status` and `production_approval_status` are separate. Without independent later visual review, assistant QA remains `pending_post_generation_inspection`; production approval remains `not_granted` until the user or an authorized external pipeline explicitly sets `user_granted` or `external_pipeline_granted`.
+`terminal_generation_call` stays `pending` until the tool/runtime trace proves `executed`. `assistant_qa_status` and `production_approval_status` are separate. Without independent later visual review, assistant QA remains `pending_post_generation_inspection`; production approval remains `not_granted` until the user or an authorized external pipeline explicitly sets `user_granted` or `external_pipeline_granted`.
 
-## 7. Later-Turn Visual QA
+## 7. Post-Generation Visual QA
 
-Inspect each returned board only on a later turn. For the main board, verify:
+Inspect each returned board after its actual result is available. For the main board, verify:
 
 - the required portrait, front, back, and side views exist;
 - body views are complete to head and feet;
@@ -256,7 +258,7 @@ For an extension, verify that it closes its named risk and does not introduce a 
 
 For every generated board, read the original built-in result file header and record its width, height, observed ratio, and exact-16:9 boolean. This is provenance evidence under `built_in_dimensions_policy: evidence_only_nonblocking`; it never changes content QA, board role, repair eligibility, prompt-pair finalization, per-board handoff readiness, or package readiness.
 
-Use `passed`, `conditional`, or `failed`. Keep production approval unchanged. If one targeted repair is justified, freeze and disclose a new complete prompt and hash before a new terminal call.
+Use `passed`, `conditional`, or `failed`. Keep production approval unchanged. If one targeted repair is justified, freeze and disclose a new complete prompt and hash before a new image call.
 
 When a board becomes the current accepted A, B, C, or D result, bind its `accepted_attempt_id`, `accepted_generation_prompt_path`, `final_generation_prompt`, and `generation_prompt_sha256` to that exact attempt. Add its unique `board_id` to `accepted_board_ids` once and set `generated_board_count` to the size of that set. Rejected attempts increase only `generation_attempt_count`; a repair that replaces a prior accepted attempt updates the binding without increasing `generated_board_count`. Final publication may use only the current accepted attempt, never a rejected or superseded prompt.
 
@@ -264,7 +266,7 @@ Do not finalize a 4K handoff for identity drift, a missing or wrong core view, i
 
 ## 8. Finalize One 4K Handoff Per Board
 
-Only after later-turn visual inspection, replace each generated board's draft with its own image-specific `final_4k_enhancement_prompt`. Treat that Codex board as the layout and continuity reference, not as sufficient high-frequency evidence. Its external reference bundle must contain both:
+Only after post-generation visual inspection, replace each generated board's draft with its own image-specific `final_4k_enhancement_prompt`. Treat that Codex board as the layout and continuity reference, not as sufficient high-frequency evidence. Its external reference bundle must contain both:
 
 - the actual Codex-generated A, B, C, or D board being enhanced;
 - the original identity and board-relevant hair, skin, body, outfit, shoe, bag, handheld, or accessory references used to create it.
@@ -298,7 +300,7 @@ Record the same selection as `third_party_model_target` for that board; the runt
 
 Do not encode another size or aspect-ratio option. If the selected platform cannot expose both controls, set that board's `external_4k_status: blocked_runtime_controls` and select no fallback size or ratio. Set `pending_external_generation` only when the complete handoff has actually been submitted.
 
-If more boards remain planned, persist the verified pair and continue the one-terminal-call-per-turn sequence. After every accepted board has a verified pair, require `generated_board_count == finalized_4k_prompt_count == 4k_prompt_hash_count == 4k_handoff_sidecar_count` and coverage of every `accepted_board_id`, then set `task_finalization_status: prompt_pair_ready`. `prompt_pair_ready` proves prompt integrity only and does not imply any board or package `external_4k_status: handoff_ready`; the external reference and runtime-control gates remain independent.
+If more boards remain planned, persist the verified pair and continue the serial generation and inspection sequence. After every accepted board has a verified pair, require `generated_board_count == finalized_4k_prompt_count == 4k_prompt_hash_count == 4k_handoff_sidecar_count` and coverage of every `accepted_board_id`, then set `task_finalization_status: prompt_pair_ready`. `prompt_pair_ready` proves prompt integrity only and does not imply any board or package `external_4k_status: handoff_ready`; the external reference and runtime-control gates remain independent.
 
 Preflight whether one final response can contain every accepted board's complete pair and hashes. If a real output ceiling prevents that, return `blocked_final_output_capacity`, keep `main_result_prompt_pair_status: pending`, and never truncate, summarize, link-only, or split the package while claiming publication.
 
@@ -338,9 +340,9 @@ The number of finalized enhancement prompts, SHA-256 hashes, handoff sidecars, a
 
 ## 9. Completion Contract
 
-A generation turn is stage-complete only when one target identity is resolved, the exact prompt and hash are disclosed before generation, the image call is terminal, and `task_finalization_status: awaiting_post_generation_continuation`. `generation_attempt_count` counts every executed call; `generated_board_count` counts unique accepted/current board IDs only. The Skill task completes only after its later final main result contains every accepted board's complete verified prompt pair, `published_board_ids == accepted_board_ids`, `published_prompt_pair_count == generated_board_count`, and `main_result_prompt_pair_status: published`. Built-in pixel dimensions remain non-blocking evidence; a ratio mismatch cannot cause content failure, repair, demotion, or handoff blocking.
+A generation turn is stage-complete only when one target identity is resolved, the exact prompt and hash are disclosed before generation, the image call succeeded, and any uninspected result is recorded as `task_finalization_status: awaiting_post_generation_continuation`. `generation_attempt_count` counts every executed call; `generated_board_count` counts unique accepted/current board IDs only. The Skill task completes only after its final main result contains every accepted board's complete verified prompt pair, `published_board_ids == accepted_board_ids`, `published_prompt_pair_count == generated_board_count`, and `main_result_prompt_pair_status: published`. Built-in pixel dimensions remain non-blocking evidence; a ratio mismatch cannot cause content failure, repair, demotion, or handoff blocking.
 
-Set `package_external_4k_status: handoff_ready` only after later-turn visual QA and distinct source-bound 4K prompt/hash/sidecar coverage for the main board and every generated extension, with original references plus each Codex board. Set package status to `blocked_runtime_controls` if any required external board lacks exact 16:9 and 4K controls, and to `verified` only when every generated board has `external_4k_status: verified`; production approval remains a separate explicit grant.
+Set `package_external_4k_status: handoff_ready` only after post-generation visual QA and distinct source-bound 4K prompt/hash/sidecar coverage for the main board and every generated extension, with original references plus each Codex board. Set package status to `blocked_runtime_controls` if any required external board lacks exact 16:9 and 4K controls, and to `verified` only when every generated board has `external_4k_status: verified`; production approval remains a separate explicit grant.
 
 Never treat declarative prompt compliance, a preflight check, or assistant visual QA as production approval. Never substitute prompt text for a generated board.
 

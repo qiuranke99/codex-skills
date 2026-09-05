@@ -123,7 +123,7 @@ Create only the Look States necessary to cover real project variation. One scene
 
 Use supplied references where they truthfully prove the intended look. Generate only missing hero, state or risk validation frames. Every machine-generated reference must be an independent clean image; do not create a multi-panel image and crop it into model inputs. A human contact sheet may be deterministically composed from approved independent references, but it is never the machine source of truth.
 
-Before a built-in image call, freeze the reference specification and generation prompt. The image call must be terminal for that generation turn. On a later continuation, inspect the actual output, record dimensions and integrity state, compare it against Look Core and intrinsic boundaries, and approve or repair only that reference. Never treat an uninspected generation as locked.
+Before a built-in image call, freeze the reference specification and generation prompt. After the tool returns an accessible image, inspect it in the same task when the host permits continuation. Only if the actual tool or host ends the turn, persist pending inspection and resume at the next available continuation. Do not require the user to say "continue" merely to perform QA. Generation success alone never proves visual approval. Record actual dimensions and integrity state, compare the image against Look Core and intrinsic boundaries, and approve or repair only that reference. Never treat an uninspected generation as locked.
 
 Read `references/reference_generation_and_authority_contract.md` before generation.
 
