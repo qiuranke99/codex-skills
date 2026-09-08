@@ -48,12 +48,16 @@ if ($env:AI_AD_REFERENCE_PYTHON) {
     }
     $PythonExecutable = $env:AI_AD_REFERENCE_PYTHON
 } else {
-    $BundledPython = Join-Path $HOME ".cache\codex-runtimes\codex-primary-runtime\dependencies\python\bin\python3"
+    $BundledPythonWindows = Join-Path $HOME ".cache\codex-runtimes\codex-primary-runtime\dependencies\python\python.exe"
+    $BundledPythonPosixLayout = Join-Path $HOME ".cache\codex-runtimes\codex-primary-runtime\dependencies\python\bin\python3"
     $Candidates = @(
+        @{ Command = "python3.14"; Prefix = @() },
+        @{ Command = "python3.13"; Prefix = @() },
         @{ Command = "python3.12"; Prefix = @() },
         @{ Command = "python3.11"; Prefix = @() },
         @{ Command = "python3.10"; Prefix = @() },
-        @{ Command = $BundledPython; Prefix = @() },
+        @{ Command = $BundledPythonWindows; Prefix = @() },
+        @{ Command = $BundledPythonPosixLayout; Prefix = @() },
         @{ Command = "python3"; Prefix = @() },
         @{ Command = "python"; Prefix = @() },
         @{ Command = "py"; Prefix = @("-3") }
