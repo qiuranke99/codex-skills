@@ -54,8 +54,8 @@ jobs:
       - name: Test the package-scoped standalone release controller
         run: python .github/scripts/test_manage_standalone_skill_release.py
 
-      - name: Validate all 17 Skills in isolated package roots
-        run: python .github/scripts/validate_standalone_skills.py --repo-root . --expected-count 17 --timeout 180 --compact
+      - name: Validate all 18 Skills in isolated package roots
+        run: python .github/scripts/validate_standalone_skills.py --repo-root . --expected-count 18 --timeout 180 --compact
 
       - name: Run undeclared package-local tests in isolated package roots
         run: python .github/scripts/run_undeclared_standalone_tests.py --repo-root . --timeout 180

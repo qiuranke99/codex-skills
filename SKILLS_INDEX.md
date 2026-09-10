@@ -2,7 +2,7 @@
 
 Migration date: 2026-05-27
 
-Last updated: 2026-09-05
+Last updated: 2026-09-10
 
 Windows canonical checkout used by the existing workstation: `D:\AI\skill`
 
@@ -14,7 +14,7 @@ Do not expose the same Skill name in both discovery roots.
 
 ## Independent Skill Packages
 
-The repository maintains 17 independently installable and runnable Skill
+The repository maintains 18 independently installable and runnable Skill
 packages. Each has one unique top-level directory, its own `SKILL.md`, and no
 duplicate runtime copy in this repository. A package may be copied, linked,
 invoked, tested, and accepted without any sibling package or repository-level
@@ -24,6 +24,7 @@ runtime authority.
 
 | Skill | Target path | Purpose | Original path | Status |
 | --- | --- | --- | --- | --- |
+| `product-tvc-30s-director` | `product-tvc-30s-director` | 将产品白底图、影调参考和关键帧编排为30秒高端产品广告完整提示词；保留身份与用户锁定，设计大动态、真实料体过程、剪辑与平台分段，只交付文本。 | Created in place | Active |
 | `character-final-lock-board` | `D:\AI\skill\character-final-lock-board` | Request a horizontal 16:9 final character board with nonblocking built-in dimensions, retain `high_angle_evidence: required / optional / off`, publish the complete prompt pair, and expose approved identity/wardrobe artifacts for an optional external integrator. | `D:\AI视觉工作室\.agents\skills\character-final-lock-board` | Active |
 | `character-casting-lock-board` | `D:\AI\skill\character-casting-lock-board` | Request horizontal 16:9 text-free casting boards with complete prompt pairs; casting stays pre-Canon unless explicitly selected as terminal character authority by an external integrator. | `D:\AI视觉工作室\.agents\skills\character-casting-lock-board` | Active |
 | `single-face-character-lock-board` | `D:\AI\skill\single-face-character-lock-board` | Request a horizontal 16:9 one-face topology board, publish the complete topology-preserving prompt pair, and expose approved identity/wardrobe artifacts for an optional external integrator. | `D:\AI视觉工作室\.agents\skills\single-face-character-lock-board` | Active |
@@ -68,6 +69,8 @@ enabled so every Blender or Blender MCP task must read its complete production
 handbook before Blender-specific action.
 
 
+
+`product-tvc-30s-director`（30秒高端产品广告提示词导演）为独立、仅交付文本的包。此工作站通过 `%USERPROFILE%/.agents/skills/product-tvc-30s-director` 的唯一 junction 发现 canonical 包；自动选择保持启用，不依赖其他 Skill。
 
 ## Legacy workstation discovery snapshot
 
