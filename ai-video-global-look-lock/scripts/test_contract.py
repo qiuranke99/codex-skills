@@ -6,11 +6,13 @@ from __future__ import annotations
 import copy
 import hashlib
 import json
+import subprocess
+import sys
 import tempfile
 from pathlib import Path
 from typing import Callable
 
-from validate_global_look import canonical_sha256, render_shot_look_delta_prompt, validate_canon_registration, validate_look, verify_declared_file_hashes
+from validate_global_look import canonical_sha256, render_shot_look_delta_prompt, validate_canon_registration, validate_look, verify_declared_file_hashes, verify_reference_sidecars
 from ai_video_input_contracts import canonical_hash, revision_semantic_view, semantic_diff_pointers
 
 
@@ -413,6 +415,59 @@ def canon_registration_integration() -> bool:
     return True
 
 
+def standalone_sidecar_cli() -> bool:
+    """Synthetic file-integrity fixtures; no image generation or visual approval."""
+    with tempfile.TemporaryDirectory() as tmp:
+        workspace = Path(tmp)
+        input_root = workspace / "inputs"
+        contract_root = workspace / "standalone-look"
+        look = single_state_pass()
+        reference = look["look_reference_set"][0]
+        image_path = input_root / reference["locator"]
+        image_path.parent.mkdir(parents=True, exist_ok=True)
+        image_path.write_bytes(b"synthetic integrity fixture, not visual evidence")
+        reference["file_sha256"] = file_hash(image_path)
+        look["sha256"] = canonical_sha256(look)
+        contract_path = contract_root / "GLOBAL_LOOK_CONTRACT.json"
+        sidecar_path = contract_root / "owned_artifacts" / f"{reference['artifact']['artifact_id']}.json"
+        write_json(contract_path, look)
+        write_json(sidecar_path, reference["artifact"])
+
+        def run() -> subprocess.CompletedProcess[str]:
+            return subprocess.run(
+                [sys.executable, "-X", "utf8", "-B", str(ROOT / "scripts" / "validate_global_look.py"),
+                 str(contract_path), "--verify-files-root", str(input_root)],
+                capture_output=True, text=True, encoding="utf-8", timeout=30,
+            )
+
+        valid = run()
+        if valid.returncode:
+            print(valid.stdout, valid.stderr)
+            return False
+        sidecar_path.unlink()
+        missing = run()
+        wrong = copy.deepcopy(reference["artifact"])
+        wrong["affected_shot_uids"] = ["S999"]
+        wrong["sha256"] = canonical_sha256(wrong)
+        write_json(sidecar_path, wrong)
+        changed = run()
+        sidecar_path.write_text("not json", encoding="utf-8")
+        malformed = run()
+        write_json(sidecar_path, reference["artifact"])
+        image_path.write_bytes(b"tampered primary bytes")
+        primary_changed = run()
+        unsafe = copy.deepcopy(look)
+        unsafe["look_reference_set"][0]["artifact"]["artifact_id"] = "../../outside"
+        unsafe_errors = verify_reference_sidecars(unsafe, contract_root)
+        return (
+            missing.returncode == 1 and "sidecar missing or unreadable" in missing.stdout
+            and changed.returncode == 1 and "differs from the complete nested artifact" in changed.stdout
+            and malformed.returncode == 1 and "sidecar missing or unreadable" in malformed.stdout
+            and primary_changed.returncode == 1 and "file_sha256 mismatch" in primary_changed.stdout
+            and any("safe reference artifact ID" in error for error in unsafe_errors)
+        )
+
+
 def main() -> int:
     results = [
         run_case("single-scene one-State look", single_state_pass, True),
@@ -498,6 +553,9 @@ def main() -> int:
     canon_ok = canon_registration_integration()
     print(f"{'PASS' if canon_ok else 'FAIL'} root plus first-class look-reference assets bind to Canon/receipt and real bytes")
     results.append(canon_ok)
+    standalone_ok = standalone_sidecar_cli()
+    print(f"{'PASS' if standalone_ok else 'FAIL'} standalone Look CLI validates separate primary bytes and owned sidecars without Canon")
+    results.append(standalone_ok)
     return 0 if all(results) else 1
 
 

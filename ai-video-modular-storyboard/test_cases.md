@@ -38,6 +38,14 @@
 
 ## Automated Contract Suite
 
+Standalone evidence regressions also cover legal intrinsic text, legal applied
+replacement, their combination, and ordinary no-text/no-replacement compatibility.
+Reject missing caller/source hashes, mutated primary bytes, forged source identity,
+wrong category, URL-only sources, rewritten/resealed base manifests, altered
+caller evidence, missing base locks, unrequested frame-record changes, upstream
+tampering, and evidence stored inside the mutable output package. Explicit Canon
+fixtures continue to test actual registration, receipts, and superseded versions.
+
 Run:
 
 ```bash

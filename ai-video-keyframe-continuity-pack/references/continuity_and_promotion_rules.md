@@ -38,7 +38,7 @@ All gates must pass:
 7. correct composition, camera, placement, pose, screen direction, and time state;
 8. actual dimensions and binary hash recorded;
 9. later visual inspection passed;
-10. no shot number, duration, editorial caption, arrow, grid line, gutter, UI, watermark, or other storyboard annotation; intrinsic packaging/product/in-world text is allowed only when every source is an exact downstream-eligible Canon authority required by the promoted keyframe;
+10. no shot number, duration, editorial caption, arrow, grid line, gutter, UI, watermark, or other storyboard annotation; intrinsic packaging/product/in-world text is allowed only when every source is an exact downstream-eligible authority required by the promoted keyframe and bound to real identity/file/hash evidence; explicit Canon integration additionally verifies the registered entry;
 11. no unsupported completion or conflicting source evidence;
 12. promotion evidence persisted.
 

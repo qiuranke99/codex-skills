@@ -37,7 +37,7 @@ A `shot_look_delta` is allowed only when all answers are yes:
 
 Examples: a half-stop relative darkening, slightly denser environmental haze, reduced halation around a critical label, or a narrowly cooler background separation while skin and product remain protected.
 
-The structured Delta is not complete until the Skill deterministically renders and freezes `shot_look_delta_prompt_full` with exactly these lines: authority header, boolean `active`, JSON-array `scope`, exact `description`, exact `reason`, and boolean `preserves_look_core`. Storyboard frames, keyframes, control previs and video prompts copy that complete block byte-for-byte. They may not reconstruct or paraphrase it.
+The structured Delta is not complete until the Skill deterministically renders and freezes `shot_look_delta_prompt_full` with exactly these lines: authority header, boolean `active`, JSON-array `scope`, exact `description`, exact `reason`, and boolean `preserves_look_core`. Look-applied storyboard frames, keyframes and video prompts copy that complete block byte-for-byte. They may not reconstruct or paraphrase it. Neutral V1/V2 motion and timing remain outside Look ownership.
 
 ## Product and material boundary
 

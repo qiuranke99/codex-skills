@@ -8,6 +8,10 @@ on:
 permissions:
   contents: read
 
+env:
+  PYTHONDONTWRITEBYTECODE: "1"
+  PYTHONUTF8: "1"
+
 jobs:
   standalone-skills:
     name: Standalone Skills / ${{ matrix.os }} / Python ${{ matrix.python }}
@@ -48,14 +52,23 @@ jobs:
         shell: pwsh
         run: choco install ffmpeg --no-progress -y
 
+      - name: Test inventory consistency and rejection cases
+        run: python -X utf8 -B .github/scripts/test_validate_skill_inventory.py
+
+      - name: Verify source inventory, real Skill identities and human index
+        run: python -X utf8 -B .github/scripts/validate_skill_inventory.py --repo-root . --expected-count 17
+
       - name: Test the repository-level standalone validator
         run: python .github/scripts/test_validate_standalone_skills.py
+
+      - name: Test undeclared runner discovery, isolation and failure handling
+        run: python -X utf8 -B .github/scripts/test_run_undeclared_standalone_tests.py
 
       - name: Test the package-scoped standalone release controller
         run: python .github/scripts/test_manage_standalone_skill_release.py
 
-      - name: Validate all 19 Skills in isolated package roots
-        run: python .github/scripts/validate_standalone_skills.py --repo-root . --expected-count 19 --timeout 180 --compact
+      - name: Validate all 17 Skills in isolated package roots
+        run: python .github/scripts/validate_standalone_skills.py --repo-root . --expected-count 17 --timeout 180 --compact
 
       - name: Run undeclared package-local tests in isolated package roots
         run: python .github/scripts/run_undeclared_standalone_tests.py --repo-root . --timeout 180

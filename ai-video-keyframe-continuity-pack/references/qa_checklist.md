@@ -21,7 +21,7 @@
 - [ ] Scene, framing, camera, subject placement, and Global Look match approved sources.
 - [ ] Hands, faces, product contact, transparent layers, and material boundaries are readable.
 - [ ] No unrelated subjects, duplicate people/products, invented text, storyboard annotation, grid, UI, or watermark appears.
-- [ ] Any intrinsic packaging/product/in-world text is bound to exact downstream-eligible Canon source authorities; provenance is not misreported as OCR or exact-copy proof.
+- [ ] Any intrinsic packaging/product/in-world text is bound to exact downstream-eligible source authorities and real file/hash evidence; verify Canon entries only for requested integration. Provenance is not misreported as OCR or exact-copy proof.
 
 ## Time And Dynamic State
 
@@ -46,6 +46,6 @@
 - [ ] Each generated/promoted image has a verified `file_sha256`.
 - [ ] Each generated image has an exact persisted prompt sidecar.
 - [ ] Every prompt sidecar byte hash is verified.
-- [ ] One manifest update receipt registers exact K1/projection/anchor artifacts and K2 when present.
-- [ ] Visual inspection occurred after the terminal image-generation turn.
+- [ ] When Project Canon registration was requested, its manifest update receipt registers exact K1/projection/anchor artifacts and K2 when present.
+- [ ] Visual inspection examined the actual completed image; a turn boundary alone is not inspection evidence.
 - [ ] Validator exits zero before `package_status: packaged`.

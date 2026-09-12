@@ -49,7 +49,7 @@ For a JSON artifact envelope:
 4. serialize UTF-8 JSON with `sort_keys=True`, `separators=(',', ':')`, `ensure_ascii=False`, and `allow_nan=False`;
 5. calculate SHA-256 over those exact bytes.
 
-Binary images use their own `file_sha256`; that hash does not replace the artifact-envelope hash. Materialize every complete binary artifact record under the producing package's `owned_artifacts/` directory. Project Canon separately locks the project-relative primary locator/hash and JSON artifact-record locator/hash; package locators never resolve against another package root.
+Binary images use their own `file_sha256`; that hash does not replace the artifact-envelope hash. Materialize every complete binary artifact record under the producing package's `owned_artifacts/` directory and validate its content against the owned envelope. Only explicitly requested Project Canon integration separately registers the project-relative primary locator/hash and JSON artifact-record locator/hash; package locators never resolve against another package root.
 
 ## Approval And Staleness
 

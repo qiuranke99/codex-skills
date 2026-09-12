@@ -734,6 +734,7 @@ def fully_reseal_current_storyboard(root: Path, mutator: Callable[[dict[str, Any
 def main() -> int:
     json.loads((SKILL_ROOT / "references/storyboard_manifest.schema.json").read_text(encoding="utf-8"))
     json.loads((SKILL_ROOT / "references/change_transaction.schema.json").read_text(encoding="utf-8"))
+    json.loads((SKILL_ROOT / "references/source_evidence.schema.json").read_text(encoding="utf-8"))
     json.loads((SKILL_ROOT / "references/storyboard_manifest_template.json").read_text(encoding="utf-8"))
     with tempfile.TemporaryDirectory() as temp:
         root = Path(temp)
@@ -894,6 +895,7 @@ def main() -> int:
         metadata = json.loads((base / "02_review_board/smoke.json").read_text(encoding="utf-8"))
         if metadata["valid_cell_count"] != 3 or metadata["is_model_input"] is not False:
             raise AssertionError("review-board builder metadata contract failed")
+    subprocess.run([sys.executable, "-B", str(HERE / "test_standalone_evidence.py")], check=True)
     print("PASS: storyboard schema parse, N=1/3/7/15/17, source-authorized intrinsic text, versioned atomic replacement, reorder, independence, hash, and board tests")
     return 0
 

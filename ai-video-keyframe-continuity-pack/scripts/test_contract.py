@@ -510,6 +510,7 @@ def build_k1(
     *,
     label_heavy: bool = False,
     promote_storyboard: bool = False,
+    inspection_turn: int = 2,
 ) -> tuple[Path, dict[str, Any], set[str]]:
     create_storyboard_fixture(project, count, intrinsic_text=label_heavy)
     uids = [f"SHT_{index:03d}" for index in range(1, count + 1)]
@@ -588,7 +589,7 @@ def build_k1(
                 },
                 "terminal_generation_call": "not_applicable_promoted" if promote_storyboard else "executed",
                 "generation_turn": None if promote_storyboard else 1,
-                "inspection_turn": 2,
+                "inspection_turn": inspection_turn,
                 "visual_qa_status": "passed",
                 "promotion_evidence": copy.deepcopy(validator.PROMOTION_EVIDENCE_GATES) if promote_storyboard else [],
             }],
@@ -750,10 +751,12 @@ def build_fixture(
     *,
     label_heavy: bool = False,
     promote_storyboard: bool = False,
+    inspection_turn: int = 2,
 ) -> tuple[Path, Path]:
     project = root / "project"
     package, _, registered = build_k1(
-        project, count, label_heavy=label_heavy, promote_storyboard=promote_storyboard
+        project, count, label_heavy=label_heavy, promote_storyboard=promote_storyboard,
+        inspection_turn=inspection_turn,
     )
     if k2:
         add_k2(project, package, registered)
@@ -812,6 +815,18 @@ def main() -> int:
             Path(tmp), 1, False, label_heavy=True, promote_storyboard=True
         )
         assert not errors_for(project, package), errors_for(project, package)
+
+    # Tool results can be inspected later in the same host turn. The manifest
+    # must remain valid with consistent hashes, while reversed and boolean
+    # indices still fail the causal evidence gate.
+    with tempfile.TemporaryDirectory() as tmp:
+        project, package = build_fixture(Path(tmp), inspection_turn=1)
+        assert not errors_for(project, package), errors_for(project, package)
+    for invalid_turn in (0, True):
+        with tempfile.TemporaryDirectory() as tmp:
+            project, package = build_fixture(Path(tmp), inspection_turn=invalid_turn)
+            errors = errors_for(project, package)
+            assert any("visual inspection cannot precede generation" in error for error in errors), errors
 
     expect_attack(
         "endpoint usage mode",

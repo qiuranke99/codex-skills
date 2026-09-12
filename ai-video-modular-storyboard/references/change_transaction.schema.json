@@ -38,7 +38,7 @@
     "atomic_commit": {"type": "boolean"},
     "route_to_shot_contract": {"type": "boolean"},
     "base_manifest_path": {"type": "string", "minLength": 1},
-    "base_manifest_file_sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+    "base_manifest_file_sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$", "description": "Original base byte hash fixed before replacement in caller-pinned source evidence, or verified against actual Canon superseded entries; never a newly self-declared hash."},
     "base_manifest_ref": {"$ref": "#/$defs/artifactRef"},
     "old_frames": {"type": "array", "items": {"$ref": "#/$defs/frameLock"}},
     "new_frames": {"type": "array", "items": {"$ref": "#/$defs/frameLock"}},

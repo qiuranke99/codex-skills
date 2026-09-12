@@ -1,119 +1,62 @@
 # Codex Skills
 
-公开维护的个人 Codex Skill 仓库。仓库根目录的 19 个 Skill 都是独立
-安装、独立发现、独立调用、独立验证的包；每个包自己的 `SKILL.md` 及其
-包内可用的资源、脚本和 validator 是其唯一运行权威。
+公开维护的个人 Codex Skill 源码仓库。当前保留 **17 个独立包**，每包只维护一个当前版本。机器清单为 [SKILLS_MANIFEST.json](SKILLS_MANIFEST.json)，用途索引为 [SKILLS_INDEX.md](SKILLS_INDEX.md)。源码存在不等于已在某台机器安装。
 
-任何 Skill 都不得把兄弟包、仓库级路由器、固定 checkout、发布回执或聊天
-历史作为执行核心能力的前置条件。跨 Skill 组合只能由仓库外的显式编排器
-消费各包已经完成并验收的可移植工件。
+机器清单描述源码库存，不是安装、视觉或生产批准回执。
 
-## 单个 Skill 快速开始
+原 High-Control 聚合系统已退役，旧批量安装器、聚合发布门和 SOP 已移除；CI 只验证独立包。不恢复被删除的技能，不把旧聚合流程作为独立包的使用前提。历史版本仅从 Git 历史追溯，不在当前树保留旧副本。
 
-克隆仓库后，只把需要的一个包复制或链接到一个 Codex discovery root。
-下例安装 `material-sensitive-product-master-asset-board`。
+## 安装普通独立包
 
-### macOS / Linux
+克隆仓库后，只把需要的包复制或链接到用户的 `.agents/skills`。例如：
 
 ```bash
 git clone https://github.com/qiuranke99/codex-skills.git
 mkdir -p "$HOME/.agents/skills"
-cp -R codex-skills/material-sensitive-product-master-asset-board \
-  "$HOME/.agents/skills/material-sensitive-product-master-asset-board"
-requirements="$HOME/.agents/skills/material-sensitive-product-master-asset-board/requirements.txt"
-if [ -f "$requirements" ]; then
-  python -m pip install -r "$requirements"
-fi
+cp -R codex-skills/material-sensitive-product-master-asset-board "$HOME/.agents/skills/"
+python -m pip install -r "$HOME/.agents/skills/material-sensitive-product-master-asset-board/requirements.txt"
 ```
 
-### Windows PowerShell
+Windows PowerShell：
 
 ```powershell
 git clone https://github.com/qiuranke99/codex-skills.git
 New-Item -ItemType Directory -Force "$HOME\.agents\skills" | Out-Null
-Copy-Item -Recurse -LiteralPath `
-  '.\codex-skills\material-sensitive-product-master-asset-board' `
-  -Destination "$HOME\.agents\skills\material-sensitive-product-master-asset-board"
-$requirements = "$HOME\.agents\skills\material-sensitive-product-master-asset-board\requirements.txt"
-if (Test-Path -LiteralPath $requirements) {
-  python -m pip install -r $requirements
-}
+Copy-Item -Recurse -LiteralPath '.\codex-skills\material-sensitive-product-master-asset-board' -Destination "$HOME\.agents\skills"
+python -m pip install -r "$HOME\.agents\skills\material-sensitive-product-master-asset-board\requirements.txt"
 ```
 
-重启 Codex 或新建任务后显式调用：
+以上用于首次安装。更新已有安装前比较源文件，避免覆盖本地修改；不要同时在 `.agents/skills` 和 legacy `.codex/skills` 暴露同名 Skill。实际依赖以该包的 requirements 为准，安装依赖需要用户授权。每包自己的 `SKILL.md` 定义输入、边界、引用和完成条件，不需仓库级运行门。
 
-```text
-$material-sensitive-product-master-asset-board
-```
+## Frozen Moment 的独立不可变发布
 
-其他包使用相同方式，只替换目录名；仅当目标包含 `requirements.txt` 时
-安装其 Python 依赖。不要在 `.agents/skills` 与 legacy `.codex/skills`
-同时暴露同名 Skill。
-
-## Skill 清单
-
-仓库当前维护 19 个独立 Skill；完整的人读清单、用途、canonical path 和
-discovery 说明见 [`SKILLS_INDEX.md`](SKILLS_INDEX.md)。每个 Skill 在仓库
-根目录只保留一个唯一包目录。
-
-## `frozen-moment-camera-coverage` 的不可变单包发布
-
-该 Skill 使用 package-scoped 发布控制器。控制器只物化该包在已接受 Git
-提交中的精确 tree，冻结快照并切换唯一 discovery entry；它不得安装、更新、
-检查或签署其他 Skill。
-
-维护者在已推送且验证通过的 `main` 上执行。运行时 Python 使用该包自己的
-依赖，不依赖仓库内其他目录：
+`frozen-moment-camera-coverage` 保留包级不可变发布控制器。普通源码同步不自动切换已安装 release，也不修改只读快照。仅在明确发布该包时运行：
 
 ```powershell
 $commit = (git rev-parse origin/main).Trim()
-$runtime = Join-Path $env:TEMP 'frozen-moment-camera-coverage-release'
-python -m venv $runtime
-$python = Join-Path $runtime 'Scripts\python.exe'
-& $python -m pip install --disable-pip-version-check -r `
-  .\frozen-moment-camera-coverage\requirements.txt
-& $python .github/scripts/manage_standalone_skill_release.py sync `
-  --repo-root . `
-  --python $python `
-  --commit $commit `
-  --canonical .\frozen-moment-camera-coverage
-& $python .github/scripts/manage_standalone_skill_release.py check `
-  --repo-root . `
-  --python $python `
-  --commit $commit `
-  --canonical .\frozen-moment-camera-coverage
+$pythonExecutable = (Get-Command python -CommandType Application).Source
+python .github/scripts/manage_standalone_skill_release.py sync --repo-root . --python $pythonExecutable --commit $commit --canonical .\frozen-moment-camera-coverage
+python .github/scripts/manage_standalone_skill_release.py check --repo-root . --python $pythonExecutable --commit $commit --canonical .\frozen-moment-camera-coverage
 ```
 
-## 验证
+使用具备该包依赖的真实 Python 可执行文件。控制器仅物化目标包的精确 Git tree，验证字节、只读保护、唯一 discovery 与包测试；不安装或签署其他包，不依赖全库库存作为发布门。当前回执使用包级 v2；历史 v1 仅用于受校验的迁移和恢复，不直接当作当前通过回执。源码同步不会自动切换已安装 release。测试通过不等于视觉批准。
 
-先测试仓库级 standalone validator，再在隔离副本中验证全部 19 个包：
+## 维护与验证
+
+修改一个 Skill 时运行相关检查；跨包维护需发现并验证全部当前包：
 
 ```bash
+python .github/scripts/test_validate_skill_inventory.py
+python .github/scripts/validate_skill_inventory.py --repo-root . --expected-count 17
 python .github/scripts/test_validate_standalone_skills.py
-python .github/scripts/validate_standalone_skills.py \
-  --repo-root . --expected-count 19 --timeout 180
-python .github/scripts/run_undeclared_standalone_tests.py \
-  --repo-root . --timeout 180
-```
-
-前一个验证器执行包内已声明的 deterministic test；后一个通用测试门把尚未
-声明测试命令、但含 `scripts/test*.py` 的包逐个复制到空 discovery root 后
-执行，不使用中央 Skill 清单或兄弟包。
-
-`frozen-moment-camera-coverage` 的发布控制器另有独立测试：
-
-```bash
+python .github/scripts/test_run_undeclared_standalone_tests.py
 python .github/scripts/test_manage_standalone_skill_release.py
+python .github/scripts/validate_standalone_skills.py --repo-root . --expected-count 17 --timeout 180 --compact
+python .github/scripts/run_undeclared_standalone_tests.py --repo-root . --timeout 180
 ```
 
-GitHub Actions 在 Ubuntu、macOS 与 Windows 上分别使用 Python 3.11 和
-3.12 运行同一套 standalone 验证。CI 证明包结构、隔离边界与确定性测试，
-不能替代真实媒体、外部软件、平台权限或人工视觉验收。
+CI 配置覆盖 Ubuntu、macOS、Windows 的 Python 3.11/3.12；包含源库存、隔离、发布安全与恢复、未声明包内测试及 PowerShell/POSIX 入口检查。Previs 的真实微视频回归需要 PATH 中可用的 FFmpeg 和 ffprobe；它们不是退役聚合系统依赖。各平台的实际通过状态以对应 CI 回执为准。隔离验证与离线测试不能证明真实生成结果、产品文字准确率、媒体权限或用户已经批准。
 
-## 数据与许可证
+## 数据边界
 
-客户脚本、私有 brief、身份资料、参考媒体、生产 manifest、storyboard、
-keyframe、生成媒体、平台 payload、凭据和密钥不得提交到这个 Public 仓库。
-
-仓库当前未声明开源许可证。Public 可见性不等于授予复用、修改或商业
-分发许可；相关权利仍归各内容权利人所有。
+仅发布可复用 Skill、通用代码、合成测试和文档。客户脚本、原图、人物身份素材、实际项目、模型输出、访问凭证、浏览器状态和本机运行回执不得进入本公开仓库。实际项目与维护证据放在仓库外。源码发布不授权业务操作、付费生成、账户变更或现有安装的自动切换。

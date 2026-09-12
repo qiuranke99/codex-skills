@@ -46,7 +46,7 @@ Use `false` for `structure_draft`; it may feed human review and V1 timing only. 
 
 The frame itself contains no storyboard annotations: no shot number, duration, editorial caption, arrow, border, grid, UI, watermark, or montage layout. An image generator may use approved source evidence but may not generate multiple storyboard cells in one image.
 
-Intrinsic text is a separate source-bound category. Packaging copy, a product mark, or in-world signage is legal only when `content_cleanliness.intrinsic_text_policy` is `source_authorized_only` and every visible-text source is locked by an exact `ai-video-artifact-v1` reference in `intrinsic_text_source_refs`. Each reference must match a current downstream-eligible Project Canon entry in a product, packaging, label, scene, environment, location, or signage category, cover the shot, be a frame dependency, and appear by artifact ID in the generation prompt. Use `none_visible` with an empty source list when no intrinsic text is visible. This is a provenance gate, not an OCR or exact-copy guarantee; exact label copy still requires evidence from its owning asset workflow.
+Intrinsic text is a separate source-bound category. Packaging copy, a product mark, or in-world signage is legal only when `content_cleanliness.intrinsic_text_policy` is `source_authorized_only` and every visible-text source is locked by an exact `ai-video-artifact-v1` reference in `intrinsic_text_source_refs`. Each reference must resolve to real primary and record bytes in caller-pinned standalone source evidence, or to an exact downstream-eligible entry when actual Project Canon integration is selected. It must be a validated, non-stale product/packaging/label/scene authority, cover the shot, be a frame dependency, and appear by artifact ID in the generation prompt. Use `none_visible` with an empty source list when no intrinsic text is visible. This is a provenance gate, not an OCR or exact-copy guarantee. See `standalone_evidence_contract.md` for direct-input validation.
 
 ## Visual Stages
 
@@ -70,6 +70,13 @@ An applied `replace_frames` transaction must:
 10. rebuild the downstream invalidation list.
 
 If any staged replacement fails, set the transaction to `rejected`; do not activate a partial subset.
+
+The base manifest's original byte hash and exact artifact reference must be
+pinned before mutation, outside the mutable package, or anchored by the actual
+Canon superseded entry. Every prior frame/prompt/board file is re-hashed. Every
+unrequested frame record stays identical, not merely its PNG hash. The base and
+current manifests must retain the same upstream authority locks. A hash inside
+the replacement manifest alone cannot prove the base was not rewritten.
 
 ## Reorder, Insert, Delete, Split, Merge
 

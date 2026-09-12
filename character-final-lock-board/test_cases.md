@@ -4,8 +4,8 @@
 
 1. **Built-in request**: `final_generation_prompt` requests one horizontal 16:9 board and offers no alternate ratio.
 2. **Non-blocking dimensions**: a source-faithful 1672x941 built-in result records dimensions under `built_in_dimensions_policy: evidence_only_nonblocking`; it does not fail content QA, trigger repair, demote the board, or block 4K handoff.
-3. **Terminal call**: imagegen is the generation turn's final action; the turn ends with `task_finalization_status: awaiting_post_generation_continuation` and is only stage-complete.
-4. **Continuation required**: the next continuation inspects the actual returned board before creating `final_4k_enhancement_prompt`.
+3. **Completed tool result**: an available image result is inspected in the same turn when the host permits; no artificial turn boundary or second user message is required.
+4. **Real continuation boundary**: if the actual tool or host requires continuation, preserve pending state and inspect the real returned board when available before creating `final_4k_enhancement_prompt`.
 5. **High-angle branch**: `required | optional | off` remains inside this Skill; a required high-angle panel and its crown-hair continuity survive 4K enhancement.
 6. **Source bundle**: 4K handoff requires the Codex board plus the original identity, wardrobe, shoe, accessory, and prop references.
 7. **Identity-safe texture**: enhancement recovers only source-supported skin and hair microtexture; it rejects beauty retouching, face reshaping, age drift, and invented pores or marks.

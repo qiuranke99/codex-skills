@@ -23,3 +23,7 @@ Thumbs.db
 outputs/
 local-projects/
 client-projects/
+
+# Local runtimes and transient validation output.
+**/.venv/
+**/*.tmp

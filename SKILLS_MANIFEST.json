@@ -1,0 +1,23 @@
+{
+  "schema_version": "codex-skills-inventory.v1",
+  "aggregate_profile": "retired",
+  "skills": [
+    "advertising-reference-research-director",
+    "ai-video-global-look-lock",
+    "ai-video-keyframe-continuity-pack",
+    "ai-video-modular-storyboard",
+    "ai-video-shot-script-director",
+    "ai-video-timed-animatic-previs-director",
+    "character-casting-lock-board",
+    "character-final-lock-board",
+    "cinematic_shot_image_explorer",
+    "complex-product-identity-reconstruction-asset-locking",
+    "frozen-moment-camera-coverage",
+    "material-sensitive-product-master-asset-board",
+    "multi-angle-product-identity-lock-board",
+    "packaging-product-identity-label-lock-board",
+    "product-tvc-30s-director",
+    "product-tvc-lighting-director",
+    "single-face-character-lock-board"
+  ]
+}

@@ -1,6 +1,9 @@
 # Contract Test Cases
 
-The package is valid only when the expected behavior—not merely attractive imagery—passes.
+Use for maintenance or relevant failure investigation, not a business preflight.
+The package is valid only when the expected behavior—not merely attractive
+imagery—passes. Canon checks apply only to explicitly requested integration;
+standalone source and owned-file integrity remain mandatory.
 
 ## 1. One Anchor Per Scripted Shot
 
@@ -14,7 +17,7 @@ Input: S004 final storyboard already has source-faithful identity/product/scene/
 Expect: `anchor_route: validated_storyboard_promotion`, `terminal_generation_call: not_applicable_promoted`, and non-empty promotion evidence.
 Fail: promotion by filename rename, contact-sheet crop, missing QA, or stale source.
 
-For label-heavy packaging or in-world signage, promotion remains legal only when Storyboard annotation controls pass and every intrinsic-text source is an exact downstream-eligible Canon product/packaging/scene authority retained in the Keyframe `required_authority_artifact_ids`. Provenance does not imply OCR or exact-copy verification. Fail if the source is invented, missing, stale, wrong-category, out of scope, or dropped during promotion.
+For label-heavy packaging or in-world signage, promotion remains legal only when Storyboard annotation controls pass and every intrinsic-text source is an exact downstream-eligible product/packaging/scene authority retained in the Keyframe `required_authority_artifact_ids`, with real identity/file/hash evidence. Explicit integration also verifies its Canon entry. Provenance does not imply OCR or exact-copy verification. Fail if the source is invented, missing, stale, wrong-category, out of scope, or dropped during promotion.
 
 ## 3. Omni Reference, Never Endpoint Or Standalone I2V Mode
 
@@ -57,8 +60,8 @@ Fail: relying on “same as before,” missing keyframe IDs, or converting the h
 ## 9. Capacity Would Split Inside A Shot
 
 Input: provider capacity would split S010 across two units.
-Expect: K2 rejects the plan and routes a scoped request to Shot Director to replace S010 with explicit stable Shot UIDs before Storyboard/V1/K1/P1 are rebuilt for that scope.
-Fail: `within_shot_split`, hidden sub-shot IDs, or an unrecorded midpoint.
+Expect: K2 blocks the affected boundary and prepares a proposal for the supplied Shot Contract's responsibility/change entry. With no callable entry, return the proposal to the user without inventing a Skill. Name original and proposed UIDs, preserved total duration/order/intent and downstream effects; rebuild the affected chain only after explicit authorization and a revised approved contract. Unaffected work can continue.
+Fail: `within_shot_split`, hidden sub-shot IDs, an unrecorded midpoint, a guessed Skill dispatch, or applying an unapproved split.
 
 ## 10. Selective Invalidation
 
@@ -75,7 +78,7 @@ Fail: omitting nested hashes, hashing pretty-printed JSON, allowing NaN, using i
 ## 12. Full Authority Inventory
 
 Input: K1 for a product shot.
-Expect: exact current Shot Contract, final Storyboard, Global Look root, every resolved first-class Look Reference asset, V1/exemption, and every relevant character/product/packaging/material/scene authority are locked per shot and in the manifest dependencies; all Canon locators resolve from explicit project root.
+Expect: exact current Shot Contract, final Storyboard, Global Look root, every resolved first-class Look Reference asset, V1/exemption, and every relevant character/product/packaging/material/scene authority are locked per shot and in the manifest dependencies. Standalone locators resolve from the explicit input root; optional Canon locators resolve from the explicit project root.
 Fail: one generic fixture authority substitutes for the real owners, or any current required authority is silently omitted.
 
 ## 13. Upstream Conflict
@@ -86,7 +89,7 @@ Fail: silently rotating the bottle or editing the Shot Contract.
 
 ## 14. Project Canon Receipt
 
-Expect: one shared-format `MANIFEST_UPDATE_RECEIPT.json` registers exact K1, anchor, projection, and optional K2 artifact IDs against before/after registry hashes; each binary anchor has separate primary-byte and complete record-sidecar locks.
+For explicitly requested integration, expect one shared-format `MANIFEST_UPDATE_RECEIPT.json` registering exact K1, anchor, projection, and optional K2 artifact IDs against before/after registry hashes; each binary anchor has separate primary-byte and complete record-sidecar locks. A standalone package omits the receipt and must still verify owned sidecars and source/primary hashes.
 Fail: a private canonical manifest, missing owned artifact ID, duplicated ID, receipt from another Skill, pseudo artifact hash, or swapped binary behind an unchanged record sidecar.
 
 ## 15. No Out-Of-Scope Artifacts

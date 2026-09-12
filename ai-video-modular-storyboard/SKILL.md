@@ -1,6 +1,6 @@
 ---
 name: ai-video-modular-storyboard
-description: "Create and maintain an editable, generation-ready AI-video storyboard from an approved professional Shot Contract. Use when every scripted shot must have exactly one independently generated storyboard frame, stable shot identity, deterministic human review sheets, local one-shot or multi-shot replacement, and downstream dependency invalidation. Do not use for rough-script professionalization, look development, keyframes, previs, video prompts, video generation, a single generative multi-panel board, editing, music, or output QC."
+description: "Create independently stored, locally replaceable storyboard frames and a review package from an approved Shot Contract. Not for script development, look design, keyframes, previs, or video generation."
 ---
 
 # AI Video Modular Storyboard
@@ -32,6 +32,13 @@ used as an optional artifact index. If it is absent, validate the Shot Contract
 and authority files directly from their declared locators and hashes. Do not
 create a private registry merely to use this Skill.
 
+For standalone source-authorized text or applied replacement, read
+`references/standalone_evidence_contract.md`: freeze direct source locks outside
+the mutable output package and retain their SHA-256 before production. For
+replacement, also pin the original pre-transaction manifest. These inputs
+validate existing authority; they do not grant new approval. Ordinary packages
+without either risk branch retain the simple structural-validation path.
+
 If the input is only a rough or structured creative draft, return
 `blocked_missing_professional_shot_contract` with the exact missing fields; do
 not require or locate a named sibling package and do not silently invent the
@@ -42,14 +49,16 @@ to stop: infer conservative directing detail and record it.
 
 ## Canonical Resources
 
-Read before producing or changing assets:
+Read the package contract and manifest guidance for the requested work:
 
 - `references/storyboard_contract.md` — ownership, generation, review, transaction, invalidation, and completion rules.
 - `references/storyboard_manifest.schema.json` — machine-readable package contract.
 - `references/storyboard_manifest_template.json` — minimum manifest example.
-- `references/change_transaction.schema.json` — atomic one-shot and multi-shot replacement record.
-- `references/review_board_contract.md` — deterministic human-review board rules.
-- `test_cases.md` — positive, adversarial, and regression fixtures.
+
+Read `references/change_transaction.schema.json` when replacing frames, and
+`references/review_board_contract.md` when composing the human review board.
+Maintainers use `test_cases.md` for regression scenarios; it is not a separate
+runtime preflight for each generated frame.
 
 The deterministic human review-board compositor uses Pillow. Treat Pillow as an explicit runtime dependency for `scripts/build_review_board.py`; missing Pillow blocks only review-board composition, not independent frame generation or preservation. Do not replace it with a generative multi-panel image.
 
@@ -61,7 +70,7 @@ Use independent low-cost frames to test shot order, representative instant, comp
 
 ### `look_applied_final`
 
-Rebuild or promote every required frame only after character/product/scene assets and the Global Look version are bound. Preserve the approved composition while applying identity, geometry, material, packaging, scene, wardrobe, and look evidence. A frame is downstream-ready only after later-turn visual inspection and approval.
+Rebuild or promote every required frame only after character/product/scene assets and the Global Look version are bound. Preserve the approved composition while applying identity, geometry, material, packaging, scene, wardrobe, and look evidence. A frame is downstream-ready only after actual post-generation visual inspection and approval.
 
 Promotion is evidence-gated: a structure frame may be promoted without regeneration only if it already passes every final identity, product, scene, material, packaging, continuity, and look check.
 
@@ -83,9 +92,9 @@ For each shot freeze:
 
 Generate every storyboard frame as an independent full-frame image. Set `generation_mode: independent_full_frame`, `independently_generated: true`, and `derived_from_multipanel: false`. Do not put shot numbers, duration, editorial captions, arrows, grid lines, UI, watermark, or layout chrome inside a model-facing frame.
 
-Do not confuse storyboard annotation with intrinsic scene content. Source-authorized packaging copy, a product mark, or in-world signage may remain visible only under `intrinsic_text_policy: source_authorized_only`, with one exact Project Canon artifact reference per source in `intrinsic_text_source_refs`. Each reference must resolve to a current downstream-eligible product, packaging, label, scene, environment, location, or signage asset, cover the shot, appear in the generation prompt, and be included in the frame dependencies. Otherwise use `intrinsic_text_policy: none_visible` and an empty reference list. This binding proves provenance only; it is not OCR evidence and does not certify exact spelling, logo geometry, legal copy, QR codes, or barcodes.
+Do not confuse storyboard annotation with intrinsic scene content. Source-authorized packaging copy, a product mark, or in-world signage may remain visible only under `intrinsic_text_policy: source_authorized_only`, with an exact artifact reference per source in `intrinsic_text_source_refs`. Resolve each reference through caller-pinned direct source evidence, or through the actual Canon when that integration is selected. Require real primary and artifact-record bytes, matching identity/hash, approved non-stale product/packaging/scene category, shot coverage, prompt binding, and frame dependency. Otherwise use `none_visible` and an empty source list. Provenance validation is not OCR evidence or certification of exact copy, logos, QR codes, or barcodes.
 
-Before each image call, freeze the frame prompt and persist its path/hash. Every prompt repeats the exact Global Directing block. A `look_applied_final` prompt additionally repeats the exact Global Look Core, assigned Look State, resolved first-class Look Reference **artifact IDs** (never the State's internal `reference_id` aliases), then the legal Shot Look Delta; the frame artifact depends on those exact reference hashes. `structure_draft` must not claim those final-look blocks. Mark the artifact `generating`. The image call is terminal for that turn. In a later continuation inspect the actual image, record actual dimensions and `file_sha256`, compare it with source authorities and adjacent shots, and only then set approval.
+Before each image call, freeze the frame prompt and persist its path/hash. Every prompt repeats the exact Global Directing block. A `look_applied_final` prompt additionally repeats the exact Global Look Core, assigned Look State, resolved first-class Look Reference **artifact IDs** (never the State's internal `reference_id` aliases), then the legal Shot Look Delta; the frame artifact depends on those exact reference hashes. `structure_draft` must not claim those final-look blocks. Mark the artifact `generating`. Follow the current image-tool contract. Once the result is available, inspect the actual image, record dimensions and `file_sha256`, and compare it with source authorities and adjacent shots. Continue this work in the same turn when the host permits; preserve pending state only if the real tool requires waiting or a continuation. Only inspected evidence can support approval; do not grant user approval yourself.
 
 If one frame fails, regenerate only that `shot_uid`. Do not regenerate unaffected frames to make a prettier board.
 
@@ -111,7 +120,7 @@ Blank layout slots after the last shot are not valid cells. Never send the conta
 
 For one-shot or multi-shot replacement, create a transaction before generation. Stage every replacement under a new artifact version while old approved frames remain active. Inspect all staged frames. Commit the manifest switch only when every requested frame passes; otherwise reject the entire transaction and leave the old manifest active.
 
-At commit, retain the exact pre-transaction Storyboard manifest as an immutable snapshot, hash the snapshot file, lock its artifact ID/owner/version/hash in the transaction, and prove that snapshot is the matching superseded entry in the actual Project Canon manifest. Self-reported “unaffected” hashes without this external anchor are insufficient.
+Before replacement, retain the exact pre-transaction Storyboard manifest and pin its byte hash and artifact identity in caller-controlled evidence outside the mutable package. At commit, bind that immutable snapshot in the transaction and verify all prior files, unchanged frame records, and upstream locks. With explicit Canon integration, also require the matching superseded/current Canon entries. Self-reported “unaffected” hashes or a newly resealed base are insufficient; follow `references/standalone_evidence_contract.md` for the direct-input branch.
 
 Then:
 
@@ -202,7 +211,7 @@ Claim the package ready only when:
 - reorder requests were routed upstream;
 - no approved artifact is stale;
 - every binary frame/board has a complete owned-artifact JSON record; when optional Project Canon registration was requested, its primary bytes and record-sidecar bytes are locked separately;
-- `python3 scripts/validate_storyboard_package.py <storyboard-package>` exits zero; when optional Project Canon integration is supplied, add `--project-root <project-root> --project-canon-manifest <actual-project-canon>` and require the same result.
+- `python3 scripts/validate_storyboard_package.py <storyboard-package>` exits zero. Standalone intrinsic text or applied replacement additionally requires `--input-root <input-root> --source-evidence <caller-frozen.json> --source-evidence-sha256 <retained-byte-hash>`. For explicit Canon integration, use `--project-root <project-root> --project-canon-manifest <actual-project-canon>` instead; neither evidence branch may bypass its source checks.
 
 Validator success proves structural integrity, not aesthetic or production approval.
 

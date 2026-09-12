@@ -318,6 +318,43 @@ class StandaloneReleaseTests(unittest.TestCase):
             self.assertEqual(len(migrated), 17)
             self.assertEqual(migrated["previous_release"]["release_commit"], first_commit)
 
+    def test_historical_v1_count_shapes_are_recovery_only_and_type_strict(self) -> None:
+        with self.sandbox() as root:
+            repo, commit = self.make_repo(root)
+            state, discovery = root / "state", root / "discovery"
+            self.sync_fixture(repo, commit, state, discovery)
+            current = json.loads((state / "active-release.json").read_text(encoding="utf-8"))
+            paths = release.state_paths(state)
+            for total, members, exclusions in ((20, 15, 5), (17, 0, 17)):
+                with self.subTest(shape=(total, members, exclusions)):
+                    legacy = self.legacy_receipt(current)
+                    legacy["aggregate_boundary"].update(standalone_package_count=total, aggregate_member_count=members, aggregate_exclusion_count=exclusions)
+                    release.validate_receipt_identity(legacy, paths, discovery, allow_legacy=True)
+                    with self.assertRaisesRegex(release.ReleaseError, "LEGACY_RECEIPT_REQUIRES_SYNC"):
+                        release.validate_receipt_identity(legacy, paths, discovery)
+            for field, value in (("standalone_package_count", True), ("aggregate_member_count", 15.0), ("aggregate_exclusion_count", 0), ("standalone_package_count", 999), ("target_excluded", 1)):
+                with self.subTest(field=field, value=value):
+                    legacy = self.legacy_receipt(current)
+                    legacy["aggregate_boundary"][field] = value
+                    with self.assertRaisesRegex(release.ReleaseError, "legacy release metadata differs"):
+                        release.validate_receipt_identity(legacy, paths, discovery, allow_legacy=True)
+
+    def test_v2_rejects_reintroduced_shared_boundary_before_remote_or_execution(self) -> None:
+        with self.sandbox() as root:
+            repo, commit = self.make_repo(root)
+            state, discovery = root / "state", root / "discovery"
+            self.sync_fixture(repo, commit, state, discovery)
+            path = state / "active-release.json"
+            current = json.loads(path.read_text(encoding="utf-8"))
+            tampered = self.legacy_receipt(current)
+            tampered["schema_version"] = release.RECEIPT_SCHEMA
+            write(path, json.dumps(tampered) + "\n")
+            with mock.patch.object(release, "remote_head") as remote, mock.patch.object(release, "run_validation") as validation:
+                with self.assertRaisesRegex(release.ReleaseError, "top-level shape differs"):
+                    release.check(repo, state, discovery, Path(sys.executable), commit)
+            remote.assert_not_called()
+            validation.assert_not_called()
+
     def test_discovery_conflicts_detect_duplicate_in_another_root(self) -> None:
         with self.sandbox() as root:
             home = root / "home"

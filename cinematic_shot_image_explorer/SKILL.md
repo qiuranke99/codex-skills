@@ -1,19 +1,19 @@
 ---
 name: cinematic_shot_image_explorer
-description: Use when the user wants cinematic shot exploration that turns an idea, rough image prompt, reference image, product, character, scene, or visual direction into exactly 10 film-still image prompts and then directly generates 10 images with Codex /image gen by default.
+description: "Turn an idea or reference into distinct cinematic shot prompts and matching images, defaulting to 10. Honor the user's count, style and prompt-only request; not a locked production storyboard or video-generation workflow."
 ---
 
 # Cinematic Shot Image Explorer / 电影镜头探索与生图器
 
 ## Standalone Runtime Contract
 
-Run this Skill directly from its own package. Prompt design, the exact-ten output contract, examples, tests, and metadata are package-local; no release manager or sibling Skill is required. The only production capability outside the package is the host's built-in image-generation tool.
+Run this Skill directly from its own package. Prompt design, the default-ten output contract, examples, tests, and metadata are package-local; no release manager or sibling Skill is required. Set `N` to the user's requested count, or 10 when unspecified. Prompt-only is a complete supported mode, not a failed image task.
 
-The ten disclosed prompts are a complete, portable handoff artifact. Generate the ten matching images when the built-in tool is available. If the host cannot execute image generation, preserve the ten valid prompts, return `blocked_image_generation_runtime`, and do not claim that any image was generated. A downstream workflow may consume the prompt artifact, but it is never a prerequisite for this Skill.
+The N disclosed prompts are a complete, portable handoff artifact. Unless the user requested prompt-only, generate N matching images with the host's built-in image tool. If that requested capability is unavailable, preserve the N valid prompts, return `blocked_image_generation_runtime`, and do not claim that any image was generated. Prompt-only needs no image-runtime check. A downstream workflow may consume the prompt artifact but is never a prerequisite.
 
 ## Purpose
 
-将任意用户输入转化为 10 个不同的电影剧照级图像提示，并直接调用 Codex 内置 /image gen 生成 10 张对应图像。每个提示围绕同一个核心主题展开，但必须通过不同的电影化构图、镜头位置、景别、机位、空间层次、光线、氛围和叙事瞬间进行视觉探索。
+将用户输入转化为 N 个不同的电影剧照级图像提示，并在生图模式下调用 Codex 内置 /image gen 生成 N 张对应图像。每个提示围绕同一个核心主题展开，但必须通过不同的电影化构图、镜头位置、景别、机位、空间层次、光线、氛围和叙事瞬间进行视觉探索。
 
 ## When to use
 
@@ -29,8 +29,8 @@ The ten disclosed prompts are a complete, portable handoff artifact. Generate th
 
 该 Skill 默认执行两步：
 
-1. 先生成 10 条图像提示词。
-2. 再基于这 10 条提示词，调用 /image gen 直接生成 10 张图。
+1. 先生成 N 条完整图像提示词。
+2. 非 prompt-only 模式下，再按这 N 条提示词调用 /image gen 生成 N 张图。
 
 提示词必须正常输出给用户，可复制、可复用。图像也必须实际生成，不要只给提示词不出图，除非用户明确要求“只要提示词”。
 
@@ -40,7 +40,7 @@ The ten disclosed prompts are a complete, portable handoff artifact. Generate th
 
 如果用户给出粗略提示：保留主题、情绪和核心视觉意图，重写为更明确的电影化镜头提示。
 
-如果用户给出图像：分析图像中的主体、场景、时代感、光线、情绪、姿势、构图、材质和视觉想法，然后生成 10 个受其启发的全新提示变体。除非用户明确要求复刻，不要逐字复制图像内容。
+如果用户给出图像：分析图像中的主体、场景、时代感、光线、情绪、姿势、构图、材质和视觉想法，然后生成 N 个受其启发的全新提示变体。除非用户明确要求复刻，不要逐字复制图像内容。
 
 如果用户给出产品：保持产品身份、形状、材质、颜色、包装结构、Logo 位置和核心卖点不变。允许变化的是场景、机位、镜头语言、空间关系、光线和叙事瞬间。
 
@@ -55,15 +55,15 @@ The ten disclosed prompts are a complete, portable handoff artifact. Generate th
 ## Default image generation settings
 
 默认使用 Codex 内置 /image gen。
-默认模型目标：GPT image2。
-默认输出：4K 高清画质。
+默认追求清晰细节；模型与分辨率以当前工具实际提供的能力为准。
+4K 是输出设置目标，提示词中的“4K”不能保证原生尺寸。交付时只报告文件元数据核实的实际尺寸。
 默认画幅：若用户未指定，优先使用 16:9。
 若用户明确指定其他画幅、风格、数量或清晰度，以用户要求为准。
 若用户明确要求“只输出提示词，不生成图片”或“只要提示词”，则跳过生图步骤。
 
 ## Output contract
 
-必须输出精确 10 个提示。不要多于 10 个。不要少于 10 个。不要解释。不要总结。不要输出额外分析。不要输出制作建议，除非用户明确要求。
+用户未另定数量时，必须输出精确 10 个提示；指定数量时，本文各处的 10 均替换为该数量。保持提示词可直接复制，遵循用户指定的格式，不附加无关分析。
 
 每个提示必须包含：
 
@@ -71,7 +71,7 @@ The ten disclosed prompts are a complete, portable handoff artifact. Generate th
 2. 构图说明
 3. 完整图像提示
 
-固定格式如下：
+用户未指定格式时使用以下结构；每条都保留完整提示，不以镜头标题或“沿用上条”代替：
 
 ```markdown
 1. **标题**
@@ -80,25 +80,9 @@ The ten disclosed prompts are a complete, portable handoff artifact. Generate th
    提示：
    [完整电影化提示]
 
----
-
-2. **标题**
-   **构图： [简要镜头/构图想法]**
-
-   提示：
-   [完整电影化提示]
-
----
 ```
 
-持续到第 10 条。
-
-在输出完 10 条提示后，必须继续执行：
-
-- 使用这 10 条提示调用 /image gen
-- 生成 10 张对应图像
-- 默认每条提示对应 1 张图
-- 默认总计输出 10 张图
+持续到第 N 条。生图模式下每条提示对应 1 张图；prompt-only 到完整 N 条提示即完成。需要参考格式时读 `examples.md`，无需把所有示例加载为常规前置。
 
 ## Prompt writing rules
 
@@ -132,33 +116,7 @@ The ten disclosed prompts are a complete, portable handoff artifact. Generate th
 
 ## Cinematic variation requirements
 
-10 个提示必须探索不同镜头语言，优先从以下类型中选择，但不要机械重复：
-
-- 极低角度
-- 高角度
-- 轻微俯视
-- 正俯视
-- 肩后视角
-- 主观视角
-- 前景遮挡
-- 反射镜头
-- 剪影镜头
-- 框中框
-- 深远消失点
-- 宽阔负空间
-- 压缩长焦距离
-- 手持近景视角
-- 对角线运动
-- 对称布景
-- 不对称平衡
-- 主体部分隐藏
-- 环境尺度
-- 分层前景/中景/背景
-- 透过门框、窗户、玻璃、织物、烟雾或人群观看
-- 运动中瞬间
-- 静默紧张瞬间
-- 事件发生前一秒
-- 事件发生后一秒
+N 个提示必须形成真正不同的机位、景别、主体位置、空间关系或叙事瞬间，而不是换词。按当前主题选择，不强迫每个案例套完整机位清单。需要拓展或排除重复方向时，读 `references/shot_variation_ideas.md`；该词库不是必读或逐项验收表。
 
 ## Cinematic quality rules
 
@@ -170,7 +128,7 @@ The ten disclosed prompts are a complete, portable handoff artifact. Generate th
 
 生成图片时，必须尽量保持：
 
-- 同一组 10 张图围绕同一核心主题
+- 同一组 N 张图围绕同一核心主题
 - 主体身份不漂移
 - 视觉气质统一
 - 风格统一
@@ -202,11 +160,11 @@ The ten disclosed prompts are a complete, portable handoff artifact. Generate th
 不要默认添加品牌名。
 不要默认添加文字、Logo、字幕、水印。
 不要默认加黑边。
-不要让 10 个提示只是换词，必须是真正不同的镜头探索。
+不要让 N 个提示只是换词，必须是真正不同的镜头探索。
 
 ## Required negative suffix
 
-每个提示末尾必须添加：
+使用默认电影写实风格时，每个提示末尾添加以下约束；用户指定的风格或构图与其冲突时，只保留兼容部分：
 
 ```text
 无干净数字锐度、无CGI外观、无海报构图、无居中肖像、无黑边
@@ -219,11 +177,13 @@ The ten disclosed prompts are a complete, portable handoff artifact. Generate th
 1. 提取用户输入的核心主题。
 2. 锁定不可更改元素：主体、身份、场景类型、情绪、产品/角色/空间识别点。
 3. 判断默认风格是否适用；如用户提供风格，优先使用用户风格。
-4. 设计 10 个互相区分的镜头语言方向。
+4. 按用户数量或默认 10，设计 N 个互相区分的镜头语言方向。
 5. 确保每个提示都是电影剧照，而不是海报、肖像、摆拍或概念图。
-6. 检查 10 个提示之间是否有重复机位、重复景别、重复主体位置。
+6. 检查 N 个提示之间是否有重复机位、重复景别、重复主体位置。
 7. 检查每个提示是否包含构图、机位、景别、空间层次、光线和叙事瞬间。
-8. 检查每个提示末尾是否包含固定负面后缀。
-9. 先输出最终 10 条提示。
-10. 再调用 /image gen，生成 10 张图。
-11. 最终向用户返回提示词和图像结果。
+8. 检查每个提示末尾是否包含与用户风格/构图兼容的负面约束。
+9. 先输出最终 N 条完整提示。
+10. 仅在生图模式下调用 /image gen，生成 N 张图。
+11. 按本次模式返回完整提示，以及实际生成的图像和真实尺寸；不把提示词中的分辨率当作文件证据。
+
+`test_cases.md` 与 `scripts/test_contract.py` 用于维护或相关问题定位，不是每次镜头探索的业务前置。

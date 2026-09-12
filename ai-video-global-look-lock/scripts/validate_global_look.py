@@ -139,6 +139,43 @@ def validate_canon_registration(
     return errors
 
 
+def verify_reference_sidecars(record: dict[str, Any], contract_directory: Path) -> list[str]:
+    """Verify owned reference records without requiring a Project Canon registry."""
+    if record.get("approval_status") == "draft":
+        return []
+    errors: list[str] = []
+    root = contract_directory.resolve()
+    references = record.get("look_reference_set")
+    for index, reference in enumerate(references if isinstance(references, list) else []):
+        if not isinstance(reference, dict) or not isinstance(reference.get("artifact"), dict):
+            continue  # The structural validator reports malformed reference records.
+        artifact = reference["artifact"]
+        artifact_id = artifact.get("artifact_id")
+        label = f"look_reference_set[{index}] owned-artifact sidecar"
+        if not isinstance(artifact_id, str) or not re.fullmatch(r"LOOK_REFERENCE_ASSET_[A-Z0-9_-]+", artifact_id):
+            errors.append(f"{label} requires a safe reference artifact ID")
+            continue
+        candidate = (root / "owned_artifacts" / f"{artifact_id}.json").resolve()
+        try:
+            candidate.relative_to(root)
+        except ValueError:
+            errors.append(f"{label} escapes the contract directory")
+            continue
+        try:
+            sidecar = load_json(candidate)
+        except (OSError, ValueError, json.JSONDecodeError) as exc:
+            errors.append(f"{label} missing or unreadable: {type(exc).__name__}")
+            continue
+        if sidecar != artifact:
+            errors.append(f"{label} differs from the complete nested artifact")
+        try:
+            if canonical_sha256(sidecar) != artifact.get("sha256"):
+                errors.append(f"{label} canonical sha256 mismatch")
+        except (TypeError, ValueError, OverflowError):
+            errors.append(f"{label} cannot be canonically hashed")
+    return errors
+
+
 def _object(record: dict[str, Any], key: str, errors: list[str]) -> dict[str, Any]:
     value = record.get(key)
     if not isinstance(value, dict):
@@ -774,9 +811,10 @@ def main() -> int:
         verified_records.extend(item for item in record.get(collection, []) if isinstance(item, dict) and item.get("integrity_status") == "verified_bytes")
     file_root = args.project_root or args.verify_files_root
     if record.get("approval_status") != "draft" and verified_records and file_root is None:
-        errors.append("non-draft verified_bytes references require --project-root")
+        errors.append("non-draft verified_bytes references require --verify-files-root or --project-root")
     if file_root is not None:
         errors.extend(verify_declared_file_hashes(record, file_root.resolve()))
+    errors.extend(verify_reference_sidecars(record, args.contract.resolve().parent))
     canon_args = (args.project_root, args.project_canon_manifest, args.manifest_update_receipt)
     if any(item is not None for item in canon_args):
         if not all(item is not None for item in canon_args):

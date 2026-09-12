@@ -13,6 +13,7 @@ from pathlib import Path
 from typing import Any
 
 from ai_video_input_contracts import (
+    validate_artifact_envelope,
     validate_global_look as validate_look,
     validate_manifest as validate_project_canon,
     validate_receipt,
@@ -195,6 +196,92 @@ def require_dependencies(artifact: dict[str, Any], required: list[dict[str, Any]
         errors.append(f"{label}: dependencies must exactly equal required artifact locks")
 
 
+def load_source_evidence(
+    path: Path | None, expected_sha256: str | None, input_root: Path | None,
+    package_root: Path, errors: list[str],
+) -> dict[str, Any] | None:
+    """Read caller-pinned inputs; this is not an artifact registry or approval issuer."""
+    if path is None or input_root is None or not is_sha(expected_sha256):
+        errors.append("standalone validation requires source evidence, its caller-pinned SHA-256, and input_root")
+        return None
+    if package_root.resolve() == path.resolve() or package_root.resolve() in path.resolve().parents:
+        errors.append("source evidence must be supplied outside the mutable storyboard package")
+        return None
+    if not path.is_file() or sha256_file(path) != expected_sha256:
+        errors.append("source evidence differs from caller-pinned SHA-256")
+        return None
+    value = json.loads(path.read_text(encoding="utf-8"), parse_constant=lambda token: (_ for _ in ()).throw(ValueError(token)))
+    if not isinstance(value, dict) or set(value) != {"schema_version", "sources", "replacement_bases"}:
+        errors.append("source evidence must contain exact schema_version/sources/replacement_bases fields")
+        return None
+    if value["schema_version"] != "storyboard-source-evidence.v1" or not isinstance(value["sources"], list) or not isinstance(value["replacement_bases"], list):
+        errors.append("source evidence schema/version invalid")
+        return None
+    source_fields = {"artifact_ref", "artifact_type", "primary_path", "primary_file_sha256", "record_path", "record_file_sha256"}
+    sources: dict[tuple[Any, Any, Any, Any], dict[str, Any]] = {}
+    for index, source in enumerate(value["sources"]):
+        label = f"source evidence.sources[{index}]"
+        if not isinstance(source, dict) or set(source) != source_fields:
+            errors.append(f"{label}: exact source byte locks required")
+            continue
+        ref = source["artifact_ref"]
+        validate_dependency(ref, label, errors)
+        if not isinstance(ref, dict):
+            continue
+        signature = dependency_signature(ref)
+        if signature in sources:
+            errors.append(f"{label}: duplicate source identity")
+            continue
+        if not isinstance(source["artifact_type"], str) or not source["artifact_type"].strip():
+            errors.append(f"{label}: artifact_type required")
+        primary = safe_file(input_root, source["primary_path"], label + ".primary", errors)
+        record_path = safe_file(input_root, source["record_path"], label + ".record", errors)
+        for candidate, digest, role in ((primary, source["primary_file_sha256"], "primary"), (record_path, source["record_file_sha256"], "record")):
+            if not is_sha(digest) or candidate is None or sha256_file(candidate) != digest:
+                errors.append(f"{label}: {role} file hash mismatch or missing")
+        if primary is not None and primary.stat().st_size == 0:
+            errors.append(f"{label}: primary source must not be empty")
+        if record_path is None:
+            continue
+        record = json.loads(record_path.read_text(encoding="utf-8"), parse_constant=lambda token: (_ for _ in ()).throw(ValueError(token)))
+        errors.extend(f"{label}: {error}" for error in validate_artifact_envelope(record))
+        if not isinstance(record, dict):
+            continue
+        if dependency_signature(record) != signature or record.get("approval_status") not in {"assistant_validated", "user_approved"} or record.get("stale_reason") is not None:
+            errors.append(f"{label}: source record identity/approval differs from pinned authority")
+        sources[signature] = {"source": source, "record": record}
+    bases: dict[str, dict[str, Any]] = {}
+    for index, base in enumerate(value["replacement_bases"]):
+        label = f"source evidence.replacement_bases[{index}]"
+        if not isinstance(base, dict) or set(base) != {"transaction_id", "artifact_ref", "file_sha256"}:
+            errors.append(f"{label}: exact transaction/base locks required")
+            continue
+        validate_dependency(base["artifact_ref"], label, errors)
+        if not isinstance(base["transaction_id"], str) or not base["transaction_id"] or base["transaction_id"] in bases or not is_sha(base["file_sha256"]):
+            errors.append(f"{label}: invalid or duplicate transaction/base hash")
+            continue
+        bases[base["transaction_id"]] = base
+    return {"sources": sources, "replacement_bases": bases, "input_root": input_root}
+
+
+def load_standalone_authority(evidence: dict[str, Any] | None, reference: Any, label: str, errors: list[str]) -> dict[str, Any] | None:
+    bound = evidence["sources"].get(dependency_signature(reference)) if evidence and isinstance(reference, dict) else None
+    if bound is None:
+        errors.append(f"{label}: source absent from caller-pinned evidence")
+        return None
+    record, source = bound["record"], bound["source"]
+    if source["primary_path"] != source["record_path"] or source["primary_file_sha256"] != source["record_file_sha256"]:
+        errors.append(f"{label}: Shot/Look primary bytes must be the exact artifact record")
+    if label == "shot_contract":
+        issues = [*validate_shot_contract(record), *verify_shot_files(record, evidence["input_root"])]
+    else:
+        issues = [*validate_look(record), *verify_look_files(record, evidence["input_root"])]
+    errors.extend(f"{label}: invalid authority artifact: {issue}" for issue in issues)
+    if record.get("approval_status") != reference.get("approval_status"):
+        errors.append(f"{label}: approval differs from source record")
+    return record
+
+
 def validate_intrinsic_text_controls(
     cleanliness: Any,
     shot_uid: str,
@@ -202,6 +289,7 @@ def validate_intrinsic_text_controls(
     canon_manifest: dict[str, Any] | None,
     label: str,
     errors: list[str],
+    source_evidence: dict[str, Any] | None = None,
 ) -> list[dict[str, Any]]:
     """Validate annotation cleanliness separately from source-authorized intrinsic text."""
     if not isinstance(cleanliness, dict) or set(cleanliness) != CONTENT_CLEANLINESS_FIELDS:
@@ -228,13 +316,24 @@ def validate_intrinsic_text_controls(
     if not refs:
         errors.append(f"{label}: source_authorized_only requires at least one intrinsic text source")
         return []
-    if canon_manifest is None:
-        errors.append(f"{label}: source-authorized intrinsic text requires actual Project Canon")
-        return [ref for ref in refs if isinstance(ref, dict)]
-    active = canon_manifest.get("active_artifacts")
+    active = canon_manifest.get("active_artifacts") if canon_manifest is not None else []
     active = active if isinstance(active, list) else []
     for ref in refs:
         if not isinstance(ref, dict):
+            continue
+        if canon_manifest is None:
+            bound = source_evidence["sources"].get(dependency_signature(ref)) if source_evidence else None
+            if bound is None:
+                errors.append(f"{label}: intrinsic text source absent from caller-pinned evidence")
+                continue
+            record, source = bound["record"], bound["source"]
+            category = set(re.split(r"[^a-z0-9]+", source["artifact_type"].lower()))
+            if not category.intersection(INTRINSIC_TEXT_CATEGORY_TOKENS):
+                errors.append(f"{label}: intrinsic text source is not a product/packaging/label/scene authority")
+            if shot_uid not in record.get("affected_shot_uids", []):
+                errors.append(f"{label}: intrinsic text source does not cover shot {shot_uid}")
+            if ref.get("artifact_id") not in prompt_text:
+                errors.append(f"{label}: intrinsic text source artifact ID missing from generation prompt")
             continue
         entry = next(
             (
@@ -349,6 +448,7 @@ def validate_transaction(
     canon_manifest: dict[str, Any] | None,
     label: str,
     errors: list[str],
+    source_evidence: dict[str, Any] | None = None,
 ) -> None:
     validate_envelope(tx, label, errors)
     if not isinstance(tx, dict):
@@ -428,7 +528,9 @@ def validate_transaction(
     if base_ref and dependency_signature(base_ref) not in dependency_refs:
         errors.append(f"{label}: transaction must depend on exact pre-transaction manifest")
     if canon_manifest is None:
-        errors.append(f"{label}: applied replacement requires actual Project Canon manifest for immutable anchoring")
+        pinned = source_evidence["replacement_bases"].get(tx["transaction_id"]) if source_evidence else None
+        if pinned is None or pinned["artifact_ref"] != base_ref or pinned["file_sha256"] != tx.get("base_manifest_file_sha256"):
+            errors.append(f"{label}: pre-transaction manifest differs from caller-pinned base")
     else:
         active = canon_manifest.get("active_artifacts") if isinstance(canon_manifest, dict) else None
         superseded = canon_manifest.get("superseded_artifacts") if isinstance(canon_manifest, dict) else None
@@ -508,9 +610,13 @@ def validate_transaction(
             base_hash = base_frames.get(uid, {}).get("file_sha256")
             if assertions[uid] != base_hash or frames_by_uid[uid].get("file_sha256") != base_hash:
                 errors.append(f"{label}: unaffected shot {uid} hash changed")
+            if frames_by_uid[uid] != base_frames.get(uid):
+                errors.append(f"{label}: unaffected shot {uid} artifact record changed")
 
 
-def _validate_package(root: Path, canon_manifest: dict[str, Any] | None = None, project_root: Path | None = None) -> list[str]:
+def _validate_package(root: Path, canon_manifest: dict[str, Any] | None = None, project_root: Path | None = None,
+                      source_evidence_path: Path | None = None, source_evidence_sha256: str | None = None,
+                      input_root: Path | None = None) -> list[str]:
     errors: list[str] = []
     manifest_path = root / "00_manifest" / "STORYBOARD_MANIFEST.json"
     if not manifest_path.is_file():
@@ -554,6 +660,9 @@ def _validate_package(root: Path, canon_manifest: dict[str, Any] | None = None, 
 
     shot_authority: dict[str, Any] | None = None
     look_authority: dict[str, Any] | None = None
+    source_evidence = None
+    if canon_manifest is not None and any(item is not None for item in (source_evidence_path, source_evidence_sha256, input_root)):
+        errors.append("choose Canon integration or standalone source evidence, not both")
     if data.get("package_status") in {"assistant_validated", "user_approved"}:
         if canon_manifest is not None:
             canon_errors = validate_project_canon(canon_manifest)
@@ -564,6 +673,15 @@ def _validate_package(root: Path, canon_manifest: dict[str, Any] | None = None, 
                 shot_authority = load_active_authority(canon_manifest, project_root, data.get("shot_contract"), "shot_contract", errors)
                 if stage == "look_applied_final":
                     look_authority = load_active_authority(canon_manifest, project_root, global_look, "global_look", errors)
+        elif (
+            any(item is not None for item in (source_evidence_path, source_evidence_sha256, input_root))
+            or any(isinstance(frame, dict) and frame.get("content_cleanliness", {}).get("intrinsic_text_policy") == "source_authorized_only" for frame in data.get("frames", []))
+            or any(isinstance(tx, dict) and tx.get("mode") == "replace_frames" and tx.get("status") == "applied" for tx in data.get("transactions", []))
+        ):
+            source_evidence = load_source_evidence(source_evidence_path, source_evidence_sha256, input_root, root, errors)
+            shot_authority = load_standalone_authority(source_evidence, data.get("shot_contract"), "shot_contract", errors)
+            if stage == "look_applied_final":
+                look_authority = load_standalone_authority(source_evidence, global_look, "global_look", errors)
 
     frames = data.get("frames")
     if not isinstance(frames, list):
@@ -625,7 +743,7 @@ def _validate_package(root: Path, canon_manifest: dict[str, Any] | None = None, 
                 errors.append(f"{label}: generation prompt file hash mismatch")
             prompt_text = prompt_path.read_text(encoding="utf-8", errors="ignore")
         intrinsic_text_refs = validate_intrinsic_text_controls(
-            cleanliness, uid, prompt_text, canon_manifest, label, errors
+            cleanliness, uid, prompt_text, canon_manifest, label, errors, source_evidence
         )
         directing = frame.get("global_directing_prompt_full")
         if not isinstance(directing, str) or len(directing.strip()) < 40 or directing not in prompt_text:
@@ -779,7 +897,7 @@ def _validate_package(root: Path, canon_manifest: dict[str, Any] | None = None, 
         errors.append("transactions must be a list")
         transactions = []
     for index, tx in enumerate(transactions):
-        validate_transaction(root, tx, frames_by_uid, set(uids), data, canon_manifest, f"transactions[{index}]", errors)
+        validate_transaction(root, tx, frames_by_uid, set(uids), data, canon_manifest, f"transactions[{index}]", errors, source_evidence)
 
     if data.get("package_status") in {"assistant_validated", "user_approved"}:
         current_artifacts = [data, *frames]
@@ -801,6 +919,8 @@ def _validate_package(root: Path, canon_manifest: dict[str, Any] | None = None, 
         if not path.is_file():
             errors.append(f"missing required output: {path.relative_to(root)}")
     if receipt_path.is_file():
+        if canon_manifest is None:
+            errors.append("Canon receipt requires explicit Canon integration; do not fabricate a standalone registry receipt")
         try:
             receipt = json.loads(receipt_path.read_text(encoding="utf-8"))
         except (OSError, json.JSONDecodeError) as exc:
@@ -837,10 +957,12 @@ def _validate_package(root: Path, canon_manifest: dict[str, Any] | None = None, 
     return errors
 
 
-def validate_package(root: Path, canon_manifest: dict[str, Any] | None = None, project_root: Path | None = None) -> list[str]:
+def validate_package(root: Path, canon_manifest: dict[str, Any] | None = None, project_root: Path | None = None,
+                     source_evidence_path: Path | None = None, source_evidence_sha256: str | None = None,
+                     input_root: Path | None = None) -> list[str]:
     try:
-        return _validate_package(root, canon_manifest, project_root)
-    except (TypeError, KeyError, AttributeError, ValueError, OverflowError) as exc:
+        return _validate_package(root, canon_manifest, project_root, source_evidence_path, source_evidence_sha256, input_root)
+    except (OSError, TypeError, KeyError, AttributeError, ValueError, OverflowError) as exc:
         return [f"malformed storyboard package rejected safely: {type(exc).__name__}: {exc}"]
 
 
@@ -849,6 +971,9 @@ def main() -> int:
     parser.add_argument("package_root", type=Path)
     parser.add_argument("--project-canon-manifest", type=Path)
     parser.add_argument("--project-root", type=Path, help="resolve Canon authority locators relative to the whole project, never package_root")
+    parser.add_argument("--source-evidence", type=Path, help="caller-frozen input locks outside the mutable output package")
+    parser.add_argument("--source-evidence-sha256", help="source-evidence byte hash retained before production/replacement")
+    parser.add_argument("--input-root", type=Path, help="root for direct source artifact/primary locators")
     args = parser.parse_args()
     canon_manifest = None
     project_root = None
@@ -862,7 +987,8 @@ def main() -> int:
         except (OSError, json.JSONDecodeError) as exc:
             print(f"ERROR: Project Canon manifest unreadable: {exc}")
             return 2
-    errors = validate_package(args.package_root.resolve(), canon_manifest, project_root)
+    errors = validate_package(args.package_root.resolve(), canon_manifest, project_root,
+                              args.source_evidence, args.source_evidence_sha256, args.input_root)
     if errors:
         for error in errors:
             print(f"ERROR: {error}")

@@ -1,6 +1,6 @@
 ---
 name: ai-video-global-look-lock
-description: "Create and freeze a production-wide visual look contract for AI video advertising from a Professional Shot Contract, approved identity assets, and optional look references. Use when color, lighting architecture, contrast, black floor, highlight roll-off, skin rendering, material response, optics, grain, atmosphere, and allowed scene-to-scene variation must remain coherent across storyboard frames, keyframes, and every video-generation prompt. Produce a Look Core, legal Look States, per-shot Look Deltas, and an independent visual reference set. Do not use to redesign product identity, replace scene or character canon, decide shot composition or action, generate storyboards, bind provider inputs, generate video, or perform post-production."
+description: "Create a cross-shot visual look contract and independent look references from approved shot and identity artifacts. Use for Look Core, legal States, and shot Deltas; not identity redesign, shot planning, storyboards, or video generation."
 ---
 
 # AI Video Global Look Lock
@@ -51,13 +51,13 @@ Missing exact product color or material evidence is not permission to stylize it
 
 ## Canonical Resources
 
-Read these files completely before producing the artifact:
+Read the references for the work being performed:
 
 - `references/look_core_state_delta_rules.md`
 - `references/reference_generation_and_authority_contract.md`
-- `references/invalidation_contract.md`
-- `references/global_look_contract.schema.json`
-- `references/global_look_contract.template.json`
+- `references/invalidation_contract.md` — when freezing or revising an artifact; preserve predecessor evidence on every non-initial revision.
+- `references/global_look_contract.schema.json` — when writing or validating the machine artifact.
+- `references/global_look_contract.template.json` — when creating a new artifact, not as a prerequisite for an existing artifact's local repair.
 
 Run `scripts/validate_global_look.py` before claiming completion.
 
@@ -66,7 +66,7 @@ Run `scripts/validate_global_look.py` before claiming completion.
 The lock is valid only when all three surfaces agree:
 
 1. **Textual contract** — frozen `GLOBAL_LOOK_PROMPT_FULL`, serialized as `global_look_prompt_full`, plus Look Core, State rules and negative look.
-2. **Visual contract** — an approved independent `GLOBAL_LOOK_REFERENCE_SET`, serialized as `look_reference_set`, with one hero reference and enough state/risk validation references. Every visual reference owns a nested `ai-video-artifact-v1` record and is a first-class Canon asset; `reference_id` is only the internal State mapping key.
+2. **Visual contract** — an approved independent `GLOBAL_LOOK_REFERENCE_SET`, serialized as `look_reference_set`, with one hero reference and enough state/risk validation references. Every visual reference owns a nested `ai-video-artifact-v1` record and a matching local sidecar; it becomes a registered Canon asset only in an explicitly requested integration. `reference_id` is only the internal State mapping key.
 3. **Inheritance contract** — every look-applied storyboard/keyframe binds the same look version, and every video-generation prompt injects the complete global block verbatim.
 
 None of the three can substitute for the others. A color card cannot prove light direction or material response. A hero image cannot define all legal scene states. Prompt prose without visual anchors is undercontrolled. Visual anchors without exact prompt inheritance are not global.
@@ -123,7 +123,7 @@ Create only the Look States necessary to cover real project variation. One scene
 
 Use supplied references where they truthfully prove the intended look. Generate only missing hero, state or risk validation frames. Every machine-generated reference must be an independent clean image; do not create a multi-panel image and crop it into model inputs. A human contact sheet may be deterministically composed from approved independent references, but it is never the machine source of truth.
 
-Before a built-in image call, freeze the reference specification and generation prompt. The image call must be terminal for that generation turn. On a later continuation, inspect the actual output, record dimensions and integrity state, compare it against Look Core and intrinsic boundaries, and approve or repair only that reference. Never treat an uninspected generation as locked.
+Before a built-in image call, freeze the reference specification and generation prompt. Follow the current image-tool contract. Once its completed result is available, inspect the actual output, record dimensions and integrity state, and compare it against Look Core and intrinsic boundaries. Continue in the same turn when the host permits; defer only for a real pending result or host boundary. Validate or repair only that reference, while keeping explicit user approval separate. Never treat an uninspected generation as locked.
 
 Read `references/reference_generation_and_authority_contract.md` before generation.
 
@@ -150,7 +150,7 @@ During drafting, use `sha256: null` and `approval_status: draft`. For a frozen a
 
 Use stable State IDs and Shot UIDs. Record changed scope, affected shots, invalidated artifacts and preserved artifacts. Any artifact with `approval_status: stale` requires a non-empty `stale_reason`.
 
-Every non-initial revision must bind exactly one frozen `predecessor_artifact`, increase SemVer, and record the exact deterministic `changed_json_pointers`. Run the validator with `--previous-contract <frozen_previous.json>`; it derives Core change, changed State/reference bindings and propagated Shot UIDs from the actual bytes. A self-reported scope cannot authorize an extra change. Invalidated and preserved IDs are disjoint, and every preservation claim must be proved against the immutable Project Canon pre/post transition.
+Every non-initial revision must bind exactly one frozen `predecessor_artifact`, increase SemVer, and record the exact deterministic `changed_json_pointers`. Run the validator with `--previous-contract <frozen_previous.json>`; it derives Core change, changed State/reference bindings and propagated Shot UIDs from the actual bytes. A self-reported scope cannot authorize an extra change. Invalidated and preserved IDs are disjoint. In a standalone handoff, name downstream preservation only when supplied immutable artifact/file locks prove it; otherwise report the downstream status as unverified. When registry integration is requested, also prove every preservation claim against the immutable Project Canon pre/post transition.
 
 Follow `references/invalidation_contract.md` exactly.
 
@@ -164,7 +164,7 @@ post state, and invoke the explicit transition handoff described below. When no
 registry is supplied, omit the receipt and complete the standalone artifact;
 never fabricate registry evidence or search for a sibling writer.
 
-Deliver one authoritative JSON artifact conforming to `global_look_contract.schema.json`, the approved independent reference images, the manifest update receipt, and a concise human-readable rendering. The JSON must contain:
+Deliver one authoritative JSON artifact conforming to `global_look_contract.schema.json`, the approved independent reference images and a concise human-readable rendering. Include a manifest update receipt only when Project Canon registration was requested and completed. The JSON must contain:
 
 - shared envelope: `contract_version`, `artifact_id`, `owner_skill`, `version`, `sha256`, `approval_status`, `dependencies`, `affected_shot_uids`, `stale_reason`;
 - complete project Shot UID set and project constraints;
@@ -196,7 +196,8 @@ Claim `assistant_validated` only when:
 - Core/State/Delta revision scope and stale propagation are valid;
 - the canonical hash is correct and approval status is honest.
 - every `verified_bytes` source and look-reference locator resolves and re-hashes exactly.
-- each look-reference owner record is materialized at `owned_artifacts/<artifact_id>.json`; its primary locator/file hash and artifact-record locator/file hash are separately locked in Project Canon;
+- each look-reference owner record is materialized at `owned_artifacts/<artifact_id>.json` beside the contract; the standalone validator verifies its complete content and canonical hash against the nested record, independently of the primary image hash;
+- only when Project Canon registration was requested, its primary locator/file hash and artifact-record locator/file hash are separately registered and locked in Canon;
 - when optional Project Canon registration was requested, the current root Global Look and every nested reference artifact are active entries registered together by one valid manifest update receipt against the supplied registry base hash;
 - every non-initial revision binds one real frozen predecessor, increases SemVer, and passes exact field/State/Shot diff validation;
 - when optional Project Canon registration was requested, the transition passes the caller-supplied transition contract against the immutable raw-hash-verified base snapshot, with every claimed preserved artifact passed explicitly.

@@ -1,6 +1,6 @@
 ---
 name: advertising-reference-research-director
-description: "Research, verify, curate, and explain high-quality advertising image and video references from global design, photography, architecture, fashion, cinematography, motion, advertising, and creator sources. Use when a user needs production-useful visual references, a reference board, mood-board research, campaign precedents, image references, video references, or both. Route from the creative decision being informed, ask at most three actual high-information questions, form exactly 30 independently checked and evidence-bound qualified candidates per pack, select 20 and reject 10 with evidence, use signed-in Chrome only when authorized and necessary, and learn from user corrections without overgeneralizing. Do not use for casual one-link lookup, unverified inspiration lists, unauthorized media downloading, copying protected work, or claiming third-party links will remain permanently available."
+description: "Create formal advertising image or video reference research packs with source and actual-media verification. Use for production reference boards and evidence-bound curation, not casual link lookup or final asset generation."
 ---
 
 # Advertising Reference Research Director
@@ -9,16 +9,19 @@ description: "Research, verify, curate, and explain high-quality advertising ima
 
 ## Standalone Package Preflight
 
-Before any workflow action, resolve this `SKILL.md` directory and run its
+Run package maintenance tests after installation, a package update, relevant
+contract/script changes, or a suspected package regression. Ordinary research
+does not rerun the maintenance suite before search or again at delivery.
+For a maintenance check, resolve this `SKILL.md` directory and run its
 package-local OS-native preflight: on Windows,
 `& 'scripts\preflight.ps1' -Format json`; on macOS/Linux,
-`./scripts/preflight.sh --format json`. Proceed only when it exits zero and
+`./scripts/preflight.sh --format json`. A passing maintenance result exits zero and
 returns `gate_mode=standalone_package`, `package_contract_ready=true`, and
 `ready_for_skill_workflow=true`. The launcher runs this package's deterministic
 contract in isolated Python mode. It does not inspect, invoke, or depend on any
 sibling package or repository-level orchestration surface.
 
-This preflight proves only that the exact local package passed its own tests.
+This preflight proves only that the tested local package passed its own tests.
 It does not prove repository freshness, immutable provenance, remote
 publication, browser attestation, or production-deliverable research evidence.
 
@@ -53,27 +56,24 @@ This Skill finds and evaluates references. It does not create the final ad, stor
 
 ## Canonical Resources
 
-Read each applicable resource completely before executing its phase. Do not redefine its fields in prose or silently weaken it:
+Read the applicable resource completely when entering its phase; do not preload
+unrelated phases or weaken their fields. Paths below are inside `references/`:
 
-- `references/activation_and_release_boundary.md`
-- `references/route_and_intent_contract.md`
-- `references/source_registry.json`
-- `references/query_lane_playbook.md`
-- `references/evidence_and_access_policy.md`
-- `references/scoring_and_diversity_rubric.md`
-- `references/multiagent_search_contract.md`
-- `references/feedback_learning_contract.md`
-- `references/source_registry.schema.json`
-- `references/intent_brief.schema.json`
-- `references/approach_registry.schema.json`
-- `references/candidate_item.schema.json`
-- `references/verification_receipt.schema.json`
-- `references/browser_capture_record.schema.json`
-- `references/shortlist_30.schema.json`
-- `references/selected_20.schema.json`
-- `references/rejected_10.schema.json`
-- `references/feedback_event.schema.json`
-- `references/verification_report.schema.json`
+- Intent and route: `route_and_intent_contract.md`; when writing the brief,
+  `intent_brief.schema.json`.
+- Source and search planning: `source_registry.json`,
+  `query_lane_playbook.md`, and `multiagent_search_contract.md`; when serializing
+  those records, `source_registry.schema.json` and `approach_registry.schema.json`.
+- Candidate collection and verification: `evidence_and_access_policy.md`,
+  `candidate_item.schema.json`, `verification_receipt.schema.json`, and
+  `browser_capture_record.schema.json`.
+- Curation: `scoring_and_diversity_rubric.md`, `shortlist_30.schema.json`,
+  `selected_20.schema.json`, and `rejected_10.schema.json`.
+- User corrections: `feedback_learning_contract.md` and
+  `feedback_event.schema.json` when recording or applying feedback.
+- Report serialization: `verification_report.schema.json`.
+- Installation, package maintenance, or publication questions:
+  `activation_and_release_boundary.md` and `test_cases.md` at package root.
 
 Use the package scripts as the mechanical authority for validation, deduplication, gallery building, and contract tests. A prose review never substitutes for validator success.
 
@@ -319,7 +319,8 @@ variable `referenced_evidence_contract`. Its rows must exactly equal this
 validator-read set; every path is canonical run-root-relative, appears once,
 exists, and matches its recorded SHA-256 and complete purpose set.
 
-Run the package validator and contract tests. Write validator results outside the
+Run the research-run validator on this run. Package maintenance tests follow the
+conditions in Standalone Package Preflight, not every delivery. Write validator results outside the
 input report. The report, feedback ledger, and referenced evidence must never
 point to a report as proof that the run was already validated. Any failed hard
 gate returns the run to the earliest affected phase.
@@ -403,7 +404,7 @@ rather than cryptographically proven:
   invalidated dependent work, and reaches input status `applied`; only the
   external result may derive `validated`;
 - all 30 passed final freshness recheck;
-- `scripts/validate_research_run.py --run-dir <run_root> --require-production-contract-eligible --output <run_root>/parallel_pack_validation_report.json` (or a pack-local output path for single modality) and the applicable deterministic/adversarial tests exit zero.
+- `scripts/validate_research_run.py --run-dir <run_root> --require-production-contract-eligible --output <run_root>/parallel_pack_validation_report.json` (or a pack-local output path for single modality) exits zero; the run-specific adversarial audit and evidence checks above are complete. Package self-tests are maintenance evidence, not a repeated research-delivery gate.
 
 Ordinary validator `PASS` may describe a fixture or retrospective smoke run and
 is not by itself a production completion claim. Even a production-live PASS is

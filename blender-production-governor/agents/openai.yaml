@@ -1,6 +1,0 @@
-interface:
-  display_name: "Blender Production Governor"
-  short_description: "Govern Blender work by delivery route and evidence gates."
-  default_prompt: "Use $blender-production-governor before planning or executing this Blender task."
-policy:
-  allow_implicit_invocation: true

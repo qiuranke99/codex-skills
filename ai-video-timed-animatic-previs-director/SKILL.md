@@ -1,6 +1,6 @@
 ---
 name: ai-video-timed-animatic-previs-director
-description: "Design and package silent timing animatics and provider-bound control previs for multimodal AI video generation from supplied artifact contracts. Use when a multi-shot sequence or generation unit needs explicit shot boundaries, timing, cuts, camera trajectory, subject blocking, object motion, or liquid/cloth/hair physics. Produce V1 Timing Animatic from a Shot Contract and storyboard; produce the optional V2 Control Previs only when approved keyframes, a generation-unit plan, boundary evidence, and provider capability evidence are supplied. Do not use for storyboards, identity/product/look ownership, text-to-video, first/last-frame generation, final editing, music, video-output QC, model routing, or orchestration."
+description: "Create silent V1 timing animatics from approved shot/storyboard artifacts, or V2 control previs with keyframes, a generation-unit plan, and verified provider evidence. Owns timing and motion, not identity/look, video generation, final editing, or output QC."
 ---
 
 # AI Video Timed Animatic / Previs Director
@@ -46,18 +46,19 @@ Require all of:
 
 If the provider only exposes T2V or first/last-frame modes, set `blocked` and return to provider preflight. Never silently downgrade.
 
-Provider capability is not a boolean assertion. Require a local, hash-bound `provider-runtime-capability-evidence.v1` snapshot copied into `input_file_evidence`. Its profile identity, backend binding, generation mode, input modalities, duration/reference-count limits, and complete `video_input_constraints` must exactly project the selected Prompt provider-runtime profile's `input_constraints.video`. The projection includes accepted media types, containers and codecs; file-byte, duration, width, height, aspect-ratio and frame-rate bounds; and audio-track policy. If the snapshot is absent, unreadable, stale, incomplete, or semantically different, V2 is blocked.
+Provider capability is not a boolean assertion. V2 requires a local hash-bound capability snapshot and the exact input-limit checks in `references/v2_control_contract.md`; missing or drifting evidence blocks V2, not an otherwise valid V1.
 
 ## Canonical Resources
 
-Read before work:
+Select V1, V2, or a legitimate single-shot skip before loading mode-specific resources:
 
 - `references/previs_contract.md` — phase order, ownership, timeline, unit, invalidation, and completion rules.
-- `references/motion_physics_contract.md` — camera, blocking, liquid, cloth, hair, and rigid-object contracts.
 - `references/previs_manifest.schema.json` — machine-readable package structure.
-- `references/previs_manifest_template.json` — V1 minimum example.
-- `references/provider_runtime_capability_evidence.schema.json` — exact local provider-runtime evidence projection required by V2.
-- `test_cases.md` — required positive and adversarial coverage.
+- `references/previs_manifest_template.json` — when creating a new V1 manifest.
+- `references/motion_physics_contract.md` — only when authoring or checking consequential motion tracks; apply the shared fields and the actual motion classes, not liquid/cloth/hair requirements to unrelated shots.
+- `references/v2_control_contract.md` and `references/provider_runtime_capability_evidence.schema.json` — V2 only; neither is a V1 or legitimate-skip prerequisite.
+- `references/project_canon_integration.md` — only for explicitly requested registry integration.
+- `test_cases.md` — only for Skill maintenance or relevant failure investigation, never an additional ordinary production preflight.
 
 ## Phase 1: Timing Animatic V1
 
@@ -98,7 +99,7 @@ One 30-second script may use one 30-second V2 unit only when the actual provider
 
 ## Motion And Physics
 
-Read `references/motion_physics_contract.md`. Every consequential motion gets an explicit track with evidence, assumptions, anchors, and collision/contact behavior.
+When consequential motion is present, read `references/motion_physics_contract.md`. Every such motion gets an explicit track with evidence, assumptions, anchors, and collision/contact behavior. Choose only the classes actually present; do not create empty or invented physics tracks to fill a checklist.
 
 - Camera: position, orientation, focal intent, path, speed profile, focus behavior, and transition boundaries.
 - Subject blocking: actor/object positions, facing, screen direction, contacts, and handoffs.

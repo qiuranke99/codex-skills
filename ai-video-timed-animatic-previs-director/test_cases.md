@@ -1,5 +1,10 @@
 # Test Cases
 
+Maintenance or relevant failure investigation only; this is not a mandatory
+business preflight. Cases about Canon apply only to explicitly requested
+registry integration. Standalone V1/V2 instead use supplied artifact/file locks
+and must not fail merely because no Canon exists.
+
 ## Positive Coverage
 
 1. **Simple single-shot skip** — one static five-second shot, no complex motion, validated skip artifact, no empty videos.
@@ -40,7 +45,7 @@
 15. Provider profile claims reference video/duration limits without a local hash-bound runtime snapshot, or the snapshot projection differs. Fail.
 16. Any root, V1, V2, timeline, media-probe, authority, input-evidence, motion-track, or invalidation record contains an undeclared field. Fail.
 17. Canon conflates an MP4 primary with a JSON artifact record, points a record outside `owned_artifacts`, or lets motion primary JSON differ from its complete record. Fail.
-18. CLI omits explicit project root, Canon is not at its canonical project path, package root is outside project root, or a package/Canon locator escapes its assigned root. Fail.
+18. Explicit Canon integration omits its project root, uses a noncanonical Canon path, or places the package outside that root; any standalone or integration locator escapes its assigned root. Fail the affected branch.
 19. Provider video-input constraints are absent, differ from the exact Prompt runtime profile projection, or the real V2 file violates any projected container/codec/byte/duration/dimension/aspect/fps/audio constraint. Fail closed.
 20. The required `standalone_single_image_to_video` deny marker is removed, while ordinary Omni image references remain accepted. Fail only the former.
 

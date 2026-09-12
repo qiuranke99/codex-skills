@@ -12,17 +12,16 @@ Exactly one approved reference has role `hero_core`. Every State must be covered
 
 Analyze the actual pixels before approval. Record locator, dimensions when available, applicable States, authority scope and conflicts. A supplied reference controls only the look dimensions named in `authority_scope`; it never becomes identity truth by implication.
 
-Every approved reference is a first-class asset. Keep its human/internal `reference_id` for State mapping, but create a distinct nested `artifact.artifact_id`, freeze its `ai-video-artifact-v1` record, and materialize that record as `owned_artifacts/<artifact_id>.json`. Project Canon locks both the image bytes and this JSON record. Downstream model inputs use the artifact ID, never the internal reference ID.
+Every approved reference is a first-class asset. Keep its human/internal `reference_id` for State mapping, but create a distinct nested `artifact.artifact_id`, freeze its `ai-video-artifact-v1` record, and materialize that complete record as `owned_artifacts/<artifact_id>.json` beside the Look contract. Standalone validation checks sidecar equality and canonical hash plus the image's separate `file_sha256` when its integrity is `verified_bytes`. Explicitly requested Project Canon integration additionally locks the primary file and JSON record separately. Downstream model inputs use the artifact ID, never the internal reference ID.
 
 ## Generated references
 
 1. Freeze a single-image generation specification and prompt.
 2. Persist the prompt hash.
 3. Generate one clean independent full-frame image.
-4. End the generation turn at the image call.
-5. On a later continuation, inspect the actual image.
-6. Record actual dimensions, file hash when bytes are available, and inspection result.
-7. Approve, repair only this reference, or reject it.
+4. Inspect the actual completed image as soon as the current tool and host permit. Continue in the same turn when possible; defer only for an actual pending result or host boundary.
+5. Record actual dimensions, file hash when bytes are available, and inspection result.
+6. Validate, repair only this reference, or reject it; user approval remains explicit.
 
 Do not generate one multi-panel board and crop cells into machine inputs. A human contact sheet is a deterministic derivative and never part of `look_reference_set`.
 

@@ -46,24 +46,28 @@ Before changing a skill:
 
 ## Root Hygiene
 
-The root should stay sparse. Keep durable root files limited to project
-coordination, inventory, top-level Skill packages, and `.github/`. Skill
-implementation content belongs inside its own Skill directory.
+The root should stay sparse. Keep durable root files limited to project coordination, current human/machine inventories, top-level Skill packages, and `.github/`. Keep only maintained source packages; do not restore retired aggregate tooling or duplicate old versions.
 
-## Standalone Skill Independence
+## Independent Package Boundaries
 
 - Every top-level Skill is independently installable, discoverable, invocable,
-  and testable. Its own package is the sole runtime authority.
-- No Skill may require a repository-level router, release receipt, sibling
-  package, fixed checkout path, or hidden chat state before performing its
-  declared core work.
-- A Skill may emit portable, hash-bound artifacts for an optional external
-  consumer, but it must not import or execute sibling implementations at
-  runtime.
-- A change confined to one Skill requires that package's own tests plus the
-  root standalone-isolation validator. Repository tooling must discover Skill
-  packages from their own `SKILL.md` files rather than from a central curated
-  inventory.
+  and testable. Its own package is the sole runtime authority. No Skill may
+  require a repository-level router, release receipt, sibling package, fixed
+  checkout path, or hidden chat state before performing its declared core work.
+- Discover packages from their own top-level `SKILL.md` files, then compare
+  that actual inventory with `SKILLS_MANIFEST.json` and `SKILLS_INDEX.md` during
+  source maintenance. The inventories are not runtime readiness, installation,
+  or package-release receipts and must not gate independent Skill use.
+- Cross-Skill transformations belong to an explicitly authorized external integrator.
+  Standalone packages emit portable, hash-bound artifacts; they do not import
+  sibling implementations at runtime.
+- Each package defines its own supported inputs, output and authorization
+  boundaries. Source maintenance never authorizes paid generation, account
+  operations, or production publication.
+- A change confined to one Skill requires its relevant package checks. Before
+  publishing source changes, run the current inventory and root standalone
+  isolation checks. Release-controller changes also require its security and
+  recovery tests. These are maintenance checks, not ordinary business-work gates.
 
 ## Public Repository Data Boundary
 

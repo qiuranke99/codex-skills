@@ -1,6 +1,6 @@
 ---
 name: ai-video-keyframe-continuity-pack
-description: "Create independently generated, generation-ready per-shot keyframe anchors and continuity ledgers for multimodal reference-to-video from supplied artifact contracts: an approved shot contract, one-shot-one-file storyboard, identity assets, global look, and timing evidence when material. Every scripted shot receives at least one approved anchor or a strictly validated storyboard promotion; complex action, liquid, material, and cross-generation-unit states receive additional anchors. Use the optional boundary-supplement mode only when a supplied generation-unit plan exists. These are Omni reference assets, never start/end-frame controls. Do not use for story ideation, storyboards, look design, video prompts, text-to-video, first/last-frame generation, editing, music, or output QC."
+description: "Create per-shot Omni keyframe anchors and continuity ledgers from approved shot, storyboard, identity, look, and timing artifacts. Add K2 boundary evidence only from a supplied generation-unit plan; not script/storyboard design, endpoint controls, or video generation."
 ---
 
 # AI Video Keyframe Continuity Pack
@@ -56,17 +56,17 @@ Do not use this Skill to:
 
 ## 2. Read The Contracts
 
-Read these files before producing a package:
+Choose K1 or K2 first, then read the applicable resources completely:
 
 - `references/artifact_contract.md`
-- `references/keyframe_manifest.schema.json`
-- `references/keyframe_manifest_template.json`
-- `references/boundary_supplement.schema.json`
-- `references/boundary_supplement.template.json`
-- `references/continuity_projection.schema.json`
 - `references/continuity_and_promotion_rules.md`
 - `references/qa_checklist.md`
-- `test_cases.md`
+
+- K1 authoring or repair: `references/keyframe_manifest.schema.json` and `references/continuity_projection.schema.json`; use `references/keyframe_manifest_template.json` when creating a new manifest.
+- K2 authoring or repair: `references/boundary_supplement.schema.json`; use `references/boundary_supplement.template.json` for a new supplement. Read the K1 schema when resolving source-anchor fields, but do not reload the K1 authoring template or rewrite K1 for a boundary-only change.
+
+Maintenance scenarios live in `test_cases.md`; read them only for Skill
+maintenance or a relevant failure investigation, not as a production preflight.
 
 Do not redefine their field names ad hoc.
 
@@ -191,15 +191,15 @@ Omit unnecessary rungs, but never skip a state whose absence creates a discontin
 For each planned anchor:
 
 1. Build one complete image-generation prompt from approved authorities and the prewritten ledgers.
-2. State that the output is one clean, full-frame cinematic image—not a board, grid, split screen, collage, diagram, or annotation-bearing layout. Source-authorized intrinsic packaging/product/in-world text may remain only when its exact approved Canon asset is bound; never invent or reconstruct unsupported copy.
+2. State that the output is one clean, full-frame cinematic image—not a board, grid, split screen, collage, diagram, or annotation-bearing layout. Source-authorized intrinsic packaging/product/in-world text may remain only when its exact approved source asset is bound in the authority inventory by identity and real file/hash evidence; verify the registered entry too when Canon integration was requested. Never invent or reconstruct unsupported copy.
 3. Bind identity/product/scene sources by stable aliases, never by hidden local paths.
 4. Apply the exact approved Global Look core plus the shot's legal Look State/Delta.
 5. Preserve the storyboard's camera, framing, placement, and screen direction.
 6. Preserve the timing anchor's action state without implying start/end-frame interpolation.
 7. Persist and hash the exact prompt sidecar before generation.
-8. Set `terminal_generation_call: pending`, then make the image-generation call the final action of that turn.
+8. Set `terminal_generation_call: pending`, then call the image tool under its current runtime contract.
 
-On a later continuation, inspect the actual image, record dimensions and `file_sha256`, run the QA checklist, and set `terminal_generation_call: executed`. A returned image is stage-complete, not package-complete.
+Set the legacy field `terminal_generation_call: executed` only from an actual completed call; its name does not require ending the turn. Once the result is available, inspect the image, record dimensions and `file_sha256`, and apply the QA checklist. Continue in the same turn when the host permits; otherwise preserve pending state for the real continuation. A returned but uninspected image is not package-complete. Record real positive integer `generation_turn` and `inspection_turn` values. They may be equal when the returned image was inspected in that turn; inspection must never precede generation, and turn numbers alone do not prove visual QA.
 
 Never generate a multi-panel keyframe sheet and crop it. Never upscale, repaint, or relabel an uninspected output as approved.
 
@@ -209,7 +209,7 @@ Promotion is an optimization, not a shortcut. A storyboard frame may become the 
 
 - it is the approved independent final frame for exactly that `shot_uid`;
 - identity, wardrobe, product geometry, label boundary, material state, scene, and Global Look meet generation-ready fidelity;
-- the source frame contains no storyboard annotation, grid, UI, or watermark; any intrinsic packaging/product/in-world text is locked to exact downstream-eligible Canon source artifacts that are also required Keyframe authorities;
+- the source frame contains no storyboard annotation, grid, UI, or watermark; any intrinsic packaging/product/in-world text is locked to exact downstream-eligible source artifacts that are also required Keyframe authorities, with Canon entry checks only for the integration branch;
 - camera, framing, pose, screen direction, and target action state match the Shot Contract and V1 timing anchor;
 - actual file dimensions and `file_sha256` are recorded;
 - later visual inspection has passed;
@@ -246,7 +246,7 @@ For every boundary between generation units, record:
 - screen direction, frame position, scene state, and Global Look state;
 - the exact values that must remain locked across the handoff.
 
-Generation-unit boundaries are legal only between stable Shot UIDs. If provider capacity would split inside one scripted shot, do not invent a hidden sub-shot here. Route a scoped change request to `ai-video-shot-script-director`, split the source shot into explicit stable Shot UIDs with preserved total timing and intent, then invalidate and regenerate only the affected Storyboard/V1/K1/P1 chain. K2 accepts only `boundary_type: between_shots`.
+Generation-unit boundaries are legal only between stable Shot UIDs. If provider capacity would split inside one scripted shot, block only that boundary and prepare a scoped change request for the responsibility/change entry declared by the supplied Shot Contract. If no callable entry is supplied, deliver the proposal to the user; do not invent an installed Skill or dispatch to a remembered package name. Record affected Shot UIDs, original intent/order/durations, the proposed explicit replacement UIDs and duration allocation, and downstream invalidations in `upstream_change_requests` and the human report. Bind `target_owner_skill` to the actual contract owner, not a guessed tool. Only after explicit authorization and a revised approved Shot Contract may the affected Storyboard/V1/K1/P1 chain be rebuilt. Preserve total timing, shot order and intent; never silently split or renumber approved shots. Unaffected work may continue. K2 accepts only `boundary_type: between_shots`.
 
 Boundary records are continuity evidence, not instructions to use first/last-frame mode.
 
@@ -320,7 +320,7 @@ Claim K1 `package_status: packaged` only when:
 - every scripted `shot_uid` appears exactly once in the manifest;
 - every shot has at least one approved anchor or a fully validated promotion;
 - all binary keyframe files, prompt sidecars, versions, and hashes resolve;
-- every binary keyframe has a complete owned-artifact JSON sidecar; Canon locks primary bytes and artifact-record bytes independently relative to project root;
+- every binary keyframe has a complete, verified owned-artifact JSON sidecar; explicitly requested Canon integration additionally locks primary bytes and artifact-record bytes independently relative to project root;
 - character/product ledgers cover every visible controlled subject;
 - material trajectories and dynamic ladders close every material/action ambiguity;
 - V1 timing anchors are bound, or a valid single-static-shot exemption exists;

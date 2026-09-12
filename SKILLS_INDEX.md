@@ -1,130 +1,35 @@
 # Codex Skills Index
 
-Migration date: 2026-05-27
+更新日期：2026-09-12。以下是 [SKILLS_MANIFEST.json](SKILLS_MANIFEST.json) 记录的17个当前源码包，路径相对于本仓库。本索引不宣称所有源码都已安装。
 
-Last updated: 2026-09-12
+清单只描述源码库存，不构成业务或视觉验收。运行方式和维护校验见 [README.md](README.md)。
 
-Windows canonical checkout used by the existing workstation: `D:\AI\skill`
-
-Current recommended user discovery root: `%USERPROFILE%\.agents\skills`
-
-Legacy workstation discovery snapshot: `C:\Users\Administrator\.codex\skills`
-
-Do not expose the same Skill name in both discovery roots.
-
-## Independent Skill Packages
-
-The repository maintains 19 independently installable and runnable Skill
-packages. Each has one unique top-level directory, its own `SKILL.md`, and no
-duplicate runtime copy in this repository. A package may be copied, linked,
-invoked, tested, and accepted without any sibling package or repository-level
-runtime authority.
-
-## Maintained Skills
-
-| Skill | Target path | Purpose | Original path | Status |
-| --- | --- | --- | --- | --- |
-| `product-tvc-30s-director` | `product-tvc-30s-director` | 将产品白底图、影调参考和关键帧编排为30秒高端产品广告完整提示词；保留身份与用户锁定，设计大动态、真实料体过程、剪辑与平台分段，只交付文本。 | Created in place | Active |
-| `product-tvc-lighting-director` | `product-tvc-lighting-director` | 以材质与光影编排为侧重的独立30秒产品TVC提示词导演；继承产品身份、大动态、料体与剪辑，按反射/遮光/透射设计注意力，只交付文本。 | Derived independently from product-tvc-30s-director | Active |
-| `character-final-lock-board` | `D:\AI\skill\character-final-lock-board` | Request a horizontal 16:9 final character board with nonblocking built-in dimensions, retain `high_angle_evidence: required / optional / off`, publish the complete prompt pair, and expose approved identity/wardrobe artifacts for an optional external integrator. | `D:\AI视觉工作室\.agents\skills\character-final-lock-board` | Active |
-| `character-casting-lock-board` | `D:\AI\skill\character-casting-lock-board` | Request horizontal 16:9 text-free casting boards with complete prompt pairs; casting stays pre-Canon unless explicitly selected as terminal character authority by an external integrator. | `D:\AI视觉工作室\.agents\skills\character-casting-lock-board` | Active |
-| `single-face-character-lock-board` | `D:\AI\skill\single-face-character-lock-board` | Request a horizontal 16:9 one-face topology board, publish the complete topology-preserving prompt pair, and expose approved identity/wardrobe artifacts for an optional external integrator. | `D:\AI视觉工作室\.agents\skills\single-face-character-lock-board` | Active |
-| `cinematic_shot_image_explorer` | `D:\AI\skill\cinematic_shot_image_explorer` | Turn ideas, rough prompts, reference images, products, characters, scenes, or visual directions into exactly 10 cinematic film-still image prompts and 10 generated images. | `D:\AI视觉工作室\.agents\skills\cinematic_shot_image_explorer` | Active |
-| `multi-angle-product-identity-lock-board` | `D:\AI\skill\multi-angle-product-identity-lock-board` | Request a horizontal 16:9 six-view opaque-product board, publish the complete prompt pair, and expose approved product-geometry artifacts for an optional external integrator. | `D:\AI视觉工作室\.agents\skills\multi-angle-product-identity-lock-board` | Active |
-| `packaging-product-identity-label-lock-board` | `D:\AI\skill\packaging-product-identity-label-lock-board` | Build one compact borderless packaging video asset board with seven upright views, two source-grounded details by default, a source-cited copy ledger, deterministic overlays, evidence-bound QA, and an optional external Project Canon handoff. | `D:\AI视觉工作室\.agents\skills\packaging-product-identity-label-lock-board` | Active |
-| `material-sensitive-product-master-asset-board` | `D:\AI\skill\material-sensitive-product-master-asset-board` | Research exact-product, same-package-family, and packaging-archetype evidence with Browser-first provenance; separate research authority from generation rights; derive a 4–10-region material board from actual surface coverage; bind one delegated image worker, research-aware QA, handoff, and accepted records; and publish the full material-preserving prompt pair without any repository-level runtime dependency. | `D:\AI视觉工作室\.agents\skills\material-sensitive-product-master-asset-board` | Active |
-| `complex-product-identity-reconstruction-asset-locking` | `complex-product-identity-reconstruction-asset-locking` | Reconstruct a source-evidenced identity model for complex multi-part, mechanical, multi-material, or stateful products; then build independent camera assets, risk-specific diagnostics, a primary upload bundle, and per-asset 4K handoff without inventing unsupported topology or state. | Created in place | Active |
-| `advertising-reference-research-director` | `D:\AI\skill\advertising-reference-research-director` | Route a creative decision to image, video, or both; build evidence-bound reference packs with exact candidate accounting, independent verification, curation, adversarial audit, and feedback learning. | Created in place | Active |
-| `blender-production-governor` | `D:\AI\skill\blender-production-governor` | Govern every Blender or Blender MCP task by final-pixel ownership; force the complete handbook read, route work to diagnostic, AI-reference previs, hybrid AI/CG control, or final CGI, and enforce structure, visual, temporal, asset-health, render, safety, and delivery gates. | Created in place | Active |
-| `frozen-moment-camera-coverage` | `D:\AI\skill\frozen-moment-camera-coverage` | Compile a reference image or text-defined anchor into evidence-bounded, camera-only frozen-moment coverage; publish every complete prompt before optional serial generation; verify exact worker lineage, actual pixels, and honest complete or partial handoff. | Created in place | Active |
-| `reference-guided-image-reconstruction-director` | `reference-guided-image-reconstruction-director` | Compile one target and optional references into a prompt-only, manually executed reconstruction package with attribute-level authority, staged routing, explicit 4K evidence limits, closed contract validation, and no pixel generation or platform automation. | `C:\Users\Administrator\.codex\skills\reference-guided-image-reconstruction-director` | Active |
-| `ai-video-shot-script-director` | `D:\AI\skill\ai-video-shot-script-director` | Upgrade rough ideas or structured creative shot drafts into a validated Professional Shot Contract with stable Shot UIDs, closed timing, observable action, camera and continuity direction, inference provenance, and the shared Project Canon registry contract. | Created in place | Active |
-| `ai-video-global-look-lock` | `D:\AI\skill\ai-video-global-look-lock` | Freeze Look Core, legal Look States, per-shot Look Deltas, independent visual references, and exact downstream prompt inheritance without changing intrinsic identity or product facts. | Created in place | Active |
-| `ai-video-modular-storyboard` | `D:\AI\skill\ai-video-modular-storyboard` | Create exactly one independent editable frame per scripted shot, deterministic human review boards, and atomic one-shot or multi-shot replacement with dependency invalidation. | Created in place | Active |
-| `ai-video-timed-animatic-previs-director` | `D:\AI\skill\ai-video-timed-animatic-previs-director` | Build a whole-ad V1 timing animatic and P1/K2-bound per-generation-unit V2 control previs with motion and physics tracks plus live media-probe evidence. | Created in place | Active |
-| `ai-video-keyframe-continuity-pack` | `D:\AI\skill\ai-video-keyframe-continuity-pack` | Create K1 per-shot Omni-reference anchors and continuity ledgers, then an immutable P1-bound K2 boundary supplement; never endpoint-frame controls. | Created in place | Active |
-
-## Package-specific maintenance notes
-
-`complex-product-identity-reconstruction-asset-locking` is an active standalone
-package. Its canonical path is
-`complex-product-identity-reconstruction-asset-locking` relative to this
-checkout, and this workstation exposes it through the matching junction under
-`$HOME/.codex/skills`.
-
-`frozen-moment-camera-coverage` has a dedicated package-scoped immutable release
-controller at `.github/scripts/manage_standalone_skill_release.py`. Its receipt,
-snapshot and discovery entry describe that package only and must never claim
-authority over a sibling Skill.
-
-`reference-guided-image-reconstruction-director` is a prompt-only standalone
-package. It may inspect supplied images read-only, but it never generates or
-edits pixels and never operates an external image platform; the user executes
-its reconstruction package manually.
-
-`blender-production-governor` is a machine-wide standalone governance package.
-Its canonical copy is
-`D:\AI\skill\blender-production-governor`; this workstation exposes exactly
-one discovery junction under `$HOME/.agents/skills`. Implicit invocation is
-enabled so every Blender or Blender MCP task must read its complete production
-handbook before Blender-specific action.
-
-
-
-`product-tvc-30s-director`（30秒高端产品广告提示词导演）为独立、仅交付文本的包。此工作站通过 `%USERPROFILE%/.agents/skills/product-tvc-30s-director` 的唯一 junction 发现 canonical 包；自动选择保持启用，不依赖其他 Skill。
-
-`product-tvc-lighting-director`（高端产品TVC灯光与光影导演）为独立衍生包，母版保留；此工作站以 `%USERPROFILE%/.agents/skills/product-tvc-lighting-director` 的唯一 junction 发现 canonical 包，自动选择启用。使用时无需母版或其他 Skill。
-
-## Legacy workstation discovery snapshot
-
-As of 2026-07-10, the existing Windows workstation exposed the following
-user-maintained entries through the legacy root. This is historical machine
-state, not the current cross-platform installation contract.
-
-| Codex entry | Junction target |
+| Skill | 用途 |
 | --- | --- |
-| `C:\Users\Administrator\.codex\skills\character-final-lock-board` | `D:\AI\skill\character-final-lock-board` |
-| `C:\Users\Administrator\.codex\skills\character-casting-lock-board` | `D:\AI\skill\character-casting-lock-board` |
-| `C:\Users\Administrator\.codex\skills\single-face-character-lock-board` | `D:\AI\skill\single-face-character-lock-board` |
-| `C:\Users\Administrator\.codex\skills\cinematic_shot_image_explorer` | `D:\AI\skill\cinematic_shot_image_explorer` |
-| `C:\Users\Administrator\.codex\skills\multi-angle-product-identity-lock-board` | `D:\AI\skill\multi-angle-product-identity-lock-board` |
-| `C:\Users\Administrator\.codex\skills\packaging-product-identity-label-lock-board` | `D:\AI\skill\packaging-product-identity-label-lock-board` |
-| `C:\Users\Administrator\.codex\skills\material-sensitive-product-master-asset-board` | `D:\AI\skill\material-sensitive-product-master-asset-board` |
+| [advertising-reference-research-director](advertising-reference-research-director/SKILL.md) | 正式广告图像/视频参考研究与真实媒体核验 |
+| [ai-video-global-look-lock](ai-video-global-look-lock/SKILL.md) | 全片影调、Look Core、状态与逐镜差异 |
+| [ai-video-keyframe-continuity-pack](ai-video-keyframe-continuity-pack/SKILL.md) | K1关键帧与可选K2边界补充 |
+| [ai-video-modular-storyboard](ai-video-modular-storyboard/SKILL.md) | 逐镜独立分镜、审阅包与局部替换 |
+| [ai-video-shot-script-director](ai-video-shot-script-director/SKILL.md) | 粗脚本转专业镜头合同 |
+| [ai-video-timed-animatic-previs-director](ai-video-timed-animatic-previs-director/SKILL.md) | V1时序预演与有证据支持的V2控制预演 |
+| [character-casting-lock-board](character-casting-lock-board/SKILL.md) | 人物选角与候选身份板 |
+| [character-final-lock-board](character-final-lock-board/SKILL.md) | 最终人物身份、服装与多角度资产板 |
+| [cinematic_shot_image_explorer](cinematic_shot_image_explorer/SKILL.md) | 按用户数量和输出模式探索电影镜头 |
+| [complex-product-identity-reconstruction-asset-locking](complex-product-identity-reconstruction-asset-locking/SKILL.md) | 复杂产品身份、结构与状态锁定 |
+| [frozen-moment-camera-coverage](frozen-moment-camera-coverage/SKILL.md) | 同一冻结瞬间多机位覆盖；独立不可变发布 |
+| [material-sensitive-product-master-asset-board](material-sensitive-product-master-asset-board/SKILL.md) | 材质敏感产品资产板 |
+| [multi-angle-product-identity-lock-board](multi-angle-product-identity-lock-board/SKILL.md) | 低风险产品六视图几何身份板 |
+| [packaging-product-identity-label-lock-board](packaging-product-identity-label-lock-board/SKILL.md) | 包装身份、标签与来源文字资产板 |
+| [product-tvc-30s-director](product-tvc-30s-director/SKILL.md) | 综合30秒产品TVC提示词；仅文本 |
+| [product-tvc-lighting-director](product-tvc-lighting-director/SKILL.md) | 照明主导TVC与锁定镜序灯光升级；仅文本 |
+| [single-face-character-lock-board](single-face-character-lock-board/SKILL.md) | 单一可见人脸及无头正背面服装板 |
 
-### Historical pending entries for the six newly published Skills
+## 安装与调用
 
-These targets were not live in the 2026-07-10 snapshot. Install any one package
-directly after auditing legacy roots; do not create duplicate discovery entries.
+每包可独立复制或链接到用户 `.agents/skills`；已有 legacy `.codex/skills` 安装需避免重复发现。当前机器状态以实际发现结果为准，不再保留过期机器快照或待安装表。
 
-| Pending Codex entry | Repository target |
-| --- | --- |
-| `C:\Users\Administrator\.codex\skills\ai-video-shot-script-director` | `D:\AI\skill\ai-video-shot-script-director` |
-| `C:\Users\Administrator\.codex\skills\ai-video-global-look-lock` | `D:\AI\skill\ai-video-global-look-lock` |
-| `C:\Users\Administrator\.codex\skills\ai-video-modular-storyboard` | `D:\AI\skill\ai-video-modular-storyboard` |
-| `C:\Users\Administrator\.codex\skills\ai-video-timed-animatic-previs-director` | `D:\AI\skill\ai-video-timed-animatic-previs-director` |
-| `C:\Users\Administrator\.codex\skills\ai-video-keyframe-continuity-pack` | `D:\AI\skill\ai-video-keyframe-continuity-pack` |
+普通产品提示词与照明主导提示词选择对应主入口，不因共用规则加载两包。项目集成是用户显式选择的外部产物交换，不构成单包完成前置条件。产品事实、真实证据、锁定内容和人工批准边界由各包合同定义。
 
-## Skipped Sources
+## 不纳入当前清单
 
-The following classes are intentionally excluded from this archive:
-
-- `C:\Users\Administrator\.codex\skills\.system`
-- `C:\Users\Administrator\.codex\plugins\cache`
-- `openai-bundled` plugin skills
-- `openai-curated` plugin skills
-- plugin cache, runtime, dependency, marketplace, and generated install directories
-
-## Notes
-
-- `D:\AI\skill` is the canonical maintenance location on the existing Windows
-  workstation. A macOS checkout may live at any stable local path.
-- New cross-platform installations use `%USERPROFILE%\.agents\skills` or
-  `$HOME/.agents/skills` by default. Existing `.codex/skills` entries are legacy
-  and must be audited before migration; never keep two live copies of one name.
-- Skill packages may be installed independently and need not remain siblings.
-  An explicitly selected external orchestrator may discover several completed
-  package artifacts and integrate them, but cannot become a runtime dependency
-  of those packages.
-- High-angle character continuity is maintained inside `character-final-lock-board` as the `high_angle_evidence` mode; the former standalone package was retired on 2026-07-10.
-- Previous entries and obsolete duplicate sources were moved to `D:\AI\skill-migration-backups\20260527-112423`.
-- Do not add loose skill files directly under `D:\AI\skill`; each skill must live in its own folder containing `SKILL.md`.
+已删除Skill的源码、退役聚合系统、旧副本、供应商插件缓存、系统技能、运行时环境、客户项目和维护输出不在当前清单内。blender-production-governor、reference-guided-image-reconstruction-director 与 high-control-ai-tvc 旧目录已移除。历史变更保留于Git历史，不恢复成可发现入口。
