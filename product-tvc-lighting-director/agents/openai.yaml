@@ -1,0 +1,4 @@
+interface:
+  display_name: "高端产品TVC灯光与光影导演"
+  short_description: "用光影塑造产品材质与观看次序，编排大动态并交付完整30秒广告提示词"
+  default_prompt: "使用 $product-tvc-lighting-director，依据产品图和影调参考，编写有材质层次与光影动态的30秒产品广告完整提示词。"

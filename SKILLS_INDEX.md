@@ -2,7 +2,7 @@
 
 Migration date: 2026-05-27
 
-Last updated: 2026-09-10
+Last updated: 2026-09-12
 
 Windows canonical checkout used by the existing workstation: `D:\AI\skill`
 
@@ -14,7 +14,7 @@ Do not expose the same Skill name in both discovery roots.
 
 ## Independent Skill Packages
 
-The repository maintains 18 independently installable and runnable Skill
+The repository maintains 19 independently installable and runnable Skill
 packages. Each has one unique top-level directory, its own `SKILL.md`, and no
 duplicate runtime copy in this repository. A package may be copied, linked,
 invoked, tested, and accepted without any sibling package or repository-level
@@ -25,6 +25,7 @@ runtime authority.
 | Skill | Target path | Purpose | Original path | Status |
 | --- | --- | --- | --- | --- |
 | `product-tvc-30s-director` | `product-tvc-30s-director` | 将产品白底图、影调参考和关键帧编排为30秒高端产品广告完整提示词；保留身份与用户锁定，设计大动态、真实料体过程、剪辑与平台分段，只交付文本。 | Created in place | Active |
+| `product-tvc-lighting-director` | `product-tvc-lighting-director` | 以材质与光影编排为侧重的独立30秒产品TVC提示词导演；继承产品身份、大动态、料体与剪辑，按反射/遮光/透射设计注意力，只交付文本。 | Derived independently from product-tvc-30s-director | Active |
 | `character-final-lock-board` | `D:\AI\skill\character-final-lock-board` | Request a horizontal 16:9 final character board with nonblocking built-in dimensions, retain `high_angle_evidence: required / optional / off`, publish the complete prompt pair, and expose approved identity/wardrobe artifacts for an optional external integrator. | `D:\AI视觉工作室\.agents\skills\character-final-lock-board` | Active |
 | `character-casting-lock-board` | `D:\AI\skill\character-casting-lock-board` | Request horizontal 16:9 text-free casting boards with complete prompt pairs; casting stays pre-Canon unless explicitly selected as terminal character authority by an external integrator. | `D:\AI视觉工作室\.agents\skills\character-casting-lock-board` | Active |
 | `single-face-character-lock-board` | `D:\AI\skill\single-face-character-lock-board` | Request a horizontal 16:9 one-face topology board, publish the complete topology-preserving prompt pair, and expose approved identity/wardrobe artifacts for an optional external integrator. | `D:\AI视觉工作室\.agents\skills\single-face-character-lock-board` | Active |
@@ -71,6 +72,8 @@ handbook before Blender-specific action.
 
 
 `product-tvc-30s-director`（30秒高端产品广告提示词导演）为独立、仅交付文本的包。此工作站通过 `%USERPROFILE%/.agents/skills/product-tvc-30s-director` 的唯一 junction 发现 canonical 包；自动选择保持启用，不依赖其他 Skill。
+
+`product-tvc-lighting-director`（高端产品TVC灯光与光影导演）为独立衍生包，母版保留；此工作站以 `%USERPROFILE%/.agents/skills/product-tvc-lighting-director` 的唯一 junction 发现 canonical 包，自动选择启用。使用时无需母版或其他 Skill。
 
 ## Legacy workstation discovery snapshot
 
