@@ -55,17 +55,32 @@ Every intent freezes exactly one mode:
 
 Every E4 receipt binds one or more canonicalized records in `browser_capture_records.jsonl`. The bindings must jointly cover access, media, object match, and provenance; the latest capture time equals `checked_at`. Capture records include their origin, operator, browser surface, frozen plan hash, structured observations, and retained source-record hash/pointer.
 
+With append-only search waves, `approach_plan_sha256` binds the capture to the
+freeze that registered its own approach, not automatically the latest wave.
+Preserve old capture/receipt hashes. A new wave cannot authorize activity that
+preceded its freeze; see the query playbook's registration helper.
+
 These are integrity bindings, not digital signatures. `signed_chrome` means a
 logged-in browser context, never a cryptographically signed observation.
 Fixture and retrospective records can pass their own acceptance class but can
 never satisfy the production-contract-eligible gate. Even a production-live
-contract PASS remains `production_deliverable=false`; any delivery or browser
-action claim requires a separate trusted external attestation that is not
-self-declared inside the run.
+contract PASS remains `production_deliverable=false`. Actual browser tool
+outputs may support scoped observations and delivery of the complete reference
+pack for user review once its quantity, qualification, and audit gates pass.
+This is not cryptographic certification: independent browser attestation or a
+certified production-deliverable claim requires separate trusted external
+evidence, never a self-declared run artifact. Do not require an extra
+certification system merely to provide the verified reference list.
 
 ## 3. Verification Independence
 
 The verification receipt must name a verifier who did not discover that candidate. A separate authenticated-source operator may supply browser observations, but the verifier still evaluates the receipt and provenance. The finder cannot set final qualification status.
+
+Finder, capture operator, and approving verifier remain three distinct actual
+identities under both execution profiles. The prospective capacity-four mapping
+may later reuse finder/relevance, verifier/diversity, and capture/root roles;
+it does not merge evidence approval or excuse absent independent audit. Read
+the mapping and blind handoffs in `multiagent_search_contract.md` before search.
 
 Automated checks may establish transport, redirect, media metadata, hashes, or timestamps. Human/browser inspection is required wherever the check depends on rendered content, exact-object match, login state, player behavior, or misleading page semantics.
 
@@ -139,6 +154,12 @@ The verifier compares rendered media against the candidate claim and frozen inte
 
 Generic praise such as “premium”, “cinematic”, “beautiful”, or “on brief” is not evidence.
 
+Under explicit `portfolio_complementary_v1`, verify every per-item hard axis
+and must-have, then record only the additional axes actually observed. The
+selected portfolio owns aggregate coverage. Missing a soft mechanism is not
+automatically a wrong-object failure; missing an explicit hard constraint is.
+Without that policy, the legacy all-axes-per-item gate remains in force.
+
 ## 8. Provenance Check
 
 An accountable source identifies at least one responsible entity and the work being shown. Preferred order:
@@ -149,6 +170,13 @@ An accountable source identifies at least one responsible entity and the work be
 4. repost/aggregator only as discovery, followed by origin recovery.
 
 Record source family, source role, signal type, accountable entity, evidence URL, and any corroborating URL. Style resemblance does not prove authorship. If origin cannot be recovered, the candidate cannot reach E4 unless the specialist source itself is accountable for the item and the uncertainty is not material.
+
+`creative_origin_v1` uses the independently checked
+`provenance_check.accountable_owner` for origin quotas. Keep the real hosting
+domain/source family unchanged and report their actual concentration. A
+platform name, unknown owner, regional channel alias, or invented source ID
+cannot create an extra creative origin. Normalize case/whitespace and resolve
+known aliases from evidence; hosting access alone does not prove ownership.
 
 ## 9. Receipt Requirements
 
@@ -252,3 +280,7 @@ Quarantine before the qualified 30 when any of these applies:
 - stale verification outside the delivery window.
 
 Quarantined items receive failure evidence but never appear in `rejected_10.json`. The rejected 10 must all remain E4 at delivery.
+
+Playback success alone is not E4. After failures create a shortfall, feed the
+actual reason to a new discovery wave and continue to the full 30/20/10 set.
+Do not call an observed-playable subset the final deliverable.

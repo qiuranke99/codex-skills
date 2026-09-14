@@ -27,6 +27,7 @@ from _evidence_binding import (
     CANONICALIZATION,
     REPORT_TRUST_STATEMENT,
     approach_plan_sha256,
+    approach_registration_bindings,
     canonical_sha256,
     curation_input_sha256,
     dedup_comparison_set_sha256,
@@ -418,11 +419,26 @@ class PackValidator:
         if human_presence not in {"mixed", "unspecified"} and alignment.get("observed_human_presence") != human_presence:
             self.fail("RELEVANCE-01", "candidate human presence contradicts the frozen intent", candidate_id=cid)
 
-        if set(alignment.get("visual_axes_matched", [])) != set(intent["visual_axes"]):
-            self.fail("RELEVANCE-01", "candidate does not account for every frozen visual axis", candidate_id=cid)
+        visual = set(alignment.get("visual_axes_matched", []))
+        temporal = set(alignment.get("temporal_axes_matched", []))
         expected_temporal = set(intent["temporal_axes"]) if candidate["modality"] == "video" else set()
-        if set(alignment.get("temporal_axes_matched", [])) != expected_temporal:
-            self.fail("RELEVANCE-01", "candidate temporal-axis evidence contradicts its modality and intent", candidate_id=cid)
+        policy = intent.get("coverage_policy")
+        if policy is None:
+            if visual != set(intent["visual_axes"]):
+                self.fail("RELEVANCE-01", "candidate does not account for every frozen visual axis", candidate_id=cid)
+            if temporal != expected_temporal:
+                self.fail("RELEVANCE-01", "candidate temporal-axis evidence contradicts its modality and intent", candidate_id=cid)
+        else:
+            hard_visual = set(policy["hard_visual_axes"])
+            hard_temporal = set(policy["hard_temporal_axes"]) if candidate["modality"] == "video" else set()
+            if not hard_visual.issubset(intent["visual_axes"]) or not set(policy["hard_temporal_axes"]).issubset(intent["temporal_axes"]):
+                self.fail("RELEVANCE-01", "hard axes must be declared frozen coverage axes", candidate_id=cid)
+            if not visual.issubset(intent["visual_axes"]) or not temporal.issubset(expected_temporal):
+                self.fail("RELEVANCE-01", "candidate claims undeclared or wrong-modality axes", candidate_id=cid)
+            if not hard_visual.issubset(visual) or not hard_temporal.issubset(temporal):
+                self.fail("RELEVANCE-01", "candidate lacks an explicit per-item hard axis", candidate_id=cid)
+            if len(visual) + len(temporal) < policy["minimum_matched_axes"]:
+                self.fail("RELEVANCE-01", "candidate contributes too little observed decision evidence", candidate_id=cid)
 
         must_have = {item.get("criterion") for item in alignment.get("must_have_evidence", [])}
         must_not = {
@@ -538,6 +554,11 @@ class PackValidator:
         computed_plan_sha = approach_plan_sha256(registry)
         if registration.get("plan_sha256") != computed_plan_sha:
             self.fail("PREREG-01", "approach registration plan hash does not match the immutable plan projection")
+        try:
+            plan_bindings = approach_registration_bindings(registry)
+        except (ValueError, KeyError, TypeError) as exc:
+            self.fail("PREREG-01", f"invalid append-only plan registration: {exc}")
+            plan_bindings = {}
 
         capture_index: dict[str, dict[str, Any]] = {}
         for record in self.artifacts["captures"]:
@@ -548,7 +569,8 @@ class PackValidator:
             capture_index[capture_id] = record
             if record.get("record_origin") != capture_origin:
                 self.fail("CAPTURE-02", "capture origin is incompatible with run mode", candidate_id=record.get("candidate_id"))
-            if record.get("approach_plan_sha256") != computed_plan_sha:
+            expected_plan = plan_bindings.get(record.get("approach_id"), (computed_plan_sha, None))[0]
+            if record.get("approach_plan_sha256") != expected_plan:
                 self.fail("CAPTURE-01", "capture is not bound to the frozen approach plan", candidate_id=record.get("candidate_id"))
             for key in ("run_id", "intent_id", "intent_version"):
                 if record.get(key) != intent.get(key):
@@ -595,6 +617,23 @@ class PackValidator:
         ]
         captured = [item for item in captured if item is not None]
         if mode == "production_live":
+            # Each extension governs only its newly registered approaches. Old
+            # receipts retain their original hash and original chronology.
+            if registry.get("append_only_plan"):
+                activity_by_approach = defaultdict(list)
+                for item in registry["approaches"]:
+                    if item.get("started_at"):
+                        activity_by_approach[item["approach_id"]].append(item["started_at"])
+                for item in self.artifacts["candidates"]:
+                    activity_by_approach[item["agent_trace"]["approach_id"]].append(item["discovered_at"])
+                for item in self.artifacts["captures"]:
+                    activity_by_approach[item["approach_id"]].append(item["captured_at"])
+                for approach_id, times in activity_by_approach.items():
+                    binding = plan_bindings.get(approach_id)
+                    if binding is None:
+                        self.fail("PREREG-01", f"activity has no frozen wave: {approach_id}")
+                    elif any(parse_timestamp(t) <= parse_timestamp(binding[1]) for t in times):
+                        self.fail("PREREG-01", f"wave was frozen after activity began: {approach_id}")
             if not captured:
                 self.fail("CAPTURE-02", "production_live requires direct browser capture records")
             if approval_time is None or (frozen_at is not None and approval_time > frozen_at):
@@ -605,7 +644,7 @@ class PackValidator:
                     f"approach[{item.get('approach_id')}].started_at",
                     "PREREG-01",
                 )
-                for item in registry.get("approaches", [])
+                for item in registry.get("approaches", []) if item.get("started_at") is not None
             ]
             discovered = [
                 self._time(
@@ -932,6 +971,21 @@ class PackValidator:
                         if dimension == "rights_risk"
                         else selected_score - rejected_score
                     )
+                if row.get("comparison_kind") == "curatorial_tradeoff":
+                    tradeoff = row.get("tradeoff", {})
+                    advantages = {key for key, delta in deltas.items() if delta > 0}
+                    concessions = {key for key, delta in deltas.items() if delta < 0}
+                    if (
+                        len(row["dominated_by_candidate_ids"]) != 1
+                        or not advantages or not concessions
+                        or set(tradeoff.get("selected_advantages", [])) != advantages
+                        or set(tradeoff.get("rejected_advantages", [])) != concessions
+                        or declared_dimension not in advantages
+                        or len(tradeoff.get("decision_rationale", "").strip()) < 30
+                        or row.get("score_tie_break") is not None
+                    ):
+                        self.fail("CURATION-02", "trade-off must disclose the exact score advantages and concessions and justify the chosen priority", candidate_id=rejected_id)
+                    continue
                 if all(delta == 0 for delta in deltas.values()):
                     tie = row.get("score_tie_break")
                     selected_stable_id = candidates[selected_id]["object"].get("stable_id")
@@ -1447,6 +1501,19 @@ class PackValidator:
         self.metrics["duplicate_groups"] = groups
 
     def _validate_diversity(self, selected: list[dict[str, Any]]) -> None:
+        intent = self.artifacts["intent"]
+        coverage_policy = intent.get("coverage_policy")
+        if coverage_policy:
+            for axis_field, matched_field in (("visual_axes", "visual_axes_matched"), ("temporal_axes", "temporal_axes_matched")):
+                for axis in intent[axis_field]:
+                    # A standalone image pack does not carry temporal coverage;
+                    # the video pack (or unified mixed pack) owns that evidence.
+                    applicable = [c for c in selected if axis_field == "visual_axes" or c["modality"] == "video"]
+                    if not applicable:
+                        continue
+                    support = sum(axis in c["intent_alignment"][matched_field] for c in applicable)
+                    if support < coverage_policy["selected_min_support_per_axis"]:
+                        self.fail("RELEVANCE-01", f"selected portfolio leaves axis uncovered: {axis}")
         domains = [_site_domain(item["source"]["domain"]) or "invalid-domain" for item in selected]
         families = [item["source"]["source_family_id"] for item in selected]
         territories = [item["diversity"]["territory_id"] for item in selected]
@@ -1463,10 +1530,26 @@ class PackValidator:
         }
         declared = self.artifacts["selected"]["diversity_policy"]
         report_declared = self.artifacts["report"]["diversity"]
+        requirements = intent["diversity_requirements"]
+        profile = requirements.get("profile", "legacy_domains_v1")
+        if declared.get("profile", "legacy_domains_v1") != profile or report_declared.get("profile", "legacy_domains_v1") != profile:
+            self.fail("DIVERSITY-01", "selected/report diversity profile differs from frozen intent")
+        if profile == "creative_origin_v1":
+            origins = []
+            hosting_platforms = {"youtube", "vimeo", "instagram", "tiktok", "facebook", "unknown",
+                                 "youtube.com", "youtu.be", "vimeo.com", "instagram.com", "tiktok.com",
+                                 "facebook.com", "dailymotion.com", "bilibili.com"}
+            for candidate in selected:
+                owner = " ".join(candidate["provenance_check"]["accountable_owner"].casefold().split())
+                owner_key = owner.removeprefix("https://").removeprefix("http://").removeprefix("www.").rstrip("/")
+                if not owner or owner_key in hosting_platforms:
+                    self.fail("DIVERSITY-01", "hosting platform or unknown owner cannot count as an accountable creative origin", candidate_id=candidate["candidate_id"])
+                origins.append(owner)
+            computed["distinct_accountable_origins"] = len(set(origins))
+            computed["max_per_accountable_origin"] = max(Counter(origins).values())
         for key, value in computed.items():
             if declared.get(key) != value or report_declared.get(key) != value:
                 self.fail("DIVERSITY-01", f"declared diversity metric {key} does not equal computed {value}")
-        requirements = self.artifacts["intent"]["diversity_requirements"]
         if (
             declared.get("broad_brief") is not requirements["broad_brief"]
             or report_declared.get("broad_brief") is not requirements["broad_brief"]
@@ -1476,14 +1559,19 @@ class PackValidator:
         # A narrow-brief declaration explains concentration; it must not silently
         # disable the declared diversity contract.  Any threshold exception still
         # requires an evidence-bearing waiver and a registered approver.
-        if computed["distinct_domains"] < requirements["min_domains"]:
+        if profile == "legacy_domains_v1" and computed["distinct_domains"] < requirements["min_domains"]:
             violations.append("min_domains")
-        if computed["distinct_source_families"] < requirements["min_source_families"]:
+        if profile == "legacy_domains_v1" and computed["distinct_source_families"] < requirements["min_source_families"]:
             violations.append("min_source_families")
         if not requirements["territory_count_min"] <= computed["territory_count"] <= requirements["territory_count_max"]:
             violations.append("territory_count")
-        if computed["max_per_domain"] > requirements["max_per_domain"]:
+        if profile == "legacy_domains_v1" and computed["max_per_domain"] > requirements["max_per_domain"]:
             violations.append("max_per_domain")
+        if profile == "creative_origin_v1":
+            if computed["distinct_accountable_origins"] < requirements["min_accountable_origins"]:
+                violations.append("min_accountable_origins")
+            if computed["max_per_accountable_origin"] > requirements["max_per_accountable_origin"]:
+                violations.append("max_per_accountable_origin")
         if computed["max_per_campaign_or_creator"] > requirements["max_per_campaign_or_creator"]:
             violations.append("max_per_campaign_or_creator")
         if computed["max_per_near_duplicate_group"] > requirements["max_per_near_duplicate_group"]:
@@ -1563,6 +1651,8 @@ class PackValidator:
 
     def _validate_agents(self, finder_ids: set[str], verifier_ids: set[str]) -> None:
         registry = self.artifacts["approaches"]
+        profile = registry["independence_policy"].get("profile", "strict_pairwise_v1")
+        capacity4 = profile == "capacity4_staged_v1"
         agent_rows = registry["agents"]
         agent_roles = {
             item["agent_id"]: {item["role"], *item.get("additional_roles", [])}
@@ -1614,16 +1704,16 @@ class PackValidator:
         }
         if len(approaches) < 3:
             self.fail("AGENT-01", "each pack requires at least three independently registered approaches")
-        completed = [item for item in approaches.values() if item["status"] == "complete"]
-        completed_methods = {item["method"] for item in completed}
-        if len(completed_methods) < 3:
-            self.fail("AGENT-01", "at least three distinct approach methods are required")
+        # Coverage measures actual method execution, including a grounded
+        # negative result. Validate all execution/failure evidence first.
+        completed_methods: set[str] = set()
         candidate_rows_by_approach: dict[str, list[dict[str, Any]]] = defaultdict(list)
         for candidate in self.artifacts["candidates"]:
             candidate_rows_by_approach[candidate["agent_trace"]["approach_id"]].append(candidate)
         receipt_by_id = {receipt["receipt_id"]: receipt for receipt in self.artifacts["receipts"]}
         final_statuses = {"qualified", "selected", "rejected"}
         for approach in approaches.values():
+            findings_before_approach = len(self.findings)
             returned = approach["returned_count"]
             qualified = approach["qualified_count"]
             expected_rate = round(qualified / returned, 3) if returned else 0
@@ -1709,6 +1799,20 @@ class PackValidator:
             }
             if set(grounded_receipt_ids) != expected_failure_receipt_ids:
                 self.fail("AGENT-01", f"failure records do not exactly cover failed-candidate receipts for {approach['approach_id']}")
+            valid_zero_yield_execution = (
+                approach["status"] == "abandoned"
+                and returned == 0 and qualified == 0 and not contributed
+                and started_at is not None and bool(failure_records)
+                and isinstance(approach.get("next_round_adjustment"), str)
+                and all(record["failure_code"] == "zero_yield" for record in failure_records)
+            )
+            if len(self.findings) == findings_before_approach and (
+                (approach["status"] == "complete" and returned > 0)
+                or valid_zero_yield_execution
+            ):
+                completed_methods.add(approach["method"])
+        if len(completed_methods) < 3:
+            self.fail("AGENT-01", "at least three distinct evidenced executed approach methods are required")
         coverage_rows = registry["coverage"]
         coverage_ids = [item["pack_id"] for item in coverage_rows]
         if len(coverage_ids) != len(set(coverage_ids)) or set(coverage_ids) != set(expected_packs):
@@ -1889,8 +1993,25 @@ class PackValidator:
             {root_synthesizer},
             {auditor},
         ]
-        if any(left & right for index, left in enumerate(role_sets) for right in role_sets[index + 1:]):
-            self.fail("AGENT-01", "decision-critical finder/capture/verifier/curator/root/auditor agent IDs must be pairwise disjoint")
+        if separation.get("profile", "strict_pairwise_v1") != profile:
+            self.fail("AGENT-01", "report separation profile differs from frozen plan")
+        if capacity4:
+            # Four real identities, three declared role pairings. No renamed
+            # executions or retrospective role reset establish independence.
+            expected_sets = [finder_ids, capture_operator_ids, verifier_ids, {auditor}]
+            if (any(len(s) != 1 for s in expected_sets)
+                    or len(set().union(*expected_sets)) != 4
+                    or relevance not in finder_ids or diversity not in verifier_ids
+                    or root_synthesizer not in capture_operator_ids
+                    or set(agent_roles) != set().union(*expected_sets)):
+                self.fail("AGENT-01", "capacity4 requires finder/relevance, capture/root, verifier/diversity, and auditor-only identities")
+            if registry["independence_policy"]["decision_roles_use_distinct_agent_ids"] is not False or separation["decision_roles_disjoint"] is not False:
+                self.fail("AGENT-01", "capacity4 must disclose role reuse, not assert all roles disjoint")
+        else:
+            if registry["independence_policy"]["decision_roles_use_distinct_agent_ids"] is not True or separation["decision_roles_disjoint"] is not True:
+                self.fail("AGENT-01", "strict profile requires disjoint role declarations")
+            if any(left & right for index, left in enumerate(role_sets) for right in role_sets[index + 1:]):
+                self.fail("AGENT-01", "decision-critical finder/capture/verifier/curator/root/auditor agent IDs must be pairwise disjoint")
         for agent_id in finder_ids:
             if not agent_roles.get(agent_id, set()) & {"search_scout", "credit_graph_scout", "authenticated_source_operator"}:
                 self.fail("AGENT-01", f"finder {agent_id} has an incompatible registry role")
@@ -2001,7 +2122,7 @@ class PackValidator:
         operative = finder_ids | capture_operator_ids | verifier_ids | {relevance, diversity, root_synthesizer}
         if "adversarial_auditor" not in agent_roles.get(auditor, set()) or auditor in operative:
             self.fail("AUDIT-01", "auditor must be registered and independent from operative agents")
-        if not separation["no_self_approval"] or not separation["decision_roles_disjoint"] or not separation["auditor_independent"]:
+        if not separation["no_self_approval"] or (not capacity4 and not separation["decision_roles_disjoint"]) or not separation["auditor_independent"]:
             self.fail("AUDIT-01", "report does not assert independent adversarial audit")
         audit = self.artifacts["report"]["adversarial_audit"]
         required_checks = {"soft_404", "media_truth", "provenance", "deduplication", "diversity", "rights_separation"}

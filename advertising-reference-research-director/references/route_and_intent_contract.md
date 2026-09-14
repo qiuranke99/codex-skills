@@ -66,15 +66,42 @@ The plan hash binds the recorded plan projection. Neither the hash nor those
 timestamps are a digital signature or independent proof that the plan or
 browser action actually existed at the declared time.
 
+An appended search wave is prospective registration, not an intent change:
+retain the base hash and bind the new approach/query IDs to their own later
+freeze and parent hash. Its freeze must precede its search/discovery/capture
+activity. See `query_lane_playbook.md`. A changed hard brief still requires the
+normal intent-version and invalidation workflow.
+
 Every qualified candidate binds the relevance-bearing subset above through
 `intent_alignment.intent_constraints_sha256`. The candidate must account for
 all must-have and must-not-have criteria and anchors, match the frozen subject,
-scene scale, and human-presence constraint, cover all visual axes and every
-applicable video temporal axis, respect `content_max_age_days`, and either match
+scene scale, and human-presence constraint, satisfy the axis policy below,
+respect `content_max_age_days`, and either match
 the market/language or document a substantive transfer rationale. Candidate and
 receipt rights may not exceed the frozen intent rights boundary. Draft intent,
 contradictory route reason codes, or a modality/object-type mismatch are never
 eligible for a completed pack.
+
+For a new complementary reference portfolio, explicitly freeze
+`coverage_policy.mode=portfolio_complementary_v1`. Its `hard_visual_axes` and
+`hard_temporal_axes` are subsets of the declared axes and apply to each item
+(temporal axes apply to video). Every item must contribute at least
+`minimum_matched_axes` observed axes. Each declared axis must then receive
+`selected_min_support_per_axis` supporting selected items; a standalone image
+pack does not carry temporal coverage. This lets one reference teach texture
+and another movement without pretending both teach everything.
+
+Subject, explicit scene/human constraints, all must-haves/must-not-haves,
+anchors, rights, and exact-media gates remain per-item requirements. Do not
+move a user must-have into optional coverage to improve yield. Without
+`coverage_policy`, legacy validation still requires every item to match every
+visual and applicable temporal axis.
+
+Default new runs to `creative_origin_v1` diversity in the intent. If only four
+real identities are available, choose `capacity4_staged_v1` in the approach plan
+before freezing. Detailed quotas and role mapping live in the scoring and
+multiagent contracts. Omitted profiles retain strict legacy behavior; never
+rewrite an old run to claim it originally used a new policy.
 
 ## 3. Deterministic Route Table
 
@@ -183,9 +210,16 @@ Ordinary ambiguity is not a blocker. Continue using reversible inferences. Block
 - the user requires mutually exclusive modalities/deliverables and declines an integrated route;
 - a required private source has no authorized access and no adequate fallback;
 - exact market/legal/brand restrictions are indispensable but contradictory;
-- the allowed source universe cannot yield 30 qualified candidates after all registered fallbacks.
+- all reasonable allowed source routes are externally blocked, with actual
+  route/failure evidence; exhaustion of the initial query list alone is not
+  evidence of this condition.
 
 In all cases complete unaffected artifacts, record the isolated blocker, and never relax verification or count requirements.
+
+Actual cancellation or exhaustion of an explicit user budget may also stop
+work as incomplete. Otherwise append gap-directed waves until the 30/20/10
+deliverable is complete. A raw batch limit or an agent's preferred effort limit
+does not replace the user's requested result.
 
 ## 9. Feedback-Driven Rerouting
 

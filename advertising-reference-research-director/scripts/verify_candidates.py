@@ -143,14 +143,16 @@ def _blocked_receipt(
     finder = get_path(candidate, "agent_trace.finder_agent_id", default="unknown_finder")
     if verifier_id == finder:
         raise ContractError(f"transport verifier must differ from finder for {cid}")
-    asset_locator = get_path(candidate, "object.asset_locator", default=None) or "unverified-asset-locator"
+    asset_locator = get_path(candidate, "object.asset_locator", default=None)
+    if not isinstance(asset_locator, str) or not asset_locator.strip():
+        asset_locator = None
     if modality == "image":
         image_render = {
             "rendered": False,
-            "asset_locator": str(asset_locator),
-            "natural_width": 1,
-            "natural_height": 1,
-            "placeholder_detected": True,
+            "asset_locator": asset_locator,
+            "natural_width": None,
+            "natural_height": None,
+            "placeholder_detected": None,
         }
         video_playback = None
     else:

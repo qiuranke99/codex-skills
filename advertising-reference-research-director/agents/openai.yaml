@@ -1,6 +1,6 @@
 interface:
   display_name: "Advertising Reference Research Director"
   short_description: "Build evidence-bound 30-to-20 image/video reference packs."
-  default_prompt: "Use $advertising-reference-research-director to build evidence-bound 30-to-20 reference packs and label unsigned production-live evidence as contract-eligible only, never production-deliverable."
+  default_prompt: "Use $advertising-reference-research-director to build evidence-bound 30-to-20 reference packs. Continue gap-directed search waves until the full quantity is met; an exhausted initial batch is not a completed subset. Preserve media verification and label unsigned production-live evidence as contract-eligible only, never production-deliverable."
 policy:
   allow_implicit_invocation: true

@@ -16,9 +16,9 @@ Every completed run must cover these responsibilities:
 - `diversity_curator` — audits near-duplicates, territories, domains, source families, creators, regions, and modality quotas;
 - `adversarial_auditor` — tries to falsify the completed pack.
 
-Physical runtimes may be reused in different waves when capacity is constrained,
-but reuse is not evidence of independence. Every decision-critical responsibility
-below requires a distinct attributable agent execution ID and a persisted handoff:
+Choose the execution profile during capability preflight, before the new run's
+plan freeze. Runtime reuse or a changed label is not evidence of a new identity.
+With no profile, or `strict_pairwise_v1`, the legacy requirements are:
 
 - finder, capture operator, and approving verifier use pairwise-distinct IDs across the final set;
 - relevance curator, diversity curator, root synthesizer, and adversarial auditor use distinct IDs and do not overlap finder/capture/verifier IDs;
@@ -26,6 +26,29 @@ below requires a distinct attributable agent execution ID and a persisted handof
 - both curators receive the same hash-bound frozen input and attest that the counterpart's result was unseen;
 - root resolution starts only after both curator reviews are frozen and hash-binds both review files;
 - adversarial audit occurs only after root resolution and names every operative ID in `independent_from`.
+
+For exactly four actual identities, opt in to
+`independence_policy.profile=capacity4_staged_v1` before freezing:
+
+| Identity | Evidence phase | Curation / completion phase |
+|---|---|---|
+| A | capture operator; root coordinates | root resolves the two frozen reviews |
+| B | search scout and credit-graph scout | relevance curator |
+| C | independent approving verifier | diversity curator |
+| D | reserved; no operative work | adversarial auditor only |
+
+These letters describe assignments, not fabricated execution IDs. Register the
+real IDs and compatible `additional_roles`. B/C review the same hash-bound
+qualified input after verification; neither sees the other's review before both
+are frozen. A resolves only afterward, then D audits. A/B/C remain pairwise
+distinct for capture/discovery/verification, and D remains outside all operative
+roles. The finder still cannot qualify its own results.
+
+Disclose reuse with `decision_roles_use_distinct_agent_ids=false`; the report
+uses the same profile and `decision_roles_disjoint=false`. The profile is part
+of the frozen hash. It cannot repair an old run by relabeling participants or
+turning an already-operative identity into an independent auditor. Capacity
+planning happens before search, not when a fifth or seventh identity is needed.
 
 ## 2. Cognitive Diversity, Not Headcount Theatre
 
@@ -49,6 +72,8 @@ Before first-wave discovery:
 
 - give each scout the frozen intent and its assigned hypothesis;
 - freeze `run_mode` and the canonical approach-plan hash before any `production_live` search or capture;
+- freeze each appended wave before its own new approaches execute; preserve the
+  base hash and all previous waves rather than rewriting their queries or times;
 - do not give scouts the root agent's favorite candidates or a shared preliminary ranking;
 - do not let one scout's low yield redefine the brief for others;
 - require candidates and failures in the same structured format.
@@ -101,9 +126,12 @@ IDs and closure are run-global hard requirements:
   failed receipts;
 - `returned_count` exactly equals all candidate-ledger rows traced to the
   approach, while `qualified_count` exactly equals its final qualified rows; and
-- at least three distinct methods occur among executed `complete` approaches;
+- at least three distinct methods occur among evidenced executed approaches:
+  positive-yield `complete` lanes or `abandoned` zero-yield lanes with validated
+  query/round/source bindings, actual start/observation times, failure evidence,
+  and next adjustment; unexecuted/planned or empty abandoned lanes do not count;
   each pack has exactly one coverage row whose count and method set exactly
-  match that pack's completed approaches, never planned labels or another
+  match that pack's evidenced executed approaches, never planned labels or another
   pack's work.
 
 ## 5. Structured Scout Handoff
@@ -121,9 +149,10 @@ Scouts return:
 
 Scouts may mark candidates `raw`, `screened`, or `quarantined`; they may not mark their own items `qualified`, `selected`, or `audit_passed`.
 
-A zero-yield lane is not a completed method. Close it as `abandoned` with its
-failure evidence and next adjustment. A lane marked `complete` must contain
-nonzero execution yield and arithmetically consistent returned/qualified counts.
+A genuinely executed zero-yield lane closes as `abandoned`, not `complete`.
+Its validated negative result counts toward method coverage, never toward the
+qualified 30. A lane marked `complete` still requires nonzero yield and
+ledger-consistent returned/qualified counts.
 
 ## 6. Verification Wave
 
@@ -174,7 +203,7 @@ The root synthesizer compares both reviews candidate by candidate. Every swap fr
 - competing criteria;
 - evidence considered;
 - final decision and rationale;
-- affected territories and rejection dominance.
+- affected territories and the truthful Pareto or curatorial-tradeoff comparison.
 
 ## 9. Adversarial Audit
 
@@ -203,12 +232,21 @@ When verification or audit fails:
 
 1. quarantine the failed item; never move it to rejected 10;
 2. register the failure against its approach/source;
-3. choose a different registered fallback or new hypothesis;
+3. choose a different registered fallback, or preregister a new hypothesis/source
+   population/creator graph/market/method with `register_search_wave.py`;
 4. discover and independently verify the replacement;
 5. rerun dedup, both curator reviews where set composition changed, diversity, and adversarial checks;
 6. recheck all 30 at delivery freshness.
 
 Repeating a failed method unchanged is allowed only when evidence shows the failure was transient; record the new evidence.
+
+The initial 45–80 raw leads and initial query list do not cap the assignment.
+Below 30 qualified candidates or a defensible 20/10 partition, the root continues
+gap-directed waves. Only actual user cancellation, an exhausted explicit user
+budget, or externally evidenced blockage of all reasonable routes permits an
+incomplete stop; none permits claiming a completed subset. Read-only
+`research_progress.py --run-dir <run_root>` reports the remaining work, not a
+qualification or delivery approval.
 
 ## 11. Root Synthesis Contract
 

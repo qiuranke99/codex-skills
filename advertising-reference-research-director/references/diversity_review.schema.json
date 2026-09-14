@@ -25,6 +25,8 @@
       "type": "object", "additionalProperties": false,
       "required": ["distinct_domains", "distinct_source_families", "territory_count", "max_per_domain", "max_per_campaign_or_creator", "max_per_near_duplicate_group"],
       "properties": {
+        "distinct_accountable_origins": {"type": "integer", "minimum": 1},
+        "max_per_accountable_origin": {"type": "integer", "minimum": 1},
         "distinct_domains": {"type": "integer", "minimum": 1},
         "distinct_source_families": {"type": "integer", "minimum": 1},
         "territory_count": {"type": "integer", "minimum": 1},

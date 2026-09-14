@@ -29,11 +29,15 @@
         "finder_cannot_approve_own_candidate": {"const": true},
         "verifier_must_differ_from_finder": {"const": true},
         "capture_operator_must_differ_from_finder_and_verifier": {"const": true},
-        "decision_roles_use_distinct_agent_ids": {"const": true},
+        "decision_roles_use_distinct_agent_ids": {"type": "boolean"},
         "blind_curators_share_frozen_input": {"const": true},
         "final_auditor_independent": {"const": true},
-        "scouts_route_blinded": {"const": true}
-      }
+        "scouts_route_blinded": {"const": true},
+        "profile": {"enum": ["strict_pairwise_v1", "capacity4_staged_v1"]}
+      },
+      "if": {"required": ["profile"], "properties": {"profile": {"const": "capacity4_staged_v1"}}},
+      "then": {"properties": {"decision_roles_use_distinct_agent_ids": {"const": false}}},
+      "else": {"properties": {"decision_roles_use_distinct_agent_ids": {"const": true}}}
     },
     "agents": {
       "type": "array", "minItems": 3,
@@ -80,7 +84,7 @@
           "source_family_ids": {"type": "array", "minItems": 1, "uniqueItems": true, "items": {"type": "string", "minLength": 1}},
           "executing_agent_id": {"type": "string", "minLength": 1},
           "favored_route_disclosed": {"const": false},
-          "started_at": {"type": "string", "format": "date-time"},
+          "started_at": {"type": ["string", "null"], "format": "date-time"},
           "returned_count": {"type": "integer", "minimum": 0},
           "qualified_count": {"type": "integer", "minimum": 0},
           "qualification_rate": {"type": "number", "minimum": 0, "maximum": 1},
@@ -122,7 +126,8 @@
           "coverage_asserted": {"const": true}
         }
       }
-    }
+    },
+    "append_only_plan": {"type": "object", "additionalProperties": false, "required": ["base_approach_ids", "waves"], "properties": {"base_approach_ids": {"type": "array", "minItems": 3, "uniqueItems": true, "items": {"type": "string", "minLength": 1}}, "waves": {"type": "array", "minItems": 1, "items": {"type": "object", "additionalProperties": false, "required": ["wave_id", "parent_plan_sha256", "plan_sha256", "frozen_at", "trigger", "approach_ids"], "properties": {"wave_id": {"type": "string", "minLength": 1}, "parent_plan_sha256": {"type": "string", "pattern": "^[a-f0-9]{64}$"}, "plan_sha256": {"type": "string", "pattern": "^[a-f0-9]{64}$"}, "frozen_at": {"type": "string", "format": "date-time"}, "trigger": {"type": "string", "minLength": 20}, "approach_ids": {"type": "array", "minItems": 1, "uniqueItems": true, "items": {"type": "string", "minLength": 1}}}}}}}
   },
   "$defs": {
     "method": {"type": "string", "enum": ["direct_category", "visual_temporal_mechanism", "credit_graph", "award_editorial_official", "adjacent_discipline", "challenger"]}

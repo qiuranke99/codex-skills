@@ -17,6 +17,14 @@ A candidate may be scored for the qualified shortlist only after it passes:
 
 Failed items are quarantined and remain outside `shortlist_30.json`, `selected_20.json`, and `rejected_10.json`.
 
+An explicit new-run `coverage_policy.mode=portfolio_complementary_v1` separates
+per-item hard axes from selected-portfolio coverage. Each item passes all hard
+visual/applicable temporal axes and `minimum_matched_axes`; every declared
+axis receives at least `selected_min_support_per_axis` selected examples.
+Must-haves, exclusions, subject, scene/human constraints, and evidence gates
+remain per-item. Without this policy, every item must match every declared
+visual and applicable temporal axis. See the route contract for exact fields.
+
 ## 2. Multi-Dimensional Evaluation
 
 Evaluate each qualified candidate on the nine schema-defined dimensions. Every dimension is `0–100` with an evidence-based rationale. Do not collapse them into one total.
@@ -82,15 +90,31 @@ least one dimension. It should also be materially stronger on one or more of:
 
 There is no total-score shortcut. Use relevance as the primary ordering, compare the other dimensions explicitly, and apply a novelty/diversity penalty to candidates that repeat an already selected mechanism, campaign, creator, source, or visual territory. Treat lower `rights_risk` as preferable only for the declared use case. Record every comparison that causes a rejection.
 
-For every declared selected comparator, the machine gate enforces the actual
-Pareto claim:
+With omitted `comparison_kind`, or explicit `pareto_dominance`, every selected
+comparator must satisfy the legacy Pareto claim:
 
 - the selected item cannot be worse on any of the nine dimensions;
 - at least one dimension must be strictly better;
 - `dominance_dimension` must name one of those strict improvements;
 - if all nine scores are exactly equal, the rejection requires the schema-defined `score_tie_break` using `object.stable_id` in ascending lexicographic order;
 - any mixed-sign trade-off fails `CURATION-02`; it may support a preference
-  explanation, but it is not dominance and cannot be recorded as one.
+  explanation, but cannot be recorded as Pareto dominance.
+
+For an actual mixed-sign decision, explicitly use
+`comparison_kind=curatorial_tradeoff`. Keep exactly one selected comparator in
+the legacy-named `dominated_by_candidate_ids` field, and populate `tradeoff`:
+
+- `selected_advantages`: exactly all dimensions where the selected item wins;
+- `rejected_advantages`: exactly all dimensions where the rejected item wins;
+- `decision_rationale`: a substantive explanation, at least 30 characters,
+  connecting the chosen priority to the frozen brief and portfolio.
+
+Both advantage sets must be nonempty; `rights_risk` retains its reversed
+direction. `dominance_dimension` must name a selected advantage, and
+`score_tie_break` must be null. Explain the actual concession rather than
+changing scores to manufacture an all-dimensions win. This is qualified
+curatorial rejection, not a claim of Pareto dominance. The compatibility field
+names do not authorize misleading prose. Omitted kinds retain strict checks.
 
 This is a score-vector Pareto and tie-determinism check, not proof that the
 scores or creative judgment are objectively correct. Do not describe validator
@@ -110,7 +134,8 @@ Forbidden rejection reasons: “broken”, “unavailable”, “duplicate”, �
 
 ## 6. Default Diversity Contract
 
-For a broad brief, the selected 20 must satisfy all defaults:
+With omitted profile or `legacy_domains_v1`, a broad brief's selected 20 must
+satisfy the legacy defaults:
 
 - at least 5 independent domains;
 - at least 4 source families;
@@ -122,6 +147,25 @@ For a broad brief, the selected 20 must satisfy all defaults:
 - appropriate market/region and discipline coverage for the frozen brief.
 
 These are anti-collapse constraints, not an instruction to maximize arbitrary difference. A territory must still answer the same decision.
+
+For a new run whose independent brands/creators share video hosting, explicitly
+freeze `diversity_requirements.profile=creative_origin_v1`,
+`min_accountable_origins`, and `max_per_accountable_origin`. The selected
+artifact and report must declare the same profile and the recomputed
+`distinct_accountable_origins` / `max_per_accountable_origin` metrics.
+For a broad brief, default to at least 5 accountable origins and at most 4
+selected items per origin. Set justified narrow-brief limits during intent
+freeze; do not lower them silently after seeing the results.
+
+Count origins from verified `provenance_check.accountable_owner`, normalized
+for case and whitespace. YouTube/Vimeo or an unknown owner cannot be an origin;
+do not split aliases or regional uploaders to inflate independent brands or
+creators. The verifier must ground ownership in actual work/source evidence.
+Under this profile, origin quotas replace domain/source-family minimums and the
+domain cap. Actual domain/family metrics remain mandatory and truthful;
+territory, campaign/creator, and near-duplicate limits remain enforced. Do not
+rewrite a YouTube host as the brand's domain. Omitted profiles retain the
+legacy limits; a new profile is not a retrospective waiver for an old run.
 
 For `parallel_packs`, apply the full diversity contract independently to image and video. For `unified_territory`, apply it to the mixed 20 and also satisfy frozen modality quotas.
 
@@ -162,7 +206,13 @@ Two reviews are required:
 - `relevance_curator`: optimizes hard brief match and decision utility without access to the diversity curator's final ranking;
 - `diversity_curator`: audits concentration, duplicate mechanisms, source/region/creator collapse, and territory coverage without silently lowering hard relevance.
 
-The root synthesizer resolves disagreements and records the decision. Neither curator may be the original finder for all affected candidates. The adversarial auditor independently tests the resulting set.
+The root synthesizer resolves disagreements only after both blind reviews
+freeze and records the decision. Under the legacy strict execution profile,
+both curators are separate from finder/capture/verifier/root/auditor. A new
+`capacity4_staged_v1` run explicitly permits finder/relevance and
+verifier/diversity reuse, with capture/root and an auditor-only fourth identity.
+The two curators still differ, receive the same frozen qualified input, and
+remain mutually blind. The auditor stays independent of all operative roles.
 
 ## 10. Selection Explanation Template
 
@@ -191,6 +241,10 @@ score_tie_break: <null, or the schema-defined exact-vector stable-ID tie rule>
 reuse_condition: <condition under which this qualified candidate becomes preferable>
 ```
 
+For mixed-sign comparisons also declare `comparison_kind: curatorial_tradeoff`
+and the three `tradeoff` fields above; do not describe its concession as a
+Pareto win. Preserve all other required rejected-item fields.
+
 ## 11. Final Set Checks
 
 Before rendering the board, prove:
@@ -202,5 +256,10 @@ Before rendering the board, prove:
 - diversity defaults pass or a valid waiver exists;
 - modality quotas pass where applicable;
 - selected items have complete adaptation/do-not-copy explanations;
-- rejected items have concrete dominance records;
+- rejected items have truthful Pareto/tie or explicit curatorial-tradeoff records;
 - scores bind the current `intent_version` and current media receipt.
+
+If a defensible 20/10 partition is not yet available, continue search and
+verification. The initial 45–80 raw batch is not a ceiling. Failure to find
+enough qualifying or complementary examples triggers another registered wave,
+not invented score dominance or fewer than 20 delivered selections.

@@ -147,6 +147,12 @@ wrong-object, and empty-player items are quarantined before the 30
 
 The rejected 10 are valid references that lost a documented comparison. Bad links and failed verification never count as rejected candidates. A run that has 29 qualified candidates is incomplete, not “close enough”. For `parallel_packs`, apply every invariant independently to both modalities.
 
+For new runs, retain this full deliverable. The initial 45–80 raw leads are a
+batch size, not a ceiling or stopping budget. Exhausting that batch or its
+queries below 30 qualified candidates requires another registered search wave,
+not a smaller final selection. Raw, observed-playable, and qualified counts are
+different states.
+
 The run records only time-stamped verification declarations at delivery, never
 permanent third-party availability. Default final-recheck freshness is 30
 minutes unless the run records a stricter or explicitly justified wider window.
@@ -216,6 +222,12 @@ If the user corrects the brief at any later phase, stop ranking affected candida
 
 ### 2. Register independent approaches before search
 
+Before freezing the plan, assign actual available execution identities. When
+only four identities are available, explicitly choose `capacity4_staged_v1`
+and its role mapping in `multiagent_search_contract.md`; reserve the auditor
+before discovery. Do not discover first and then invent missing curator/auditor
+IDs. Omitted profiles retain the legacy strict policy.
+
 Preflight `references/source_registry.json` against its schema. Select sources by modality, object/intent tags, evidence role, region/language, current status, access mode, linkability, media-verification capability, and fallback—not by a flat prestige ranking. Treat `last_verified_at` and status as registry evidence, not a promise that the source is currently healthy; record observed drift in the run failure evidence and use declared fallbacks.
 
 Create `01_orchestration/approach_registry.json` before broad discovery. Freeze
@@ -232,7 +244,7 @@ adjacent-discipline method when the brief permits it.
 Each approach records its `pack_id`, hypothesis, decision axis, modality, source
 families, queries, executor, returned count, qualified count, failures, and next
 adjustment. Coverage is declared once per pack and may count only that pack's
-completed methods. Maintain a failure registry. Repeating a failed query/source
+evidenced, executed methods. Maintain a failure registry. Repeating a failed query/source
 combination without new evidence is forbidden.
 
 Make every `approach_id` unique across the registry and every `query_id` unique
@@ -244,11 +256,16 @@ ledger row traced to the approach and `qualified_count` from that approach's
 final qualified/selected/rejected rows; never trust self-reported totals. Every
 abandoned or partially qualifying lane records structured failures that exactly
 cover its non-final candidates and any bound failed receipts. Count method
-coverage from executed complete approaches, never from planned labels.
+coverage from complete approaches or executed, fully evidenced zero-yield
+abandoned approaches, never from planned labels or empty failure declarations.
 
 ### 3. Discover broadly and traverse credit graphs
 
-Target roughly 45–80 raw candidates per pack before hard-gating; this is a search target, not a completion count. Use global and region-compensating source families. Treat search engines and social feeds as discovery surfaces, then recover stable item pages and attributable origins.
+Target roughly 45–80 raw candidates per pack in the initial batch and stream
+them into independent screening as they arrive. This is neither a ceiling nor
+a completion count. Use global and region-compensating source families. Treat
+search engines and social feeds as discovery surfaces, then recover stable
+item pages and attributable origins.
 
 When a strong candidate exposes credits, traverse the director, photographer, DOP, set designer, stylist, colorist, VFX studio, production company, agency, and brand graph. Use the graph to find original publication and adjacent work; do not merely keep rewriting adjectives.
 
@@ -271,12 +288,15 @@ Quarantine inaccessible, irrelevant, weakly attributable, placeholder, wrong-obj
 Before qualification, populate each candidate's schema-backed
 `intent_alignment`. Bind it to the frozen constraint projection with
 `intent_constraints_sha256`; account exactly for the decision, subject,
-scene scale, human presence, every visual axis, applicable temporal axes,
+scene scale, human presence, the observed contribution to visual/temporal axes,
 must-have/must-not-have criteria, every anchor, market, language, content-age
 limit, and rights boundary. Cross-market or cross-language transfer requires a
 substantive rationale. An image candidate must be a `project_image`; a video
 candidate must be a `specific_video_work` or `specific_cut`. A changed intent
 hash invalidates candidate qualification until alignment is rebuilt.
+
+Account for axes using the frozen coverage policy: all matched axes must have
+observations, and missing soft axes must not be invented to fit every item.
 
 ### 5. Verify every candidate independently
 
@@ -290,11 +310,33 @@ Use already-authorized signed-in Chrome only when it adds necessary evidence or 
 
 ### 6. Form exactly 30 qualified candidates
 
-Only candidates that pass every hard gate may enter `shortlist_30.json`. Keep searching and verifying until each pack has exactly 30. If access or evidence cannot support 30 after the registered fallback approaches are exhausted, emit an honest incomplete or blocked run with the shortfall and failure evidence; do not create a final pack or claim completion.
+Only candidates that pass every hard gate may enter `shortlist_30.json`. Keep
+searching and verifying until each pack has exactly 30. When initial queries
+are exhausted, register a new hypothesis, source population, creator graph,
+market, or method through `scripts/register_search_wave.py`; preserve old
+hashes and record the new freeze before new activity. See the query playbook.
+Run `scripts/research_progress.py --run-dir <run_root>` for a read-only phase,
+shortfall, and next-step view; it does not approve media or complete a run.
+
+An incomplete stop requires actual user cancellation, exhaustion of an explicit
+user budget, or evidenced external blockage of all reasonable routes within the
+brief. Record the remaining gap and reason. An agent's initial query limit,
+low yield, or inconvenience is not such a blocker. A subset may be retained as
+work in progress, never delivered as the completed 20-item pack.
 
 ### 7. Select 20 and reject 10
 
 Apply the hard gates, scoring, dominance comparisons, near-duplicate control, and diversity rules in `references/scoring_and_diversity_rubric.md`. Use separate relevance-first and diversity-first reviews. Organize the selected 20 into 4–6 decision-useful visual territories unless a narrow-brief waiver is justified.
+
+For new runs, default to explicitly freezing `coverage_policy.mode=portfolio_complementary_v1`
+to distinguish per-item hard axes from selected-set coverage, and
+`diversity_requirements.profile=creative_origin_v1` to apply source quotas to
+verified accountable origins while still reporting actual hosting domains.
+Declare both policies during intent freeze, before discovery. Put user-required
+per-item axes in the hard lists; these defaults never weaken explicit constraints.
+Omission preserves legacy strict rules. A rejected item may explicitly use
+`comparison_kind=curatorial_tradeoff`, recording the winner's advantages and
+its concessions; do not fabricate Pareto dominance or change scores to force it.
 
 Every selected item explains:
 
@@ -351,7 +393,13 @@ Use all useful available agent capacity, but optimize for cognitive diversity ra
 - adversarial auditor;
 - root synthesizer.
 
-When concurrency is limited, execute roles in independent waves and preserve role identities and evidence boundaries. Do not let one agent silently combine finder, verifier, curator, and auditor. Follow `references/multiagent_search_contract.md` for structured handoffs and vetoes.
+With the legacy strict profile, decision roles remain pairwise distinct.
+The opt-in four-identity profile permits only the declared staged pairings:
+capture/root, finder/relevance, verifier/diversity, and an auditor-only identity.
+Finder, capture, and approving verifier still differ; both curators remain
+mutually blind; the auditor remains independent of every operative identity.
+Choose the profile before the new run's plan freeze, never retrospectively.
+Follow `references/multiagent_search_contract.md` for handoffs and vetoes.
 
 ## Access, Chrome, And Rights
 
@@ -395,7 +443,7 @@ rather than cryptographically proven:
   a concrete asset locator;
 - no broken, probable, unconfirmed, duplicate, challenge, placeholder, wrong-object, or empty-player item entered the 30;
 - deduplication and diversity rules pass or a narrow, evidence-backed waiver is recorded;
-- at least three distinct completed approach methods satisfy unique ID, executor,
+- at least three distinct evidenced, executed approach methods satisfy unique ID, executor,
   terminal-status, yield, failure-recording, and coverage closure; verifier
   evidence, both curator reviews, and adversarial audit are traceable;
 - selected and rejected explanations satisfy their contracts;
@@ -417,9 +465,14 @@ aesthetic quality in the abstract, commercial performance, or permission to
 reproduce the referenced work.
 
 The legacy `--require-production-deliverable` flag always fails closed with
-`ATTEST-01`. A separate trusted external attestation process must establish any
-browser-action or delivery claim; never create or self-declare that attestation
-inside the research run.
+`ATTEST-01`. This machine certification boundary does not prohibit delivering
+the complete 20-reference pack for user review after the gates above pass.
+Actual browser tool outputs support scoped observation claims and canonical
+links with check times; validator PASS alone cannot substitute for those outputs.
+Do not build an extra cryptographic certification system for ordinary reference
+delivery. Claims of independently attested browser actions or a certified
+production-deliverable status require separate trusted external attestation;
+never create or self-declare that attestation inside the research run.
 
 ## Publication Boundary
 

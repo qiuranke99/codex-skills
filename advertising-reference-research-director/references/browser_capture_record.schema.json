@@ -30,7 +30,7 @@
       "required": ["canonical_url", "asset_locator", "stable_id", "access_state", "media_check", "object_match", "provenance_check", "dedup_fingerprint"],
       "properties": {
         "canonical_url": {"type": "string", "format": "uri"},
-        "asset_locator": {"type": "string", "minLength": 1},
+        "asset_locator": {"type": ["string", "null"], "minLength": 1},
         "stable_id": {"type": ["string", "null"]},
         "access_state": {"type": "object"},
         "media_check": {"type": "object"},
@@ -73,5 +73,14 @@
         "session_free_access_observed": {"type": ["boolean", "string"], "enum": [true, false, "unknown"]}
       }
     }
-  }
+  },
+  "allOf": [
+    {
+      "if": {"properties": {"observation": {"properties": {"asset_locator": {"type": "null"}}, "required": ["asset_locator"]}}},
+      "then": {"properties": {"observation": {"properties": {
+        "media_check": {"required": ["status"], "properties": {"status": {"const": "failed"}}},
+        "dedup_fingerprint": {"type": "null"}
+      }}}}
+    }
+  ]
 }

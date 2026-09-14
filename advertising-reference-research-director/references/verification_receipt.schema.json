@@ -43,7 +43,7 @@
       "properties": {
         "status": {"type": "string", "enum": ["passed", "failed", "not_applicable"]},
         "kind": {"type": "string", "enum": ["image", "video"]},
-        "image_render": {"type": ["object", "null"], "additionalProperties": false, "required": ["rendered", "asset_locator", "natural_width", "natural_height", "placeholder_detected"], "properties": {"rendered": {"type": "boolean"}, "asset_locator": {"type": "string", "minLength": 1}, "natural_width": {"type": "integer", "minimum": 1}, "natural_height": {"type": "integer", "minimum": 1}, "placeholder_detected": {"type": "boolean"}}},
+        "image_render": {"type": ["object", "null"], "additionalProperties": false, "required": ["rendered", "asset_locator", "natural_width", "natural_height", "placeholder_detected"], "properties": {"rendered": {"type": "boolean"}, "asset_locator": {"type": ["string", "null"], "minLength": 1}, "natural_width": {"type": ["integer", "null"], "minimum": 1}, "natural_height": {"type": ["integer", "null"], "minimum": 1}, "placeholder_detected": {"type": ["boolean", "null"]}}},
         "video_playback": {"type": ["object", "null"], "additionalProperties": false, "required": ["player_present", "playback_started", "observed_progress_seconds", "duration_seconds", "specific_work_matched"], "properties": {"player_present": {"type": "boolean"}, "playback_started": {"type": "boolean"}, "observed_progress_seconds": {"type": "number", "minimum": 0}, "duration_seconds": {"type": ["number", "null"], "exclusiveMinimum": 0}, "specific_work_matched": {"type": "boolean"}}}
       }
     },
@@ -115,6 +115,21 @@
     "rights_scope": {"type": "object", "additionalProperties": false, "required": ["discoverable", "viewable", "shareable_without_session", "downloadable", "internal_board_use", "commercial_reuse"], "properties": {"discoverable": {"$ref": "#/$defs/right"}, "viewable": {"$ref": "#/$defs/right"}, "shareable_without_session": {"$ref": "#/$defs/right"}, "downloadable": {"$ref": "#/$defs/right"}, "internal_board_use": {"$ref": "#/$defs/right"}, "commercial_reuse": {"$ref": "#/$defs/right"}}}
   },
   "allOf": [
+    {
+      "if": {"properties": {"media_check": {"properties": {"image_render": {
+        "type": "object",
+        "anyOf": [
+          {"required": ["asset_locator"], "properties": {"asset_locator": {"type": "null"}}},
+          {"required": ["natural_width"], "properties": {"natural_width": {"type": "null"}}},
+          {"required": ["natural_height"], "properties": {"natural_height": {"type": "null"}}},
+          {"required": ["placeholder_detected"], "properties": {"placeholder_detected": {"type": "null"}}}
+        ]
+      }}}}},
+      "then": {"properties": {
+        "outcome": {"enum": ["failed", "blocked"]},
+        "media_check": {"properties": {"status": {"const": "failed"}, "image_render": {"properties": {"rendered": {"const": false}}}}}
+      }}
+    },
     {"if": {"properties": {"modality": {"const": "image"}}}, "then": {"properties": {"media_check": {"properties": {"kind": {"const": "image"}, "image_render": {"type": "object"}, "video_playback": {"type": "null"}}}}}},
     {"if": {"properties": {"modality": {"const": "video"}}}, "then": {"properties": {"media_check": {"properties": {"kind": {"const": "video"}, "image_render": {"type": "null"}, "video_playback": {"type": "object"}}}}}},
     {
@@ -133,7 +148,7 @@
         }
       }
     },
-    {"if": {"properties": {"modality": {"const": "image"}, "outcome": {"const": "qualified"}}}, "then": {"properties": {"media_check": {"properties": {"image_render": {"properties": {"rendered": {"const": true}, "natural_width": {"type": "integer", "minimum": 240}, "natural_height": {"type": "integer", "minimum": 240}, "placeholder_detected": {"const": false}}}}}}}},
+    {"if": {"properties": {"modality": {"const": "image"}, "outcome": {"const": "qualified"}}}, "then": {"properties": {"media_check": {"properties": {"image_render": {"properties": {"rendered": {"const": true}, "asset_locator": {"type": "string", "minLength": 1}, "natural_width": {"type": "integer", "minimum": 240}, "natural_height": {"type": "integer", "minimum": 240}, "placeholder_detected": {"const": false}}}}}}}},
     {
       "if": {"properties": {"modality": {"const": "video"}, "outcome": {"const": "qualified"}}},
       "then": {

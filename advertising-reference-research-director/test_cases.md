@@ -169,9 +169,10 @@ at the declared time; the package always reports `production_deliverable=false`.
 - exact identity collisions cannot be waived as authorized versions;
 - soft near-duplicates require a hash-covered manual version review whose
   members and fingerprint evidence exactly match the detected group;
-- dominance requires no worse score on all nine direction-normalized
-  dimensions and a strict improvement on the declared axis; mixed trade-offs
-  fail, while exact vectors require the deterministic stable-ID tie-break;
+- Pareto dominance requires no worse score on all nine direction-normalized
+  dimensions and a strict improvement on the declared axis; an undeclared
+  trade-off still fails. Explicit `curatorial_tradeoff` records must disclose
+  every advantage and concession, while exact vectors retain the stable-ID tie-break;
 - generated HTML escapes untrusted titles and rationales;
 - gallery links remain canonical landing pages and do not copy remote media.
 
@@ -182,6 +183,32 @@ The local schema runtime implements and tests `$ref`, `allOf`, `if/then/else`,
 structural keyword used by the checked-in schemas. It recursively rejects any
 unsupported keyword, including one hidden in an untaken branch. The complete
 checked-in `source_registry.json` is also validated against its schema.
+
+## Quantity-recovery regressions
+
+The normal package preflight also runs the tests in `tests/test_*.py` and
+`scripts/test_plan_waves_capacity4.py`. All fixtures are synthetic and temporary:
+
+- A 59- or 100-lead run with only 17 selections continues; exhausting the initial
+  search plan requests another wave, never a smaller completed delivery.
+- Pending candidates may record unknown observations; final references cannot
+  inherit those unknowns or fabricate an asset locator.
+- Complementary per-item axes can form a complete selected portfolio. Explicit
+  hard axes, must-have criteria, forbidden content, and coverage gaps still fail.
+- A 30-item Pareto antichain can yield a truthful 20/10 curatorial trade-off;
+  hidden concessions and reversed rights-risk comparisons still fail.
+- Distinct verified owners on one hosting platform count as creative origins;
+  platform aliases, mismatched provenance, and inflated metrics do not.
+- Four prospectively assigned real identities can perform staged roles while
+  retaining independent verification, blind reviews, and an auditor-only identity.
+- Appended waves preserve old plan/capture bindings. Backdated activity, modified
+  old queries, conflicting IDs, and broken hash chains fail.
+- An executed zero-yield method with a complete failure record counts toward
+  method coverage; an empty or unexecuted registration does not.
+- Legacy runs retain their original hash projection and strict policy behavior.
+
+The checkpoint always uses a fresh full validation when declared counts are met;
+it does not trust an old `validation_result.json`, grant E4, or attest browser use.
 
 ## Non-deterministic release acceptance
 

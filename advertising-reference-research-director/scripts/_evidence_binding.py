@@ -36,7 +36,7 @@ def canonical_sha256(value: Any) -> str:
 
 
 def approach_plan_projection(registry: dict[str, Any]) -> dict[str, Any]:
-    return {
+    projection = {
         "run_id": registry.get("run_id"),
         "intent_id": registry.get("intent_id"),
         "intent_version": registry.get("intent_version"),
@@ -69,12 +69,101 @@ def approach_plan_projection(registry: dict[str, Any]) -> dict[str, Any]:
                 "favored_route_disclosed": item.get("favored_route_disclosed"),
             }
             for item in registry.get("approaches", [])
+            if not registry.get("append_only_plan") or item.get("approach_id") in registry["append_only_plan"]["base_approach_ids"]
         ],
     }
+    # Legacy hashes are byte-for-byte unchanged. Capacity policy is prospective:
+    # adding it to an old plan changes the hash and cannot silently relax it.
+    if registry.get("independence_policy", {}).get("profile"):
+        projection["independence_policy"] = registry["independence_policy"]
+    return projection
 
 
 def approach_plan_sha256(registry: dict[str, Any]) -> str:
     return canonical_sha256(approach_plan_projection(registry))
+
+
+def approach_wave_sha256(registry: dict[str, Any], wave: dict[str, Any]) -> str:
+    plans = approach_plan_projection({**registry, "append_only_plan": None})["approaches"]
+    return canonical_sha256({
+        "base_plan_sha256": registry["registration"]["plan_sha256"],
+        "wave_id": wave["wave_id"], "parent_plan_sha256": wave["parent_plan_sha256"],
+        "frozen_at": wave["frozen_at"], "trigger": wave["trigger"],
+        "approach_ids": wave["approach_ids"],
+        "approaches": [p for p in plans if p["approach_id"] in wave["approach_ids"]],
+    })
+
+
+def approach_registration_bindings(registry: dict[str, Any]) -> dict[str, tuple[str, str]]:
+    """Validate the append chain; bind each immutable approach to its own freeze.
+
+    Raises ValueError for malformed or rewritten history. This is internal
+    consistency, not external timestamp attestation.
+    """
+    base = registry["registration"]
+    validate_capacity4_registration(registry)
+    if approach_plan_sha256(registry) != base["plan_sha256"]:
+        raise ValueError("base plan hash mismatch")
+    agent_roles = {
+        a["agent_id"]: {a["role"], *a.get("additional_roles", [])}
+        for a in registry["agents"]
+    }
+    discovery_roles = {"search_scout", "credit_graph_scout", "authenticated_source_operator"}
+    capacity4 = registry.get("independence_policy", {}).get("profile") == "capacity4_staged_v1"
+    for approach in registry["approaches"]:
+        roles = agent_roles.get(approach.get("executing_agent_id"), set())
+        if not roles & discovery_roles or (capacity4 and "search_scout" not in roles):
+            raise ValueError("approach executor lacks an eligible discovery role; capacity4 permits only its finder identity")
+    ids = [a["approach_id"] for a in registry["approaches"]]
+    if len(ids) != len(set(ids)):
+        raise ValueError("duplicate approach IDs")
+    append = registry.get("append_only_plan")
+    base_ids = append["base_approach_ids"] if append else ids
+    if len(base_ids) != len(set(base_ids)) or not set(base_ids).issubset(ids):
+        raise ValueError("invalid base approach IDs")
+    bindings = {i: (base["plan_sha256"], base["frozen_at"]) for i in base_ids}
+    previous = base["plan_sha256"]
+    previous_time = base["frozen_at"]
+    from datetime import datetime
+    stamp = lambda value: datetime.fromisoformat(value.replace("Z", "+00:00"))
+    wave_ids = set()
+    for wave in append.get("waves", []) if append else []:
+        if wave["wave_id"] in wave_ids or wave["parent_plan_sha256"] != previous:
+            raise ValueError("duplicate wave or broken parent hash")
+        wave_ids.add(wave["wave_id"])
+        if stamp(wave["frozen_at"]) <= stamp(previous_time):
+            raise ValueError("wave freeze is not strictly after its parent")
+        assigned = wave["approach_ids"]
+        if not assigned or len(assigned) != len(set(assigned)) or set(assigned) & bindings.keys() or not set(assigned).issubset(ids):
+            raise ValueError("wave approaches overlap, are empty, or are missing")
+        if approach_wave_sha256(registry, wave) != wave["plan_sha256"]:
+            raise ValueError("wave plan hash mismatch")
+        bindings.update({i: (wave["plan_sha256"], wave["frozen_at"]) for i in assigned})
+        previous, previous_time = wave["plan_sha256"], wave["frozen_at"]
+    if set(bindings) != set(ids):
+        raise ValueError("unregistered appended approaches")
+    query_ids = [q["query_id"] for a in registry["approaches"] for q in a["queries"]]
+    if len(query_ids) != len(set(query_ids)):
+        raise ValueError("query IDs must be globally unique across waves")
+    return bindings
+
+
+def validate_capacity4_registration(registry: dict[str, Any]) -> None:
+    """Check the prospective four-actor assignment before any searches start."""
+    if registry.get("independence_policy", {}).get("profile") != "capacity4_staged_v1":
+        return
+    agents = registry.get("agents", [])
+    roles = {a["agent_id"]: {a["role"], *a.get("additional_roles", [])} for a in agents}
+    owners = lambda role: {aid for aid, assigned in roles.items() if role in assigned}
+    groups = [owners("search_scout"), owners("capture_operator"), owners("verification_agent"), owners("adversarial_auditor")]
+    if (len(agents) != 4 or len(roles) != 4 or any(len(s) != 1 for s in groups)
+            or len(set().union(*groups)) != 4
+            or owners("relevance_curator") != groups[0]
+            or owners("root_synthesizer") != groups[1]
+            or owners("diversity_curator") != groups[2]
+            or any(roles[aid] != {"adversarial_auditor"} for aid in groups[3])
+            or registry["independence_policy"].get("decision_roles_use_distinct_agent_ids") is not False):
+        raise ValueError("capacity4 must prospectively assign exactly four real actors to finder/relevance, capture/root, verifier/diversity, auditor-only")
 
 
 def dedup_comparison_projection(candidates: list[dict[str, Any]]) -> list[dict[str, Any]]:
@@ -103,7 +192,7 @@ def dedup_comparison_set_sha256(candidates: list[dict[str, Any]]) -> str:
 def intent_constraints_projection(intent: dict[str, Any]) -> dict[str, Any]:
     """Project every frozen field that can change candidate relevance or eligibility."""
 
-    return {
+    projection = {
         "run_id": intent.get("run_id"),
         "intent_id": intent.get("intent_id"),
         "intent_version": intent.get("intent_version"),
@@ -124,6 +213,13 @@ def intent_constraints_projection(intent: dict[str, Any]) -> dict[str, Any]:
         "content_max_age_days": intent.get("freshness_need", {}).get("content_max_age_days"),
         "rights_scope": intent.get("rights_scope"),
     }
+    # New policies are opt-in and hash-bound. Preserve byte projections for
+    # historical runs which did not declare them; never silently reinterpret one.
+    if "coverage_policy" in intent:
+        projection["coverage_policy"] = intent["coverage_policy"]
+    if "profile" in intent.get("diversity_requirements", {}):
+        projection["diversity_requirements"] = intent["diversity_requirements"]
+    return projection
 
 
 def intent_constraints_sha256(intent: dict[str, Any]) -> str:

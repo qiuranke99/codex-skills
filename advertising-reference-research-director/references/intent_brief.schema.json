@@ -60,6 +60,17 @@
     "human_presence": {"type": "string", "enum": ["none", "hands_only", "partial_body", "full_body_single", "full_body_group", "mixed", "unspecified"]},
     "visual_axes": {"type": "array", "minItems": 1, "uniqueItems": true, "items": {"type": "string", "minLength": 1}},
     "temporal_axes": {"type": "array", "uniqueItems": true, "items": {"type": "string", "minLength": 1}},
+    "coverage_policy": {
+      "type": "object", "additionalProperties": false,
+      "required": ["mode", "hard_visual_axes", "hard_temporal_axes", "minimum_matched_axes", "selected_min_support_per_axis"],
+      "properties": {
+        "mode": {"const": "portfolio_complementary_v1"},
+        "hard_visual_axes": {"type": "array", "uniqueItems": true, "items": {"type": "string", "minLength": 1}},
+        "hard_temporal_axes": {"type": "array", "uniqueItems": true, "items": {"type": "string", "minLength": 1}},
+        "minimum_matched_axes": {"type": "integer", "minimum": 1},
+        "selected_min_support_per_axis": {"type": "integer", "minimum": 1, "maximum": 20}
+      }
+    },
     "must_have": {"type": "array", "uniqueItems": true, "items": {"type": "string", "minLength": 1}},
     "must_not_have": {"type": "array", "uniqueItems": true, "items": {"type": "string", "minLength": 1}},
     "positive_anchors": {"type": "array", "items": {"$ref": "#/$defs/anchor"}},
@@ -92,6 +103,9 @@
       "type": "object", "additionalProperties": false,
       "required": ["broad_brief", "min_domains", "min_source_families", "territory_count_min", "territory_count_max", "max_per_domain", "max_per_campaign_or_creator", "max_per_near_duplicate_group"],
       "properties": {
+        "profile": {"type": "string", "enum": ["legacy_domains_v1", "creative_origin_v1"]},
+        "min_accountable_origins": {"type": "integer", "minimum": 1, "maximum": 20},
+        "max_per_accountable_origin": {"type": "integer", "minimum": 1, "maximum": 20},
         "broad_brief": {"type": "boolean"},
         "min_domains": {"type": "integer", "minimum": 1},
         "min_source_families": {"type": "integer", "minimum": 1},
@@ -100,7 +114,8 @@
         "max_per_domain": {"type": "integer", "minimum": 1},
         "max_per_campaign_or_creator": {"type": "integer", "minimum": 1},
         "max_per_near_duplicate_group": {"type": "integer", "minimum": 1}
-      }
+      },
+      "allOf": [{"if": {"required": ["profile"], "properties": {"profile": {"const": "creative_origin_v1"}}}, "then": {"required": ["min_accountable_origins", "max_per_accountable_origin"]}}]
     },
     "clarification_questions": {
       "type": "array", "maxItems": 3,

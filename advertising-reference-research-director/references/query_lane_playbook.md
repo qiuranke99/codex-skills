@@ -35,6 +35,11 @@ never pool methods across parallel image/video packs.
 
 An approach is distinct only when it changes the evidence route, source population, or retrieval model. Three synonym bundles over the same source are one approach.
 
+A real zero-yield execution can contribute method coverage when closed as
+`abandoned` with validated `zero_yield` failure/query/round/source bindings,
+`started_at`, `observed_at`, and next adjustment. Planned or empty abandoned
+lanes cannot. This negative evidence contributes no qualified candidates.
+
 ## 2. Canonical Method Families
 
 Use at least three of these; prefer four to six for a broad brief:
@@ -137,13 +142,34 @@ Every approach declares which image and video quota it serves. Do not let the ea
 
 ## 4. Search Waves
 
+The base plan is immutable, not a permanent limit on discovery. For an appended
+wave, create a JSON array of new approaches: new globally unique approach/query
+IDs, exact queries/locales, existing registered executors, `status=planned`,
+`started_at=null`, zero yield, and no retrospective failures. Then run:
+
+```text
+python scripts/register_search_wave.py --run-dir <run_root> --draft <new_approaches.json> --wave-id <unique_wave_id> --trigger <evidence-backed gap or failure>
+```
+
+The helper records the real current freeze time without a timestamp override.
+`append_only_plan.base_approach_ids` preserves the base projection; each wave
+binds its new approaches, trigger, freeze time, and previous plan hash. Old
+agents, queries, times, and capture hashes remain unchanged. A new query uses a
+new approach ID even when it continues an existing method. Stamp the actual
+`started_at` before execution. Never rewrite a failed query or backdate a wave
+to authorize already-discovered candidates. Old captures keep their own
+approach's plan hash; new captures use their wave hash. The final core registry
+hash covers the complete appended history.
+
 ### Wave 0 — calibration probe
 
 When needed, test at least three divergent territories with a small sample. Record which assumption each probe tests. Probe results are not automatically qualified.
 
 ### Wave 1 — independent broad discovery
 
-Run method-diverse scouts without broadcasting the root agent's favored candidates. Seek roughly 45–80 raw candidates per pack. Return structured candidate records, not prose lists.
+Run method-diverse scouts without broadcasting the root agent's favored candidates.
+Seek roughly 45–80 raw candidates per pack as an initial batch, not an upper
+limit. Return structured candidate records, not prose lists.
 
 ### Wave 2 — provenance and credit recovery
 
@@ -159,7 +185,10 @@ Actively test the leading interpretation against contrary strong evidence. Regis
 
 ### Wave 5 — replacement search
 
-After verification or dedup removes items, search for replacements through registered fallbacks. A replacement must pass the same gates; never relax evidence to close the count.
+After verification or dedup removes items, search for replacements through
+registered fallbacks. If those queries are exhausted, append new hypotheses,
+source populations, creator graphs, markets, or methods. A replacement must
+pass the same gates; never relax evidence to close the count.
 
 ## 5. Candidate Capture
 
@@ -230,7 +259,16 @@ Discovery does not stop because raw count reaches 30. Stop only when:
 - dedup and diversity gates pass or a valid narrow-brief waiver exists;
 - unresolved failures cannot alter qualification or selection.
 
-If fallback approaches are exhausted below 30, preserve the shortfall and failure evidence and return an incomplete/blocked state. Do not invent, duplicate, or downgrade candidates.
+Exhausted initial fallbacks below 30 trigger another registered wave. They do
+not normally terminate research or justify a subset delivery. Use
+`scripts/research_progress.py --run-dir <run_root>` to inspect the phase, gap,
+and next action without changing the run. Continue through 30 genuinely
+qualified items and the final 20 selected / 10 qualified-but-rejected partition.
+
+Only actual user cancellation, an exhausted explicit user budget, or evidence
+that all reasonable allowed routes are externally blocked permits an incomplete
+stop. Record that evidence and the exact shortfall; never claim completion,
+invent items, duplicate campaigns, or count playback failures as rejected 10.
 
 ## 9. Anti-Patterns
 

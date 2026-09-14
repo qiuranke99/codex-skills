@@ -3821,6 +3821,19 @@ def test_package_standalone_gate() -> None:
                 raise AssertionError(f"standalone package retains forbidden sibling coupling {marker}: {path}")
 
 
+def test_quantity_recovery_extensions() -> None:
+    """Run opt-in policy regressions through the normal package preflight."""
+    import unittest
+    import test_plan_waves_capacity4
+
+    loader = unittest.TestLoader()
+    suite = loader.discover(str(PACKAGE_ROOT / "tests"), pattern="test_*.py")
+    suite.addTests(loader.loadTestsFromModule(test_plan_waves_capacity4))
+    result = unittest.TextTestRunner(verbosity=1).run(suite)
+    if not result.wasSuccessful():
+        raise AssertionError("quantity recovery extension regressions failed")
+
+
 def main() -> int:
     tests = [
         test_validator_and_adversarial,
@@ -3837,6 +3850,7 @@ def main() -> int:
         test_strict_evidence_boundaries,
         test_schema_keyword_enforcement,
         test_package_standalone_gate,
+        test_quantity_recovery_extensions,
     ]
     failures = []
     for test in tests:

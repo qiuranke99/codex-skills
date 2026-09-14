@@ -16,13 +16,24 @@
         "type": "object", "additionalProperties": false,
         "required": ["candidate_id", "shortlist_rank", "verification_receipt_id", "qualified_before_selection", "dominance_dimension", "dominance_reason", "stronger_candidate_class", "dominated_by_candidate_ids", "score_tie_break", "reuse_condition"],
         "properties": {
+          "comparison_kind": {"type": "string", "enum": ["pareto_dominance", "curatorial_tradeoff"]},
+          "tradeoff": {
+            "type": "object", "additionalProperties": false,
+            "required": ["selected_advantages", "rejected_advantages", "decision_rationale"],
+            "properties": {
+              "selected_advantages": {"type": "array", "minItems": 1, "uniqueItems": true, "items": {"$ref": "#/$defs/score_dimension"}},
+              "rejected_advantages": {"type": "array", "minItems": 1, "uniqueItems": true, "items": {"$ref": "#/$defs/score_dimension"}},
+              "decision_rationale": {"type": "string", "minLength": 30}
+            }
+          },
           "candidate_id": {"type": "string", "minLength": 1}, "shortlist_rank": {"type": "integer", "minimum": 1, "maximum": 30}, "verification_receipt_id": {"type": "string", "minLength": 1}, "qualified_before_selection": {"const": true},
           "dominance_dimension": {"type": "string", "enum": ["relevance", "craft_signal", "source_authority", "freshness", "access_reliability", "link_durability", "evidence_completeness", "rights_risk", "diversity_contribution"]},
           "dominance_reason": {"type": "string", "minLength": 1}, "stronger_candidate_class": {"type": "string", "minLength": 1},
           "dominated_by_candidate_ids": {"type": "array", "minItems": 1, "uniqueItems": true, "items": {"type": "string", "minLength": 1}},
           "score_tie_break": {"type": ["object", "null"], "additionalProperties": false, "required": ["key", "order", "applies_when"], "properties": {"key": {"const": "object.stable_id"}, "order": {"const": "ascending_lexicographic"}, "applies_when": {"const": "all_dimensions_equal"}}},
           "reuse_condition": {"type": "string", "minLength": 1}
-        }
+        },
+        "allOf": [{"if": {"required": ["comparison_kind"], "properties": {"comparison_kind": {"const": "curatorial_tradeoff"}}}, "then": {"required": ["tradeoff"], "properties": {"dominated_by_candidate_ids": {"maxItems": 1}, "score_tie_break": {"type": "null"}}}, "else": {"not": {"required": ["tradeoff"]}}}]
       }
     },
     "curation_trace": {
@@ -35,5 +46,6 @@
       "required": ["rejected_subset_of_shortlist", "disjoint_from_selected", "union_with_selected_equals_shortlist", "candidate_ids_unique", "all_were_qualified", "all_have_dominance_reason"],
       "properties": {"rejected_subset_of_shortlist": {"const": true}, "disjoint_from_selected": {"const": true}, "union_with_selected_equals_shortlist": {"const": true}, "candidate_ids_unique": {"const": true}, "all_were_qualified": {"const": true}, "all_have_dominance_reason": {"const": true}}
     }
-  }
+  },
+  "$defs": {"score_dimension": {"type": "string", "enum": ["relevance", "craft_signal", "source_authority", "freshness", "access_reliability", "link_durability", "evidence_completeness", "rights_risk", "diversity_contribution"]}}
 }
