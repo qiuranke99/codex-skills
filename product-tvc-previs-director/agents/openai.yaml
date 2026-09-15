@@ -1,0 +1,4 @@
+interface:
+  display_name: "产品广告美术与预演导演"
+  short_description: "从产品与影调图完成美术布局、后台多镜预演及完整视频提示词附件包"
+  default_prompt: "使用 $product-tvc-previs-director，依据产品白底图和影调参考完成美术设计、AI布局图、Blender后台预演以及完整视频提示词和附件包。"

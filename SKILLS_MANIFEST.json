@@ -19,6 +19,7 @@
     "packaging-product-identity-label-lock-board",
     "product-tvc-30s-director",
     "product-tvc-lighting-director",
+    "product-tvc-previs-director",
     "single-face-character-lock-board"
   ]
 }

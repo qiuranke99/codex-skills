@@ -56,7 +56,7 @@ jobs:
         run: python -X utf8 -B .github/scripts/test_validate_skill_inventory.py
 
       - name: Verify source inventory, real Skill identities and human index
-        run: python -X utf8 -B .github/scripts/validate_skill_inventory.py --repo-root . --expected-count 18
+        run: python -X utf8 -B .github/scripts/validate_skill_inventory.py --repo-root . --expected-count 19
 
       - name: Test the repository-level standalone validator
         run: python .github/scripts/test_validate_standalone_skills.py
@@ -67,8 +67,8 @@ jobs:
       - name: Test the package-scoped standalone release controller
         run: python .github/scripts/test_manage_standalone_skill_release.py
 
-      - name: Validate all 18 Skills in isolated package roots
-        run: python .github/scripts/validate_standalone_skills.py --repo-root . --expected-count 18 --timeout 180 --compact
+      - name: Validate all 19 Skills in isolated package roots
+        run: python .github/scripts/validate_standalone_skills.py --repo-root . --expected-count 19 --timeout 180 --compact
 
       - name: Run undeclared package-local tests in isolated package roots
         run: python .github/scripts/run_undeclared_standalone_tests.py --repo-root . --timeout 180

@@ -1,6 +1,6 @@
 # Codex Skills
 
-公开维护的个人 Codex Skill 源码仓库。当前保留 **18 个独立包**，每包只维护一个当前版本。机器清单为 [SKILLS_MANIFEST.json](SKILLS_MANIFEST.json)，用途索引为 [SKILLS_INDEX.md](SKILLS_INDEX.md)。源码存在不等于已在某台机器安装。
+公开维护的个人 Codex Skill 源码仓库。当前保留 **19 个独立包**，每包只维护一个当前版本。机器清单为 [SKILLS_MANIFEST.json](SKILLS_MANIFEST.json)，用途索引为 [SKILLS_INDEX.md](SKILLS_INDEX.md)。源码存在不等于已在某台机器安装。
 
 机器清单描述源码库存，不是安装、视觉或生产批准回执。
 
@@ -47,11 +47,11 @@ python .github/scripts/manage_standalone_skill_release.py check --repo-root . --
 
 ```bash
 python .github/scripts/test_validate_skill_inventory.py
-python .github/scripts/validate_skill_inventory.py --repo-root . --expected-count 18
+python .github/scripts/validate_skill_inventory.py --repo-root . --expected-count 19
 python .github/scripts/test_validate_standalone_skills.py
 python .github/scripts/test_run_undeclared_standalone_tests.py
 python .github/scripts/test_manage_standalone_skill_release.py
-python .github/scripts/validate_standalone_skills.py --repo-root . --expected-count 18 --timeout 180 --compact
+python .github/scripts/validate_standalone_skills.py --repo-root . --expected-count 19 --timeout 180 --compact
 python .github/scripts/run_undeclared_standalone_tests.py --repo-root . --timeout 180
 ```
 
