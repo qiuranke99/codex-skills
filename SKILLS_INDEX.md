@@ -1,6 +1,6 @@
 # Codex Skills Index
 
-更新日期：2026-09-12。以下是 [SKILLS_MANIFEST.json](SKILLS_MANIFEST.json) 记录的17个当前源码包，路径相对于本仓库。本索引不宣称所有源码都已安装。
+更新日期：2026-09-15。以下是 [SKILLS_MANIFEST.json](SKILLS_MANIFEST.json) 记录的18个当前源码包，路径相对于本仓库。本索引不宣称所有源码都已安装。
 
 清单只描述源码库存，不构成业务或视觉验收。运行方式和维护校验见 [README.md](README.md)。
 
@@ -12,6 +12,7 @@
 | [ai-video-modular-storyboard](ai-video-modular-storyboard/SKILL.md) | 逐镜独立分镜、审阅包与局部替换 |
 | [ai-video-shot-script-director](ai-video-shot-script-director/SKILL.md) | 粗脚本转专业镜头合同 |
 | [ai-video-timed-animatic-previs-director](ai-video-timed-animatic-previs-director/SKILL.md) | V1时序预演与有证据支持的V2控制预演 |
+| [brand-visual-system-campaign](brand-visual-system-campaign/SKILL.md) | 品牌视觉系统、主视觉与系列素材的实际制作、修正和成品交付 |
 | [character-casting-lock-board](character-casting-lock-board/SKILL.md) | 人物选角与候选身份板 |
 | [character-final-lock-board](character-final-lock-board/SKILL.md) | 最终人物身份、服装与多角度资产板 |
 | [cinematic_shot_image_explorer](cinematic_shot_image_explorer/SKILL.md) | 按用户数量和输出模式探索电影镜头 |

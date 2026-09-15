@@ -1,0 +1,4 @@
+interface:
+  display_name: "品牌视觉系统与系列素材扩展"
+  short_description: "从品牌与产品资料出发，完成主视觉、系列素材、实际修正及可用成品交付"
+  default_prompt: "使用 $brand-visual-system-campaign，依据我的品牌、产品和参考资料完成所需视觉成品；保留已批准内容，在授权范围内制作、修正并验证后交付。"

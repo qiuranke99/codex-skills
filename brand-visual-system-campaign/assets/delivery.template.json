@@ -1,0 +1,6 @@
+{
+  "schema_version": "brand-delivery-manifest.v1",
+  "contract": {"path": "contract.json", "sha256": ""},
+  "outputs": [],
+  "user_acceptance": {"status": "not_requested"}
+}
