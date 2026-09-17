@@ -1,0 +1,4 @@
+interface:
+  display_name: "产品功效 B-roll 导演"
+  short_description: "从 A-roll 提取摄影风格与影调参考，编写十五秒产品功效 B-roll 提示词"
+  default_prompt: "使用 $product-efficacy-broll-director，读取我提供的 A-roll 视频、功效说明和 B-roll 参考图，截取影调参考帧并编写 15 秒功效镜头提示词，镜数随内容决定，成片组接交给剪辑。"

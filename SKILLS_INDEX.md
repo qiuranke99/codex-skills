@@ -1,6 +1,6 @@
 # Codex Skills Index
 
-更新日期：2026-09-15。以下是 [SKILLS_MANIFEST.json](SKILLS_MANIFEST.json) 记录的19个当前源码包，路径相对于本仓库。本索引不宣称所有源码都已安装。
+更新日期：2026-09-17。以下是 [SKILLS_MANIFEST.json](SKILLS_MANIFEST.json) 记录的20个当前源码包，路径相对于本仓库。本索引不宣称所有源码都已安装。
 
 清单只描述源码库存，不构成业务或视觉验收。运行方式和维护校验见 [README.md](README.md)。
 
@@ -21,6 +21,7 @@
 | [material-sensitive-product-master-asset-board](material-sensitive-product-master-asset-board/SKILL.md) | 材质敏感产品资产板 |
 | [multi-angle-product-identity-lock-board](multi-angle-product-identity-lock-board/SKILL.md) | 低风险产品六视图几何身份板 |
 | [packaging-product-identity-label-lock-board](packaging-product-identity-label-lock-board/SKILL.md) | 包装身份、标签与来源文字资产板 |
+| [product-efficacy-broll-director](product-efficacy-broll-director/SKILL.md) | 从 A-roll 提取影调，结合参考图编写15秒功效 B-roll 提示词；镜数灵活，组接交给剪辑 |
 | [product-tvc-30s-director](product-tvc-30s-director/SKILL.md) | 综合30秒产品TVC提示词；仅文本 |
 | [product-tvc-lighting-director](product-tvc-lighting-director/SKILL.md) | 照明主导TVC与锁定镜序灯光升级；仅文本 |
 | [product-tvc-previs-director](product-tvc-previs-director/SKILL.md) | 产品美术与AI布局、Blender后台多镜预演及提示词附件包 |
