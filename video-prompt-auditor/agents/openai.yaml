@@ -1,0 +1,6 @@
+interface:
+  display_name: "视频提示词逐镜校对"
+  short_description: "研究多条真实参考片，逐镜检查大幅景别变化、运镜、剪辑及音乐设计"
+  default_prompt: "使用 $video-prompt-auditor 校对这份视频生成提示词，研究多条相近参考片，逐镜指出弱运镜、景别变化不足、音乐缺失和关键帧微动画风险。"
+policy:
+  allow_implicit_invocation: true

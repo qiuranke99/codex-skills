@@ -1,6 +1,6 @@
 # Codex Skills Index
 
-更新日期：2026-09-17。以下是 [SKILLS_MANIFEST.json](SKILLS_MANIFEST.json) 记录的20个当前源码包，路径相对于本仓库。本索引不宣称所有源码都已安装。
+更新日期：2026-09-30。以下是 [SKILLS_MANIFEST.json](SKILLS_MANIFEST.json) 记录的21个当前源码包，路径相对于本仓库。本索引不宣称所有源码都已安装。
 
 清单只描述源码库存，不构成业务或视觉验收。运行方式和维护校验见 [README.md](README.md)。
 
@@ -26,6 +26,7 @@
 | [product-tvc-lighting-director](product-tvc-lighting-director/SKILL.md) | 照明主导TVC与锁定镜序灯光升级；仅文本 |
 | [product-tvc-previs-director](product-tvc-previs-director/SKILL.md) | 产品美术与AI布局、Blender后台多镜预演及提示词附件包 |
 | [single-face-character-lock-board](single-face-character-lock-board/SKILL.md) | 单一可见人脸及无头正背面服装板 |
+| [video-prompt-auditor](video-prompt-auditor/SKILL.md) | 多条真实参考片支持的逐镜提示词校对；大幅景别变化、运镜、剪辑、音乐与关键帧微动画风险 |
 
 ## 安装与调用
 

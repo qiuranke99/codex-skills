@@ -1,0 +1,6 @@
+{
+  "deterministic_test": {
+    "command": ["{python}", "scripts/test_scan_prompt.py"],
+    "timeout_seconds": 30
+  }
+}
