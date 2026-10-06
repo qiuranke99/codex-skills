@@ -56,6 +56,8 @@ The table is representative, not a complete enumeration. The executable
 | selected item removed | `SCHEMA-01` (schema gate stops semantic validation) |
 | receipt removed | `VERIFY-01` |
 | stale receipt | `FRESHNESS-01` |
+| valid 30/120-minute receipt with a still-future expiry | no freshness failure; expiry is a deadline |
+| expiry differs from checked time plus frozen window | `FRESHNESS-01` |
 | video poster/player without playback progress | `VERIFY-02` |
 | discovery-only provenance rejected by the qualified-receipt schema | `SCHEMA-01` |
 | duplicate canonical item URL | `DEDUP-01` |
@@ -108,6 +110,11 @@ result and never by a report reference inside the input run.
 The `drop_selected_item` case is a specific regression test: malformed
 partition data previously reached a `StopIteration`; it must now fail at the
 schema gate without reaching unsafe semantic indexing.
+
+`tests/test_freshness_deadlines.py` also validates a complete synthetic run at
+its delivery clock, before its receipts expire. It covers the 120-minute receipt
+path, wrong TTL, expired receipts, future occurrence times, and missing timezones.
+These are deterministic contract tests, not live media or freshness evidence.
 
 ## BOTH routing
 

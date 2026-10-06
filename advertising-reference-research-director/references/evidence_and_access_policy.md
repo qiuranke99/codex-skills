@@ -252,6 +252,11 @@ Image download is an optional, explicit branch after rights/access review. Video
 
 Define `delivery_reference_time` and `freshness_window_minutes` in the verification report. Default freshness is 30 minutes.
 
+`expires_at` is a deadline, not a completed event: it may be later than the
+validation clock, but must equal `checked_at` plus the frozen window, and the
+receipt must still be fresh at delivery. Discovery, capture, verification,
+review, and report occurrence times retain the trusted-clock future check.
+
 Before delivery:
 
 1. recheck all 30 qualified candidates, not only the selected 20;

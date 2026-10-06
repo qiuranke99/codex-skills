@@ -240,13 +240,21 @@ class PackValidator:
     def fail(self, code: str, message: str, artifact: str | None = None, candidate_id: str | None = None) -> None:
         self.findings.append(Finding(code, message, artifact, candidate_id))
 
-    def _time(self, value: Any, label: str, code: str = "FRESHNESS-01", candidate_id: str | None = None) -> datetime | None:
+    def _time(
+        self,
+        value: Any,
+        label: str,
+        code: str = "FRESHNESS-01",
+        candidate_id: str | None = None,
+        *,
+        is_deadline: bool = False,
+    ) -> datetime | None:
         try:
             parsed = parse_timestamp(value, label)
         except ContractError as exc:
             self.fail(code, str(exc), candidate_id=candidate_id)
             return None
-        if parsed > self.validation_now + MAX_FUTURE_SKEW:
+        if not is_deadline and parsed > self.validation_now + MAX_FUTURE_SKEW:
             self.fail(code, f"{label} is later than the trusted validation clock plus allowed skew", candidate_id=candidate_id)
         return parsed
 
@@ -1218,7 +1226,10 @@ class PackValidator:
         checked_at = self._time(receipt["checked_at"], f"receipt[{cid}].checked_at", candidate_id=cid)
         discovered_at = self._time(candidate["discovered_at"], f"candidate[{cid}].discovered_at", candidate_id=cid)
         expires = self._time(
-            receipt["freshness"]["expires_at"], f"receipt[{cid}].freshness.expires_at", candidate_id=cid
+            receipt["freshness"]["expires_at"],
+            f"receipt[{cid}].freshness.expires_at",
+            candidate_id=cid,
+            is_deadline=True,
         )
         if checked_at is not None and discovered_at is not None and discovered_at > checked_at:
             self.fail("FRESHNESS-01", "candidate discovery occurs after its verification receipt", candidate_id=cid)
