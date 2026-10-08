@@ -84,11 +84,24 @@ test('synthetic integration uses actual GPU posters and produces bound PNG and P
     const checked=await verifyFileReference(root,receipt.output);assert.deepEqual([...checked.bytes.subarray(0,8)],[137,80,78,71,13,10,26,10]);
   }
   await withBrowser(root,{},async({page})=>{
+    await page.locator('#compare-open').click();
+    assert.deepEqual(await page.locator('#compare-role option').evaluateAll(items=>items.map(item=>item.value)),['__snapshot__','synthetic object study']);
+    await page.locator('#compare-role').selectOption('synthetic object study');
+    assert.equal(await page.locator('#compare-grid .paired-image img').count(),3);
+    for(let i=1;i<=3;i++)assert.equal(await page.locator(`#compare-grid img[src$="/media/assets/object-${i}.svg"]`).count(),1);
+    await page.setViewportSize({width:390,height:844});
+    const bounds=await page.locator('#compare-grid .paired-item').evaluateAll(items=>items.slice(0,2).map(item=>{const r=item.getBoundingClientRect();return {x:r.x,y:r.y,width:r.width};}));
+    assert.ok(Math.abs(bounds[0].y-bounds[1].y)<1,'mobile comparison starts with adjacent directions');assert.ok(bounds[1].x>=bounds[0].x+bounds[0].width,'mobile paired images do not overlap');
+    await page.locator('#compare-role').selectOption('__snapshot__');assert.equal(await page.locator('#compare-grid .paired-image img').count(),3);
+    await page.keyboard.press('Escape');assert.equal(await page.locator('#compare-dialog').isVisible(),false);
+    await page.setViewportSize({width:1440,height:1000});
     await page.evaluate(()=>window.VEM.preparePrint());
+    assert.equal(await page.locator('#study').isVisible(),false,'export does not repeat the current direction');assert.equal(await page.locator('#asset-section').isVisible(),false);assert.equal(await page.locator('#print-overview').isVisible(),true);
     assert.equal(await page.locator('#print-directions .compare-poster').count(),3);
     assert.equal(await page.locator('#print-directions .compare-asset img').count(),3);
     for(let i=1;i<=3;i++)assert.equal(await page.locator(`#print-directions img[src$="/media/assets/object-${i}.svg"]`).count(),1);
     await page.evaluate(()=>window.VEM.finishPrint());
+    assert.equal(await page.locator('#study').isVisible(),true,'normal study returns after export');
   });
   const png=await exportProject(root,{format:'png'}),pdf=await exportProject(root,{format:'pdf'});
   for(const receipt of [png,pdf]) {assert.equal(receipt.engineDigest,build);assert.equal(receipt.snapshots.length,3);assert.ok((await verifyFileReference(root,receipt.output)).bytes.length>1000);}

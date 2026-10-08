@@ -350,11 +350,38 @@ function snapshotFigure(direction, index, allowSelect = true) {
   if (allowSelect) {const button = make('button', 'text-button'); button.type = 'button'; button.append(make('span', '', '进入此方向'), make('span', '', '↗')); button.addEventListener('click', () => {$('compare-dialog').close(); act(() => api.setDirection(direction.id)); $('study').scrollIntoView({behavior: state.reducedMotion ? 'auto' : 'smooth'});}); article.append(button);}
   return article;
 }
+const roleLabels = {hero:'主体关系', macro:'局部与空间关系', plan:'总图', entrance:'入口视点', center:'中央视点', material:'光与材质'};
+let comparisonRole = '__snapshot__';
+function pairedFigure(direction, index, role) {
+  const article = make('article', 'paired-item'); article.dataset.directionId = direction.id;
+  article.append(make('h3', '', `${numbered(index)} / ${direction.title || direction.id}`));
+  const asset = role === '__snapshot__' ? null : visibleAssets(direction).find(item => item.role === role && mediaURL(item.url));
+  const url = mediaURL(asset?.url || (role === '__snapshot__' && direction.snapshot ? viewingPoster(direction) : null));
+  const image = make('div', 'paired-image');
+  if (url) {const img = make('img'); img.src = url; img.alt = asset?.alt || asset?.caption || `${direction.title} · 已保存主体与光场`; img.loading = 'eager'; img.addEventListener('error', () => image.replaceChildren(make('p', 'compare-missing', '此画面载入失败，尚未验证。'))); image.append(img);}
+  else image.append(make('p', 'compare-missing', '此维度尚无可用画面。'));
+  article.append(image, make('p', 'paired-caption', asset?.caption || (direction.snapshot ? `${Number(direction.snapshot.timeSeconds || 0).toFixed(2)} s · v${direction.snapshot.revision ?? '—'} · 已保存主体与光场` : '尚无已保存快照')));
+  if (url) article.append(originalImageLink(url, `${direction.title} / ${roleLabels[role] || (role === '__snapshot__' ? '已保存主体与光场' : role)}`));
+  return article;
+}
+function renderPairedComparison() {
+  const grid = $('compare-grid'); grid.replaceChildren();
+  state.project.directions.forEach((direction, index) => grid.append(pairedFigure(direction, index, comparisonRole)));
+}
 function renderComparison() {
-  const grid = $('compare-grid'); const print = $('print-directions'); grid.replaceChildren(); print.replaceChildren();
-  state.project.directions.forEach((direction, index) => {grid.append(snapshotFigure(direction, index)); print.append(snapshotFigure(direction, index, false));});
+  const print = $('print-directions'), details = $('compare-details'), select = $('compare-role'); print.replaceChildren(); details.replaceChildren(); select.replaceChildren();
+  const roles = state.project.directions.map(direction => {
+    const counts = new Map(); for (const asset of visibleAssets(direction)) if (mediaURL(asset.url) && typeof asset.role === 'string' && asset.role.trim()) counts.set(asset.role, (counts.get(asset.role) || 0) + 1);
+    return new Set([...counts].filter(([, count]) => count === 1).map(([role]) => role));
+  });
+  const common = [...roles[0]].filter(role => roles.every(set => set.has(role)));
+  for (const [value, label] of [['__snapshot__', '已保存主体与光场'], ...common.map(role => [role, roleLabels[role] || role])]) {const option = make('option', '', label); option.value = value; select.append(option);}
+  if (!['__snapshot__', ...common].includes(comparisonRole)) comparisonRole = '__snapshot__';
+  select.value = comparisonRole; select.onchange = () => {comparisonRole = select.value; renderPairedComparison();};
+  renderPairedComparison();
+  state.project.directions.forEach((direction, index) => {details.append(snapshotFigure(direction, index)); print.append(snapshotFigure(direction, index, false));});
   setText('print-overview-title',`${state.project.project.title} / 已保存方向`);
-  synchronize(); setText('compare-note', state.dirty ? '当前画面有未保存变化；这里仍显示各方向自己的已提交快照。保存后重新生成对应海报再比较。' : '各方向显示自己的已提交快照。时间、参数与配方版本分别绑定；不是同一时间等同同一观看关系。');
+  synchronize(); setText('compare-note', state.dirty ? '当前有未保存变化。主体与光场显示各方向已提交快照；其他维度为项目素材，不随实时参数变化。保存并重新生成海报后再比较。' : '先按共同维度并看，再展开依据。主体与光场来自已提交快照；其他维度为项目素材，不随实时参数变化，也不表示观看关系或制作可行性已通过。');
 }
 function renderReview() {
   const content = $('review-content'); content.replaceChildren(); const direction = currentDirection();
