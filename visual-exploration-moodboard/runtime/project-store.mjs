@@ -192,10 +192,7 @@ export async function checkProject(root, { scope = 'technical' } = {}) {
   for (const direction of project.directions) {
     await check(`SNAPSHOT_${direction.id}`,()=>validateSavedSnapshot(root,project,direction,currentEngine));
     await check(`RENDER_${direction.id}`, async () => {
-      assert(direction.render, 'RENDER_MISSING', `${direction.id}: actual render missing`);
-      const r = await verifyReference(root, direction.render);
-      await validateRender(root,direction,r,currentEngine);
-      assert(direction.poster===`/media/${r.output.path.split('/').map(encodeURIComponent).join('/')}`,'POSTER_MISMATCH',`${direction.id}: visible poster differs from checked output`);if(direction.studyComposition)assert(direction.compositionPoster===`/media/${r.composition.output.path.split('/').map(encodeURIComponent).join('/')}`,'COMPOSITION_MISMATCH',`${direction.id}: visible object frame differs from checked output`);return r.output.path;
+      const r = await validateSavedRender(root,direction,currentEngine);return r.output.path;
     });
   }
   if (scope === 'delivery') {
@@ -239,6 +236,13 @@ export async function checkProject(root, { scope = 'technical' } = {}) {
   function result() { const status = findings.some(f => f.status === 'FAIL') ? 'FAIL' : findings.some(f => f.status === 'UNVERIFIED') ? 'UNVERIFIED' : 'PASS'; return { schemaVersion: 1, checkedAt: now(), scope, status, findings, boundaries: { aestheticCertification: false, userAcceptance: 'not_inferred', independentMediaReview: 'only_as_referenced' } }; }
 }
 function narrative(direction){return {title:direction.title,subtitle:direction.subtitle||'',description:direction.description||'',claim:direction.claim||'',caption:direction.caption||'',palette:direction.palette||[]};}
+export async function validateSavedRender(root,direction,currentEngine){
+  assert(direction.render,'RENDER_MISSING',`${direction.id}: actual render missing`);
+  const r=await verifyReference(root,direction.render);await validateRender(root,direction,r,currentEngine||await engineDigest());
+  assert(direction.poster===`/media/${r.output.path.split('/').map(encodeURIComponent).join('/')}`,'POSTER_MISMATCH',`${direction.id}: visible poster differs from checked output`);
+  if(direction.studyComposition)assert(direction.compositionPoster===`/media/${r.composition.output.path.split('/').map(encodeURIComponent).join('/')}`,'COMPOSITION_MISMATCH',`${direction.id}: visible object frame differs from checked output`);
+  return r;
+}
 async function validateRender(root,direction,r,currentEngine){
   assert(r.schemaVersion===1&&r.kind==='actual-shader-frame'&&r.directionId===direction.id&&r.browser?.version,'RENDER_SCHEMA','A real direction-specific browser frame receipt is required');
   assert(r.snapshotDigest===direction.snapshot?.digest&&r.engineDigest===currentEngine,'STALE_RENDER',`${direction.id}: render stale`);

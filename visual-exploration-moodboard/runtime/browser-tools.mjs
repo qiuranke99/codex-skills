@@ -3,7 +3,7 @@ import path from 'node:path';
 import os from 'node:os';
 import {chromium} from 'playwright';
 import {startServer} from './server.mjs';
-import {loadProject,projectFile,engineDigest,atomicJSON,fileReference,verifyReference,verifyFileReference,attachRender,withProjectLock,assert,now,ContractError,canonical,digest,validateSavedSnapshot} from './project-store.mjs';
+import {loadProject,projectFile,engineDigest,atomicJSON,fileReference,verifyReference,verifyFileReference,attachRender,withProjectLock,assert,now,ContractError,canonical,digest,validateSavedSnapshot,validateSavedRender} from './project-store.mjs';
 import {AUTHORITY_RENDER_PROFILE,assertAuthorityRenderProfile,assertRenderEnvironment,resolveAuthorityRenderProfile,renderBinding} from './render-profile.mjs';
 import {decodePNG} from './media-contract.mjs';
 
@@ -157,7 +157,12 @@ export async function exportProject(projectRoot,{format='png',...options}={}) {
     let project=await loadProject(projectRoot);const current=await engineDigest();
     for(const direction of project.directions) {
       assert(direction.snapshot?.engineDigest===current,'STALE_SNAPSHOT',`${direction.id}: save against the current runtime before exporting`);
-      await renderInBrowser(projectRoot,ctx,direction);
+      await validateSavedSnapshot(projectRoot,project,direction,current);
+      // Formats share one authoritative capture. Recapturing a browser composition
+      // can introduce real 1-LSB variation and invalidate an earlier format.
+      // Invalid saved evidence must fail; only an absent render is generated here.
+      if(direction.render)await validateSavedRender(projectRoot,direction,current);
+      else await renderInBrowser(projectRoot,ctx,direction);
     }
     project=await loadProject(projectRoot);
     const renderBindings=await savedRenderBindings(projectRoot,project);
