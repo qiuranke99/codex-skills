@@ -55,6 +55,7 @@
             <label class="timeline-label" for="timeline">选帧</label><input id="timeline" class="timeline" type="range" min="0" max="12" step="0.01" value="0" aria-label="研究时间，秒"><output id="time-display" for="timeline">00.00 s</output>
             <button class="icon-button" id="restart" type="button" aria-label="从零秒重新观看">↺</button>
           </div>
+          <section class="asset-section" id="asset-section" aria-labelledby="asset-title" hidden><div class="section-heading"><p class="section-index" lang="en">01 — THE DECIDING VIEWS</p><h2 id="asset-title">决定方向的画面</h2></div><div class="asset-strip" id="asset-strip"></div></section>
         </div>
 
         <aside class="direction-aside">
@@ -71,11 +72,9 @@
       </section>
 
       <section class="hypothesis page-width" aria-labelledby="hypothesis-title">
-        <div class="section-heading"><p class="section-index" lang="en">01 — THE PROPOSITION</p><h2 id="hypothesis-title">方向如何成立</h2></div>
+        <div class="section-heading"><p class="section-index" lang="en">02 — THE PROPOSITION</p><h2 id="hypothesis-title">方向如何成立</h2></div>
         <div class="hypothesis-grid"><div class="hypothesis-question"><span class="small-label">要观察的问题</span><p id="hypothesis-question"></p></div><div><span class="small-label">表现机制</span><p id="hypothesis-mechanism"></p></div><div><span class="small-label">预期与反例</span><p id="hypothesis-expected"></p><p class="failure-condition" id="hypothesis-failure"></p></div></div>
       </section>
-
-      <section class="asset-section page-width" id="asset-section" aria-labelledby="asset-title" hidden><div class="section-heading"><p class="section-index" lang="en">02 — IN CONTEXT</p><h2 id="asset-title">素材与观看条件</h2></div><div class="asset-strip" id="asset-strip"></div></section>
 
       <section class="handoff page-width" id="handoff" aria-labelledby="handoff-title"><div class="section-heading"><p class="section-index" lang="en">03 — WHAT TO CARRY FORWARD</p><h2 id="handoff-title">把关系，带进下一步</h2><p>当前方向的制作建议。采用范围与用户批准分别记录。</p></div><div class="handoff-grid"><article><span class="handoff-number">01</span><h3>采用的关系</h3><ul id="handoff-adopt"></ul></article><article><span class="handoff-number">02</span><h3>不继承的内容</h3><ul id="handoff-exclude"></ul></article><article><span class="handoff-number">03</span><h3>仍未证明</h3><ul id="handoff-unproven"></ul></article></div></section>
 
@@ -83,7 +82,9 @@
       <footer class="page-footer page-width"><span id="footer-title"></span><span>视觉探索 / 可编辑研究</span><a href="#top">回到开头 ↑</a></footer>
     </main>
 
-    <dialog class="compare-dialog" id="compare-dialog" aria-labelledby="compare-title"><div class="dialog-heading"><div><p class="section-index" lang="en">A SHARED VIEWING CONDITION</p><h2 id="compare-title">按同一问题，对照方向</h2><p id="compare-note">各方向显示自己的已提交快照。</p></div><button class="icon-button close-button" id="compare-close" type="button" aria-label="关闭方向对照">×</button></div><div class="compare-toolbar"><label for="compare-role">观看维度</label><select id="compare-role"></select></div><div class="compare-grid compare-pairs" id="compare-grid"></div><details class="compare-details"><summary>展开各方向的依据与交接</summary><div class="compare-detail-grid" id="compare-details"></div></details></dialog>
+    <dialog class="compare-dialog" id="compare-dialog" aria-labelledby="compare-title"><div class="dialog-heading"><div><p class="section-index" lang="en">A SHARED VIEWING CONDITION</p><h2 id="compare-title">按同一问题，对照方向</h2><p id="compare-note">各方向显示自己的已提交快照。</p></div><button class="icon-button close-button" id="compare-close" type="button" aria-label="关闭方向对照">×</button></div><div class="compare-toolbar"><label for="compare-role">观看维度</label><select id="compare-role"></select><button id="compare-inspect" class="text-button" type="button">放大并看 ↗</button></div><div class="compare-grid compare-pairs" id="compare-grid"></div><details class="compare-details"><summary>展开各方向的依据与交接</summary><div class="compare-detail-grid" id="compare-details"></div></details></dialog>
+
+    <dialog class="inspect-dialog" id="inspect-dialog" aria-labelledby="inspect-title"><div class="dialog-heading"><div><p class="section-index" lang="en">A CLOSER LOOK</p><h2 id="inspect-title">细看关系</h2><p id="inspect-hint">拖动画面平移；＋／－放大，方向键移动，0 复位。并看时同步相同画面位置。</p></div><button id="inspect-close" class="icon-button close-button" type="button" aria-label="关闭细看">×</button></div><div class="inspect-toolbar"><button id="inspect-out" class="text-button" type="button" aria-label="缩小画面">−</button><output id="inspect-scale" aria-live="polite">100%</output><button id="inspect-in" class="text-button" type="button" aria-label="放大画面">＋</button><button id="inspect-reset" class="text-button" type="button">复位</button><button id="inspect-layout" class="text-button" type="button">逐图细看</button></div><div id="inspect-grid" class="inspect-grid"></div></dialog>
 
     <dialog class="review-dialog" id="review-dialog" aria-labelledby="review-title"><div class="dialog-heading"><div><p class="section-index" lang="en">PROVENANCE & REVIEW</p><h2 id="review-title">来源与审阅层</h2></div><button class="icon-button close-button" id="review-close" type="button" aria-label="关闭来源与审阅">×</button></div><div id="review-content"></div></dialog>
     <div class="toast" id="toast" role="status" aria-live="polite" hidden></div>

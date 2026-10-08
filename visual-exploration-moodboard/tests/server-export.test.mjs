@@ -96,6 +96,16 @@ test('synthetic integration uses actual GPU posters and produces bound PNG and P
     await page.setViewportSize({width:390,height:844});
     const bounds=await page.locator('#compare-grid .paired-item').evaluateAll(items=>items.slice(0,2).map(item=>{const r=item.getBoundingClientRect();return {x:r.x,y:r.y,width:r.width};}));
     assert.ok(Math.abs(bounds[0].y-bounds[1].y)<1,'mobile comparison starts with adjacent directions');assert.ok(bounds[1].x>=bounds[0].x+bounds[0].width,'mobile paired images do not overlap');
+    const savedBeforeInspect=(await page.evaluate(()=>window.VEM.getState())).snapshot;
+    await page.locator('#compare-inspect').click();assert.equal(await page.locator('#inspect-dialog').isVisible(),true);assert.equal(await page.locator('#inspect-grid img').count(),3);
+    await page.locator('#inspect-in').click();assert.equal(await page.locator('#inspect-scale').textContent(),'150%');
+    const viewport=page.locator('#inspect-grid .inspect-viewport').first();await viewport.focus();await page.keyboard.press('ArrowRight');
+    const synchronized=await page.locator('#inspect-grid img').evaluateAll(items=>items.map(img=>img.style.transform));assert.ok(synchronized[0].includes('8%'));assert.ok(synchronized.every(value=>value===synchronized[0]));
+    await page.locator('#inspect-layout').click();assert.equal(await page.locator('#inspect-dialog').getAttribute('data-single'),'true');assert.ok((await viewport.boundingBox()).width>300,'mobile single view uses the board width');
+    const vp=await viewport.boundingBox();await page.mouse.move(vp.x+vp.width/2,vp.y+vp.height/2);await page.mouse.down();await page.mouse.move(vp.x+vp.width/2+25,vp.y+vp.height/2+15);await page.mouse.up();
+    const dragged=await page.locator('#inspect-grid img').evaluateAll(items=>items.map(img=>img.style.transform));assert.notEqual(dragged[0],synchronized[0]);assert.ok(dragged.every(value=>value===dragged[0]));
+    await page.locator('#inspect-reset').click();assert.equal(await page.locator('#inspect-scale').textContent(),'100%');await page.keyboard.press('Escape');assert.equal(await page.locator('#inspect-dialog').isVisible(),false);assert.equal(await page.locator('#compare-dialog').isVisible(),true);
+    assert.deepEqual((await page.evaluate(()=>window.VEM.getState())).snapshot,savedBeforeInspect,'detail inspection does not alter the saved study');
     await page.locator('#compare-role').selectOption('snapshot');assert.equal(await page.locator('#compare-grid .paired-image img').count(),3);assert.equal(await page.locator('#compare-grid img[src*="/posters/"]').count(),3);
     await page.keyboard.press('Escape');assert.equal(await page.locator('#compare-dialog').isVisible(),false);
     await page.setViewportSize({width:1440,height:1000});
@@ -106,6 +116,7 @@ test('synthetic integration uses actual GPU posters and produces bound PNG and P
     for(let i=1;i<=3;i++)assert.equal(await page.locator(`#print-directions img[src$="/media/assets/object-${i}.svg"]`).count(),1);
     await page.evaluate(()=>window.VEM.finishPrint());
     assert.equal(await page.locator('#study').isVisible(),true,'normal study returns after export');
+    assert.equal(await page.locator('#study #asset-section').count(),1,'decision evidence stays directly under the current study');
   });
   const png=await exportProject(root,{format:'png'}),pdf=await exportProject(root,{format:'pdf'});
   assert.equal(png.printAssetRasters.length,0);assert.equal(pdf.printAssetRasters.length,3);

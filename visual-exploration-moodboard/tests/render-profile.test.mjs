@@ -91,6 +91,14 @@ test('actual GPU authority rejects mobile overwrite, permits responsive preview,
   const rendered=await renderProject(root,{viewport:{width:1440,height:1000},renderProfile:structuredClone(AUTHORITY_RENDER_PROFILE)});
   for(const r of rendered) {assert.deepEqual(r.renderProfile,AUTHORITY_RENDER_PROFILE);assert.equal(r.renderEnvironment.deviceScaleFactor,1);assert.equal(r.renderEnvironment.canvas.colorSpace,'srgb');assert.equal(r.renderEnvironment.canvas.toneMapping,'standard');assert.ok(r.gpu.observation.currentFrameReadbackVerified);}
   const before=await loadProject(root),poster=(await verifyReference(root,before.directions[0].render)).output.path;
+  const frameContradictions=[];
+  for(const mutate of [r=>{r.gpu.observation.lastReadback.timeSeconds+=5;},r=>{const key=Object.keys(r.gpu.observation.lastReadback.parameters)[0];r.gpu.observation.lastReadback.parameters[key]+=.25;}]) {
+    const changed=await loadProject(root),direction=changed.directions[0],original=await verifyReference(root,direction.render),invalid=structuredClone(original);mutate(invalid);
+    await atomicJSON(path.join(root,direction.render.path),invalid);direction.render=await fileReference(root,direction.render.path);await atomicJSON(path.join(root,'project.json'),changed);
+    const checks=await checkProject(root,{scope:'technical'});assert.ok(checks.findings.some(f=>f.code==='GPU_FRAME_MISMATCH'&&f.status==='FAIL'));
+    await assert.rejects(exportProject(root,{format:'png'}),error=>error.code==='GPU_FRAME_MISMATCH');frameContradictions.push(checks);
+    await atomicJSON(path.join(root,direction.render.path),original);direction.render=await fileReference(root,direction.render.path);await atomicJSON(path.join(root,'project.json'),changed);
+  }
   const observedContradictions=[];
   for(const mutate of [r=>{r.renderEnvironment.viewport={width:390,height:844};r.renderEnvironment.deviceScaleFactor=2;},r=>{r.renderEnvironment.canvas.width+=1;}]) {
     const changed=await loadProject(root),direction=changed.directions[0],original=await verifyReference(root,direction.render),invalid=structuredClone(original);mutate(invalid);
@@ -132,7 +140,7 @@ test('actual GPU authority rejects mobile overwrite, permits responsive preview,
   const stale=await checkProject(root,{scope:'delivery'}),pngCheck=stale.findings.find(check=>check.code==='STALE_EXPORT');
   assert.ok(pngCheck,JSON.stringify(stale));
   assert.equal(pngCheck.status,'FAIL');assert.equal(pngCheck.code,'STALE_EXPORT');
-  const result={root,engineDigest:build,renderProfile:AUTHORITY_RENDER_PROFILE,rendered,observedContradictions,preview,overviewText,exported,pdf,checks,identicalRecapture:repeated,replacedRenderBinding:pngCheck,scope:'Synthetic implementer functional self-check; not independent review or user acceptance'};
+  const result={root,engineDigest:build,renderProfile:AUTHORITY_RENDER_PROFILE,rendered,frameContradictions,observedContradictions,preview,overviewText,exported,pdf,checks,identicalRecapture:repeated,replacedRenderBinding:pngCheck,scope:'Synthetic implementer functional self-check; not independent review or user acceptance'};
   await fs.writeFile(path.join(root,'render-profile-selfcheck.json'),JSON.stringify(result,null,2));console.log(JSON.stringify({root,engineDigest:build,rendered:rendered.length,png:exported.output,stale:pngCheck}));
 });
 

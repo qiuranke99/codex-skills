@@ -146,17 +146,22 @@ function renderDirectionNav() {
 }
 function renderAssets(direction) {
   const strip = $('asset-strip'); strip.replaceChildren();
-  visibleAssets(direction).forEach((asset) => {
-    const figure = make('figure'); const wrap = make('div', 'asset-image-wrap');
+  const assets=visibleAssets(direction),sequenceRoles=['entrance','threshold','center'];
+  const sequence=sequenceRoles.every(role=>assets.filter(a=>a.role===role).length===1)?make('div','asset-sequence'):null;
+  if(sequence){sequence.append(make('h3','asset-sequence-title','入口 → 屏端 → 中央'));strip.append(sequence);}
+  const ordered=sequence?[...sequenceRoles.map(role=>assets.find(a=>a.role===role)),...assets.filter(a=>!sequenceRoles.includes(a.role))]:assets;
+  ordered.forEach((asset) => {
+    const figure = make('figure');figure.dataset.role=asset.role||''; const wrap = make('div', 'asset-image-wrap');
     const url = mediaURL(asset.url); const caption = make('figcaption');
-    caption.append(make('span', 'asset-role', asset.role || '素材角色未声明'), make('span', '', asset.caption || asset.title || '未附素材说明'));
+    caption.append(make('span', 'asset-role', roleLabels[asset.role] || asset.role || '素材角色未声明'), make('span', '', asset.caption || asset.title || '未附素材说明'));
     if (url) {
       const img = make('img'); img.src = url; img.alt = asset.alt || asset.caption || asset.title || '项目素材'; img.loading = 'lazy'; img.decoding = 'async';
       img.addEventListener('error', () => {wrap.replaceChildren(make('p', 'asset-error', '素材未能载入。此项尚未验证。'));}); wrap.append(img);
       caption.append(originalImageLink(url, asset.title || `${direction.title} / ${asset.role || asset.id || '素材'}`));
+      caption.append(inspectButton([{url,title:`${direction.title} / ${roleLabels[asset.role]||asset.role||'画面'}`,caption:asset.caption}]));
     } else if(asset.rights?.status==='reference-only'&&sourceURL(asset.sourceURL)) {const link=make('a','','查看外部参考来源');link.href=sourceURL(asset.sourceURL);link.target='_blank';link.rel='noopener noreferrer';wrap.append(link);}
     else wrap.append(make('p', 'asset-error', '素材地址不在当前本地工程，未载入。'));
-    figure.append(wrap, caption); strip.append(figure);
+    figure.append(wrap, caption); (sequence&&sequenceRoles.includes(asset.role)?sequence:strip).append(figure);
   });
   $('asset-section').hidden = !strip.childElementCount;
 }
@@ -237,7 +242,7 @@ function updatePlayback() {
   $('study-canvas').style.visibility = failed || compositionHidden ? 'hidden' : 'visible';
   if (failed) {setText('stage-failure-message', state.failure.message || state.failure.code); if (lastAnnouncedFailure !== state.failure.code) {lastAnnouncedFailure = state.failure.code; toast(`动态研究不可用：${state.failure.message || state.failure.code}`);}}
   const snapshot = state.snapshot;
-  setText('snapshot-caption', snapshot ? `保存版本 ${snapshot.revision ?? '—'} / ${String(snapshot.id).slice(0, 20)}` : '尚无保存快照');
+  setText('snapshot-caption', snapshot ? `保存版本 ${snapshot.revision ?? '—'} · ${Number(snapshot.timeSeconds||0).toFixed(2)} s` : '尚无保存快照');
   const stale=state.project?._snapshotStates?.[state.directionId];
   const status = state.saving ? '正在保存此参数与选帧…' : state.loading ? '正在载入此方向…' : failed ? '当前为部分可浏览状态；动态与导出尚未成立。' : stale?.status==='stale' ? `保存版本已失效：${stale.message}。请重新保存并生成海报。` : state.dirty ? (state.paused ? '有未保存变化。对照仍使用已保存快照。' : '正在观看动态。保存会冻结当前帧与参数。') : `已保存 · ${state.timeSeconds.toFixed(2)} 秒。保存不代表批准。`;
   if ($('save-state').textContent !== status) setText('save-state', status);
@@ -330,7 +335,7 @@ function snapshotFigure(direction, index, allowSelect = true) {
     const content=direction[key];if(typeof content==='string'&&content.trim()&&!shown.has(content)){article.append(make('p',`compare-${key}`,`${label}：${content}`));shown.add(content);}
   }
   const snapshot = direction.snapshot;
-  article.append(make('p', 'compare-snapshot', snapshot ? `${snapshot.id} · v${snapshot.revision ?? '—'} · ${Number(snapshot.timeSeconds || 0).toFixed(2)} s\n配方 ${String(snapshot.recipeDigest || '未绑定').slice(0, 16)} · ${snapshot.digest || '摘要缺失'}` : '未保存'));
+  article.append(make('p', 'compare-snapshot', snapshot ? `保存版本 ${snapshot.revision ?? '—'} · ${Number(snapshot.timeSeconds || 0).toFixed(2)} s` : '未保存'));
   if (direction.hypothesis?.mechanism) article.append(make('p', 'compare-mechanism', direction.hypothesis.mechanism));
   if (!allowSelect) {
     const notes = make('div', 'print-direction-notes');
@@ -350,7 +355,7 @@ function snapshotFigure(direction, index, allowSelect = true) {
   if (allowSelect) {const button = make('button', 'text-button'); button.type = 'button'; button.append(make('span', '', '进入此方向'), make('span', '', '↗')); button.addEventListener('click', () => {$('compare-dialog').close(); act(() => api.setDirection(direction.id)); $('study').scrollIntoView({behavior: state.reducedMotion ? 'auto' : 'smooth'});}); article.append(button);}
   return article;
 }
-const roleLabels = {__proto__:null, hero:'主体关系', macro:'局部与空间关系', plan:'总图', entrance:'入口视点', center:'中央视点', material:'光与材质'};
+const roleLabels = {__proto__:null, hero:'主体关系', macro:'局部与空间关系', aperture:'气口对照', plan:'总图', entrance:'入口视点', threshold:'屏端视点', center:'中央视点', material:'光与材质'};
 let comparisonRole = null;
 function pairedFigure(direction, index, role) {
   const article = make('article', 'paired-item'); article.dataset.directionId = direction.id;
@@ -363,6 +368,29 @@ function pairedFigure(direction, index, role) {
   article.append(image, make('p', 'paired-caption', asset?.caption || (direction.snapshot ? `${Number(direction.snapshot.timeSeconds || 0).toFixed(2)} s · v${direction.snapshot.revision ?? '—'} · 已保存主体与光场` : '尚无已保存快照')));
   if (url) article.append(originalImageLink(url, `${direction.title} / ${roleLabels[role] || (role === null ? '已保存主体与光场' : role)}`));
   return article;
+}
+let inspectZoom=1,inspectPan={x:0,y:0},inspectWasPlaying=false;
+function inspectButton(entries){const button=make('button','inspect-link','板内细看 ↗');button.type='button';button.addEventListener('click',()=>openInspector(entries));return button;}
+function updateInspector(){
+  const limit=(inspectZoom-1)/2;inspectPan.x=Math.max(-limit,Math.min(limit,inspectPan.x));inspectPan.y=Math.max(-limit,Math.min(limit,inspectPan.y));
+  $('inspect-scale').value=`${Math.round(inspectZoom*100)}%`;
+  for(const img of $('inspect-grid').querySelectorAll('img'))img.style.transform=`translate(${inspectPan.x*100}%,${inspectPan.y*100}%) scale(${inspectZoom})`;
+  $('inspect-out').disabled=inspectZoom<=1;$('inspect-in').disabled=inspectZoom>=6;
+}
+function openInspector(entries){
+  entries=entries.filter(entry=>mediaURL(entry.url));if(!entries.length){toast('尚无可细看的已保存画面。');return;}
+  const dialog=$('inspect-dialog'),grid=$('inspect-grid');grid.replaceChildren();inspectZoom=1;inspectPan={x:0,y:0};dialog.dataset.single='false';
+  $('inspect-layout').hidden=entries.length<2;$('inspect-layout').textContent='逐图细看';
+  for(const entry of entries){const figure=make('figure','inspect-item'),viewport=make('div','inspect-viewport'),img=make('img');
+    figure.append(make('h3','',entry.title));viewport.tabIndex=0;viewport.setAttribute('aria-label',`${entry.title}，可放大和平移`);viewport.setAttribute('aria-describedby','inspect-hint');
+    img.src=entry.url;img.alt=entry.caption||entry.title;img.draggable=false;img.addEventListener('error',()=>viewport.replaceChildren(make('p','asset-error','此画面载入失败，不能细看。')));viewport.append(img);
+    let drag=null;viewport.addEventListener('pointerdown',event=>{if(event.button!==0)return;viewport.focus();drag={id:event.pointerId,x:event.clientX,y:event.clientY,pan:{...inspectPan}};viewport.setPointerCapture(event.pointerId);});
+    viewport.addEventListener('pointermove',event=>{if(!drag||drag.id!==event.pointerId)return;const rect=viewport.getBoundingClientRect();inspectPan={x:drag.pan.x+(event.clientX-drag.x)/rect.width,y:drag.pan.y+(event.clientY-drag.y)/rect.height};updateInspector();});
+    const finish=()=>{drag=null;};viewport.addEventListener('pointerup',finish);viewport.addEventListener('pointercancel',finish);viewport.addEventListener('lostpointercapture',finish);
+    viewport.addEventListener('keydown',event=>{const actions={ArrowLeft:()=>inspectPan.x-=.08,ArrowRight:()=>inspectPan.x+=.08,ArrowUp:()=>inspectPan.y-=.08,ArrowDown:()=>inspectPan.y+=.08,'+':()=>inspectZoom=Math.min(6,inspectZoom+.5),'=':()=>inspectZoom=Math.min(6,inspectZoom+.5),'-':()=>inspectZoom=Math.max(1,inspectZoom-.5),'0':()=>{inspectZoom=1;inspectPan={x:0,y:0};}};if(actions[event.key]){event.preventDefault();actions[event.key]();updateInspector();}});
+    figure.append(viewport,make('figcaption','',entry.caption||''),originalImageLink(entry.url,entry.title));grid.append(figure);
+  }
+  inspectWasPlaying=!getState().paused;act(()=>api.pause());updateInspector();dialog.showModal();
 }
 function renderPairedComparison() {
   const grid = $('compare-grid'); grid.replaceChildren();
@@ -499,6 +527,13 @@ $('reduced-motion').addEventListener('change', () => act(async () => {state.redu
 $('composition-enabled').addEventListener('change', () => act(() => api.setCompositionEnabled($('composition-enabled').checked)));
 $('compare-open').addEventListener('click', () => {if (!state.project) return; renderComparison(); $('compare-dialog').showModal();});
 $('compare-close').addEventListener('click', () => $('compare-dialog').close());
+$('compare-inspect').addEventListener('click',()=>openInspector(state.project.directions.map(d=>{const asset=comparisonRole===null?null:visibleAssets(d).find(a=>a.role===comparisonRole);return {url:comparisonRole===null?viewingPoster(d):asset?.url,title:d.title,caption:asset?.caption||(comparisonRole===null?'已保存主体与光场':'')};})));
+$('inspect-close').addEventListener('click',()=>$('inspect-dialog').close());
+$('inspect-dialog').addEventListener('close',()=>{if(inspectWasPlaying&&!state.reducedMotion)act(()=>api.resume());inspectWasPlaying=false;});
+$('inspect-in').addEventListener('click',()=>{inspectZoom=Math.min(6,inspectZoom+.5);updateInspector();});
+$('inspect-out').addEventListener('click',()=>{inspectZoom=Math.max(1,inspectZoom-.5);updateInspector();});
+$('inspect-reset').addEventListener('click',()=>{inspectZoom=1;inspectPan={x:0,y:0};updateInspector();});
+$('inspect-layout').addEventListener('click',()=>{const single=$('inspect-dialog').dataset.single!=='true';$('inspect-dialog').dataset.single=String(single);$('inspect-layout').textContent=single?'同步并看':'逐图细看';});
 $('review-open').addEventListener('click', () => {if (!state.project) return; renderReview(); $('review-dialog').showModal();});
 $('review-close').addEventListener('click', () => $('review-dialog').close());
 for (const dialog of [$('compare-dialog'), $('review-dialog')]) dialog.addEventListener('click', (event) => {if (event.target === dialog) {const rect = dialog.getBoundingClientRect(); if (event.clientX < rect.left || event.clientX > rect.right || event.clientY < rect.top || event.clientY > rect.bottom) dialog.close();}});
