@@ -123,7 +123,7 @@ test('changed saved snapshot file and missing snapshot fail instead of silently 
 
 test('project-relative resolution rejects traversal, absolute paths, NUL and escaped symlink parents',async t=>{
   const {root,outside}=await fixture(t);
-  for(const filename of ['../outside/secret.json','..\\outside\\secret.json',path.join(outside,'secret.json'),'bad\0name']) await assert.rejects(store.projectFile(root,filename),error=>error.code==='UNSAFE_PATH');
+  for(const filename of ['../outside/secret.json','..\\outside\\secret.json',path.join(outside,'secret.json'),'C:\\outside\\secret.json','C:outside/secret.json','\\\\server\\share\\secret.json','bad\0name']) await assert.rejects(store.projectFile(root,filename),error=>error.code==='UNSAFE_PATH');
   await fs.writeFile(path.join(outside,'secret.json'),'{}');
   await fs.symlink(outside,path.join(root,'escape'),process.platform==='win32'?'junction':'dir');
   await assert.rejects(store.projectFile(root,'escape/secret.json',{mustExist:true}),error=>error.code==='UNSAFE_PATH');

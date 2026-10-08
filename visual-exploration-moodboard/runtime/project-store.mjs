@@ -35,7 +35,8 @@ export async function atomicJSON(filename, value) {
 export function validId(id) { return typeof id === 'string' && /^[a-zA-Z0-9][a-zA-Z0-9_-]{0,79}$/.test(id); }
 export function inside(root, target) { const relative = path.relative(root, target); return relative === '' || (!relative.startsWith(`..${path.sep}`) && relative !== '..' && !path.isAbsolute(relative)); }
 export async function projectFile(root, relative, { mustExist = false } = {}) {
-  assert(typeof relative === 'string' && relative.length > 0 && !relative.includes('\0') && !path.isAbsolute(relative), 'UNSAFE_PATH', 'Expected project-relative path');
+  assert(typeof relative === 'string' && relative.length > 0 && !relative.includes('\0') && !path.isAbsolute(relative) && !path.win32.isAbsolute(relative) && !/^[a-zA-Z]:/.test(relative), 'UNSAFE_PATH', 'Expected project-relative path');
+  relative=relative.replaceAll('\\','/');
   const actualRoot = await fs.realpath(root);
   const absolute = path.resolve(actualRoot, relative);
   assert(inside(actualRoot, absolute), 'UNSAFE_PATH', `Path escapes project: ${relative}`);
