@@ -72,7 +72,7 @@ test('synthetic integration uses actual GPU posters and produces bound PNG and P
     await fs.writeFile(path.join(root,relative),`<svg xmlns="http://www.w3.org/2000/svg" width="800" height="400"><rect width="800" height="400" fill="${['#cec2a3','#a7c8bf','#c7bcce'][index]}"/><text x="60" y="230" font-size="54">Object ${index+1}</text></svg>`);
     const {fileReference}=await import('../runtime/project-store.mjs');
     const sourceRef=await fileReference(root,relative);
-    direction.assets=[{url:`/media/${relative}`,role:'synthetic object study',caption:`Distinct subject ${index+1}`,sourceRef,rights:{status:'self-owned',display:true,redistribution:true,evidenceRef:sourceRef},authorization:{operations:['display'],regions:['whole-asset'],immutableProperties:[]},operation:{type:'display',region:'whole-asset',affectedProperties:[],authorizationRef:sourceRef}}];
+    direction.assets=[{url:`/media/${relative}`,role:'__snapshot__',caption:`Distinct subject ${index+1}`,sourceRef,rights:{status:'self-owned',display:true,redistribution:true,evidenceRef:sourceRef},authorization:{operations:['display'],regions:['whole-asset'],immutableProperties:[]},operation:{type:'display',region:'whole-asset',affectedProperties:[],authorizationRef:sourceRef}}];
   }
   await createProject(root,input);
   for(const direction of (await loadProject(root)).directions) await commitSnapshot(root,{directionId:direction.id,parameters:direction.parameters,timeSeconds:4.25});
@@ -84,15 +84,19 @@ test('synthetic integration uses actual GPU posters and produces bound PNG and P
     const checked=await verifyFileReference(root,receipt.output);assert.deepEqual([...checked.bytes.subarray(0,8)],[137,80,78,71,13,10,26,10]);
   }
   await withBrowser(root,{},async({page})=>{
+    // A fresh page must print without requiring a prior comparison/scroll to
+    // trigger lazy images in the study that the overview intentionally hides.
+    let printTimer;try{await Promise.race([page.evaluate(()=>window.VEM.preparePrint()),new Promise((_,reject)=>{printTimer=setTimeout(()=>reject(new Error('Fresh overview print hung on hidden lazy assets')),10000);})]);}finally{clearTimeout(printTimer);}
+    assert.equal(await page.locator('#print-directions .compare-asset img').count(),3);await page.evaluate(()=>window.VEM.finishPrint());
     await page.locator('#compare-open').click();
-    assert.deepEqual(await page.locator('#compare-role option').evaluateAll(items=>items.map(item=>item.value)),['__snapshot__','synthetic object study']);
-    await page.locator('#compare-role').selectOption('synthetic object study');
+    assert.deepEqual(await page.locator('#compare-role option').evaluateAll(items=>items.map(item=>item.value)),['snapshot','["asset","__snapshot__"]']);
+    await page.locator('#compare-role').selectOption('["asset","__snapshot__"]');
     assert.equal(await page.locator('#compare-grid .paired-image img').count(),3);
     for(let i=1;i<=3;i++)assert.equal(await page.locator(`#compare-grid img[src$="/media/assets/object-${i}.svg"]`).count(),1);
     await page.setViewportSize({width:390,height:844});
     const bounds=await page.locator('#compare-grid .paired-item').evaluateAll(items=>items.slice(0,2).map(item=>{const r=item.getBoundingClientRect();return {x:r.x,y:r.y,width:r.width};}));
     assert.ok(Math.abs(bounds[0].y-bounds[1].y)<1,'mobile comparison starts with adjacent directions');assert.ok(bounds[1].x>=bounds[0].x+bounds[0].width,'mobile paired images do not overlap');
-    await page.locator('#compare-role').selectOption('__snapshot__');assert.equal(await page.locator('#compare-grid .paired-image img').count(),3);
+    await page.locator('#compare-role').selectOption('snapshot');assert.equal(await page.locator('#compare-grid .paired-image img').count(),3);assert.equal(await page.locator('#compare-grid img[src*="/posters/"]').count(),3);
     await page.keyboard.press('Escape');assert.equal(await page.locator('#compare-dialog').isVisible(),false);
     await page.setViewportSize({width:1440,height:1000});
     await page.evaluate(()=>window.VEM.preparePrint());
