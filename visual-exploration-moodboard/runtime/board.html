@@ -1,0 +1,92 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width,initial-scale=1">
+    <meta name="color-scheme" content="light">
+    <meta name="theme-color" content="#f5f4ee">
+    <link rel="icon" href="data:,">
+    <title>视觉探索</title>
+    <link rel="stylesheet" href="/runtime/board.css">
+    <script type="module" src="/bundle/board.js"></script>
+  </head>
+  <body>
+    <a class="skip-link" href="#study">跳到当前视觉研究</a>
+    <header class="masthead">
+      <a class="wordmark" href="#top" aria-label="视觉探索，返回开头"><span class="wordmark-symbol" aria-hidden="true">V<span>∕</span>E</span><span class="wordmark-label">视觉探索<br><span lang="en">VISUAL EXPLORATION</span></span></a>
+      <div class="masthead-context" id="masthead-context"></div>
+      <nav class="masthead-actions" aria-label="研究工具">
+        <button class="text-button" id="compare-open" type="button">方向对照 <span id="direction-count"></span><span aria-hidden="true">↗</span></button>
+        <a class="text-button" href="#handoff">交接 <span aria-hidden="true">↓</span></a>
+        <button class="text-button review-toggle" id="review-open" type="button">来源与审阅 <span aria-hidden="true">＋</span></button>
+      </nav>
+    </header>
+
+    <main id="top">
+      <section class="project-intro page-width" aria-labelledby="project-title">
+        <div>
+          <p class="eyebrow"><span id="medium-label">视觉研究</span><span class="eyebrow-rule" aria-hidden="true"></span><span lang="en">A WORKING ATLAS</span></p>
+          <h1 id="project-title">正在载入研究</h1>
+          <p id="project-subtitle" class="project-subtitle"></p>
+        </div>
+        <div class="decision-block"><span class="section-index" lang="en">THE QUESTION</span><p id="decision"></p><a href="#study" class="discovery-link">进入方向研究 <span aria-hidden="true">↙</span></a></div>
+      </section>
+
+      <nav class="direction-nav page-width" id="direction-nav" aria-label="选择视觉方向"></nav>
+
+      <section class="study page-width" id="study" aria-labelledby="direction-title">
+        <div class="study-main">
+          <figure class="visual-study" aria-describedby="visual-caption">
+            <div class="shader-stage" id="shader-stage" data-study aria-busy="true">
+              <img class="composition-base" id="composition-base" alt="当前方向的主体研究" hidden>
+              <img id="composition-mask-source" alt="" aria-hidden="true" hidden>
+              <img class="stage-poster" id="stage-poster" alt="当前方向的已保存静态研究" hidden>
+              <canvas id="study-canvas" aria-label="当前方向的实时 Shader 视觉研究"></canvas>
+              <img class="print-frame" id="print-frame" alt="当前已保存快照的视觉研究" hidden>
+              <div class="stage-failure" id="stage-failure" hidden><span class="failure-mark" aria-hidden="true">!</span><h3>研究画面暂不可用</h3><p id="stage-failure-message"></p><p>当前仅可阅读仍可用的静态资料。此状态尚不构成完整情绪板。</p></div>
+              <span class="stage-mode" id="stage-mode">正在建立画面</span>
+              <span class="stage-corner" id="stage-corner" aria-hidden="true">01</span>
+            </div>
+            <figcaption id="visual-caption"><span id="study-caption"></span><span class="snapshot-caption" id="snapshot-caption"></span></figcaption>
+          </figure>
+          <div class="composition-controls" id="composition-controls" hidden><label><input id="composition-enabled" type="checkbox" checked><span>光场介入</span></label><p id="composition-purpose"></p><span id="composition-status" aria-live="polite"></span></div>
+          <div class="playback-bar" aria-label="研究播放与选帧">
+            <button class="play-button" id="play-toggle" type="button" aria-label="暂停动态研究"><span id="play-icon" aria-hidden="true">Ⅱ</span><span id="play-label">暂停</span></button>
+            <label class="timeline-label" for="timeline">选帧</label><input id="timeline" class="timeline" type="range" min="0" max="12" step="0.01" value="0" aria-label="研究时间，秒"><output id="time-display" for="timeline">00.00 s</output>
+            <button class="icon-button" id="restart" type="button" aria-label="从零秒重新观看">↺</button>
+          </div>
+        </div>
+
+        <aside class="direction-aside">
+          <p class="eyebrow"><span id="direction-number">01</span><span class="eyebrow-rule" aria-hidden="true"></span><span id="direction-subtitle"></span></p>
+          <h2 id="direction-title"></h2>
+          <p class="direction-claim" id="direction-claim"></p>
+          <p class="direction-description" id="direction-description"></p>
+          <div class="palette" id="palette" aria-label="方向色彩关系"></div>
+          <details class="parameter-panel" id="parameter-panel"><summary><span>调整观看关系</span><span class="details-sign" aria-hidden="true">＋</span></summary><div id="parameter-controls"></div><button class="text-button restore-button" id="restore" type="button">恢复已保存状态 <span aria-hidden="true">↶</span></button></details>
+          <div class="save-area"><button class="primary-button" id="save-snapshot" type="button"><span>保存当前研究</span><span aria-hidden="true">↗</span></button><p class="save-state" id="save-state" aria-live="polite"></p></div>
+          <label class="reduced-control"><input id="reduced-motion" type="checkbox"><span>减少动态 · 保留选帧</span></label>
+          <details class="export-controls"><summary>导出研究 <span aria-hidden="true">↗</span></summary><p>保存当前参数与选帧，再导出全部方向的已保存总览。此操作不代表批准。</p><div><button id="export-png" class="text-button" type="button">保存并导出 PNG</button><button id="export-pdf" class="text-button" type="button">保存并导出 PDF</button></div></details>
+        </aside>
+      </section>
+
+      <section class="hypothesis page-width" aria-labelledby="hypothesis-title">
+        <div class="section-heading"><p class="section-index" lang="en">01 — THE PROPOSITION</p><h2 id="hypothesis-title">方向如何成立</h2></div>
+        <div class="hypothesis-grid"><div class="hypothesis-question"><span class="small-label">要观察的问题</span><p id="hypothesis-question"></p></div><div><span class="small-label">表现机制</span><p id="hypothesis-mechanism"></p></div><div><span class="small-label">预期与反例</span><p id="hypothesis-expected"></p><p class="failure-condition" id="hypothesis-failure"></p></div></div>
+      </section>
+
+      <section class="asset-section page-width" id="asset-section" aria-labelledby="asset-title" hidden><div class="section-heading"><p class="section-index" lang="en">02 — IN CONTEXT</p><h2 id="asset-title">素材与观看条件</h2></div><div class="asset-strip" id="asset-strip"></div></section>
+
+      <section class="handoff page-width" id="handoff" aria-labelledby="handoff-title"><div class="section-heading"><p class="section-index" lang="en">03 — WHAT TO CARRY FORWARD</p><h2 id="handoff-title">把关系，带进下一步</h2><p>当前方向的制作建议。采用范围与用户批准分别记录。</p></div><div class="handoff-grid"><article><span class="handoff-number">01</span><h3>采用的关系</h3><ul id="handoff-adopt"></ul></article><article><span class="handoff-number">02</span><h3>不继承的内容</h3><ul id="handoff-exclude"></ul></article><article><span class="handoff-number">03</span><h3>仍未证明</h3><ul id="handoff-unproven"></ul></article></div></section>
+
+      <section class="print-overview page-width" id="print-overview" aria-labelledby="print-overview-title" hidden><h2 id="print-overview-title">已保存方向总览</h2><div id="print-directions"></div></section>
+      <footer class="page-footer page-width"><span id="footer-title"></span><span>视觉探索 / 可编辑研究</span><a href="#top">回到开头 ↑</a></footer>
+    </main>
+
+    <dialog class="compare-dialog" id="compare-dialog" aria-labelledby="compare-title"><div class="dialog-heading"><div><p class="section-index" lang="en">A SHARED VIEWING CONDITION</p><h2 id="compare-title">已保存快照对照</h2><p id="compare-note">各方向显示自己的已提交快照，版本与时间标在画面下方。</p></div><button class="icon-button close-button" id="compare-close" type="button" aria-label="关闭方向对照">×</button></div><div class="compare-grid" id="compare-grid"></div></dialog>
+
+    <dialog class="review-dialog" id="review-dialog" aria-labelledby="review-title"><div class="dialog-heading"><div><p class="section-index" lang="en">PROVENANCE & REVIEW</p><h2 id="review-title">来源与审阅层</h2></div><button class="icon-button close-button" id="review-close" type="button" aria-label="关闭来源与审阅">×</button></div><div id="review-content"></div></dialog>
+    <div class="toast" id="toast" role="status" aria-live="polite" hidden></div>
+    <noscript><p class="noscript">此本地情绪板需要 JavaScript 才能播放 Shader、切换方向和保存研究。请启用 JavaScript 后从本地服务重新打开。</p></noscript>
+  </body>
+</html>

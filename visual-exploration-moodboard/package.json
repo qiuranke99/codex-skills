@@ -1,0 +1,17 @@
+{
+  "name": "visual-exploration-moodboard",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Agent-directed visual exploration with real Shaders and editable local HTML moodboards",
+  "engines": { "node": ">=22" },
+  "scripts": {
+    "test": "node --test tests/*.test.mjs",
+    "moodboard": "node scripts/moodboard.mjs"
+  },
+  "dependencies": {
+    "esbuild": "0.28.2",
+    "playwright": "1.64.0",
+    "shaders": "4.0.2"
+  }
+}

@@ -1,0 +1,6 @@
+interface:
+  display_name: "视觉探索与情绪板"
+  short_description: "以专业视觉假设和真实 Shaders 制作可比较、修订与交接的动态情绪板"
+  default_prompt: "使用 $visual-exploration-moodboard，根据我的 brief、锁定素材与使用条件，制作具有明确方向差异的本地 HTML 视觉情绪板。"
+policy:
+  allow_implicit_invocation: true

@@ -1,6 +1,6 @@
 # Codex Skills Index
 
-更新日期：2026-09-30。以下是 [SKILLS_MANIFEST.json](SKILLS_MANIFEST.json) 记录的21个当前源码包，路径相对于本仓库。本索引不宣称所有源码都已安装。
+更新日期：2026-10-08。以下是 [SKILLS_MANIFEST.json](SKILLS_MANIFEST.json) 记录的22个当前源码包，路径相对于本仓库。本索引不宣称所有源码都已安装。
 
 清单只描述源码库存，不构成业务或视觉验收。运行方式和维护校验见 [README.md](README.md)。
 
@@ -37,3 +37,4 @@
 ## 不纳入当前清单
 
 已删除Skill的源码、退役聚合系统、旧副本、供应商插件缓存、系统技能、运行时环境、客户项目和维护输出不在当前清单内。blender-production-governor、reference-guided-image-reconstruction-director 与 high-control-ai-tvc 旧目录已移除。历史变更保留于Git历史，不恢复成可发现入口。
+| [visual-exploration-moodboard](visual-exploration-moodboard/SKILL.md) | 视觉探索创意导演；对象与载体分别判断、必选Shaders、HTML/PNG/PDF与可接续研究 |
