@@ -104,6 +104,8 @@ test('synthetic integration uses actual GPU posters and produces bound PNG and P
     assert.equal(await page.locator('#study').isVisible(),true,'normal study returns after export');
   });
   const png=await exportProject(root,{format:'png'}),pdf=await exportProject(root,{format:'pdf'});
+  assert.equal(png.printAssetRasters.length,0);assert.equal(pdf.printAssetRasters.length,3);
+  for(const raster of pdf.printAssetRasters){assert.deepEqual([raster.width,raster.height],[800,400]);assert.ok((await verifyFileReference(root,raster.output)).bytes.length>100);}
   for(const receipt of [png,pdf]) {assert.equal(receipt.engineDigest,build);assert.equal(receipt.snapshots.length,3);assert.ok((await verifyFileReference(root,receipt.output)).bytes.length>1000);}
   assert.deepEqual([...(await verifyFileReference(root,png.output)).bytes.subarray(0,8)],[137,80,78,71,13,10,26,10]);
   assert.equal((await verifyFileReference(root,pdf.output)).bytes.subarray(0,4).toString(),'%PDF');

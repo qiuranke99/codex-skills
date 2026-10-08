@@ -125,6 +125,31 @@ export async function renderProject(projectRoot,options={}) {
   const renderProfile=resolveAuthorityRenderProfile(options);
   return withBrowser(projectRoot,{...options,renderProfile},async ctx=>{const project=await loadProject(projectRoot);const receipts=[];for(const direction of project.directions)receipts.push(await renderInBrowser(projectRoot,ctx,direction));assert(!ctx.errors.length,'BROWSER_ERRORS',ctx.errors.join('\n'));return receipts;});
 }
+// Chromium's PDF vector backend can change SVG blend/isolation behavior.
+// Preserve the browser-decoded appearance, leaving editable source SVGs intact.
+export async function rasterizePrintSVGs(projectRoot,{page}) {
+  const rasters=await page.locator('#print-directions .compare-asset img').evaluateAll(async images=>{
+    const output=[];
+    for(const [index,image] of images.entries()) {
+      const sourceURL=image.src;if(!new URL(sourceURL).pathname.toLowerCase().endsWith('.svg'))continue;
+      await image.decode();const originalWidth=image.naturalWidth,originalHeight=image.naturalHeight;
+      if(!(originalWidth>0&&originalHeight>0))throw new Error('PDF SVG source has no decoded dimensions');
+      const scale=Math.min(1,4096/Math.max(originalWidth,originalHeight)),width=Math.max(1,Math.round(originalWidth*scale)),height=Math.max(1,Math.round(originalHeight*scale));
+      const canvas=document.createElement('canvas');canvas.width=width;canvas.height=height;
+      const context=canvas.getContext('2d');if(!context)throw new Error('PDF image rasterization context unavailable');
+      context.drawImage(image,0,0,width,height);const data=canvas.toDataURL('image/png');
+      image.src=data;await image.decode();output.push({index,sourceURL,originalWidth,originalHeight,width,height,data});
+    }
+    return output;
+  });
+  const receipts=[];
+  for(const raster of rasters) {
+    const bytes=Buffer.from(raster.data.split(',')[1],'base64'),pixels=decodePNG(bytes);assert(pixels.width===raster.width&&pixels.height===raster.height&&pixels.nonTransparent>0,'PDF_RASTER_INVALID','PDF SVG raster is empty or has incorrect dimensions');
+    const relative=`exports/pdf-assets/asset-${raster.index+1}-${digest(raster.sourceURL).slice(0,12)}.png`,filename=await projectFile(projectRoot,relative);await fs.mkdir(path.dirname(filename),{recursive:true});await fs.writeFile(filename,bytes);
+    const {data,...observation}=raster;receipts.push({...observation,output:await fileReference(projectRoot,relative),decodedDigest:pixels.pixelDigest});
+  }
+  return receipts;
+}
 export async function exportProject(projectRoot,{format='png',...options}={}) {
   assert(['png','pdf'].includes(format),'UNSUPPORTED_EXPORT','Only PNG and PDF are supported in v1');
   const renderProfile=resolveAuthorityRenderProfile(options);
@@ -140,10 +165,11 @@ export async function exportProject(projectRoot,{format='png',...options}={}) {
     const renderEnvironment=await observeRenderEnvironment(ctx.page,renderProfile);
     await ctx.page.evaluate(project=>window.VEM.preparePrint({project}),project);
     const relative=`exports/overview.${format}`;const filename=await projectFile(projectRoot,relative);await fs.mkdir(path.dirname(filename),{recursive:true});
+    const printAssetRasters=format==='pdf'?await rasterizePrintSVGs(projectRoot,ctx):[];
     if(format==='png')await ctx.page.screenshot({path:filename,fullPage:true});
     else await ctx.page.pdf({path:filename,format:'A3',printBackground:true,preferCSSPageSize:true,margin:{top:'12mm',bottom:'12mm',left:'12mm',right:'12mm'}});
     assert(!ctx.errors.length,'BROWSER_ERRORS',ctx.errors.join('\n'));
-    const receipt={schemaVersion:1,kind:`${format}-overview`,createdAt:now(),engineDigest:current,renderProfile,renderEnvironment,renderBindings,snapshots:project.directions.map(d=>[d.id,d.snapshot.digest]),output:await fileReference(projectRoot,relative),browser:{executablePath:ctx.executablePath,version:ctx.browser.version()},scope:'Complete saved-state overview; visual inspection separately recorded'};
+    const receipt={schemaVersion:1,kind:`${format}-overview`,createdAt:now(),engineDigest:current,renderProfile,renderEnvironment,renderBindings,snapshots:project.directions.map(d=>[d.id,d.snapshot.digest]),printAssetRasters,output:await fileReference(projectRoot,relative),browser:{executablePath:ctx.executablePath,version:ctx.browser.version()},scope:'Complete saved-state overview; PDF SVG assets preserve decoded screen appearance as PNGs up to 4096px; visual inspection separately recorded'};
     const receiptPath=`evidence/export-${format}.json`;await atomicJSON(await projectFile(projectRoot,receiptPath),receipt);
     await withProjectLock(projectRoot,async()=>{const latest=await loadProject(projectRoot);assert(canonical(latest.directions.map(d=>[d.id,d.snapshot?.digest]))===canonical(receipt.snapshots),'STALE_EXPORT','Project changed while exporting');for(const direction of latest.directions)await validateSavedSnapshot(projectRoot,latest,direction,current);assert(canonical(await savedRenderBindings(projectRoot,latest))===canonical(renderBindings),'STALE_EXPORT','Authoritative posters changed while exporting');latest.exports||={};latest.exports[format]=await fileReference(projectRoot,receiptPath);await atomicJSON(path.join(projectRoot,'project.json'),latest);});
     await ctx.page.evaluate(()=>window.VEM.finishPrint());return receipt;
