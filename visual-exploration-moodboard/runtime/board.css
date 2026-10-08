@@ -57,6 +57,8 @@ body[data-export=true] .composition-controls{display:none!important}
  .print-overview .compare-item.has-composition .compare-assets:has(.compare-asset:nth-child(3)){grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
  .print-overview .compare-item.has-composition .compare-assets:has(.compare-asset:nth-child(3)) .compare-asset img{max-height:40mm}
  .print-overview .compare-item.has-composition .compare-assets:has(.compare-asset:nth-child(3)) .compare-asset figcaption{font-size:8px;line-height:1.6}
+ .print-overview .compare-item.has-composition .compare-assets:has(.compare-asset:nth-child(5)){gap:9px}
+ .print-overview .compare-item.has-composition .compare-assets:has(.compare-asset:nth-child(5)) .compare-asset img{max-height:27mm}
 }
 
 .fullres-link{display:block;width:fit-content;margin-top:9px;font-size:10px;line-height:1.7;color:var(--ink);text-decoration:underline;text-underline-offset:3px;overflow-wrap:anywhere}.compare-item>.fullres-link{margin:-8px 0 18px}.fullres-link:hover{color:var(--accent)}
