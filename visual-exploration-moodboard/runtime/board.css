@@ -54,6 +54,9 @@ body[data-export=true] .composition-controls{display:none!important}
  .print-overview .compare-item.has-composition .compare-image{float:left;width:57%;height:auto;min-height:0}
  .print-overview .compare-item.has-composition .compare-assets{float:right;width:39%;margin:0 0 16px 25px;grid-template-columns:1fr}
  .print-overview .compare-item.has-composition .compare-image img{position:relative;display:block;height:auto}
+ .print-overview .compare-item.has-composition .compare-assets:has(.compare-asset:nth-child(3)){grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
+ .print-overview .compare-item.has-composition .compare-assets:has(.compare-asset:nth-child(3)) .compare-asset img{max-height:40mm}
+ .print-overview .compare-item.has-composition .compare-assets:has(.compare-asset:nth-child(3)) .compare-asset figcaption{font-size:8px;line-height:1.6}
 }
 
 .fullres-link{display:block;width:fit-content;margin-top:9px;font-size:10px;line-height:1.7;color:var(--ink);text-decoration:underline;text-underline-offset:3px;overflow-wrap:anywhere}.compare-item>.fullres-link{margin:-8px 0 18px}.fullres-link:hover{color:var(--accent)}
