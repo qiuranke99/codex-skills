@@ -550,6 +550,16 @@ window.addEventListener('beforeunload', () => {renderer?.destroy();});
 window.addEventListener('beforeprint', () => {if (!state.exporting) {toast('请使用已保存状态的导出入口，以保证 Shader 和所有方向海报完整。');}});
 setInterval(() => {if (state.project && !state.loading) updatePlayback();}, 250);
 
+// Move the actual controls, retaining listeners and DOM reading/focus order.
+// Long support-asset sequences must not separate mobile parameters from the study.
+const mobileStudyLayout=matchMedia('(max-width:760px)');
+function arrangeStudyLayout(){
+  const main=document.querySelector('.study-main'),aside=document.querySelector('.direction-aside');
+  if(mobileStudyLayout.matches){main.prepend($('direction-heading'));main.insertBefore($('direction-tools'),$('asset-section'));}
+  else aside.append($('direction-heading'),$('direction-tools'));
+}
+mobileStudyLayout.addEventListener('change',arrangeStudyLayout);arrangeStudyLayout();
+
 api.ready = (async () => {
   try {
     state.project = validateProject(await requestJSON('/api/project')); renderProject();

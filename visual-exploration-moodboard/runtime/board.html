@@ -59,15 +59,19 @@
         </div>
 
         <aside class="direction-aside">
+          <div id="direction-heading">
           <p class="eyebrow"><span id="direction-number">01</span><span class="eyebrow-rule" aria-hidden="true"></span><span id="direction-subtitle"></span></p>
           <h2 id="direction-title"></h2>
           <p class="direction-claim" id="direction-claim"></p>
           <p class="direction-description" id="direction-description"></p>
           <div class="palette" id="palette" aria-label="方向色彩关系"></div>
+          </div>
+          <div id="direction-tools">
           <details class="parameter-panel" id="parameter-panel"><summary><span>调整观看关系</span><span class="details-sign" aria-hidden="true">＋</span></summary><div id="parameter-controls"></div><button class="text-button restore-button" id="restore" type="button">恢复已保存状态 <span aria-hidden="true">↶</span></button></details>
           <div class="save-area"><button class="primary-button" id="save-snapshot" type="button"><span>保存当前研究</span><span aria-hidden="true">↗</span></button><p class="save-state" id="save-state" aria-live="polite"></p></div>
           <label class="reduced-control"><input id="reduced-motion" type="checkbox"><span>减少动态 · 保留选帧</span></label>
           <details class="export-controls"><summary>导出研究 <span aria-hidden="true">↗</span></summary><p>保存当前参数与选帧，再导出全部方向的已保存总览。此操作不代表批准。</p><div><button id="export-png" class="text-button" type="button">保存并导出 PNG</button><button id="export-pdf" class="text-button" type="button">保存并导出 PDF</button></div></details>
+          </div>
         </aside>
       </section>
 

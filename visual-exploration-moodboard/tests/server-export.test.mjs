@@ -94,6 +94,10 @@ test('synthetic integration uses actual GPU posters and produces bound PNG and P
     assert.equal(await page.locator('#compare-grid .paired-image img').count(),3);
     for(let i=1;i<=3;i++)assert.equal(await page.locator(`#compare-grid img[src$="/media/assets/object-${i}.svg"]`).count(),1);
     await page.setViewportSize({width:390,height:844});
+    await page.waitForFunction(()=>document.querySelector('#direction-tools').parentElement.matches('.study-main'));
+    const mobileStudyOrder=await page.locator('.study-main').evaluate(main=>[...main.children].map(node=>node.id||node.className));
+    assert.equal(mobileStudyOrder[0],'direction-heading','mobile title precedes the studied image');
+    assert.ok(mobileStudyOrder.indexOf('direction-tools')>mobileStudyOrder.indexOf('playback-bar')&&mobileStudyOrder.indexOf('direction-tools')<mobileStudyOrder.indexOf('asset-section'),'mobile parameters stay between playback and long support sequences');
     const bounds=await page.locator('#compare-grid .paired-item').evaluateAll(items=>items.slice(0,2).map(item=>{const r=item.getBoundingClientRect();return {x:r.x,y:r.y,width:r.width};}));
     assert.ok(Math.abs(bounds[0].y-bounds[1].y)<1,'mobile comparison starts with adjacent directions');assert.ok(bounds[1].x>=bounds[0].x+bounds[0].width,'mobile paired images do not overlap');
     const savedBeforeInspect=(await page.evaluate(()=>window.VEM.getState())).snapshot;
@@ -109,6 +113,10 @@ test('synthetic integration uses actual GPU posters and produces bound PNG and P
     await page.locator('#compare-role').selectOption('snapshot');assert.equal(await page.locator('#compare-grid .paired-image img').count(),3);assert.equal(await page.locator('#compare-grid img[src*="/posters/"]').count(),3);
     await page.keyboard.press('Escape');assert.equal(await page.locator('#compare-dialog').isVisible(),false);
     await page.setViewportSize({width:1440,height:1000});
+    await page.waitForFunction(()=>document.querySelector('#direction-tools').parentElement.matches('.direction-aside'));
+    assert.equal(await page.locator('.direction-aside #direction-heading').count(),1,'desktop title returns beside the picture');
+    assert.equal(await page.locator('#direction-tools').count(),1,'responsive relocation retains a single set of actual controls');
+    assert.deepEqual((await page.evaluate(()=>window.VEM.getState())).snapshot,savedBeforeInspect,'responsive relocation preserves the saved study');
     await page.evaluate(()=>window.VEM.preparePrint());
     assert.equal(await page.locator('#study').isVisible(),false,'export does not repeat the current direction');assert.equal(await page.locator('#asset-section').isVisible(),false);assert.equal(await page.locator('#print-overview').isVisible(),true);
     assert.equal(await page.locator('#print-directions .compare-poster').count(),3);
