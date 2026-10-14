@@ -82,8 +82,8 @@ def scan(data: bytes, expected_sha256: str | None = None) -> dict:
         "next_checks": [
             "Read each mention in context, including quotations and prohibitions.",
             "Identify every actual shot, including unnumbered and repeated labels.",
-            "Review start/end framing, substantial scale change, event and timing.",
-            "Research multiple distinct videos with actual playback and listening.",
+            "Review start/intermediate/end framing, substantial scale change, event and timing.",
+            "Research references only when explicitly requested for this task; prompts alone suffice for the default audit.",
             "Review music development, edit points, constraints and generation risks.",
         ],
     }
