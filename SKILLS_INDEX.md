@@ -26,7 +26,7 @@
 | [product-tvc-lighting-director](product-tvc-lighting-director/SKILL.md) | 照明主导TVC与锁定镜序灯光升级；仅文本 |
 | [product-tvc-previs-director](product-tvc-previs-director/SKILL.md) | 产品美术与AI布局、Blender后台多镜预演及提示词附件包 |
 | [single-face-character-lock-board](single-face-character-lock-board/SKILL.md) | 单一可见人脸及无头正背面服装板 |
-| [video-prompt-auditor](video-prompt-auditor/SKILL.md) | 仅凭提示词逐镜校对大幅景别变化、弱运镜、剪辑、音乐与关键帧微动画风险；参考研究按需另行开展 |
+| [video-prompt-auditor](video-prompt-auditor/SKILL.md) | 仅凭提示词逐镜校对参考职责、动作起点、材质与动静区域、大幅景别变化、弱运镜、剪辑和音乐；参考研究按需另行开展 |
 
 ## 安装与调用
 

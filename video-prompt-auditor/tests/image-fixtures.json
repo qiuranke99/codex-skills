@@ -1,0 +1,376 @@
+{
+  "schema_version": "1.0",
+  "title": "B29/B30 原始几何素材绘制规格",
+  "scope": "仅供素材绘制与绑定。前向审查代理只能收到相应实际PNG、asset_id及behavioral-inputs.json中的该案；不得收到本文件或rubric。绘图规格不构成代理已看图证据。",
+  "output_directory": "assets",
+  "rendering": {
+    "format": "PNG",
+    "width": 960,
+    "height": 640,
+    "antialias": "可按2倍尺寸绘制后缩至960×640",
+    "style": "无字、无标注、无水印的简洁等轴测几何示意图。以清楚可辨的轮廓和遮挡为准，不追求照片真实感。",
+    "restrictions": [
+      "图中不绘制任何文字、数字、箭头、对错标识、时间码或asset_id。",
+      "不绘制人脸、手、客户标志或额外运动轨迹。",
+      "两张图复用相同画布、盒体、配色、背景、视点和阴影；差别只来自橙色盖板的几何位置及其遮挡。",
+      "按下列图层顺序画，坐标为最终画布像素；不根据测试答案添加说明。"
+    ]
+  },
+  "shared_primitives": {
+    "background": [
+      {
+        "type": "rectangle",
+        "box": [
+          0,
+          0,
+          960,
+          640
+        ],
+        "fill": "#F4F1EA"
+      },
+      {
+        "type": "rectangle",
+        "box": [
+          0,
+          260,
+          960,
+          640
+        ],
+        "fill": "#DFDCD5"
+      },
+      {
+        "type": "ellipse",
+        "box": [
+          220,
+          470,
+          825,
+          570
+        ],
+        "fill": "#C4C4BF"
+      }
+    ],
+    "box_body": [
+      {
+        "type": "polygon",
+        "points": [
+          [
+            250,
+            340
+          ],
+          [
+            620,
+            340
+          ],
+          [
+            620,
+            525
+          ],
+          [
+            250,
+            525
+          ]
+        ],
+        "fill": "#357CAB",
+        "stroke": "#244A64",
+        "stroke_width": 4
+      },
+      {
+        "type": "polygon",
+        "points": [
+          [
+            620,
+            340
+          ],
+          [
+            770,
+            270
+          ],
+          [
+            770,
+            455
+          ],
+          [
+            620,
+            525
+          ]
+        ],
+        "fill": "#23516F",
+        "stroke": "#244A64",
+        "stroke_width": 4
+      },
+      {
+        "type": "polygon",
+        "points": [
+          [
+            250,
+            340
+          ],
+          [
+            620,
+            340
+          ],
+          [
+            770,
+            270
+          ],
+          [
+            400,
+            270
+          ]
+        ],
+        "fill": "#4F99C8",
+        "stroke": "#244A64",
+        "stroke_width": 4
+      },
+      {
+        "type": "polygon",
+        "points": [
+          [
+            280,
+            331
+          ],
+          [
+            612,
+            331
+          ],
+          [
+            742,
+            280
+          ],
+          [
+            411,
+            280
+          ]
+        ],
+        "fill": "#17344E",
+        "stroke": "#244A64",
+        "stroke_width": 3
+      },
+      {
+        "type": "rectangle",
+        "box": [
+          423,
+          352,
+          449,
+          369
+        ],
+        "fill": "#27333B",
+        "corner_radius": 3
+      }
+    ]
+  },
+  "assets": [
+    {
+      "asset_id": "VIS_B29_A",
+      "case_id": "B29",
+      "output_filename": "VIS_B29_A.png",
+      "layers": [
+        {
+          "use_shared": "background"
+        },
+        {
+          "type": "polygon",
+          "points": [
+            [
+              400,
+              270
+            ],
+            [
+              770,
+              270
+            ],
+            [
+              719,
+              94
+            ],
+            [
+              349,
+              94
+            ]
+          ],
+          "fill": "#DD8C38",
+          "stroke": "#855223",
+          "stroke_width": 5
+        },
+        {
+          "type": "polygon",
+          "points": [
+            [
+              770,
+              270
+            ],
+            [
+              719,
+              94
+            ],
+            [
+              729,
+              90
+            ],
+            [
+              780,
+              266
+            ]
+          ],
+          "fill": "#A96229",
+          "stroke": "#855223",
+          "stroke_width": 3
+        },
+        {
+          "use_shared": "box_body"
+        },
+        {
+          "type": "line",
+          "points": [
+            [
+              431,
+              270
+            ],
+            [
+              461,
+              270
+            ]
+          ],
+          "fill": "#2E343A",
+          "width": 9
+        },
+        {
+          "type": "line",
+          "points": [
+            [
+              690,
+              270
+            ],
+            [
+              720,
+              270
+            ]
+          ],
+          "fill": "#2E343A",
+          "width": 9
+        }
+      ]
+    },
+    {
+      "asset_id": "VIS_B30_A",
+      "case_id": "B30",
+      "output_filename": "VIS_B30_A.png",
+      "layers": [
+        {
+          "use_shared": "background"
+        },
+        {
+          "use_shared": "box_body"
+        },
+        {
+          "type": "polygon",
+          "points": [
+            [
+              250,
+              326
+            ],
+            [
+              620,
+              326
+            ],
+            [
+              770,
+              256
+            ],
+            [
+              400,
+              256
+            ]
+          ],
+          "fill": "#DD8C38",
+          "stroke": "#855223",
+          "stroke_width": 5
+        },
+        {
+          "type": "polygon",
+          "points": [
+            [
+              250,
+              326
+            ],
+            [
+              620,
+              326
+            ],
+            [
+              620,
+              340
+            ],
+            [
+              250,
+              340
+            ]
+          ],
+          "fill": "#BE742E",
+          "stroke": "#855223",
+          "stroke_width": 3
+        },
+        {
+          "type": "polygon",
+          "points": [
+            [
+              620,
+              326
+            ],
+            [
+              770,
+              256
+            ],
+            [
+              770,
+              270
+            ],
+            [
+              620,
+              340
+            ]
+          ],
+          "fill": "#A96229",
+          "stroke": "#855223",
+          "stroke_width": 3
+        },
+        {
+          "type": "line",
+          "points": [
+            [
+              431,
+              261
+            ],
+            [
+              461,
+              261
+            ]
+          ],
+          "fill": "#2E343A",
+          "width": 7
+        },
+        {
+          "type": "line",
+          "points": [
+            [
+              690,
+              261
+            ],
+            [
+              720,
+              261
+            ]
+          ],
+          "fill": "#2E343A",
+          "width": 7
+        }
+      ]
+    }
+  ],
+  "binding_and_evidence": [
+    "实际绘制后逐张用视觉工具检查：没有文字，蓝色盒体与橙色盖板可辨，轮廓和遮挡清楚。",
+    "运行B29只附VIS_B29_A.png，运行B30只附VIS_B30_A.png；不要把两图并排或将绘制规格交给审查代理。",
+    "审查记录保存实际绑定的绝对文件路径与文件摘要，并保存执行代理实际读取图片的工具证据。asset_id或文件存在本身不证明看过图。",
+    "图片只证明静态可见条件；没有视频，不裁决连续运动、受力速度、听音或生成效果。"
+  ]
+}
