@@ -1,6 +1,6 @@
 interface:
   display_name: "视频提示词逐镜校对"
-  short_description: "逐镜校对参考职责、动作起点、材质与动静区域，严查弱运镜、大幅景别变化和音乐"
-  default_prompt: "使用 $video-prompt-auditor 校对这份视频生成提示词，检查参考职责与动作起点、材质受力、刚体与动态区域，逐镜严查弱运镜、景别变化与音乐，给出保留原任务和约束的局部修正。"
+  short_description: "逐镜校对参考与物理连续性、动态光影和影调，严查弱运镜、大幅景别变化与音乐"
+  default_prompt: "使用 $video-prompt-auditor 校对这份视频生成提示词，检查参考职责、动作起点、材质与动静区域、光影目的和跨镜重复，严查弱运镜、景别变化与音乐，给出保留原任务和影调的局部修正。"
 policy:
   allow_implicit_invocation: true
