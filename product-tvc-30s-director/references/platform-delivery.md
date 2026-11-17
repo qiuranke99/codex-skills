@@ -8,7 +8,7 @@
 
 优先使用用户给定入口与已有当次证据，需更新时查该平台一手文档/真实界面。不把其他站点的经验、旧次任务或参考预演当成该入口支持证明。不为核查而提交生成、上传私有素材或启动付费任务。
 
-模型未指定：先交付完整30秒通用稿及素材代号，说明实际上传标签尚待映射。模型已指定但入口限制未知：能核实的继续核实，无法核实的标明未知；必要时只问入口或关键限制。不得声称“已可直接提交到该平台”来掩盖未知项。
+模型未指定：先交付完整用户指定时长（未指定则30秒）的通用稿及素材代号，说明实际上传标签尚待映射。模型已指定但入口限制未知：能核实的继续核实，无法核实的标明未知；必要时只问入口或关键限制。不得声称“已可直接提交到该平台”来掩盖未知项。
 
 用户提供的测试限制可以作为本次输入合同，明确来源为“用户给定”，不伪造官方核验。某入口只能首/尾帧或不能绑定全部所需图片时，不默默将关键帧改成端点或丢弃身份图；解释不相容的具体用途，并在已授权范围内给通用稿/可行映射。
 
@@ -39,7 +39,7 @@
 
 ```text
 python scripts/check_delivery.py --prompt unit-a.txt --prompt unit-b.txt --limit 5000 --reserve 250
-python scripts/check_delivery.py --timeline timeline.json
+python scripts/check_delivery.py --timeline timeline.json --duration 30
 ```
 
 数值只是命令示例，不是任何模型限制。可指定 `--count-unit utf16`。时间表格式：
@@ -48,4 +48,33 @@ python scripts/check_delivery.py --timeline timeline.json
 {"shots":[{"id":"S01","start":0,"end":8},{"id":"S02","start":8,"end":21},{"id":"S03","start":21,"end":30}],"hold_start":28.5}
 ```
 
-这也不是默认三镜结构。工具只检查0—30秒连续覆盖、唯一镜号、正时长和申报的最终停留时间至少1秒；不能证明28.5秒时画面真的落定。审稿者必须从正文判断构图、姿态、品牌信息是否已稳定，所有转场/变焦是否已结束。脚本报告通过只代表算术/长度通过。
+这也不是默认三镜结构。工具检查0—T秒连续覆盖（T优先取--duration或JSON顶层total_seconds，均未提供时默认30；同时提供且不一致报错）、唯一镜号、正时长和申报的最终停留时间至少1秒；不能证明28.5秒时画面真的落定。审稿者必须从正文判断构图、姿态、品牌信息是否已稳定，所有转场/变焦是否已结束。脚本报告通过只代表算术/长度通过。
+
+## Seedance 2.5：参考职责与声音转写
+
+核对日期：2026-11-17。官方提示词指南：<https://docs.byteplus.com/en/docs/modelark/seedance-2-5-prompt-guide>；官方版本介绍：<https://seed.bytedance.com/en/blog/one-take-creation-flexible-referencing-introducing-seedance-2-5>。发布介绍包含30秒能力，不能据旧经验写成模型统一只支持5—10秒；实际账号、模式与第三方入口仍须单独核实。
+
+按主体、动作/事件、场景、风格、运镜/切点和声音组织表达。多模态引用使用实际入口支持的 `@Image1`、`@Video1`、`@Audio1` 等标记，并说明每份素材负责身份、构图、影调、动作、节奏还是声音；文本编号不等于附件已绑定。参考生成、视频编辑、首尾帧和延长模式不互相冒充。
+
+官方指南示例以圆括号组织音乐、尖括号组织音效、花括号组织对白、〖〗组织字幕；只在当前入口兼容且本任务需要该声音/字幕时采用。不要为了符合示例新增用户未要求的人物、对白或字幕。保留用户规定的镜数、顺序和切点意图，不能以无证据的“模型只适合长镜头”自动合并镜头。
+
+## MiniMax H3：按实际输入模式选择描述协议
+
+核对日期：2026-11-17。直接来源：
+
+- 基础生成：<https://huggingface.co/MiniMaxAI/MiniMax-H3/blob/main/docs/VIDEO_PROMPT_WRITING_GUIDE_base_en.md>
+- 参考生成：<https://huggingface.co/MiniMaxAI/MiniMax-H3/blob/main/docs/VIDEO_PROMPT_WRITING_GUIDE_ref_en.md>
+
+基础指南覆盖T2VA、I2VA、FL2VA、L2VA，描述结构为 `integrated_multimodal_description`、`overall_soundscape`、`non_diegetic_music`。参考指南按实际关系区分keyframe completion、reference generation、video editing、video continuation、audio reuse及audio reference，结构为 `subject_definitions`、`summary`、`retention_analysis`、`detailed_description`、`overall_soundscape`、`non_diegetic_music`。这是官方指南的组织协议；第三方入口只有自然语言框时，在其接受的格式内表达对应职责，不强行要求它接收JSON。
+
+`<Subject N>`定义复用的可见内容（对象、环境、风格或动作等），不是源文件编号；`<Picture N>`绑定指定画面/构图证据；`<Video N>`负责全片结构、编辑或延续源，片中的复用内容另定义Subject；`<Audio N>`负责声音。只有实际启用/引用音轨才建立Audio，不因视频文件有声就自动沿用。不得将Picture自动升级为全程身份源或首尾控制。按指南需要使用retention_analysis的 fully_preserved、partially_preserved、attribute_transfer、weak_reference，明确保留内容，不把“参考”一律理解为完整复刻。Audio另用fully_copy、partially_copy、reference、weak_reference，不混用可见内容的标记。
+
+多镜描述第一镜使用 `[Shot 1]`，不加时间；后续镜头用 `[Shot N] At MM:SS.mmm` 表示开始时间，递增且小于该生成单元总时长。逐镜保留运动类型、幅度、速度、主体变化、状态与声音；这是文本意图与协议，不保证模型逐帧准确实现。分段时模型内镜号可重新从1开始，但交付表保留其与全片S编号的明确映射。
+
+官方规范稿正文使用英语，画中文字、对白及歌词保留原语言；用户指定中文交付时遵从用户并说明与官方规范稿的差别。基础模式风格写在[Shot 1]之后，全参考模式整体风格可在第一镜之前。
+
+`overall_soundscape`汇总环境与物理声，具体对白/歌词及逐镜同步声留在逐镜正文；只有完全静音才为 `N/A`。`non_diegetic_music`无配乐时可为 `N/A`，不能连带删掉物理声。明确需要原文文字时保留原句引号。指南中的典型描述长度是写法建议，不是所有入口的硬字符上限。
+
+## 工具数值边界
+
+总时长必须为有限正数。JSON可增加 `"total_seconds":18`；`--duration 18`可以单独使用，同时指定时必须一致。至少1秒最终停留仍是本Skill的交付规则，因此不足1秒的总长即使数值为正也不能通过此项检查。唯一镜号、重复JSON键、布尔伪数值、非有限数、缺口/重叠仍会检查。4096位算术精度保护用于拒绝极端指数造成的资源消耗，不是视频时长上限。机械报告schema及退出码0（通过）、1（内容不通过）、2（输入/运行错误）保持不变。

@@ -18,12 +18,15 @@ import check_delivery as checker
 SCRIPT = Path(__file__).with_name("check_delivery.py").resolve()
 
 
-def timeline(shots=None, hold_start=28.5):
-    return {"shots": shots if shots is not None else [
+def timeline(shots=None, hold_start=28.5, total_seconds=None):
+    payload = {"shots": shots if shots is not None else [
         {"id": "S01", "start": 0, "end": 2.5},
         {"id": "S02", "start": 2.5, "end": 9.75},
         {"id": "S03", "start": 9.75, "end": 30},
     ], "hold_start": hold_start}
+    if total_seconds is not None:
+        payload["total_seconds"] = total_seconds
+    return payload
 
 
 class DeliveryChecks(unittest.TestCase):
@@ -37,9 +40,9 @@ class DeliveryChecks(unittest.TestCase):
         path.write_bytes(content if isinstance(content, bytes) else content.encode("utf-8"))
         return path
 
-    def check_timeline(self, payload):
+    def check_timeline(self, payload, duration=None):
         path = self.fixture("timeline.json", json.dumps(payload))
-        return checker.check_timeline(checker.read_timeline(path))
+        return checker.check_timeline(checker.read_timeline(path), duration=duration)
 
     def cli(self, *args, expected=0):
         completed = subprocess.run(
@@ -72,7 +75,9 @@ class DeliveryChecks(unittest.TestCase):
         self.assertFalse(checker.check_prompt(path, 2, count_unit="utf16")["passed"])
 
     def test_legal_variable_shot_lengths(self):
-        self.assertTrue(self.check_timeline(timeline())["passed"])
+        result = self.check_timeline(timeline())
+        self.assertTrue(result["passed"])
+        self.assertEqual(result["required_total_seconds"], 30)
 
     def test_single_shot_and_exact_one_second_hold(self):
         payload = timeline([{"id": "one", "start": 0, "end": 30}], 29)
@@ -107,6 +112,84 @@ class DeliveryChecks(unittest.TestCase):
                             '{"id":"a","start":0,"end":30}],'
                             '"hold_start":29.000000000000000000000000000001}')
         self.assertFalse(checker.check_timeline(checker.read_timeline(path))["passed"])
+
+    def test_custom_positive_duration_15s_multi_shot_via_cli_and_json(self):
+        shots_15s = [
+            {"id": "S01", "start": 0, "end": 1.2},
+            {"id": "S02", "start": 1.2, "end": 2.5},
+            {"id": "S03", "start": 2.5, "end": 3.65},
+            {"id": "S04", "start": 3.65, "end": 4.8},
+            {"id": "S05", "start": 4.8, "end": 6.15},
+            {"id": "S06", "start": 6.15, "end": 7.6},
+            {"id": "S07", "start": 7.6, "end": 9.15},
+            {"id": "S08", "start": 9.15, "end": 10.7},
+            {"id": "S09", "start": 10.7, "end": 12.2},
+            {"id": "S10", "start": 12.2, "end": 15},
+        ]
+        path_no_total = self.fixture("t15.json", json.dumps(timeline(shots_15s, hold_start=13.7)))
+        self.assertFalse(self.cli("--timeline", path_no_total, expected=1)["passed"])
+        report = self.cli("--timeline", path_no_total, "--duration", "15")
+        self.assertTrue(report["passed"])
+        self.assertEqual(report["timeline"]["required_total_seconds"], 15)
+        self.assertEqual(report["timeline"]["shot_count"], 10)
+
+        path_with_total = self.fixture(
+            "t15-json.json", json.dumps(timeline(shots_15s, hold_start=14, total_seconds=15))
+        )
+        self.assertTrue(self.cli("--timeline", path_with_total)["passed"])
+        self.assertTrue(self.cli("--timeline", path_with_total, "--duration", "15.0")["passed"])
+
+        path_short_hold = self.fixture(
+            "t15-short-hold.json", json.dumps(timeline(shots_15s, hold_start=14.05, total_seconds=15))
+        )
+        self.assertFalse(self.cli("--timeline", path_short_hold, expected=1)["passed"])
+
+    def test_fractional_and_high_precision_custom_duration(self):
+        path = self.fixture(
+            "frac.json",
+            '{"total_seconds":12.5,"shots":[{"id":"S01","start":0,"end":4.25},'
+            '{"id":"S02","start":4.25,"end":12.5}],"hold_start":11.5}',
+        )
+        report = self.cli("--timeline", path)
+        self.assertTrue(report["passed"])
+        self.assertEqual(report["timeline"]["required_total_seconds"], "12.5")
+
+        precise_fail = self.fixture(
+            "frac-precise-fail.json",
+            '{"total_seconds":12.5,"shots":[{"id":"S01","start":0,"end":12.5}],'
+            '"hold_start":11.500000000000000000000000000001}',
+        )
+        self.assertFalse(self.cli("--timeline", precise_fail, expected=1)["passed"])
+
+    def test_sub_second_total_duration_fails_minimum_one_second_hold(self):
+        path = self.fixture(
+            "subsecond.json",
+            '{"shots":[{"id":"S01","start":0,"end":0.8}],"hold_start":0}',
+        )
+        report = self.cli("--timeline", path, "--duration", "0.8", expected=1)
+        self.assertFalse(report["passed"])
+        self.assertIn("at least 1 second", " ".join(report["timeline"]["errors"]))
+
+    def test_json_total_seconds_validation_and_cli_conflict(self):
+        for bad_total in (True, False, "15", None, 0, -15):
+            with self.subTest(bad_total=bad_total):
+                payload = timeline([{"id": "S01", "start": 0, "end": 15}], 14, total_seconds=bad_total)
+                self.assertFalse(self.check_timeline(payload)["passed"])
+
+        path = self.fixture(
+            "conflict.json",
+            json.dumps(timeline([{"id": "S01", "start": 0, "end": 15}], 14, total_seconds=15)),
+        )
+        report = self.cli("--timeline", path, "--duration", "30", expected=1)
+        self.assertFalse(report["passed"])
+        self.assertIn("does not match --duration", " ".join(report["timeline"]["errors"]))
+
+    def test_extreme_exponent_rejected_cleanly(self):
+        path = self.fixture(
+            "extreme.json",
+            '{"total_seconds":1e10000,"shots":[{"id":"S01","start":0,"end":1e10000}],"hold_start":0}',
+        )
+        self.assertEqual(self.cli("--timeline", path, expected=2)["error"]["kind"], "invalid_input")
 
     def test_overlap_gap_and_input_order(self):
         for start in (2.4, 2.6):
@@ -176,7 +259,7 @@ class DeliveryChecks(unittest.TestCase):
 
     def test_incorrect_timeline_shape(self):
         for payload in ([], None, {}, {"shots": []}, {"shots": [None]},
-                        {"shots": [{"id": "a"}], "hold_start":29}):
+                        {"shots": [{"id": "a"}], "hold_start": 29}):
             with self.subTest(payload=payload):
                 self.assertFalse(self.check_timeline(payload)["passed"])
 
@@ -216,12 +299,20 @@ class DeliveryChecks(unittest.TestCase):
 
     def test_cli_invalid_options_are_json_without_tracebacks(self):
         path = self.fixture("body.txt", "A")
+        tpath = self.fixture("timeline.json", json.dumps(timeline()))
         cases = [(), ("--unexpected",), ("--prompt",),
                  ("--prompt", path, "--limit", 0), ("--prompt", path, "--limit", -1),
                  ("--prompt", path, "--limit", "1.5"), ("--prompt", path, "--reserve", -1),
                  ("--prompt", path, "--reserve", 1),
                  ("--prompt", path, "--limit", 1, "--reserve", 2),
-                 ("--prompt", path, "--count-unit", "bytes")]
+                 ("--prompt", path, "--count-unit", "bytes"),
+                 ("--prompt", path, "--duration", "15"),
+                 ("--timeline", tpath, "--duration", "0"),
+                 ("--timeline", tpath, "--duration", "-10"),
+                 ("--timeline", tpath, "--duration", "NaN"),
+                 ("--timeline", tpath, "--duration", "Infinity"),
+                 ("--timeline", tpath, "--duration", "abc"),
+                 ("--timeline", tpath, "--duration", " 15 ")]
         for args in cases:
             with self.subTest(args=args):
                 self.assertEqual(self.cli(*args, expected=2)["error"]["kind"], "invalid_input")

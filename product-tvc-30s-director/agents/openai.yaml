@@ -1,4 +1,4 @@
 interface:
   display_name: "30秒高端产品广告提示词导演"
-  short_description: "以产品白底图、影调图与关键帧编写大动态且连贯的30秒TVC提示词"
-  default_prompt: "使用 $product-tvc-30s-director，根据我的产品白底图、影调参考和关键帧，编写完整30秒高端产品广告视频生成提示词。"
+  short_description: "以产品白底图、影调图与关键帧编写大动态产品TVC提示词，时长遵从用户"
+  default_prompt: "使用 $product-tvc-30s-director，根据我的产品白底图、影调参考和关键帧，按我指定的时长（未指定则30秒）编写完整高端产品广告视频生成提示词。"
